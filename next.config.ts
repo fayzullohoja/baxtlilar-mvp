@@ -1,4 +1,7 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 // Telegram-домены для frame-ancestors (Mini App грузится как iframe в TG-клиентах).
 const TG_FRAME_ANCESTORS = [
@@ -13,7 +16,6 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=()" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-  // CSP с allowlist для Telegram (frame-ancestors); base-uri и form-action — для безопасности
   {
     key: "Content-Security-Policy",
     value: [
@@ -30,4 +32,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

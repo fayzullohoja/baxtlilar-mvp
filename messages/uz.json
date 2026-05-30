@@ -1,0 +1,18 @@
+{
+  "Brand": {
+    "name": "Baxtlilar",
+    "subtitle": "Oila qurish maqsadida jiddiy tanishuvlar uchun platforma"
+  },
+  "Welcome": {
+    "tagline": "Bu yerda ishonch, hurmat va ongli tanlov muhim",
+    "feature_verified": "Tekshirilgan profillar",
+    "feature_privacy": "Maʼlumotlar maxfiyligi",
+    "feature_respect": "Hurmatli muloqot",
+    "start": "Boshlash",
+    "legal": "Davom etib, siz platforma qoidalari va maxfiylik siyosatiga rozilik bildirasiz"
+  },
+  "Lang": {
+    "ru": "RU",
+    "uz": "UZ"
+  }
+}
