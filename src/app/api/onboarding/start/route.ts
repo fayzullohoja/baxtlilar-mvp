@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadUserForStep } from "@/lib/onboarding/guard-api";
-import { transition } from "@/lib/state-machine/transitions";
+import { tryTransition } from "@/lib/state-machine/transitions";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
 
 export const runtime = "nodejs";
@@ -19,9 +19,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     /* язык необязателен в теле */
   }
 
-  await transition(user.id, { language, onboarding_step: "consent" }, "user pressed start", {
-    kind: "user",
-    id: user.id,
-  });
+  const tr = await tryTransition(
+    user.id,
+    { language, onboarding_step: "consent" },
+    "user pressed start",
+    { kind: "user", id: user.id },
+  );
+  if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
   return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.consent });
 }

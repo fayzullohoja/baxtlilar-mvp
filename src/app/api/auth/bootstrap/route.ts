@@ -29,7 +29,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const e = env();
   let parsed;
   try {
-    parsed = verifyInitData(initData, { bypass: e.DEV_BYPASS_TG });
+    // SEC-4: bypass HMAC допустим ТОЛЬКО вне production, даже если флаг включён в env
+    const bypass = e.DEV_BYPASS_TG && process.env.NODE_ENV !== "production";
+    parsed = verifyInitData(initData, { bypass });
   } catch (err) {
     const code = err instanceof InitDataError ? err.message : "verify_failed";
     return NextResponse.json({ ok: false, error: code }, { status: 401 });
@@ -73,6 +75,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       .select("id, onboarding_step, lifecycle_state")
       .single();
     if (insErr || !created) {
+      // BUG-7: гонка двух первых заходов — второй ловит unique(telegram_id) (23505).
+      // Перечитываем уже созданную строку вместо 500.
+      if (insErr && (insErr.code === "23505" || /duplicate|unique/i.test(insErr.message))) {
+        const { data: race } = await sb
+          .from("users")
+          .select("id, onboarding_step, lifecycle_state")
+          .eq("telegram_id", tgId)
+          .single();
+        if (race) {
+          await setSession(race.id as string);
+          return NextResponse.json({
+            ok: true,
+            userId: race.id,
+            onboarding_step: race.onboarding_step,
+            lifecycle_state: race.lifecycle_state,
+          });
+        }
+      }
       return NextResponse.json(
         { ok: false, error: insErr?.message ?? "insert_failed" },
         { status: 500 },

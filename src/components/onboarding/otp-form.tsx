@@ -50,7 +50,7 @@ export function OtpForm() {
         placeholder="••••••"
         className="w-full text-center text-2xl tracking-[0.5em] rounded-2xl border border-baxt-border bg-white px-4 py-3 outline-none focus:border-baxt-coral"
       />
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm text-baxt-coral-dk">{error}</p> : null}
       {resent ? <p className="text-sm text-baxt-muted">{t("otp_subtitle")}</p> : null}
       <PrimaryButton onClick={submit} disabled={busy || code.length < 4}>
         {t("otp_confirm")}

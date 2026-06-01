@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi, adminAudit } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { BUCKET_DOCUMENTS } from "@/lib/uploads/storage";
+import { trustedIp } from "@/lib/http/ip";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,7 +40,7 @@ export async function GET(
     entityId: id,
     newValue: { kind },
     reason: "moderation review",
-    ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
+    ip: trustedIp(req),
   });
 
   return NextResponse.json({ ok: true, url: signed.signedUrl });

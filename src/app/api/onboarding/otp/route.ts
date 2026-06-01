@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadUserForStep } from "@/lib/onboarding/guard-api";
-import { transition } from "@/lib/state-machine/transitions";
+import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { verifyOtp, sendOtp } from "@/lib/otp/service";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
@@ -34,16 +34,30 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const v = await verifyOtp(user.id, code);
   if (!v.ok) return NextResponse.json({ ok: false, error: v.error }, { status: 400 });
 
+  // ONB-2: повторная проверка занятости номера перед подтверждением (защита от гонки;
+  // на уровне БД дополнительно стоит partial-unique индекс phone при phone_verified=true).
+  if (user.phone_number) {
+    const { data: taken } = await supabaseAdmin()
+      .from("users")
+      .select("id")
+      .eq("phone_number", user.phone_number)
+      .eq("phone_verified", true)
+      .neq("id", user.id)
+      .maybeSingle();
+    if (taken) return NextResponse.json({ ok: false, error: "phone_taken" }, { status: 409 });
+  }
+
   await supabaseAdmin()
     .from("users")
     .update({ phone_verified_at: new Date().toISOString() })
     .eq("id", user.id);
 
-  await transition(
+  const tr = await tryTransition(
     user.id,
     { phone_verified: true, verification_status: "phone_verified", onboarding_step: "doc_upload" },
     "otp verified",
     { kind: "user", id: user.id },
   );
+  if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
   return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.doc_upload });
 }

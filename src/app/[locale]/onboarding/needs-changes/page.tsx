@@ -14,9 +14,10 @@ export default async function NeedsChangesPage({ params }: { params: Promise<{ l
 
   const { data: doc } = await supabaseAdmin()
     .from("user_documents")
-    .select("reject_reason")
+    .select("reject_reason, reject_target")
     .eq("user_id", user.id)
     .maybeSingle();
+  const target = (doc?.reject_target as "passport" | "selfie" | "both" | null) ?? "both";
 
   return (
     <Screen title={t("nc_title")} subtitle={t("nc_subtitle")} step={4} totalSteps={6}>
@@ -26,7 +27,7 @@ export default async function NeedsChangesPage({ params }: { params: Promise<{ l
           <div className="text-amber-900">{doc.reject_reason as string}</div>
         </div>
       ) : null}
-      <NeedsChangesForm />
+      <NeedsChangesForm target={target} />
     </Screen>
   );
 }

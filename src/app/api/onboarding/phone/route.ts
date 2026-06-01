@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadUserForStep } from "@/lib/onboarding/guard-api";
-import { transition } from "@/lib/state-machine/transitions";
+import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { normalizeUzPhone, PhoneError } from "@/lib/phone";
 import { sendOtp } from "@/lib/otp/service";
@@ -36,11 +36,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const sent = await sendOtp(user.id, phone);
   if (!sent.ok) return NextResponse.json({ ok: false, error: sent.error }, { status: 429 });
 
-  await transition(
+  const tr = await tryTransition(
     user.id,
     { phone_number: phone, onboarding_step: "otp_pending" },
     "phone submitted, OTP sent",
     { kind: "user", id: user.id },
   );
+  if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
   return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.otp_pending });
 }

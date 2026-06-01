@@ -10,7 +10,8 @@ export async function notifyUser(telegramId: number, text: string): Promise<bool
     const res = await fetch(`https://api.telegram.org/bot${env().TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: telegramId, text, parse_mode: "HTML" }),
+      // без parse_mode: текст модератора идёт как plain — нет HTML-инъекции/поломки доставки (ADM-6/BUG-8)
+      body: JSON.stringify({ chat_id: telegramId, text }),
     });
     return res.ok;
   } catch (e) {

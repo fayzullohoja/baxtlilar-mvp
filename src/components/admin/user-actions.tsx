@@ -11,13 +11,19 @@ export function UserActions({ userId, blocked }: { userId: string; blocked: bool
 
   async function ban() {
     if (!reason.trim()) return;
+    // ADM-5: подтверждение опасного действия
+    if (!window.confirm(`Заблокировать пользователя?\nПричина: ${reason}`)) return;
     setBusy(true);
-    await fetch(`/api/admin/users/${userId}/ban`, {
+    const r = await fetch(`/api/admin/users/${userId}/ban`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reason }),
     });
     setBusy(false);
+    if (!r.ok) {
+      window.alert(r.status === 403 ? "Недостаточно прав (нужен супер-админ)" : "Ошибка");
+      return;
+    }
     setAsking(false);
     setReason("");
     router.refresh();

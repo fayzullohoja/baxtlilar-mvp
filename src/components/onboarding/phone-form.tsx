@@ -47,7 +47,7 @@ export function PhoneForm() {
         />
       </div>
       <p className="text-xs text-baxt-muted">{t("phone_hint")}</p>
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm text-baxt-coral-dk">{error}</p> : null}
       <PrimaryButton onClick={submit} disabled={busy || phone.replace(/\D/g, "").length < 9}>
         {t("phone_get_code")}
       </PrimaryButton>

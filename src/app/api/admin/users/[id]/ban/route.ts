@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi, adminAudit } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { transition } from "@/lib/state-machine/transitions";
+import { tryTransition } from "@/lib/state-machine/transitions";
+import { trustedIp } from "@/lib/http/ip";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,9 @@ export async function POST(
 ): Promise<NextResponse> {
   const { session, res } = await requireAdminApi();
   if (res) return res;
+  // ADM-1: блокировка — действие супер-админа
+  if (session.role !== "superadmin")
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   const { id } = await params;
   const { reason } = (await req.json().catch(() => ({}))) as { reason?: string };
   if (!reason?.trim())
@@ -21,17 +25,18 @@ export async function POST(
     .from("users")
     .update({ blocked_at: new Date().toISOString(), blocked_reason: reason })
     .eq("id", id);
-  await transition(id, { lifecycle_state: "blocked" }, `banned: ${reason}`, {
+  const tr = await tryTransition(id, { lifecycle_state: "blocked" }, `banned: ${reason}`, {
     kind: "admin",
     id: session.adminId,
   });
+  if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
   await adminAudit({
     adminId: session.adminId,
     action: "ban_user",
     entity: "user",
     entityId: id,
     reason,
-    ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
+    ip: trustedIp(req),
   });
   return NextResponse.json({ ok: true });
 }

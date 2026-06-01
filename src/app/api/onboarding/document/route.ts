@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadUserForStep } from "@/lib/onboarding/guard-api";
-import { transition } from "@/lib/state-machine/transitions";
+import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { uploadDocumentImage } from "@/lib/uploads/storage";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
@@ -28,11 +28,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { onConflict: "user_id" },
     );
 
-  await transition(
+  const tr = await tryTransition(
     user.id,
     { verification_status: "documents_uploaded", onboarding_step: "selfie_upload" },
     "passport uploaded",
     { kind: "user", id: user.id },
   );
+  if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
   return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.selfie_upload });
 }

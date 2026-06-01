@@ -48,7 +48,16 @@ export function verifyInitData(
   const secretKey = crypto.createHmac("sha256", "WebAppData").update(e.TELEGRAM_BOT_TOKEN).digest();
   const computed = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
 
-  if (!opts?.bypass && computed !== hash) throw new InitDataError("hash mismatch");
+  // SEC-1: тайминг-безопасное сравнение фикс. длины (без утечки по времени и без падения на кривом hex)
+  let valid = false;
+  if (computed.length === hash.length) {
+    try {
+      valid = crypto.timingSafeEqual(Buffer.from(computed, "hex"), Buffer.from(hash, "hex"));
+    } catch {
+      valid = false;
+    }
+  }
+  if (!opts?.bypass && !valid) throw new InitDataError("hash mismatch");
 
   const raw = Object.fromEntries(entries);
   const auth_date = Number.parseInt(raw.auth_date ?? "0", 10);

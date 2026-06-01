@@ -6,15 +6,52 @@ import { useRouter } from "@/i18n/navigation";
 import { postForm } from "@/lib/client/api";
 import { PrimaryButton } from "@/components/ui/screen";
 
-export function NeedsChangesForm() {
+function FilePick({
+  label,
+  capture,
+  onPick,
+}: {
+  label: string;
+  capture: "user" | "environment";
+  onPick: (f: File | null) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [name, setName] = useState<string | null>(null);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => ref.current?.click()}
+        className="w-full rounded-2xl border-2 border-dashed border-baxt-border bg-baxt-pink-bg px-4 py-5 text-sm text-baxt-muted hover:border-baxt-coral"
+      >
+        {name ?? label}
+      </button>
+      <input
+        ref={ref}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic"
+        capture={capture}
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0] ?? null;
+          setName(f?.name ?? null);
+          onPick(f);
+        }}
+      />
+    </div>
+  );
+}
+
+export function NeedsChangesForm({ target = "both" }: { target?: "passport" | "selfie" | "both" }) {
   const t = useTranslations("Onboarding");
   const router = useRouter();
-  const passportRef = useRef<HTMLInputElement>(null);
-  const selfieRef = useRef<HTMLInputElement>(null);
   const [passport, setPassport] = useState<File | null>(null);
   const [selfie, setSelfie] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const showPassport = target === "passport" || target === "both";
+  const showSelfie = target === "selfie" || target === "both";
 
   async function submit() {
     if (!passport && !selfie) return;
@@ -31,36 +68,13 @@ export function NeedsChangesForm() {
     }
   }
 
-  const pick = (
-    label: string,
-    file: File | null,
-    setF: (f: File | null) => void,
-    ref: React.RefObject<HTMLInputElement | null>,
-    capture: "user" | "environment",
-  ) => (
-    <div>
-      <button
-        onClick={() => ref.current?.click()}
-        className="w-full rounded-2xl border-2 border-dashed border-baxt-border bg-baxt-pink-bg px-4 py-5 text-sm text-baxt-muted hover:border-baxt-coral"
-      >
-        {file?.name ?? label}
-      </button>
-      <input
-        ref={ref}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/heic"
-        capture={capture}
-        className="hidden"
-        onChange={(e) => setF(e.target.files?.[0] ?? null)}
-      />
-    </div>
-  );
-
   return (
     <div className="space-y-3">
-      {pick(t("doc_upload"), passport, setPassport, passportRef, "environment")}
-      {pick(t("selfie_upload"), selfie, setSelfie, selfieRef, "user")}
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {showPassport ? (
+        <FilePick label={t("doc_upload")} capture="environment" onPick={setPassport} />
+      ) : null}
+      {showSelfie ? <FilePick label={t("selfie_upload")} capture="user" onPick={setSelfie} /> : null}
+      {error ? <p className="text-sm text-baxt-coral-dk">{error}</p> : null}
       <PrimaryButton onClick={submit} disabled={busy || (!passport && !selfie)}>
         {t("submit_to_review")}
       </PrimaryButton>

@@ -64,7 +64,7 @@ export function UploadForm({
           setFileName(f?.name ?? null);
         }}
       />
-      {error ? <p className="text-sm text-red-600">{error}</p> : null}
+      {error ? <p className="text-sm text-baxt-coral-dk">{error}</p> : null}
       <PrimaryButton onClick={submit} disabled={busy || !file}>
         {tc("continue")}
       </PrimaryButton>

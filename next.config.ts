@@ -19,9 +19,17 @@ const securityHeaders = [
   {
     key: "Content-Security-Policy",
     value: [
+      "default-src 'self'",
+      // Next-гидрация = inline-скрипты; telegram-web-app.js грузится с telegram.org
+      "script-src 'self' 'unsafe-inline' https://telegram.org",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https:", // signed URL фото/документов (supabase) + аватары TG
+      "font-src 'self' data:",
+      "connect-src 'self' https://*.supabase.co",
       `frame-ancestors ${TG_FRAME_ANCESTORS.join(" ")}`,
       "base-uri 'self'",
       "form-action 'self'",
+      "object-src 'none'",
     ].join("; "),
   },
 ];

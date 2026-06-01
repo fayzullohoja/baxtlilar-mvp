@@ -40,6 +40,13 @@ export async function sendOtp(userId: string, phone: string): Promise<SendResult
     if (inHour.length >= MAX_PER_HOUR) return { ok: false, error: "hourly_limit" };
   }
 
+  // ONB-1/BUG-9: гасим все прежние неиспользованные коды — валиден только новый.
+  await sb
+    .from("otp_codes")
+    .update({ used_at: new Date(nowMs).toISOString() })
+    .eq("user_id", userId)
+    .is("used_at", null);
+
   const code = genCode();
   const expiresAt = new Date(nowMs + TTL_SEC * 1000).toISOString();
   await sb.from("otp_codes").insert({

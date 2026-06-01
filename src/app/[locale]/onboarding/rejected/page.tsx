@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { Screen } from "@/components/ui/screen";
+import { RetryButton } from "@/components/onboarding/retry-button";
 
 export const dynamic = "force-dynamic";
 
@@ -12,9 +13,10 @@ export default async function RejectedPage({ params }: { params: Promise<{ local
 
   return (
     <Screen title={t("rejected_title")} subtitle={t("rejected_subtitle")}>
-      <div className="rounded-2xl bg-red-50 border border-red-200 px-4 py-4 text-sm text-red-800">
+      <div className="mb-5 rounded-2xl bg-baxt-coral-bg px-4 py-4 text-sm text-baxt-navy">
         {t("rejected_support")}
       </div>
+      <RetryButton />
     </Screen>
   );
 }

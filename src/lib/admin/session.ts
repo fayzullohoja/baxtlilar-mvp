@@ -32,7 +32,11 @@ export async function getAdminSession(): Promise<AdminSession | null> {
   const [b64, sig] = val.split(".");
   if (!b64 || !sig || sign(b64) !== sig) return null;
   try {
-    const p = JSON.parse(Buffer.from(b64, "base64url").toString("utf-8")) as Partial<AdminSession>;
+    const p = JSON.parse(Buffer.from(b64, "base64url").toString("utf-8")) as Partial<AdminSession> & {
+      iat?: number;
+    };
+    // ADM-4: серверная проверка срока — подписанная cookie живёт не дольше MAX_AGE_SEC
+    if (typeof p.iat !== "number" || Date.now() - p.iat > MAX_AGE_SEC * 1000) return null;
     if (typeof p.adminId === "string" && (p.role === "superadmin" || p.role === "moderator")) {
       return { adminId: p.adminId, role: p.role };
     }

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi, adminAudit } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { transition } from "@/lib/state-machine/transitions";
+import { tryTransition } from "@/lib/state-machine/transitions";
 import { notifyUser } from "@/lib/telegram/notify";
+import { trustedIp } from "@/lib/http/ip";
 import type { OnboardingStep, VerificationStatus } from "@/lib/state-machine/types";
 
 export const runtime = "nodejs";
@@ -47,6 +48,17 @@ export async function POST(
   if (user.verification_status !== "pending_review")
     return NextResponse.json({ ok: false, error: "not_pending" }, { status: 409 });
 
+  // BUG-4: нельзя одобрить без загруженных паспорта и селфи
+  if (action === "approve") {
+    const { data: doc } = await supabaseAdmin()
+      .from("user_documents")
+      .select("passport_path, selfie_path")
+      .eq("user_id", id)
+      .maybeSingle();
+    if (!doc?.passport_path || !doc?.selfie_path)
+      return NextResponse.json({ ok: false, error: "documents_missing" }, { status: 409 });
+  }
+
   let step: OnboardingStep;
   let vstatus: VerificationStatus;
   let docStatus: string;
@@ -64,6 +76,15 @@ export async function POST(
     docStatus = "needs_changes";
   }
 
+  // BUG-3: сначала авторитетный переход (атомарно + аудит). При гонке — 409, ничего не меняем.
+  const tr = await tryTransition(
+    id,
+    { verification_status: vstatus, onboarding_step: step },
+    `moderation: ${action}${body.reason ? " — " + body.reason : ""}`,
+    { kind: "admin", id: session.adminId },
+  );
+  if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
+
   await supabaseAdmin()
     .from("user_documents")
     .update({
@@ -75,13 +96,6 @@ export async function POST(
     })
     .eq("user_id", id);
 
-  await transition(
-    id,
-    { verification_status: vstatus, onboarding_step: step },
-    `moderation: ${action}${body.reason ? " — " + body.reason : ""}`,
-    { kind: "admin", id: session.adminId },
-  );
-
   await adminAudit({
     adminId: session.adminId,
     action: `verification_${action}`,
@@ -89,7 +103,7 @@ export async function POST(
     entityId: id,
     newValue: { verification_status: vstatus, onboarding_step: step },
     reason: body.reason,
-    ip: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
+    ip: trustedIp(req),
   });
 
   const pushText =
