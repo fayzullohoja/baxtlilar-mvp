@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { usePathname, useRouter } from "@/i18n/navigation";
+import { clientNextPath } from "@/lib/state-machine/client-paths";
 
 type TgWebApp = {
   initData: string;
   ready: () => void;
   expand: () => void;
-  colorScheme?: string;
 };
 
 declare global {
@@ -16,31 +17,39 @@ declare global {
 }
 
 /**
- * Запускается при открытии Mini App внутри Telegram:
- * читает window.Telegram.WebApp.initData и вызывает /api/auth/bootstrap
- * (HMAC-валидация + upsert пользователя + сессия). Невидим в UI.
- * Вне Telegram (обычный браузер) ничего не делает, кроме dev-режима с DEV_BYPASS_TG.
+ * При открытии Mini App внутри Telegram: читает initData → /api/auth/bootstrap
+ * (HMAC + upsert + сессия). При успехе, если пользователь уже не на welcome-шаге,
+ * перебрасывает на его актуальный экран (resumable). Вне Telegram — ничего не делает.
  */
 export function TelegramInit() {
-  const [, setStatus] = useState<"idle" | "ok" | "skip" | "error">("idle");
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     let cancelled = false;
 
-    async function run(initData: string) {
+    async function bootstrap(initData: string) {
       try {
         const res = await fetch("/api/auth/bootstrap", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ initData }),
         });
-        if (!cancelled) setStatus(res.ok ? "ok" : "error");
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as {
+          ok: boolean;
+          onboarding_step?: string;
+          lifecycle_state?: string;
+        };
+        if (!data.ok) return;
+        const target = clientNextPath(data.lifecycle_state ?? "onboarding", data.onboarding_step ?? "language");
+        // Резюмируемость: редиректим только если попали на welcome, а шаг уже дальше.
+        if (pathname === "/" && target !== "/" && !cancelled) router.replace(target);
       } catch {
-        if (!cancelled) setStatus("error");
+        /* офлайн / ошибка — остаёмся на текущем экране */
       }
     }
 
-    // Telegram-скрипт может загрузиться чуть позже монтирования — ждём WebApp до ~3с.
     let tries = 0;
     const timer = setInterval(() => {
       tries += 1;
@@ -50,11 +59,9 @@ export function TelegramInit() {
         tg.ready?.();
         tg.expand?.();
         const initData = tg.initData ?? "";
-        if (initData) void run(initData);
-        else setStatus("skip"); // обычный браузер вне Telegram
+        if (initData) void bootstrap(initData);
       } else if (tries >= 15) {
         clearInterval(timer);
-        setStatus("skip");
       }
     }, 200);
 
@@ -62,7 +69,7 @@ export function TelegramInit() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, []);
+  }, [pathname, router]);
 
   return null;
 }

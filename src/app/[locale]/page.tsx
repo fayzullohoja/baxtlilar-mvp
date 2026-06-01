@@ -1,5 +1,8 @@
 import { useTranslations } from "next-intl";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { StartButton } from "@/components/onboarding/start-button";
+
+export const dynamic = "force-dynamic";
 
 export default function WelcomePage() {
   const t = useTranslations();
@@ -33,12 +36,7 @@ export default function WelcomePage() {
           </li>
         </ul>
 
-        <button
-          type="button"
-          className="w-full bg-baxt-coral hover:bg-baxt-coral-dk text-white font-medium rounded-full py-3 transition-colors"
-        >
-          {t("Welcome.start")}
-        </button>
+        <StartButton />
 
         <p className="text-[11px] text-baxt-muted mt-4 leading-snug">{t("Welcome.legal")}</p>
       </div>

@@ -11,8 +11,48 @@
     "start": "Boshlash",
     "legal": "Davom etib, siz platforma qoidalari va maxfiylik siyosatiga rozilik bildirasiz"
   },
-  "Lang": {
-    "ru": "RU",
-    "uz": "UZ"
+  "Lang": { "ru": "RU", "uz": "UZ" },
+  "Common": {
+    "continue": "Davom etish",
+    "back": "Orqaga",
+    "loading": "Kuting…",
+    "error_generic": "Xatolik yuz berdi. Qayta urinib koʻring."
+  },
+  "Onboarding": {
+    "consent_title": "Bu jiddiy platforma",
+    "consent_subtitle": "Baxtlilar — oila qurish maqsadida jiddiy munosabat izlayotganlar uchun. Tasodifiy tanishuvlar uchun emas.",
+    "consent_intentions": "Faqat jiddiy niyatlar, tasodifiy muloqot va bosimsiz",
+    "consent_check_serious": "Platforma oila qurish maqsadidagi jiddiy tanishuv uchun yaratilganini tushunaman",
+    "consent_check_rules": "Platforma qoidalari va maxfiylik siyosati bilan tanishdim hamda maʼlumotlarim va hujjatlarim qayta ishlanishiga roziman",
+    "phone_title": "Raqamni tasdiqlash",
+    "phone_subtitle": "Telefon raqamingizni kiriting — tasdiqlash kodi bilan SMS yuboramiz.",
+    "phone_placeholder": "90 123 45 67",
+    "phone_hint": "Raqam boshqalarga koʻrinmaydi. Faqat xavfsizlik uchun ishlatiladi.",
+    "phone_get_code": "Kod olish",
+    "phone_err_invalid": "Telefon raqamini tekshiring",
+    "phone_err_taken": "Bu raqam boshqa akkauntga bogʻlangan. Qoʻllab-quvvatlashga murojaat qiling.",
+    "phone_err_cooldown": "Kod yuborilgan. Qayta yuborishdan oldin bir daqiqa kuting.",
+    "otp_title": "Kodni kiriting",
+    "otp_subtitle": "Raqamingizga 6 xonali kod yubordik.",
+    "otp_confirm": "Tasdiqlash",
+    "otp_resend": "Kodni qayta yuborish",
+    "otp_err_wrong": "Notoʻgʻri kod. Qayta urinib koʻring.",
+    "otp_err_expired": "Kod muddati tugadi. Yangisini soʻrang.",
+    "otp_err_attempts": "Juda koʻp urinish. Yangi kod soʻrang.",
+    "doc_title": "Hujjat fotosi",
+    "doc_subtitle": "Pasport yoki ID-karta aniq fotosini yuklang. Hujjat toʻliq kadrda, yorugʻliksiz boʻlsin.",
+    "doc_upload": "Hujjat fotosini yuklash",
+    "doc_hint": "Hujjat faqat shaxsni tekshirish uchun ishlatiladi va boshqalarga koʻrinmaydi.",
+    "selfie_title": "Selfi tekshiruvi",
+    "selfie_subtitle": "Hujjat sizniki ekanini tasdiqlash uchun selfi oling.",
+    "selfie_upload": "Selfi olish / yuklash",
+    "selfie_hint": "Selfi faqat tekshiruv uchun ishlatiladi va profilda koʻrsatilmaydi.",
+    "upload_err_bad_type": "Faqat rasm mumkin (JPEG, PNG, WebP, HEIC).",
+    "upload_err_too_large": "Fayl juda katta (maks. 12 MB).",
+    "submit_to_review": "Tekshiruvga yuborish",
+    "pending_title": "Maʼlumotlar tekshiruvga yuborildi",
+    "pending_subtitle": "Rahmat! Maʼlumotlaringizni tekshiryapmiz.",
+    "pending_info": "Odatda tekshiruv bir necha daqiqadan 24 soatgacha davom etadi. Tayyor boʻlganda Telegram orqali xabar yuboramiz.",
+    "pending_status": "Holat: tekshiruvda"
   }
 }
