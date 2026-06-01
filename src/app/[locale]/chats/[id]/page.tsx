@@ -1,9 +1,9 @@
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Link, redirect } from "@/i18n/navigation";
 import { requireActiveUser } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getMiniProfiles } from "@/lib/profile/mini";
-import { MessageForm } from "@/components/chat/message-form";
+import { ChatRoom, type Msg } from "@/components/chat/chat-room";
 
 export const dynamic = "force-dynamic";
 
@@ -31,47 +31,29 @@ export default async function ChatThread({
     .eq("chat_id", id)
     .order("created_at", { ascending: true })
     .limit(200);
-  const msgs = messages ?? [];
 
   return (
-    <main className="min-h-screen pb-24 bg-baxt-pink-bg">
-      <header className="sticky top-0 bg-white border-b border-baxt-border px-4 py-3 flex items-center gap-3 z-10">
-        <Link href="/chats" className="text-baxt-muted">←</Link>
-        <Link href={`/profile/${otherId}`} className="flex items-center gap-2 min-w-0">
-          <div className="w-9 h-9 rounded-full bg-baxt-coral-bg overflow-hidden shrink-0">
+    <main className="mx-auto flex h-[100dvh] max-w-screen-sm flex-col overflow-hidden bg-baxt-pink-bg">
+      <header className="flex shrink-0 items-center gap-2 border-b border-baxt-border bg-white px-2 py-2">
+        <Link
+          href="/chats"
+          aria-label="Назад"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-lg text-baxt-navy hover:bg-baxt-pink-bg"
+        >
+          ←
+        </Link>
+        <Link href={`/profile/${otherId}`} className="flex min-w-0 items-center gap-2.5">
+          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-baxt-coral-bg">
             {other?.photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={other.photoUrl} alt="" className="w-full h-full object-cover" />
+              <img src={other.photoUrl} alt="" className="h-full w-full object-cover" />
             ) : null}
           </div>
-          <span className="text-sm font-medium text-baxt-navy truncate">{other?.name}</span>
+          <span className="truncate text-sm font-semibold text-baxt-navy">{other?.name}</span>
         </Link>
       </header>
 
-      <div className="px-4 py-4 space-y-2">
-        {msgs.length === 0 ? (
-          <div className="rounded-2xl bg-baxt-coral-bg px-4 py-3 text-xs text-baxt-navy text-center mb-2">
-            {t("safety_tip")}
-          </div>
-        ) : null}
-        {msgs.map((m) => {
-          const mine = m.sender_id === user.id;
-          return (
-            <div key={m.id as string} className={mine ? "flex justify-end" : "flex justify-start"}>
-              <div
-                className={
-                  "max-w-[75%] rounded-2xl px-3.5 py-2 text-sm " +
-                  (mine ? "bg-baxt-coral text-white" : "bg-white border border-baxt-border text-baxt-navy")
-                }
-              >
-                {m.body as string}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <MessageForm chatId={id} />
+      <ChatRoom chatId={id} myId={user.id} initial={(messages ?? []) as Msg[]} safetyTip={t("safety_tip")} />
     </main>
   );
 }
