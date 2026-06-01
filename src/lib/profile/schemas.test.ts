@@ -61,7 +61,7 @@ describe("valuesSchema", () => {
 });
 
 describe("lookingForSchema", () => {
-  const base = { looking_for_gender: "f", partner_age_min: 22, partner_age_max: 30, geo_preference: "my_city" };
+  const base = { partner_age_min: 22, partner_age_max: 30, geo_preference: "my_city" };
   it("корректный диапазон ок", () => expect(lookingForSchema.safeParse(base).success).toBe(true));
   it("min>max → ошибка", () =>
     expect(lookingForSchema.safeParse({ ...base, partner_age_min: 35 }).success).toBe(false));

@@ -6,13 +6,12 @@ import { useRouter } from "@/i18n/navigation";
 import { postJson } from "@/lib/client/api";
 import { PrimaryButton } from "@/components/ui/screen";
 import { Field, Select, TextInput } from "./fields";
-import { GENDER, GEO_PREFERENCE } from "@/lib/profile/options";
+import { GEO_PREFERENCE } from "@/lib/profile/options";
 
 export function AnketaLookingForm() {
   const t = useTranslations("Anketa");
   const tc = useTranslations("Common");
   const router = useRouter();
-  const [gender, setGender] = useState("");
   const [min, setMin] = useState("");
   const [max, setMax] = useState("");
   const [geo, setGeo] = useState("");
@@ -23,7 +22,6 @@ export function AnketaLookingForm() {
     setBusy(true);
     setErr(null);
     const r = await postJson("/api/onboarding/profile/looking-for", {
-      looking_for_gender: gender,
       partner_age_min: Number(min),
       partner_age_max: Number(max),
       geo_preference: geo,
@@ -35,14 +33,10 @@ export function AnketaLookingForm() {
     }
   }
 
-  const valid =
-    gender && geo && Number(min) >= 18 && Number(max) >= 18 && Number(max) >= Number(min);
+  const valid = !!geo && Number(min) >= 18 && Number(max) >= 18 && Number(max) >= Number(min);
 
   return (
     <div className="space-y-4">
-      <Field label={t("looking_gender_label")}>
-        <Select options={GENDER} value={gender} onChange={setGender} />
-      </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label={t("age_min_label")}>
           <TextInput type="number" inputMode="numeric" min={18} max={100} value={min} onChange={(e) => setMin(e.target.value)} />

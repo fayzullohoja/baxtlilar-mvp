@@ -16,9 +16,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!parsed.success)
     return NextResponse.json({ ok: false, error: "validation" }, { status: 400 });
 
-  await supabaseAdmin()
+  const sb = supabaseAdmin();
+  // Пол партнёра не спрашиваем: выводим автоматически как противоположный своему
+  // (платформа только для разнополых пар; свой пол указан на шаге «Основное»).
+  const { data: prof } = await sb
     .from("user_profiles")
-    .upsert({ user_id: user.id, ...parsed.data }, { onConflict: "user_id" });
+    .select("gender")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const ownGender = prof?.gender as string | undefined;
+  if (ownGender !== "m" && ownGender !== "f")
+    return NextResponse.json({ ok: false, error: "no_gender" }, { status: 409 });
+  const looking_for_gender = ownGender === "m" ? "f" : "m";
+
+  await sb
+    .from("user_profiles")
+    .upsert({ user_id: user.id, ...parsed.data, looking_for_gender }, { onConflict: "user_id" });
 
   const tr = await tryTransition(
     user.id,

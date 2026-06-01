@@ -65,9 +65,9 @@ export const valuesSchema = z.object({
   employment: z.enum(tuple(vals(EMPLOYMENT))).optional(),
 });
 
+// Пол партнёра НЕ спрашиваем — выводится автоматически как противоположный своему (см. looking-for route).
 export const lookingForSchema = z
   .object({
-    looking_for_gender: z.enum(tuple(vals(GENDER))),
     partner_age_min: z.coerce.number().int().min(18).max(100),
     partner_age_max: z.coerce.number().int().min(18).max(100),
     geo_preference: z.enum(tuple(vals(GEO_PREFERENCE))),
