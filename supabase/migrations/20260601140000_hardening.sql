@@ -61,7 +61,10 @@ update storage.buckets set public = false where id in ('user-documents');
 -- storage.objects имеет RLS включённым по умолчанию и без policy для anon/authenticated,
 -- поэтому доступ возможен только через service_role (сервер) и signed URL. Фиксируем явно.
 
--- ── ADM-3: журналы только на запись (неизменяемы даже под service_role) ───
+-- ── ADM-3: журналы защищены от ИЗМЕНЕНИЯ (UPDATE) даже под service_role ───
+-- DELETE намеренно разрешён: каскад при удалении пользователя + право на удаление
+-- персональных данных (Чат 8 legal). Содержимое истории нельзя подделать, но можно стереть
+-- в рамках erasure. (Изначально блокировали и DELETE — это ломало каскад users→logs.)
 create or replace function prevent_log_mutation() returns trigger
 language plpgsql as $$
 begin
@@ -69,10 +72,10 @@ begin
 end;
 $$;
 
-create trigger user_state_transitions_no_mutate
-  before update or delete on user_state_transitions
+create trigger user_state_transitions_no_update
+  before update on user_state_transitions
   for each row execute function prevent_log_mutation();
 
-create trigger admin_audit_log_no_mutate
-  before update or delete on admin_audit_log
+create trigger admin_audit_log_no_update
+  before update on admin_audit_log
   for each row execute function prevent_log_mutation();
