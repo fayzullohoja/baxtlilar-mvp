@@ -1,0 +1,32 @@
+import { getTranslations, setRequestLocale } from "next-intl/server";
+import { requireUserAtStep } from "@/lib/state-machine/guard";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { Screen } from "@/components/ui/screen";
+import { NeedsChangesForm } from "@/components/onboarding/needs-changes-form";
+
+export const dynamic = "force-dynamic";
+
+export default async function NeedsChangesPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const user = await requireUserAtStep(locale, "needs_changes");
+  const t = await getTranslations("Onboarding");
+
+  const { data: doc } = await supabaseAdmin()
+    .from("user_documents")
+    .select("reject_reason")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  return (
+    <Screen title={t("nc_title")} subtitle={t("nc_subtitle")} step={4} totalSteps={6}>
+      {doc?.reject_reason ? (
+        <div className="mb-4 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm">
+          <div className="font-medium text-amber-800 mb-1">{t("nc_reason_label")}</div>
+          <div className="text-amber-900">{doc.reject_reason as string}</div>
+        </div>
+      ) : null}
+      <NeedsChangesForm />
+    </Screen>
+  );
+}

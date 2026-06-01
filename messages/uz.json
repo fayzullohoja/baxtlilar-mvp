@@ -53,6 +53,12 @@
     "pending_title": "Maʼlumotlar tekshiruvga yuborildi",
     "pending_subtitle": "Rahmat! Maʼlumotlaringizni tekshiryapmiz.",
     "pending_info": "Odatda tekshiruv bir necha daqiqadan 24 soatgacha davom etadi. Tayyor boʻlganda Telegram orqali xabar yuboramiz.",
-    "pending_status": "Holat: tekshiruvda"
+    "pending_status": "Holat: tekshiruvda",
+    "nc_title": "Maʼlumotlarni tuzatish kerak",
+    "nc_subtitle": "Moderator hujjatlarni qayta olishni soʻraydi. Kerakli fotolarni qayta yuklang va tekshiruvga yuboring.",
+    "nc_reason_label": "Nimani tuzatish kerak:",
+    "rejected_title": "Tekshiruvdan oʻtmadi",
+    "rejected_subtitle": "Shaxsingizni tasdiqlay olmadik.",
+    "rejected_support": "Agar bu xato deb hisoblasangiz, qoʻllab-quvvatlashga murojaat qiling."
   }
 }

@@ -43,7 +43,7 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   doc_upload: ["selfie_upload", "needs_changes"],
   selfie_upload: ["moderation_pending", "needs_changes"],
   moderation_pending: ["needs_changes", "verification_rejected", "profile_basic"],
-  needs_changes: ["doc_upload", "selfie_upload"],
+  needs_changes: ["doc_upload", "selfie_upload", "moderation_pending"],
   verification_rejected: ["doc_upload"], // повторная попытка, если разрешена
   profile_basic: ["profile_photos"],
   profile_photos: ["profile_preview"],

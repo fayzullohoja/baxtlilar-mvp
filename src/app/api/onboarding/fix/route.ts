@@ -1,0 +1,48 @@
+import { NextRequest, NextResponse } from "next/server";
+import { loadUserForStep } from "@/lib/onboarding/guard-api";
+import { transition } from "@/lib/state-machine/transitions";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { uploadDocumentImage } from "@/lib/uploads/storage";
+import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+/** Повторная загрузка после needs_changes: грузим присланные файлы → снова на модерацию. */
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  const { user, res } = await loadUserForStep("needs_changes");
+  if (res) return res;
+
+  const form = await req.formData().catch(() => null);
+  if (!form) return NextResponse.json({ ok: false, error: "no_form" }, { status: 400 });
+
+  const passport = form.get("passport");
+  const selfie = form.get("selfie");
+  const patch: { passport_path?: string; selfie_path?: string } = {};
+
+  if (passport instanceof File) {
+    const up = await uploadDocumentImage(user.id, "passport", await passport.arrayBuffer());
+    if (!up.ok) return NextResponse.json({ ok: false, error: up.error }, { status: 400 });
+    patch.passport_path = up.path;
+  }
+  if (selfie instanceof File) {
+    const up = await uploadDocumentImage(user.id, "selfie", await selfie.arrayBuffer());
+    if (!up.ok) return NextResponse.json({ ok: false, error: up.error }, { status: 400 });
+    patch.selfie_path = up.path;
+  }
+  if (!patch.passport_path && !patch.selfie_path)
+    return NextResponse.json({ ok: false, error: "no_file" }, { status: 400 });
+
+  await supabaseAdmin()
+    .from("user_documents")
+    .update({ ...patch, status: "pending_review", reject_reason: null, reject_target: null })
+    .eq("user_id", user.id);
+
+  await transition(
+    user.id,
+    { verification_status: "pending_review", onboarding_step: "moderation_pending" },
+    "re-submitted after needs_changes",
+    { kind: "user", id: user.id },
+  );
+  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.moderation_pending });
+}
