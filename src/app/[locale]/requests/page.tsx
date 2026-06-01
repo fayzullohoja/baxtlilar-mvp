@@ -3,6 +3,7 @@ import { Link } from "@/i18n/navigation";
 import { requireActiveUser } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getMiniProfiles } from "@/lib/profile/mini";
+import { cityLabel } from "@/lib/profile/cities";
 import { BottomNav } from "@/components/bottom-nav";
 import { RequestActions } from "@/components/requests/request-actions";
 
@@ -91,7 +92,7 @@ export default async function RequestsPage({
                       {m?.age ? `, ${m.age}` : ""}
                     </div>
                     <div className="text-xs text-baxt-muted truncate">
-                      {isOut ? t(`status_${r.status as string}`) : ((r.message as string) || m?.city)}
+                      {isOut ? t(`status_${r.status as string}`) : ((r.message as string) || cityLabel(m?.city, locale))}
                     </div>
                   </div>
                 </Link>

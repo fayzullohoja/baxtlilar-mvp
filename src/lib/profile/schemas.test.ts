@@ -31,10 +31,12 @@ describe("basicSchema", () => {
     display_name: "Алишер",
     gender: "m",
     birth_date: "1994-05-10",
-    city: "Ташкент",
+    city: "toshkent",
     bio: "Спокойный, ценю семью и честность, люблю готовить и путешествовать",
   };
   it("валидная анкета", () => expect(basicSchema.safeParse(ok).success).toBe(true));
+  it("город вне справочника → ошибка", () =>
+    expect(basicSchema.safeParse({ ...ok, city: "Ташкент" }).success).toBe(false));
   it("несовершеннолетний → ошибка", () =>
     expect(basicSchema.safeParse({ ...ok, birth_date: "2015-01-01" }).success).toBe(false));
   it("bio с телефоном → ошибка", () =>

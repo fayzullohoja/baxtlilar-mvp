@@ -3,6 +3,7 @@ import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { BUCKET_PHOTOS } from "@/lib/uploads/storage";
 import { ageFromDate } from "@/lib/profile/schemas";
+import { cityLabel } from "@/lib/profile/cities";
 import { Screen } from "@/components/ui/screen";
 import { PublishButton } from "@/components/onboarding/publish-button";
 
@@ -43,7 +44,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
             {(p?.display_name as string) ?? ""}
             {age ? `, ${age}` : ""}
           </div>
-          <div className="text-sm text-baxt-muted">{(p?.city as string) ?? ""}</div>
+          <div className="text-sm text-baxt-muted">{cityLabel(p?.city as string, locale)}</div>
           <p className="text-sm text-baxt-navy mt-2 whitespace-pre-line">{(p?.bio as string) ?? ""}</p>
         </div>
       </div>

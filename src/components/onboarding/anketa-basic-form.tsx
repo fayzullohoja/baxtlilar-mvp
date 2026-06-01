@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { postJson } from "@/lib/client/api";
 import { PrimaryButton } from "@/components/ui/screen";
-import { Field, TextInput, TextArea, Select } from "./fields";
+import { Field, TextInput, TextArea, Select, CitySelect } from "./fields";
 import { GENDER } from "@/lib/profile/options";
 
 export function AnketaBasicForm({ defaultName }: { defaultName?: string }) {
@@ -38,7 +38,7 @@ export function AnketaBasicForm({ defaultName }: { defaultName?: string }) {
   }
 
   const valid =
-    name.trim().length >= 2 && !!gender && !!birth && city.trim().length >= 2 && bio.trim().length >= 20;
+    name.trim().length >= 2 && !!gender && !!birth && !!city && bio.trim().length >= 20;
 
   return (
     <div className="space-y-4">
@@ -52,7 +52,7 @@ export function AnketaBasicForm({ defaultName }: { defaultName?: string }) {
         <TextInput type="date" value={birth} onChange={(e) => setBirth(e.target.value)} />
       </Field>
       <Field label={t("city_label")}>
-        <TextInput value={city} onChange={(e) => setCity(e.target.value)} maxLength={80} />
+        <CitySelect value={city} onChange={setCity} placeholder={t("city_placeholder")} />
       </Field>
       <Field label={t("bio_label")}>
         <TextArea value={bio} onChange={(e) => setBio(e.target.value)} placeholder={t("bio_hint")} />

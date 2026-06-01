@@ -2,6 +2,7 @@
 
 import { useLocale } from "next-intl";
 import type { Opt } from "@/lib/profile/options";
+import { CITY_GROUPS } from "@/lib/profile/cities";
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -42,6 +43,33 @@ export function Select({
         <option key={o.value} value={o.value}>
           {locale === "uz" ? o.uz : o.ru}
         </option>
+      ))}
+    </select>
+  );
+}
+
+/** Выбор города Узбекистана: один дропдаун, города сгруппированы по областям (optgroup). */
+export function CitySelect({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  const locale = useLocale();
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} className={inputCls}>
+      <option value="">{placeholder ?? "—"}</option>
+      {CITY_GROUPS.map((g) => (
+        <optgroup key={g.region.ru} label={locale === "uz" ? g.region.uz : g.region.ru}>
+          {g.cities.map((c) => (
+            <option key={c.value} value={c.value}>
+              {locale === "uz" ? c.uz : c.ru}
+            </option>
+          ))}
+        </optgroup>
       ))}
     </select>
   );

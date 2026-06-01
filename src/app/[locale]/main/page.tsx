@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { requireActiveUser } from "@/lib/auth/active-guard";
 import { getRecommendations } from "@/lib/matching/recommend";
+import { cityLabel } from "@/lib/profile/cities";
 import { BottomNav } from "@/components/bottom-nav";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +41,7 @@ export default async function FeedPage({ params }: { params: Promise<{ locale: s
                 <div className="text-sm font-semibold text-baxt-navy">
                   {c.display_name}, {c.age}
                 </div>
-                <div className="text-xs text-baxt-muted">{c.city}</div>
+                <div className="text-xs text-baxt-muted">{cityLabel(c.city, locale)}</div>
               </div>
             </Link>
           ))}

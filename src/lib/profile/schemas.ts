@@ -11,6 +11,7 @@ import {
   EMPLOYMENT,
   GEO_PREFERENCE,
 } from "./options";
+import { ALL_CITY_VALUES } from "./cities";
 
 const tuple = (a: string[]) => a as [string, ...string[]];
 
@@ -41,7 +42,7 @@ export const basicSchema = z.object({
     .string()
     .refine((s) => ageFromDate(s) >= 18, { message: "must_be_18" })
     .refine((s) => ageFromDate(s) <= 100, { message: "invalid_age" }),
-  city: z.string().trim().min(2).max(80),
+  city: z.enum(tuple(ALL_CITY_VALUES)),
   bio: z
     .string()
     .trim()

@@ -69,6 +69,7 @@
     "gender_label": "Jins",
     "birth_label": "Tugʻilgan sana",
     "city_label": "Shahar",
+    "city_placeholder": "Shaharni tanlang",
     "bio_label": "Oʻzim haqimda",
     "bio_hint": "Siz uchun nima muhim, nima bilan qiziqasiz… Telefon va havolasiz.",
     "bio_no_contacts": "Matndan kontakt va havolalarni olib tashlang",

@@ -3,6 +3,7 @@ import { requireActiveUser } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { BUCKET_PHOTOS } from "@/lib/uploads/storage";
 import { ageFromDate } from "@/lib/profile/schemas";
+import { cityLabel } from "@/lib/profile/cities";
 import { BottomNav } from "@/components/bottom-nav";
 import { SettingsActions } from "@/components/settings/settings-actions";
 
@@ -47,7 +48,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
               {(p?.display_name as string) ?? ""}
               {age ? `, ${age}` : ""}
             </div>
-            <div className="text-sm text-baxt-muted">{(p?.city as string) ?? ""}</div>
+            <div className="text-sm text-baxt-muted">{cityLabel(p?.city as string, locale)}</div>
             {user.lifecycle_state === "paused" ? (
               <span className="text-xs text-baxt-coral-dk">{t("status_paused")}</span>
             ) : null}

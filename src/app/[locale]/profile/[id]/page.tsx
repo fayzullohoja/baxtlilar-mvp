@@ -14,6 +14,7 @@ import {
   CHILDREN_PLAN,
   LIFE_VALUES,
 } from "@/lib/profile/options";
+import { cityLabel } from "@/lib/profile/cities";
 import { ProfileActions } from "@/components/profile/profile-actions";
 
 export const dynamic = "force-dynamic";
@@ -78,7 +79,7 @@ export default async function ProfileDetail({
           {(p!.display_name as string) ?? ""}
           {age ? `, ${age}` : ""}
         </h1>
-        <p className="text-sm text-baxt-muted mb-1">{(p!.city as string) ?? ""}</p>
+        <p className="text-sm text-baxt-muted mb-1">{cityLabel(p!.city as string, locale)}</p>
         <span className="inline-block text-[11px] bg-baxt-coral text-white px-2 py-0.5 rounded-full mb-4">
           {t("verified")}
         </span>
