@@ -33,3 +33,31 @@ export async function uploadDocumentImage(
   if (error) return { ok: false, error: "upload_failed" };
   return { ok: true, path, type };
 }
+
+export type PhotoUploadResult =
+  | { ok: true; path: string; publicUrl: string; type: AllowedImage }
+  | { ok: false; error: "too_large" | "bad_type" | "upload_failed" };
+
+/**
+ * Загрузка фото профиля в ПУБЛИЧНЫЙ бакет (показывается другим — после одобрения, S5).
+ * @param idx порядковый индекс фото (имя файла), чтобы хранить до 3 фото.
+ */
+export async function uploadProfilePhoto(
+  userId: string,
+  idx: number,
+  file: ArrayBuffer,
+): Promise<PhotoUploadResult> {
+  if (file.byteLength > MAX_BYTES) return { ok: false, error: "too_large" };
+  const bytes = new Uint8Array(file);
+  const type = detectImageType(bytes);
+  if (!type) return { ok: false, error: "bad_type" };
+
+  const path = `${userId}/photo_${idx}_${Date.now()}.${extForType(type)}`;
+  const sb = supabaseAdmin();
+  const { error } = await sb.storage
+    .from(BUCKET_PHOTOS)
+    .upload(path, bytes, { contentType: type, upsert: true });
+  if (error) return { ok: false, error: "upload_failed" };
+  const { data } = sb.storage.from(BUCKET_PHOTOS).getPublicUrl(path);
+  return { ok: true, path, publicUrl: data.publicUrl, type };
+}

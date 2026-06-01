@@ -13,6 +13,9 @@ export type OnboardingStep =
   | "needs_changes"
   | "verification_rejected"
   | "profile_basic"
+  | "profile_family"
+  | "profile_values"
+  | "profile_looking_for"
   | "profile_photos"
   | "profile_preview"
   | "quiz"
@@ -45,9 +48,12 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   moderation_pending: ["needs_changes", "verification_rejected", "profile_basic"],
   needs_changes: ["doc_upload", "selfie_upload", "moderation_pending"],
   verification_rejected: ["doc_upload"], // повторная попытка, если разрешена
-  profile_basic: ["profile_photos"],
+  profile_basic: ["profile_family"],
+  profile_family: ["profile_values"],
+  profile_values: ["profile_looking_for"],
+  profile_looking_for: ["profile_photos"],
   profile_photos: ["profile_preview"],
-  profile_preview: ["profile_basic", "quiz"], // edit или publish
+  profile_preview: ["profile_basic", "quiz"], // edit (назад к началу анкеты) или publish
   quiz: ["active"],
   active: [],
 };

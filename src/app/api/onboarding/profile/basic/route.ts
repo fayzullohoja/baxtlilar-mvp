@@ -1,0 +1,34 @@
+import { NextRequest, NextResponse } from "next/server";
+import { loadUserForStep } from "@/lib/onboarding/guard-api";
+import { tryTransition } from "@/lib/state-machine/transitions";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { basicSchema } from "@/lib/profile/schemas";
+import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  const { user, res } = await loadUserForStep("profile_basic");
+  if (res) return res;
+
+  const parsed = basicSchema.safeParse(await req.json().catch(() => ({})));
+  if (!parsed.success)
+    return NextResponse.json(
+      { ok: false, error: "validation", detail: parsed.error.issues[0]?.message },
+      { status: 400 },
+    );
+
+  await supabaseAdmin()
+    .from("user_profiles")
+    .upsert({ user_id: user.id, ...parsed.data }, { onConflict: "user_id" });
+
+  const tr = await tryTransition(
+    user.id,
+    { onboarding_step: "profile_family", profile_completion: "in_progress" },
+    "anketa: basic saved",
+    { kind: "user", id: user.id },
+  );
+  if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
+  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_family });
+}
