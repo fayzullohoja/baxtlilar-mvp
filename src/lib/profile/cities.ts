@@ -211,3 +211,15 @@ export const cityLabel = (value: string | null | undefined, locale: string): str
   if (!c) return value; // на случай старых/неизвестных значений
   return locale === "uz" ? c.uz : c.ru;
 };
+
+const REGION_BY_CITY: Record<string, { ru: string; uz: string }> = Object.fromEntries(
+  CITY_GROUPS.flatMap((g) => g.cities.map((c) => [c.value, g.region])),
+);
+
+/** Регион (область) по значению города — для демографии. Для старых/неизвестных значений вернёт «Другое». */
+export const regionLabelOfCity = (value: string | null | undefined, locale: string): string => {
+  if (!value) return "";
+  const r = REGION_BY_CITY[value];
+  if (!r) return locale === "uz" ? "Boshqa" : "Другое";
+  return locale === "uz" ? r.uz : r.ru;
+};

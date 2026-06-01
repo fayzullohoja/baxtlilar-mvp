@@ -9,20 +9,26 @@ export default async function AdminDashboard() {
   const session = await requireAdmin();
   const sb = supabaseAdmin();
 
-  const [pending, photos, totalUsers, active, blocked] = await Promise.all([
+  // Те же числа, что и на странице «Демография» — единый RPC (исключает удалённых пользователей).
+  const [pending, photos, demo] = await Promise.all([
     sb.from("users").select("*", { count: "exact", head: true }).eq("verification_status", "pending_review"),
     sb.from("profile_photos").select("*", { count: "exact", head: true }).eq("status", "under_review"),
-    sb.from("users").select("*", { count: "exact", head: true }),
-    sb.from("users").select("*", { count: "exact", head: true }).eq("lifecycle_state", "active"),
-    sb.from("users").select("*", { count: "exact", head: true }).eq("lifecycle_state", "blocked"),
+    sb.rpc("get_admin_demographics"),
   ]);
+  const d = (demo.data ?? {}) as {
+    total?: number;
+    gender?: { m: number; f: number };
+    lifecycle?: Record<string, number>;
+  };
 
   const cards = [
     { label: "Заявки на проверке", value: pending.count ?? 0, href: "/admin/verifications", accent: true },
     { label: "Фото на проверке", value: photos.count ?? 0, href: "/admin/photos", accent: (photos.count ?? 0) > 0 },
-    { label: "Всего пользователей", value: totalUsers.count ?? 0, href: "/admin/users" },
-    { label: "Активных", value: active.count ?? 0, href: "/admin/users" },
-    { label: "Заблокировано", value: blocked.count ?? 0, href: "/admin/users" },
+    { label: "Всего пользователей", value: d.total ?? 0, href: "/admin/users" },
+    { label: "Активных", value: d.lifecycle?.active ?? 0, href: "/admin/users?status=active" },
+    { label: "Заблокировано", value: d.lifecycle?.blocked ?? 0, href: "/admin/users?status=blocked" },
+    { label: "♂ Мужчин", value: d.gender?.m ?? 0, href: "/admin/users?gender=m" },
+    { label: "♀ Женщин", value: d.gender?.f ?? 0, href: "/admin/users?gender=f" },
   ];
 
   return (

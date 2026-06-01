@@ -3,6 +3,7 @@ import { LogoutButton } from "./logout-button";
 
 const NAV = [
   { href: "/admin", label: "Дашборд" },
+  { href: "/admin/analytics", label: "Демография" },
   { href: "/admin/verifications", label: "Верификация" },
   { href: "/admin/photos", label: "Фото" },
   { href: "/admin/users", label: "Пользователи" },
