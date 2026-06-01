@@ -115,5 +115,71 @@
     "title": "Xush kelibsiz!",
     "subtitle": "Anketangiz faol",
     "feed_soon": "Mos odamlarni tanlash tez orada shu yerda paydo boʻladi."
+  },
+  "Nav": { "feed": "Lenta", "requests": "Soʻrovlar", "chats": "Suhbatlar", "profile": "Profil" },
+  "Feed": {
+    "title": "Tavsiyalar",
+    "subtitle": "Yaqin qadriyatli odamlar",
+    "empty": "Hozircha mos anketalar yoʻq. Keyinroq qarang."
+  },
+  "ProfileView": {
+    "verified": "Profil tasdiqlangan",
+    "religion": "Eʼtiqod",
+    "marital": "Oilaviy holat",
+    "children": "Farzandlar",
+    "children_plan": "Farzand rejalari",
+    "education": "Taʼlim",
+    "employment": "Bandlik",
+    "interest": "Qiziqish bildirish",
+    "send_interest": "Qiziqish yuborish",
+    "message_hint": "Qisqa xabar qoʻshishingiz mumkin (ixtiyoriy)",
+    "skip": "Oʻtkazib yuborish",
+    "block": "Bloklash",
+    "report": "Shikoyat",
+    "block_confirm": "Bu foydalanuvchini bloklaysizmi?",
+    "report_prompt": "Shikoyat sababini yozing:",
+    "report_done": "Rahmat, shikoyat yuborildi.",
+    "limit": "Kunlik qiziqish limiti tugadi. Ertaga urinib koʻring.",
+    "err": "Boʻlmadi. Qayta urinib koʻring."
+  },
+  "Requests": {
+    "title": "Soʻrovlar",
+    "incoming": "Kiruvchi",
+    "outgoing": "Yuborilgan",
+    "empty": "Hozircha boʻsh.",
+    "accept": "Qabul qilish",
+    "decline": "Rad etish",
+    "withdraw": "Qaytarib olish",
+    "status_pending": "Javob kutilmoqda",
+    "status_accepted": "Qabul qilindi — suhbat ochiq",
+    "status_declined": "Rad etilgan",
+    "status_withdrawn": "Qaytarib olingan",
+    "status_expired": "Muddati tugagan"
+  },
+  "Chat": {
+    "title": "Suhbatlar",
+    "empty": "Hozircha suhbatlar yoʻq. Ular oʻzaro qiziqishdan keyin paydo boʻladi.",
+    "no_messages": "Xabarlar yoʻq",
+    "placeholder": "Xabar…",
+    "send": "Yuborish",
+    "safety_tip": "Hurmat bilan muloqot qiling. Telefon, ijtimoiy tarmoq va manzilni ishonchsiz holda bermang — bu xavfsizligingiz uchun.",
+    "contact_blocked": "Suhbatda kontakt bermang — bu xavfsizlik uchun.",
+    "send_err": "Yuborib boʻlmadi."
+  },
+  "Settings": {
+    "title": "Profil",
+    "status_paused": "Profil pauzada",
+    "pause": "Pauzaga qoʻyish",
+    "resume": "Pauzadan chiqarish",
+    "pause_hint": "Pauzada siz tavsiyalarda koʻrinmaysiz, lekin suhbatlar ochiq.",
+    "paused_hint": "Tavsiyalarni qayta olish uchun pauzadan chiqing.",
+    "delete": "Akkauntni oʻchirish",
+    "delete_confirm": "Akkauntni oʻchirasizmi? Bu qaytarib boʻlmaydi."
+  },
+  "Blocked": {
+    "title": "Kirish cheklangan",
+    "subtitle": "Akkauntingiz bloklangan",
+    "default_reason": "Akkaunt platforma qoidalarini buzgani uchun bloklangan.",
+    "support": "Agar bu xato deb hisoblasangiz — qoʻllab-quvvatlashga murojaat qiling."
   }
 }

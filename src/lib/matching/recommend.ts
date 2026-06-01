@@ -1,0 +1,60 @@
+import "server-only";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { BUCKET_PHOTOS } from "@/lib/uploads/storage";
+import { ageFromDate } from "@/lib/profile/schemas";
+import { scoreCandidate, type ScoreInput } from "./score";
+
+export type Candidate = {
+  user_id: string;
+  display_name: string;
+  age: number;
+  city: string;
+  photoUrl: string | null;
+  score: number;
+};
+
+/** Лента рекомендаций: жёсткие фильтры (SQL) + скоринг/сортировка (JS). */
+export async function getRecommendations(viewerId: string, limit = 20): Promise<Candidate[]> {
+  const sb = supabaseAdmin();
+
+  const { data: vp } = await sb
+    .from("user_profiles")
+    .select("city, values, birth_date")
+    .eq("user_id", viewerId)
+    .maybeSingle();
+  const { data: vq } = await sb.from("quiz_results").select("vector").eq("user_id", viewerId).maybeSingle();
+  if (!vp) return [];
+  const viewer: ScoreInput = {
+    age: vp.birth_date ? ageFromDate(vp.birth_date as string) : 30,
+    city: (vp.city as string) ?? "",
+    values: (vp.values as string[]) ?? [],
+    vector: (vq?.vector as Record<string, number>) ?? {},
+  };
+
+  const { data: rows, error } = await sb.rpc("get_recommendations", {
+    p_viewer: viewerId,
+    p_limit: 100,
+  });
+  if (error || !rows) return [];
+
+  const scored: Candidate[] = (rows as Record<string, unknown>[]).map((r) => {
+    const cand: ScoreInput = {
+      age: (r.age as number) ?? 30,
+      city: (r.city as string) ?? "",
+      values: (r.vals as string[]) ?? [],
+      vector: (r.vector as Record<string, number>) ?? {},
+    };
+    const path = r.main_photo_path as string | null;
+    return {
+      user_id: r.user_id as string,
+      display_name: (r.display_name as string) ?? "",
+      age: cand.age,
+      city: cand.city,
+      photoUrl: path ? sb.storage.from(BUCKET_PHOTOS).getPublicUrl(path).data.publicUrl : null,
+      score: scoreCandidate(viewer, cand),
+    };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, limit);
+}
