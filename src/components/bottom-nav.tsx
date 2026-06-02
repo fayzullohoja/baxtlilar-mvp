@@ -10,10 +10,16 @@ const TABS = [
   { href: "/settings", key: "profile", icon: "☰" },
 ] as const;
 
-export function BottomNav({ active }: { active: "feed" | "requests" | "chats" | "profile" }) {
+export function BottomNav({
+  active,
+  unread = 0,
+}: {
+  active: "feed" | "requests" | "chats" | "profile";
+  unread?: number;
+}) {
   const t = useTranslations("Nav");
   return (
-    <nav className="fixed bottom-0 inset-x-0 bg-white border-t border-baxt-border flex z-20">
+    <nav className="fixed bottom-0 inset-x-0 z-20 mx-auto flex max-w-screen-sm border-t border-baxt-border bg-white pb-[env(safe-area-inset-bottom)]">
       {TABS.map((tab) => (
         <Link
           key={tab.key}
@@ -23,7 +29,14 @@ export function BottomNav({ active }: { active: "feed" | "requests" | "chats" | 
             (active === tab.key ? "text-baxt-coral" : "text-baxt-muted")
           }
         >
-          <span className="text-lg leading-none">{tab.icon}</span>
+          <span className="relative text-lg leading-none">
+            {tab.icon}
+            {tab.key === "chats" && unread > 0 ? (
+              <span className="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-baxt-coral px-1 text-[10px] font-semibold text-white">
+                {unread > 9 ? "9+" : unread}
+              </span>
+            ) : null}
+          </span>
           {t(tab.key)}
         </Link>
       ))}

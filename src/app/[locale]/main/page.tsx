@@ -3,6 +3,7 @@ import { Link } from "@/i18n/navigation";
 import { requireActiveUser } from "@/lib/auth/active-guard";
 import { getRecommendations } from "@/lib/matching/recommend";
 import { cityLabel } from "@/lib/profile/cities";
+import { getUnreadTotal } from "@/lib/chat/list";
 import { BottomNav } from "@/components/bottom-nav";
 
 export const dynamic = "force-dynamic";
@@ -48,7 +49,7 @@ export default async function FeedPage({ params }: { params: Promise<{ locale: s
         </div>
       )}
 
-      <BottomNav active="feed" />
+      <BottomNav active="feed" unread={await getUnreadTotal(user.id)} />
     </main>
   );
 }

@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { BUCKET_PHOTOS } from "@/lib/uploads/storage";
 import { ageFromDate } from "@/lib/profile/schemas";
 import { cityLabel } from "@/lib/profile/cities";
+import { getUnreadTotal } from "@/lib/chat/list";
 import { BottomNav } from "@/components/bottom-nav";
 import { SettingsActions } from "@/components/settings/settings-actions";
 
@@ -56,7 +57,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
         </div>
         <SettingsActions paused={user.lifecycle_state === "paused"} />
       </div>
-      <BottomNav active="profile" />
+      <BottomNav active="profile" unread={await getUnreadTotal(user.id)} />
     </main>
   );
 }

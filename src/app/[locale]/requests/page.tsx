@@ -4,6 +4,7 @@ import { requireActiveUser } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getMiniProfiles } from "@/lib/profile/mini";
 import { cityLabel } from "@/lib/profile/cities";
+import { getUnreadTotal } from "@/lib/chat/list";
 import { BottomNav } from "@/components/bottom-nav";
 import { RequestActions } from "@/components/requests/request-actions";
 
@@ -106,7 +107,7 @@ export default async function RequestsPage({
           })}
         </ul>
       )}
-      <BottomNav active="requests" />
+      <BottomNav active="requests" unread={await getUnreadTotal(user.id)} />
     </main>
   );
 }
