@@ -31,7 +31,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     // SEC-4: bypass HMAC допустим ТОЛЬКО вне production, даже если флаг включён в env
     const bypass = e.DEV_BYPASS_TG && process.env.NODE_ENV !== "production";
-    parsed = verifyInitData(initData, { bypass });
+    // M4: сужаем окно свежести initData 24ч → 3ч (меньше окно реплея; долгие сессии ещё ок)
+    parsed = verifyInitData(initData, { bypass, maxAgeSec: 3 * 3600 });
   } catch (err) {
     const code = err instanceof InitDataError ? err.message : "verify_failed";
     return NextResponse.json({ ok: false, error: code }, { status: 401 });

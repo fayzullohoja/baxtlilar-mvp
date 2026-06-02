@@ -34,7 +34,12 @@ export async function getSessionUserId(): Promise<string | null> {
   const e = env();
   if (sign(b64, e.SESSION_SECRET) !== sig) return null;
   try {
-    const payload = JSON.parse(Buffer.from(b64, "base64url").toString("utf-8")) as { uid?: unknown };
+    const payload = JSON.parse(Buffer.from(b64, "base64url").toString("utf-8")) as {
+      uid?: unknown;
+      iat?: unknown;
+    };
+    // протухание: сессия живёт не дольше MAX_AGE_SEC (cookie maxAge можно обойти — проверяем сами)
+    if (typeof payload.iat === "number" && Date.now() - payload.iat > MAX_AGE_SEC * 1000) return null;
     return typeof payload.uid === "string" ? payload.uid : null;
   } catch {
     return null;
