@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { requireActiveUser } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { BUCKET_PHOTOS } from "@/lib/uploads/storage";
+import { signedPhotoUrl } from "@/lib/uploads/storage";
 import { ageFromDate } from "@/lib/profile/schemas";
 import { cityLabel } from "@/lib/profile/cities";
 import { getUnreadTotal } from "@/lib/chat/list";
@@ -28,7 +28,7 @@ export default async function SettingsPage({ params }: { params: Promise<{ local
     .eq("user_id", user.id)
     .eq("is_main", true)
     .maybeSingle();
-  const photoUrl = photo ? sb.storage.from(BUCKET_PHOTOS).getPublicUrl(photo.path as string).data.publicUrl : null;
+  const photoUrl = photo ? await signedPhotoUrl(photo.path as string) : null;
   const age = p?.birth_date ? ageFromDate(p.birth_date as string) : null;
 
   return (

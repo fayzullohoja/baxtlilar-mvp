@@ -35,11 +35,35 @@ export async function uploadDocumentImage(
 }
 
 export type PhotoUploadResult =
-  | { ok: true; path: string; publicUrl: string; type: AllowedImage }
+  | { ok: true; path: string; url: string | null; type: AllowedImage }
   | { ok: false; error: "too_large" | "bad_type" | "upload_failed" };
 
+// Фото профиля — ПРИВАТНЫЙ бакет: отдаём только через подписанные URL с коротким TTL.
+// Так серверные гейты (published/approved/active/block) реально управляют доступом.
+const PHOTO_TTL_SEC = 3600;
+
+/** Подписанный URL одного фото (или null). */
+export async function signedPhotoUrl(path: string, ttl = PHOTO_TTL_SEC): Promise<string | null> {
+  if (!path) return null;
+  const { data } = await supabaseAdmin().storage.from(BUCKET_PHOTOS).createSignedUrl(path, ttl);
+  return data?.signedUrl ?? null;
+}
+
+/** Подписанные URL пачкой: path → signedUrl (для лент/списков, один round-trip). */
+export async function signedPhotoUrls(
+  paths: (string | null | undefined)[],
+  ttl = PHOTO_TTL_SEC,
+): Promise<Record<string, string>> {
+  const uniq = [...new Set(paths.filter((p): p is string => !!p))];
+  if (!uniq.length) return {};
+  const { data } = await supabaseAdmin().storage.from(BUCKET_PHOTOS).createSignedUrls(uniq, ttl);
+  const out: Record<string, string> = {};
+  for (const it of data ?? []) if (it.path && it.signedUrl) out[it.path] = it.signedUrl;
+  return out;
+}
+
 /**
- * Загрузка фото профиля в ПУБЛИЧНЫЙ бакет (показывается другим — после одобрения, S5).
+ * Загрузка фото профиля в приватный бакет. Возвращает подписанный URL для немедленного показа.
  * @param idx порядковый индекс фото (имя файла), чтобы хранить до 3 фото.
  */
 export async function uploadProfilePhoto(
@@ -53,11 +77,9 @@ export async function uploadProfilePhoto(
   if (!type) return { ok: false, error: "bad_type" };
 
   const path = `${userId}/photo_${idx}_${Date.now()}.${extForType(type)}`;
-  const sb = supabaseAdmin();
-  const { error } = await sb.storage
-    .from(BUCKET_PHOTOS)
+  const { error } = await supabaseAdmin()
+    .storage.from(BUCKET_PHOTOS)
     .upload(path, bytes, { contentType: type, upsert: true });
   if (error) return { ok: false, error: "upload_failed" };
-  const { data } = sb.storage.from(BUCKET_PHOTOS).getPublicUrl(path);
-  return { ok: true, path, publicUrl: data.publicUrl, type };
+  return { ok: true, path, url: await signedPhotoUrl(path), type };
 }

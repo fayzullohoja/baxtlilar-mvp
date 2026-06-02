@@ -11,15 +11,16 @@ export async function sendSms(phone: string, text: string): Promise<void> {
     console.log(`[SMS:mock] → ${phone}: ${text}`);
     return;
   }
+  // НЕ fail-open: неподключённый провайдер должен бросать, иначе верификация телефона
+  // «успешно» проходит в проде без реальной отправки кода.
   if (provider === "eskiz") {
     // TODO(OD-3): Eskiz.uz REST — получить токен, POST /message/sms/send
-    console.warn("[SMS:eskiz] not configured yet — falling back to no-op");
-    return;
+    throw new Error("SMS provider 'eskiz' is not configured");
   }
   if (provider === "playmobile") {
-    console.warn("[SMS:playmobile] not configured yet — falling back to no-op");
-    return;
+    throw new Error("SMS provider 'playmobile' is not configured");
   }
+  throw new Error(`Unknown SMS provider: ${provider}`);
 }
 
 /** В dev/mock режиме фиксированный код всегда валиден. */

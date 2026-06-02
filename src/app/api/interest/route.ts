@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { checkAndIncrement } from "@/lib/matching/quota";
 import { ensureChat } from "@/lib/matching/chat";
 import { notifyUser } from "@/lib/telegram/notify";
+import { areBlocked } from "@/lib/safety/blocks";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,14 +33,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "unavailable" }, { status: 404 });
 
   // блокировка в любую сторону
-  const { data: blocked } = await sb
-    .from("blocks")
-    .select("blocker_id")
-    .or(
-      `and(blocker_id.eq.${user.id},blocked_id.eq.${receiver_id}),and(blocker_id.eq.${receiver_id},blocked_id.eq.${user.id})`,
-    )
-    .maybeSingle();
-  if (blocked) return NextResponse.json({ ok: false, error: "blocked" }, { status: 403 });
+  if (await areBlocked(user.id, receiver_id))
+    return NextResponse.json({ ok: false, error: "blocked" }, { status: 403 });
 
   // встречный pending → взаимный интерес: открыть чат
   const { data: reverse } = await sb

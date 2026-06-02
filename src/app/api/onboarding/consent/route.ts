@@ -3,11 +3,13 @@ import { loadUserForStep } from "@/lib/onboarding/guard-api";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
+import { LEGAL_VERSION } from "@/content/legal";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CONSENT_VERSION = "mvp-1";
+// версия согласий = версия опубликованных юр-документов (ToS/Политика/оферта)
+const CONSENT_VERSION = LEGAL_VERSION;
 const CONSENT_TYPES = ["terms", "privacy", "pd", "documents"] as const;
 
 /** Экран согласий: фиксируем согласия, consent → phone_input. */

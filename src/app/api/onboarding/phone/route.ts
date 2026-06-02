@@ -34,7 +34,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (taken) return NextResponse.json({ ok: false, error: "phone_taken" }, { status: 409 });
 
   const sent = await sendOtp(user.id, phone);
-  if (!sent.ok) return NextResponse.json({ ok: false, error: sent.error }, { status: 429 });
+  if (!sent.ok)
+    return NextResponse.json(
+      { ok: false, error: sent.error },
+      { status: sent.error === "sms_failed" ? 503 : 429 },
+    );
 
   const tr = await tryTransition(
     user.id,

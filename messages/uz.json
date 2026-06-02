@@ -24,6 +24,9 @@
     "consent_intentions": "Faqat jiddiy niyatlar, tasodifiy muloqot va bosimsiz",
     "consent_check_serious": "Platforma oila qurish maqsadidagi jiddiy tanishuv uchun yaratilganini tushunaman",
     "consent_check_rules": "Platforma qoidalari va maxfiylik siyosati bilan tanishdim hamda maʼlumotlarim va hujjatlarim qayta ishlanishiga roziman",
+    "legal_terms": "Foydalanuvchi shartnomasi",
+    "legal_privacy": "Maxfiylik siyosati",
+    "legal_offer": "Ommaviy oferta",
     "phone_title": "Raqamni tasdiqlash",
     "phone_subtitle": "Telefon raqamingizni kiriting — tasdiqlash kodi bilan SMS yuboramiz.",
     "phone_placeholder": "90 123 45 67",
@@ -181,6 +184,7 @@
     "title": "Kirish cheklangan",
     "subtitle": "Akkauntingiz bloklangan",
     "default_reason": "Akkaunt platforma qoidalarini buzgani uchun bloklangan.",
-    "support": "Agar bu xato deb hisoblasangiz — qoʻllab-quvvatlashga murojaat qiling."
+    "support": "Agar bu xato deb hisoblasangiz — qoʻllab-quvvatlashga murojaat qiling.",
+    "contact": "Qoʻllab-quvvatlashga yozish"
   }
 }

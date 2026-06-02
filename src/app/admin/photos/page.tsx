@@ -1,6 +1,6 @@
 import { requireAdmin } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { BUCKET_PHOTOS } from "@/lib/uploads/storage";
+import { signedPhotoUrls } from "@/lib/uploads/storage";
 import { AdminShell } from "@/components/admin/shell";
 import { PhotoActions } from "@/components/admin/photo-actions";
 
@@ -17,6 +17,7 @@ export default async function PhotosModeration() {
     .order("created_at", { ascending: true })
     .limit(60);
   const list = rows ?? [];
+  const urls = await signedPhotoUrls(list.map((p) => p.path as string));
 
   return (
     <AdminShell active="/admin/photos" role={session.role}>
@@ -29,7 +30,7 @@ export default async function PhotosModeration() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {list.map((p) => {
             const owner = p.users as { telegram_first_name?: string; telegram_username?: string } | null;
-            const url = sb.storage.from(BUCKET_PHOTOS).getPublicUrl(p.path as string).data.publicUrl;
+            const url = urls[p.path as string];
             return (
               <div key={p.id as string} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}

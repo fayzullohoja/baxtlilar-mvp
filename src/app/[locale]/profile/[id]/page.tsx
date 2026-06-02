@@ -2,7 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { requireActiveUser } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { BUCKET_PHOTOS } from "@/lib/uploads/storage";
+import { signedPhotoUrls } from "@/lib/uploads/storage";
 import { ageFromDate } from "@/lib/profile/schemas";
 import {
   labelOf,
@@ -52,7 +52,9 @@ export default async function ProfileDetail({
     .eq("status", "approved")
     .order("is_main", { ascending: false })
     .order("ord", { ascending: true });
-  const urls = (photos ?? []).map((ph) => sb.storage.from(BUCKET_PHOTOS).getPublicUrl(ph.path as string).data.publicUrl);
+  const paths = (photos ?? []).map((ph) => ph.path as string);
+  const signed = await signedPhotoUrls(paths);
+  const urls = paths.map((p) => signed[p]).filter(Boolean);
   const age = p!.birth_date ? ageFromDate(p!.birth_date as string) : null;
   const L = (list: typeof RELIGION, v: unknown) => (v ? labelOf(list, v as string, locale) : null);
 

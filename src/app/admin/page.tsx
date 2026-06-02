@@ -10,10 +10,11 @@ export default async function AdminDashboard() {
   const sb = supabaseAdmin();
 
   // Те же числа, что и на странице «Демография» — единый RPC (исключает удалённых пользователей).
-  const [pending, photos, demo] = await Promise.all([
+  const [pending, photos, demo, reports] = await Promise.all([
     sb.from("users").select("*", { count: "exact", head: true }).eq("verification_status", "pending_review"),
     sb.from("profile_photos").select("*", { count: "exact", head: true }).eq("status", "under_review"),
     sb.rpc("get_admin_demographics"),
+    sb.from("reports").select("*", { count: "exact", head: true }).in("status", ["new", "in_progress", "requires_clarification", "escalated"]),
   ]);
   const d = (demo.data ?? {}) as {
     total?: number;
@@ -24,6 +25,7 @@ export default async function AdminDashboard() {
   const cards = [
     { label: "Заявки на проверке", value: pending.count ?? 0, href: "/admin/verifications", accent: true },
     { label: "Фото на проверке", value: photos.count ?? 0, href: "/admin/photos", accent: (photos.count ?? 0) > 0 },
+    { label: "Жалобы", value: reports.count ?? 0, href: "/admin/reports", accent: (reports.count ?? 0) > 0 },
     { label: "Всего пользователей", value: d.total ?? 0, href: "/admin/users" },
     { label: "Активных", value: d.lifecycle?.active ?? 0, href: "/admin/users?status=active" },
     { label: "Заблокировано", value: d.lifecycle?.blocked ?? 0, href: "/admin/users?status=blocked" },

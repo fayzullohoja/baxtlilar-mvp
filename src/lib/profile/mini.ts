@@ -1,6 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { BUCKET_PHOTOS } from "@/lib/uploads/storage";
+import { signedPhotoUrls } from "@/lib/uploads/storage";
 import { ageFromDate } from "@/lib/profile/schemas";
 
 export type Mini = { id: string; name: string; age: number | null; city: string; photoUrl: string | null };
@@ -23,11 +23,14 @@ export async function getMiniProfiles(ids: string[]): Promise<Record<string, Min
     .order("is_main", { ascending: false })
     .order("ord", { ascending: true });
 
-  const photoBy: Record<string, string> = {};
+  const pathBy: Record<string, string> = {};
   for (const ph of photos ?? []) {
     const uid = ph.user_id as string;
-    if (!photoBy[uid]) photoBy[uid] = sb.storage.from(BUCKET_PHOTOS).getPublicUrl(ph.path as string).data.publicUrl;
+    if (!pathBy[uid]) pathBy[uid] = ph.path as string;
   }
+  const urls = await signedPhotoUrls(Object.values(pathBy));
+  const photoBy: Record<string, string> = {};
+  for (const [uid, path] of Object.entries(pathBy)) if (urls[path]) photoBy[uid] = urls[path];
 
   const out: Record<string, Mini> = {};
   for (const p of profs ?? []) {

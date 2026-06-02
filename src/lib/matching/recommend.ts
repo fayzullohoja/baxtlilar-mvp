@@ -1,6 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { BUCKET_PHOTOS } from "@/lib/uploads/storage";
+import { signedPhotoUrls } from "@/lib/uploads/storage";
 import { ageFromDate } from "@/lib/profile/schemas";
 import { scoreCandidate, type ScoreInput } from "./score";
 
@@ -37,7 +37,10 @@ export async function getRecommendations(viewerId: string, limit = 20): Promise<
   });
   if (error || !rows) return [];
 
-  const scored: Candidate[] = (rows as Record<string, unknown>[]).map((r) => {
+  const list = rows as Record<string, unknown>[];
+  const urls = await signedPhotoUrls(list.map((r) => r.main_photo_path as string | null));
+
+  const scored: Candidate[] = list.map((r) => {
     const cand: ScoreInput = {
       age: (r.age as number) ?? 30,
       city: (r.city as string) ?? "",
@@ -50,7 +53,7 @@ export async function getRecommendations(viewerId: string, limit = 20): Promise<
       display_name: (r.display_name as string) ?? "",
       age: cand.age,
       city: cand.city,
-      photoUrl: path ? sb.storage.from(BUCKET_PHOTOS).getPublicUrl(path).data.publicUrl : null,
+      photoUrl: path ? (urls[path] ?? null) : null,
       score: scoreCandidate(viewer, cand),
     };
   });

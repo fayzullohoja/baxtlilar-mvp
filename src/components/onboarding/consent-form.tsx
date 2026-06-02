@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
+import { useRouter, Link } from "@/i18n/navigation";
 import { postJson } from "@/lib/client/api";
 import { PrimaryButton } from "@/components/ui/screen";
 
@@ -46,6 +46,17 @@ export function ConsentForm() {
         />
         <span>{t("consent_check_rules")}</span>
       </label>
+      <div className="flex flex-wrap gap-x-3 gap-y-1 pt-1 text-xs text-baxt-coral underline">
+        <Link href="/legal/terms" target="_blank">
+          {t("legal_terms")}
+        </Link>
+        <Link href="/legal/privacy" target="_blank">
+          {t("legal_privacy")}
+        </Link>
+        <Link href="/legal/offer" target="_blank">
+          {t("legal_offer")}
+        </Link>
+      </div>
       {error ? <p className="text-sm text-baxt-coral-dk">{error}</p> : null}
       <PrimaryButton onClick={submit} disabled={!serious || !rules || busy}>
         {tc("continue")}

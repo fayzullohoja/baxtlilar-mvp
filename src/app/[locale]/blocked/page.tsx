@@ -3,6 +3,7 @@ import { redirect } from "@/i18n/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { nextScreenFor } from "@/lib/state-machine/router";
 import { Screen } from "@/components/ui/screen";
+import { SupportLink } from "@/components/support-link";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,9 @@ export default async function BlockedPage({ params }: { params: Promise<{ locale
         {user!.blocked_reason || t("default_reason")}
       </div>
       <p className="text-xs text-baxt-muted mt-4 text-center">{t("support")}</p>
+      <div className="text-center">
+        <SupportLink label={t("contact")} />
+      </div>
     </Screen>
   );
 }

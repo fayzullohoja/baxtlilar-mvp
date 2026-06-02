@@ -19,7 +19,7 @@ function genCode(): string {
   return String(crypto.randomInt(0, 1_000_000)).padStart(6, "0");
 }
 
-export type SendResult = { ok: true } | { ok: false; error: "cooldown" | "hourly_limit" };
+export type SendResult = { ok: true } | { ok: false; error: "cooldown" | "hourly_limit" | "sms_failed" };
 
 export async function sendOtp(userId: string, phone: string): Promise<SendResult> {
   const sb = supabaseAdmin();
@@ -55,7 +55,13 @@ export async function sendOtp(userId: string, phone: string): Promise<SendResult
     code_hash: hashCode(code),
     expires_at: expiresAt,
   });
-  await sendSms(phone, `Baxtlilar: ваш код подтверждения ${code}`);
+  try {
+    await sendSms(phone, `Baxtlilar: ваш код подтверждения ${code}`);
+  } catch (e) {
+    // провайдер не настроен/недоступен — НЕ выдаём «успех», иначе пользователь застрянет без кода
+    console.error("[sendOtp] SMS send failed:", e);
+    return { ok: false, error: "sms_failed" };
+  }
   return { ok: true };
 }
 

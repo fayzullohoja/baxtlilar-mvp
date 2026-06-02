@@ -46,6 +46,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   return NextResponse.json({
     ok: true,
-    photo: { id: inserted.id, url: up.publicUrl, is_main: inserted.is_main },
+    photo: { id: inserted.id, url: up.url, is_main: inserted.is_main },
   });
 }

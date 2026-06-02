@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { containsContact } from "@/lib/profile/schemas";
 import { notifyUser } from "@/lib/telegram/notify";
 import { loadChatRow, getLiveState } from "@/lib/chat/live";
+import { areBlocked } from "@/lib/safety/blocks";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,6 +47,11 @@ export async function POST(
   const chat = await loadChatRow(id, user.id);
   if (!chat) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
 
+  const otherIdEarly = chat.user_a === user.id ? chat.user_b : chat.user_a;
+  // блокировка в любую сторону → не отправляем и не уведомляем
+  if (await areBlocked(user.id, otherIdEarly))
+    return NextResponse.json({ ok: false, error: "blocked" }, { status: 403 });
+
   const { data: inserted } = await sb
     .from("chat_messages")
     .insert({ chat_id: id, sender_id: user.id, body: text })
@@ -55,8 +61,7 @@ export async function POST(
   const stopTyping = user.id === chat.user_a ? { typing_a_until: null } : { typing_b_until: null };
   await sb.from("chats").update({ last_message_at: new Date().toISOString(), ...stopTyping }).eq("id", id);
 
-  const otherId = chat.user_a === user.id ? chat.user_b : chat.user_a;
-  const { data: other } = await sb.from("users").select("telegram_id").eq("id", otherId).maybeSingle();
+  const { data: other } = await sb.from("users").select("telegram_id").eq("id", otherIdEarly).maybeSingle();
   if (other) await notifyUser(other.telegram_id as number, "Новое сообщение в Baxtlilar.");
   return NextResponse.json({ ok: true, message: inserted });
 }

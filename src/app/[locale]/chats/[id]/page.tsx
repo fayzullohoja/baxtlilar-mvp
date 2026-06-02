@@ -4,6 +4,7 @@ import { requireActiveUser } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getMiniProfiles } from "@/lib/profile/mini";
 import { ChatRoom, type Msg } from "@/components/chat/chat-room";
+import { ChatMenu } from "@/components/chat/chat-menu";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,7 @@ export default async function ChatThread({
         >
           ←
         </Link>
-        <Link href={`/profile/${otherId}`} className="flex min-w-0 items-center gap-2.5">
+        <Link href={`/profile/${otherId}`} className="flex min-w-0 flex-1 items-center gap-2.5">
           <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-baxt-coral-bg">
             {other?.photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -51,6 +52,7 @@ export default async function ChatThread({
           </div>
           <span className="truncate text-sm font-semibold text-baxt-navy">{other?.name}</span>
         </Link>
+        <ChatMenu otherId={otherId} chatId={id} />
       </header>
 
       <ChatRoom key={id} chatId={id} myId={user.id} initial={(messages ?? []) as Msg[]} safetyTip={t("safety_tip")} />

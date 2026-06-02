@@ -1,7 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { BUCKET_PHOTOS } from "@/lib/uploads/storage";
+import { signedPhotoUrl } from "@/lib/uploads/storage";
 import { ageFromDate } from "@/lib/profile/schemas";
 import { cityLabel } from "@/lib/profile/cities";
 import { Screen } from "@/components/ui/screen";
@@ -28,7 +28,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
     .eq("is_main", true)
     .maybeSingle();
   const photoUrl = mainPhoto
-    ? sb.storage.from(BUCKET_PHOTOS).getPublicUrl(mainPhoto.path as string).data.publicUrl
+    ? await signedPhotoUrl(mainPhoto.path as string)
     : null;
   const age = p?.birth_date ? ageFromDate(p.birth_date as string) : null;
 

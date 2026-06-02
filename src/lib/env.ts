@@ -12,6 +12,8 @@ const Env = z.object({
     .transform((v) => v === true || v === "1" || v === "true"),
   SMS_PROVIDER: z.enum(["mock", "eskiz", "playmobile"]).default("mock"),
   APP_URL: z.string().url().optional(),
+  // Канал поддержки (например, https://t.me/baxtlilar_support) — показывается на тупиковых экранах.
+  SUPPORT_URL: z.string().url().optional(),
 });
 
 export type EnvShape = z.infer<typeof Env>;
