@@ -25,11 +25,13 @@ export async function POST(
   // Вернуть в active, если онбординг был завершён; иначе — назад в onboarding.
   const restored = u?.quiz_completion === "completed" ? "active" : "onboarding";
 
-  await supabaseAdmin().from("users").update({ blocked_at: null, blocked_reason: null }).eq("id", id);
-  const tr = await tryTransition(id, { lifecycle_state: restored }, "unbanned", {
-    kind: "admin",
-    id: session.adminId,
-  });
+  // M18: снимаем blocked_at/blocked_reason в том же атомарном переходе
+  const tr = await tryTransition(
+    id,
+    { lifecycle_state: restored, blocked_at: null, blocked_reason: null },
+    "unbanned",
+    { kind: "admin", id: session.adminId },
+  );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
   await adminAudit({
     adminId: session.adminId,

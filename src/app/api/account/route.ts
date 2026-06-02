@@ -35,24 +35,54 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   if (action === "delete") {
-    // soft-delete: помечаем deleted, стираем ПД и файлы, чистим сессию (запись остаётся для аудита)
+    // soft-delete: помечаем deleted, СТИРАЕМ все ПД и файлы, чистим сессию (строка users остаётся для аудита)
     await tryTransition(user.id, { lifecycle_state: "deleted" }, "user deleted account", {
       kind: "user",
       id: user.id,
     });
+    // обезличиваем users (телефон + telegram-профиль)
     await sb
       .from("users")
-      .update({ deleted_at: new Date().toISOString(), phone_number: null, phone_verified: false })
+      .update({
+        deleted_at: new Date().toISOString(),
+        phone_number: null,
+        phone_verified: false,
+        telegram_username: null,
+        telegram_first_name: null,
+        telegram_last_name: null,
+      })
       .eq("id", user.id);
 
-    const { data: photos } = await sb.from("profile_photos").select("path").eq("user_id", user.id);
-    const photoPaths = (photos ?? []).map((p) => p.path as string);
-    if (photoPaths.length) await sb.storage.from(BUCKET_PHOTOS).remove(photoPaths);
-    await sb.from("profile_photos").delete().eq("user_id", user.id);
+    // фото и документы — из стораджа (ошибки не должны срывать всё стирание — try/catch)
+    try {
+      const { data: photos } = await sb.from("profile_photos").select("path").eq("user_id", user.id);
+      const photoPaths = (photos ?? []).map((p) => p.path as string);
+      if (photoPaths.length) await sb.storage.from(BUCKET_PHOTOS).remove(photoPaths);
+      const { data: docFiles } = await sb.storage.from(BUCKET_DOCUMENTS).list(user.id);
+      if (docFiles?.length)
+        await sb.storage.from(BUCKET_DOCUMENTS).remove(docFiles.map((f) => `${user.id}/${f.name}`));
+    } catch (e) {
+      console.error("[account.delete] storage cleanup failed (continuing):", e);
+    }
 
-    const { data: docFiles } = await sb.storage.from(BUCKET_DOCUMENTS).list(user.id);
-    if (docFiles?.length)
-      await sb.storage.from(BUCKET_DOCUMENTS).remove(docFiles.map((f) => `${user.id}/${f.name}`));
+    // ПД из всех таблиц (анкета, опрос, согласия, метаданные документов, квоты, OTP, просмотры)
+    for (const tbl of [
+      "profile_photos",
+      "user_profiles",
+      "quiz_answers",
+      "quiz_results",
+      "consents",
+      "user_documents",
+      "daily_request_quotas",
+      "otp_codes",
+    ] as const) {
+      await sb.from(tbl).delete().eq("user_id", user.id);
+    }
+    await sb.from("match_views").delete().eq("viewer_id", user.id);
+    // свободный текст пользователя (содержит ПД): сообщения, заметка интереса, текст жалобы
+    await sb.from("chat_messages").update({ body: "[удалено]" }).eq("sender_id", user.id);
+    await sb.from("match_requests").update({ message: null }).eq("sender_id", user.id);
+    await sb.from("reports").update({ comment: null }).eq("reporter_id", user.id);
 
     await clearSession();
     return NextResponse.json({ ok: true });

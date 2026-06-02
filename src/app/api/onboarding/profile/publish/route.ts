@@ -34,10 +34,12 @@ export async function POST(): Promise<NextResponse> {
   if (!complete)
     return NextResponse.json({ ok: false, error: "profile_incomplete" }, { status: 400 });
 
+  // нужно ≥1 НЕ отклонённого фото (approved/under_review), иначе анкета останется без видимого фото
   const { count } = await sb
     .from("profile_photos")
     .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .neq("status", "rejected");
   if (!count) return NextResponse.json({ ok: false, error: "no_photo" }, { status: 400 });
 
   await sb

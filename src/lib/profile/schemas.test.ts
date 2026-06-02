@@ -20,10 +20,20 @@ describe("ageFromDate", () => {
 
 describe("containsContact", () => {
   it("ловит телефон", () => expect(containsContact("пиши +998 90 123 45 67")).toBe(true));
+  it("ловит телефон без разделителей", () => expect(containsContact("998901234567")).toBe(true));
+  it("ловит цифры через пробелы", () => expect(containsContact("9 0 1 2 3 4 5 6 7")).toBe(true));
   it("ловит @username", () => expect(containsContact("мой тг @ali_2024")).toBe(true));
   it("ловит ссылку", () => expect(containsContact("сайт example.com")).toBe(true));
+  it("ловит мессенджер по названию", () => expect(containsContact("пиши в telegram")).toBe(true));
   it("чистый текст ок", () =>
     expect(containsContact("Люблю горы, книги и спокойные вечера дома")).toBe(false));
+  // регрессии: легитимные числа/диапазоны НЕ должны блокироваться
+  it("год не блокируется", () => expect(containsContact("Мне 1995 года рождения")).toBe(false));
+  it("диапазон лет не блокируется", () => expect(containsContact("диплом 2018-2022 годов")).toBe(false));
+  it("диапазон дохода не блокируется", () =>
+    expect(containsContact("Доход 3 000 000 - 5 000 000 сум")).toBe(false));
+  it("слово 'инстинкт' не ложноблок", () =>
+    expect(containsContact("ценю инстинкт самосохранения")).toBe(false));
 });
 
 describe("basicSchema", () => {

@@ -26,12 +26,19 @@ export function ageFromDate(dateStr: string): number {
   return age;
 }
 
-/** Признаки контактов/ссылок/рекламы в «о себе». */
+/** Признаки контактов/ссылок/рекламы в «о себе» / сообщениях. */
 export function containsContact(text: string): boolean {
+  // нормализация: NFKC (полноширинные цифры → ascii) + удалить ТОЛЬКО zero-width вставки.
+  // Обычные пробелы НЕ убираем — иначе диапазоны «2018-2022» / «3 000 000 - 5 000 000» ложно ловятся.
+  const norm = text.normalize("NFKC").replace(/[​-‍﻿]/g, "");
+  const low = norm.toLowerCase();
+  // телефон: ≥9 «цифр с одиночным разделителем» подряд (узб. номер = 9 цифр). Год (4 цифры) и
+  // диапазоны через « - » не дают 9 в одном прогоне → не блокируются.
   return (
-    /\+?\d[\d\s().-]{6,}\d/.test(text) || // телефон
-    /@[A-Za-z0-9_]{3,}/.test(text) || // @username
-    /(https?:\/\/|www\.|\bt\.me\b|\b\S+\.(?:uz|ru|com|net|org)\b)/i.test(text) // ссылки
+    /(\+?\d[ .()-]?){9,}/.test(norm) || // телефон
+    /@[A-Za-z0-9_]{3,}/.test(norm) || // @username
+    /(https?:\/\/|www\.|\bt\.me\b|\b\S+\.(?:uz|ru|com|net|org|me)\b)/i.test(norm) || // ссылки
+    /\b(telegram|телеграм|instagram|инстаграм|whats?app|вотсап|ватсап|viber|вайбер)\b/.test(low) // мессенджеры
   );
 }
 

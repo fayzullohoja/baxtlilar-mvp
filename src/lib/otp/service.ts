@@ -40,6 +40,22 @@ export async function sendOtp(userId: string, phone: string): Promise<SendResult
     if (inHour.length >= MAX_PER_HOUR) return { ok: false, error: "hourly_limit" };
   }
 
+  // M6: антибомбинг по НОМЕРУ (а не только по user_id) — иначе один номер можно засыпать SMS
+  // через разные аккаунты. Те же окна: cooldown + лимит/час.
+  const { data: byPhone } = await sb
+    .from("otp_codes")
+    .select("created_at")
+    .eq("phone", phone)
+    .order("created_at", { ascending: false })
+    .limit(MAX_PER_HOUR);
+  if (byPhone && byPhone.length) {
+    const lastMs = new Date(byPhone[0].created_at as string).getTime();
+    if (nowMs - lastMs < RESEND_COOLDOWN_SEC * 1000) return { ok: false, error: "cooldown" };
+    const hourAgo = nowMs - 3600_000;
+    const inHour = byPhone.filter((r) => new Date(r.created_at as string).getTime() > hourAgo);
+    if (inHour.length >= MAX_PER_HOUR) return { ok: false, error: "hourly_limit" };
+  }
+
   // ONB-1/BUG-9: гасим все прежние неиспользованные коды — валиден только новый.
   await sb
     .from("otp_codes")
@@ -86,10 +102,11 @@ export async function verifyOtp(userId: string, code: string): Promise<VerifyRes
   if ((otp.attempts as number) >= MAX_ATTEMPTS) return { ok: false, error: "too_many_attempts" };
 
   if (hashCode(code) !== otp.code_hash) {
-    await sb
-      .from("otp_codes")
-      .update({ attempts: (otp.attempts as number) + 1 })
-      .eq("id", otp.id as string);
+    // M5: атомарный инкремент попыток (без lost-update при гонке неверных кодов)
+    const { data: attempts, error } = await sb.rpc("bump_otp_attempt", { p_id: otp.id as string });
+    // fail-closed: если счётчик не увеличился (ошибка/не число) — не раздаём новые попытки
+    if (error || typeof attempts !== "number" || attempts >= MAX_ATTEMPTS)
+      return { ok: false, error: "too_many_attempts" };
     return { ok: false, error: "wrong_code" };
   }
 

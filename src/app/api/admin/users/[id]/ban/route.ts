@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi, adminAudit } from "@/lib/admin/guard";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { trustedIp } from "@/lib/http/ip";
 
@@ -21,14 +20,14 @@ export async function POST(
   if (!reason?.trim())
     return NextResponse.json({ ok: false, error: "reason_required" }, { status: 400 });
 
-  await supabaseAdmin()
-    .from("users")
-    .update({ blocked_at: new Date().toISOString(), blocked_reason: reason })
-    .eq("id", id);
-  const tr = await tryTransition(id, { lifecycle_state: "blocked" }, `banned: ${reason}`, {
-    kind: "admin",
-    id: session.adminId,
-  });
+  // M18: blocked_at/reason в том же атомарном переходе (не отдельный UPDATE, иначе ломается
+  // оптимистичный concurrency transition_user)
+  const tr = await tryTransition(
+    id,
+    { lifecycle_state: "blocked", blocked_at: new Date().toISOString(), blocked_reason: reason },
+    `banned: ${reason}`,
+    { kind: "admin", id: session.adminId },
+  );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
   await adminAudit({
     adminId: session.adminId,

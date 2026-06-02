@@ -9,6 +9,9 @@ import { areBlocked } from "@/lib/safety/blocks";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const RATE_WINDOW_MS = 10_000; // окно антифлуда
+const RATE_MAX = 10; // не больше 10 сообщений за 10с в один чат
+
 /**
  * Дозагрузка живого состояния чата (фолбэк-опрос, когда нет SSE).
  * ?after=<ISO> → новые сообщения; всегда возвращает read_through (галочки) и typing.
@@ -52,6 +55,26 @@ export async function POST(
   if (await areBlocked(user.id, otherIdEarly))
     return NextResponse.json({ ok: false, error: "blocked" }, { status: 403 });
 
+  // антифлуд: не более RATE_MAX сообщений за RATE_WINDOW_MS в этом чате от одного отправителя
+  const since = new Date(Date.now() - RATE_WINDOW_MS).toISOString();
+  const { count: recent } = await sb
+    .from("chat_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("chat_id", id)
+    .eq("sender_id", user.id)
+    .gte("created_at", since);
+  if ((recent ?? 0) >= RATE_MAX)
+    return NextResponse.json({ ok: false, error: "too_fast" }, { status: 429 });
+
+  // дебаунс пуша: уведомляем только если у получателя ещё НЕТ непрочитанных от меня (первое в серии)
+  const { count: unreadFromMe } = await sb
+    .from("chat_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("chat_id", id)
+    .eq("sender_id", user.id)
+    .is("read_at", null);
+  const shouldPush = (unreadFromMe ?? 0) === 0;
+
   const { data: inserted } = await sb
     .from("chat_messages")
     .insert({ chat_id: id, sender_id: user.id, body: text })
@@ -61,7 +84,9 @@ export async function POST(
   const stopTyping = user.id === chat.user_a ? { typing_a_until: null } : { typing_b_until: null };
   await sb.from("chats").update({ last_message_at: new Date().toISOString(), ...stopTyping }).eq("id", id);
 
-  const { data: other } = await sb.from("users").select("telegram_id").eq("id", otherIdEarly).maybeSingle();
-  if (other) await notifyUser(other.telegram_id as number, "Новое сообщение в Baxtlilar.");
+  if (shouldPush) {
+    const { data: other } = await sb.from("users").select("telegram_id").eq("id", otherIdEarly).maybeSingle();
+    if (other) await notifyUser(other.telegram_id as number, "Новое сообщение в Baxtlilar.");
+  }
   return NextResponse.json({ ok: true, message: inserted });
 }

@@ -18,6 +18,8 @@ export type UserStatePatch = Partial<{
   phone_verified: boolean;
   phone_number: string;
   language: "ru" | "uz";
+  blocked_at: string | null;
+  blocked_reason: string | null;
 }>;
 
 export type TriggeredBy = { kind: "user" | "system" | "admin"; id?: string };
