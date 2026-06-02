@@ -53,7 +53,7 @@ export default async function ChatThread({
         </Link>
       </header>
 
-      <ChatRoom chatId={id} myId={user.id} initial={(messages ?? []) as Msg[]} safetyTip={t("safety_tip")} />
+      <ChatRoom key={id} chatId={id} myId={user.id} initial={(messages ?? []) as Msg[]} safetyTip={t("safety_tip")} />
     </main>
   );
 }

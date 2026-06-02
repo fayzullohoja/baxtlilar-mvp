@@ -164,7 +164,8 @@
     "send": "Yuborish",
     "safety_tip": "Hurmat bilan muloqot qiling. Telefon, ijtimoiy tarmoq va manzilni ishonchsiz holda bermang — bu xavfsizligingiz uchun.",
     "contact_blocked": "Suhbatda kontakt bermang — bu xavfsizlik uchun.",
-    "send_err": "Yuborib boʻlmadi."
+    "send_err": "Yuborib boʻlmadi.",
+    "typing": "yozmoqda…"
   },
   "Settings": {
     "title": "Profil",
