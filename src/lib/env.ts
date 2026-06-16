@@ -2,8 +2,10 @@ import "server-only";
 import { z } from "zod";
 
 const Env = z.object({
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(20),
+  // Postgres (Railway). Внутренняя сеть Railway — без SSL; внешние хосты — PGSSL=require.
+  DATABASE_URL: z.string().min(1),
+  // Каталог объектного хранилища (Railway Volume в проде, локально — ./.storage).
+  STORAGE_DIR: z.string().default(".storage"),
   SESSION_SECRET: z.string().min(32),
   TELEGRAM_BOT_TOKEN: z.string().min(20),
   DEV_BYPASS_TG: z

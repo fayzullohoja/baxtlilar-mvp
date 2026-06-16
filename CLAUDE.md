@@ -10,10 +10,10 @@ Telegram Mini App для серьёзных знакомств в Узбекис
 ## Стек
 - Next.js 16 (App Router, **async** cookies/headers/params; Server Actions возвращают void/Promise<void>)
 - React 19 · TypeScript strict · Tailwind v4
-- Supabase (Postgres + Storage) — service_role только на сервере, RLS off
+- **Postgres напрямую** (node-`pg`, `src/lib/db/`) + файловое хранилище на **Railway Volume** (`src/lib/storage/`) — доступ только с сервера, RLS off (service-уровень). **Supabase больше НЕ используется.**
 - Auth: Telegram **initData (HMAC-SHA256)** + httpOnly cookie session
 - next-intl 4 (RU/UZ) · Vitest · Zod
-- Vercel (preview на каждый push + prod)
+- **Railway** (Nixpacks, Node 22, pnpm 10): один сервис `baxtlilar-mvp` + сервис Postgres + Volume `/data`; деплой `railway up`, healthcheck `/api/health`
 
 ## 9 инвариантов (нельзя нарушать)
 1. Контакты защищены: телефон/документы/селфи не в публичном API.
@@ -26,25 +26,37 @@ Telegram Mini App для серьёзных знакомств в Узбекис
 8. Смена статуса — **только через `transition()` с записью в `user_state_transitions`**.
 9. Бренд: коралл `#E2526B` на белом; запреты — см. Чат 13 Часть 4.
 
+## Данные и хранилище (native, не Supabase)
+- `supabaseAdmin()` (`src/lib/supabase/admin.ts`) — историческое имя; теперь это **native-клиент** поверх node-`pg` + файлового хранилища. Поверхность `.from()/.rpc()/.storage` сохранена, поэтому call-site'ы не трогаем.
+- `src/lib/db/query-builder.ts` — мини query-builder под используемое подмножество PostgREST (select/insert/update/upsert/delete · eq/neq/gt/gte/lt/lte/in/is/not · order/limit · single/maybeSingle · count+head · RETURNING · `.rpc()` именованными аргументами). Все значения параметризуются, идентификаторы валидируются.
+- `.rpc(name, …)` зовёт ту же Postgres-функцию: `process_interest`/`get_recommendations`/`get_chat_list` возвращают набор (массив), остальные — скаляр.
+- `src/lib/storage/fs-store.ts` — фото/документы на Railway Volume (`STORAGE_DIR=/data`); приватность через подписанный (HMAC+TTL) роут `/api/storage/o/<bucket>/<path>` — НЕ публичные ссылки.
+- Миграции `supabase/migrations/*.sql` — обычный Postgres; накатываются по timestamp-порядку через `psql` (строки `storage.buckets` пропускаются — в голом PG их нет).
+
 ## Чего НЕ делать
-- Не запрашивать БД из браузера; только через server actions с `supabaseAdmin()`.
+- Не запрашивать БД из браузера; только через server actions / API-роуты с `supabaseAdmin()` (native-клиент).
 - Не bypass'ить `transition()` прямым UPDATE статусов.
 - Не возвращать ошибки из server actions объектами — `redirect(...?error=...)`.
 - Не класть секреты в `NEXT_PUBLIC_*` env-vars.
+- Не отдавать фото/документы публично — только через подписанный `/api/storage/...` (инвариант 1).
 
 ## Команды
 ```
-pnpm dev          # локальный dev (Turbopack)
+pnpm dev          # локальный dev (нужен DATABASE_URL → локальный Postgres)
 pnpm test         # vitest unit (watch)
 pnpm test:run     # CI-режим (run once)
 pnpm typecheck    # tsc --noEmit
 pnpm lint         # eslint
 pnpm build        # next build
-vercel dev        # с TG-webhook через preview tunnel
+railway up        # деплой на Railway (Nixpacks, healthcheck /api/health)
+# накатить миграции: psql "$DATABASE_PUBLIC_URL?sslmode=require" -f <combined.sql>
 ```
 
+## Env (обязательные)
+`DATABASE_URL` (Postgres), `STORAGE_DIR` (на Railway `/data`), `SESSION_SECRET` (32+), `TELEGRAM_BOT_TOKEN`, `SMS_PROVIDER`. Опц.: `APP_URL`, `SUPPORT_URL`, `PGSSL=require` (для внешнего Postgres).
+
 ## Dev-флаги
-- `DEV_BYPASS_TG=1` — пропустить HMAC initData в браузере (только локально).
+- `DEV_BYPASS_TG=1` — пропустить HMAC initData в браузере (только локально; в проде НЕ ставить).
 - `SMS_PROVIDER=mock` — код `123456` принимается всегда.
 
 ## Порядок верификации MVP (важно!)

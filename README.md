@@ -1,36 +1,50 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Baxtlilar
 
-## Getting Started
+Telegram Mini App для серьёзных знакомств в Узбекистане (верифицированный дейтинг).
 
-First, run the development server:
+Полный путь пользователя: **телефон+OTP → паспорт → селфи → модерация → одобрено → анкета → опрос на совместимость → active → лента → интерес → взаимность → чат**. Плюс админка (модерация фото/документов/жалоб, бан/анбан, аналитика) и safety (блокировки, жалобы, анти-контакт-фильтр).
+
+## Стек
+
+- **Next.js 16** (App Router, async cookies/headers/params) · React 19 · TypeScript strict · Tailwind v4
+- **Postgres напрямую** через node-`pg` (`src/lib/db/`) — без Supabase/PostgREST
+- **Файловое хранилище** на Railway Volume (`src/lib/storage/`) — приватные фото/документы отдаются только через подписанный (HMAC+TTL) роут `/api/storage/o/...`
+- Auth: Telegram **initData (HMAC-SHA256)** + httpOnly cookie session
+- next-intl 4 (RU/UZ) · Vitest · Zod
+- Хостинг: **Railway** (Nixpacks, Node 22, pnpm 10)
+
+> Раньше проект работал на Vercel + Supabase; мигрирован на Railway + native Postgres.
+> Подробности слоя данных и деплоя — в [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+## Локальный запуск
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+cp .env.local.example .env.local   # заполни DATABASE_URL и SESSION_SECRET
+# накати схему в свой Postgres:
+cat $(ls supabase/migrations/*.sql | sort) | grep -v 'storage\.buckets' | psql "$DATABASE_URL"
+pnpm dev                           # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Dev-флаги (`.env.local`): `DEV_BYPASS_TG=1` (пропустить Telegram-HMAC), `SMS_PROVIDER=mock` (код `123456`). **На прод не ставить.**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Команды
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm typecheck    # tsc --noEmit
+pnpm test:run     # vitest (CI-режим)
+pnpm build        # next build
+railway up        # деплой на Railway (healthcheck /api/health)
+```
 
-## Learn More
+## Структура
 
-To learn more about Next.js, take a look at the following resources:
+- `src/app/[locale]/` — экраны (онбординг, лента, чаты, профиль, настройки)
+- `src/app/admin/` + `src/app/api/admin/` — админ-панель
+- `src/app/api/` — серверные роуты (онбординг, матчинг, чат, storage, health)
+- `src/lib/db/` — native Postgres-клиент (pool + query-builder)
+- `src/lib/storage/` — файловое хранилище + подписанные ссылки
+- `src/lib/state-machine/` — единственный путь смены статусов (`transition()`)
+- `supabase/migrations/` — SQL-миграции (обычный Postgres; имя каталога историческое)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+См. также [`CLAUDE.md`](CLAUDE.md) — гайдрейлы и 9 инвариантов.

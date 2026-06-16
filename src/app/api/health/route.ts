@@ -20,6 +20,8 @@ export async function GET() {
     db,
     dbError,
     ts: new Date().toISOString(),
-    commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "local",
+    commit:
+      (process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.VERCEL_GIT_COMMIT_SHA)?.slice(0, 7) ??
+      "local",
   });
 }
