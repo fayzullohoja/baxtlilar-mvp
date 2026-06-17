@@ -1,5 +1,6 @@
 import "server-only";
 import { env } from "@/lib/env";
+import { sendViaEskiz } from "./eskiz";
 
 /**
  * Отправка SMS. MVP: провайдер `mock` (логирует, не шлёт; код 123456 принимается).
@@ -14,8 +15,15 @@ export async function sendSms(phone: string, text: string): Promise<void> {
   // НЕ fail-open: неподключённый провайдер должен бросать, иначе верификация телефона
   // «успешно» проходит в проде без реальной отправки кода.
   if (provider === "eskiz") {
-    // TODO(OD-3): Eskiz.uz REST — получить токен, POST /message/sms/send
-    throw new Error("SMS provider 'eskiz' is not configured");
+    const e = env();
+    if (!e.ESKIZ_EMAIL || !e.ESKIZ_PASSWORD)
+      throw new Error("SMS provider 'eskiz' selected but ESKIZ_EMAIL/ESKIZ_PASSWORD not set");
+    await sendViaEskiz(
+      { baseUrl: e.ESKIZ_BASE_URL, email: e.ESKIZ_EMAIL, password: e.ESKIZ_PASSWORD, from: e.ESKIZ_FROM },
+      phone,
+      text,
+    );
+    return;
   }
   if (provider === "playmobile") {
     throw new Error("SMS provider 'playmobile' is not configured");

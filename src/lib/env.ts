@@ -13,6 +13,12 @@ const Env = z.object({
     .optional()
     .transform((v) => v === true || v === "1" || v === "true"),
   SMS_PROVIDER: z.enum(["mock", "eskiz", "playmobile"]).default("mock"),
+  // Eskiz.uz (нужны только при SMS_PROVIDER=eskiz). ESKIZ_FROM — одобренный отправитель
+  // (4546 — тестовый sender Eskiz). Перед прод-активацией одобрить отправителя и шаблон.
+  ESKIZ_EMAIL: z.string().optional(),
+  ESKIZ_PASSWORD: z.string().optional(),
+  ESKIZ_FROM: z.string().default("4546"),
+  ESKIZ_BASE_URL: z.string().url().default("https://notify.eskiz.uz/api"),
   APP_URL: z.string().url().optional(),
   // Канал поддержки (например, https://t.me/baxtlilar_support) — показывается на тупиковых экранах.
   SUPPORT_URL: z.string().url().optional(),
