@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { requireActiveUser } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { areBlocked } from "@/lib/safety/blocks";
 import { signedPhotoUrls } from "@/lib/uploads/storage";
 import { ageFromDate } from "@/lib/profile/schemas";
 import {
@@ -44,6 +45,9 @@ export default async function ProfileDetail({
     .maybeSingle();
   if (!u || u.lifecycle_state !== "active" || !p || p.status !== "published")
     redirect({ href: "/main", locale });
+  // блокировка в любую сторону скрывает профиль (как в ленте и чате): заблокированный
+  // не должен открыть профиль блокирующего по прямой ссылке/сохранённому id.
+  if (await areBlocked(viewer.id, id)) redirect({ href: "/main", locale });
 
   const { data: photos } = await sb
     .from("profile_photos")
