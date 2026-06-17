@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapRows } from "@/lib/db/unwrap";
 import { signedPhotoUrls } from "@/lib/uploads/storage";
 import { AdminShell } from "@/components/admin/shell";
 import { PhotoActions } from "@/components/admin/photo-actions";
@@ -10,13 +11,14 @@ export default async function PhotosModeration() {
   const session = await requireAdmin();
   const sb = supabaseAdmin();
 
-  const { data: rows } = await sb
-    .from("profile_photos")
-    .select("id, user_id, path, is_main")
-    .eq("status", "under_review")
-    .order("created_at", { ascending: true })
-    .limit(60);
-  const list = rows ?? [];
+  const list = unwrapRows(
+    await sb
+      .from("profile_photos")
+      .select("id, user_id, path, is_main")
+      .eq("status", "under_review")
+      .order("created_at", { ascending: true })
+      .limit(60),
+  );
 
   // Владельцев фото берём отдельным запросом и сшиваем в JS:
   // native-адаптер не делает PostgREST-embed users(...) — раньше этот embed тихо
@@ -25,11 +27,10 @@ export default async function PhotosModeration() {
   const ownerIds = [...new Set(list.map((p) => p.user_id as string))];
   const owners = new Map<string, Owner>();
   if (ownerIds.length) {
-    const { data: users } = await sb
-      .from("users")
-      .select("id, telegram_first_name, telegram_username")
-      .in("id", ownerIds);
-    for (const u of users ?? []) owners.set(u.id as string, u as Owner);
+    const users = unwrapRows(
+      await sb.from("users").select("id, telegram_first_name, telegram_username").in("id", ownerIds),
+    );
+    for (const u of users) owners.set(u.id as string, u as Owner);
   }
 
   const urls = await signedPhotoUrls(list.map((p) => p.path as string));

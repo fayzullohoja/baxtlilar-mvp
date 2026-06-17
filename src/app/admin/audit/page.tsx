@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapRows } from "@/lib/db/unwrap";
 import { AdminShell } from "@/components/admin/shell";
 
 export const dynamic = "force-dynamic";
@@ -8,20 +9,21 @@ export default async function AuditPage() {
   const session = await requireAdmin();
 
   const sb = supabaseAdmin();
-  const { data: rows } = await sb
-    .from("admin_audit_log")
-    .select("created_at, action, entity, entity_id, reason, admin_id")
-    .order("created_at", { ascending: false })
-    .limit(100);
-  const list = rows ?? [];
+  const list = unwrapRows(
+    await sb
+      .from("admin_audit_log")
+      .select("created_at, action, entity, entity_id, reason, admin_id")
+      .order("created_at", { ascending: false })
+      .limit(100),
+  );
 
   // Логины сотрудников — отдельным запросом и сшивкой (native-адаптер не делает
   // embed admin_users(login); раньше это тихо обнуляло весь журнал).
   const adminIds = [...new Set(list.map((r) => r.admin_id as string).filter(Boolean))];
   const logins = new Map<string, string>();
   if (adminIds.length) {
-    const { data: admins } = await sb.from("admin_users").select("id, login").in("id", adminIds);
-    for (const a of admins ?? []) logins.set(a.id as string, a.login as string);
+    const admins = unwrapRows(await sb.from("admin_users").select("id, login").in("id", adminIds));
+    for (const a of admins) logins.set(a.id as string, a.login as string);
   }
 
   return (

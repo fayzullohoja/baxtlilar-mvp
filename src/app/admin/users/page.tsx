@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapRows } from "@/lib/db/unwrap";
 import { AdminShell } from "@/components/admin/shell";
 import { UserActions } from "@/components/admin/user-actions";
 import { ageFromDate } from "@/lib/profile/schemas";
@@ -48,8 +49,9 @@ export default async function UsersPage({
   // пола в user_profiles, затем ограничиваем выборку users по .in("id", …).
   let genderIds: string[] | null = null;
   if (genderF !== "all") {
-    const { data: gp } = await sb.from("user_profiles").select("user_id").eq("gender", genderF);
-    genderIds = (gp ?? []).map((r) => r.user_id as string);
+    genderIds = unwrapRows(await sb.from("user_profiles").select("user_id").eq("gender", genderF)).map(
+      (r) => r.user_id as string,
+    );
   }
 
   let list: UserRow[] = [];
@@ -63,19 +65,17 @@ export default async function UsersPage({
       .limit(100);
     if (statusF !== "all") q = q.eq("lifecycle_state", statusF);
     if (genderIds) q = q.in("id", genderIds);
-    const { data: rows } = await q;
-    list = (rows ?? []) as unknown as UserRow[];
+    list = unwrapRows(await q) as unknown as UserRow[];
   }
 
   // Профили (пол/возраст/город) подтягиваем отдельным запросом и сшиваем в JS.
   const profiles = new Map<string, ProfileEmbed>();
   const ids = list.map((u) => u.id);
   if (ids.length) {
-    const { data: ups } = await sb
-      .from("user_profiles")
-      .select("user_id, gender, birth_date, city")
-      .in("user_id", ids);
-    for (const p of ups ?? []) profiles.set(p.user_id as string, p as ProfileEmbed);
+    const ups = unwrapRows(
+      await sb.from("user_profiles").select("user_id, gender, birth_date, city").in("user_id", ids),
+    );
+    for (const p of ups) profiles.set(p.user_id as string, p as ProfileEmbed);
   }
 
   // ссылки фильтров сохраняют второй параметр
