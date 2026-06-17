@@ -30,9 +30,18 @@ export async function POST(
   if (r.status !== "pending")
     return NextResponse.json({ ok: false, error: "not_pending" }, { status: 409 });
 
+  // Все переходы — условный UPDATE по status='pending' + RETURNING: атомарно (без
+  // гонки двойного accept) и с проверкой ошибки (не отвечаем «ok» на тихий сбой БД).
   if (action === "withdraw") {
     if (r.sender_id !== user.id) return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
-    await sb.from("match_requests").update({ status: "withdrawn" }).eq("id", id);
+    const { data: upd, error } = await sb
+      .from("match_requests")
+      .update({ status: "withdrawn" })
+      .eq("id", id)
+      .eq("status", "pending")
+      .select("id");
+    if (error) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
+    if (!upd?.length) return NextResponse.json({ ok: false, error: "not_pending" }, { status: 409 });
     return NextResponse.json({ ok: true });
   }
 
@@ -40,17 +49,32 @@ export async function POST(
   if (r.receiver_id !== user.id)
     return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   if (new Date(r.auto_decline_at as string).getTime() < Date.now()) {
-    await sb.from("match_requests").update({ status: "expired" }).eq("id", id);
+    await sb.from("match_requests").update({ status: "expired" }).eq("id", id).eq("status", "pending");
     return NextResponse.json({ ok: false, error: "expired" }, { status: 409 });
   }
 
   if (action === "decline") {
-    await sb.from("match_requests").update({ status: "declined" }).eq("id", id);
+    const { data: upd, error } = await sb
+      .from("match_requests")
+      .update({ status: "declined" })
+      .eq("id", id)
+      .eq("status", "pending")
+      .select("id");
+    if (error) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
+    if (!upd?.length) return NextResponse.json({ ok: false, error: "not_pending" }, { status: 409 });
     return NextResponse.json({ ok: true }); // отправителя НЕ уведомляем (бережём)
   }
 
-  // accept
-  await sb.from("match_requests").update({ status: "accepted" }).eq("id", id);
+  // accept — чат и уведомление ТОЛЬКО если условный UPDATE реально применился
+  // (иначе при гонке/сбое мог бы создаться чат, а заявка осталась бы pending).
+  const { data: acc, error: accErr } = await sb
+    .from("match_requests")
+    .update({ status: "accepted" })
+    .eq("id", id)
+    .eq("status", "pending")
+    .select("id");
+  if (accErr) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
+  if (!acc?.length) return NextResponse.json({ ok: false, error: "not_pending" }, { status: 409 });
   const chatId = await ensureChat(r.sender_id as string, r.receiver_id as string);
   const { data: sender } = await sb
     .from("users")

@@ -105,6 +105,32 @@ describe("query-builder: mutations", () => {
     expect(last().values).toEqual([1, 5]);
   });
 
+  it("conditional update (status guard) + RETURNING distinguishes winner from race-loser", async () => {
+    // выиграл гонку: статус был pending → 1 строка обновлена → data=[row] (роут создаёт чат)
+    const win = rec([{ id: "req1" }]);
+    const r1 = await createDbClient(win.runner)
+      .from("match_requests")
+      .update({ status: "accepted" })
+      .eq("id", "req1")
+      .eq("status", "pending")
+      .select("id");
+    expect(win.last().text).toBe(
+      'UPDATE "match_requests" SET "status" = $1 WHERE "id" = $2 AND "status" = $3 RETURNING *',
+    );
+    expect(win.last().values).toEqual(["accepted", "req1", "pending"]);
+    expect(r1.data).toEqual([{ id: "req1" }]);
+
+    // проиграл гонку: статус уже не pending → 0 строк → data=[] → роут вернёт 409, чат НЕ создаст
+    const lose = rec([]);
+    const r2 = await createDbClient(lose.runner)
+      .from("match_requests")
+      .update({ status: "accepted" })
+      .eq("id", "req1")
+      .eq("status", "pending")
+      .select("id");
+    expect(r2.data).toEqual([]);
+  });
+
   it("update fire-and-forget (no returning)", async () => {
     const { runner, last } = rec([]);
     const db = createDbClient(runner);
