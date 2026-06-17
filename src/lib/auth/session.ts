@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import crypto from "node:crypto";
 import { env } from "@/lib/env";
+import { safeEqual } from "@/lib/crypto/safe-equal";
 
 const COOKIE = "bx_session";
 const MAX_AGE_SEC = 60 * 60 * 24 * 30; // 30 дней
@@ -32,7 +33,7 @@ export async function getSessionUserId(): Promise<string | null> {
   const [b64, sig] = val.split(".");
   if (!b64 || !sig) return null;
   const e = env();
-  if (sign(b64, e.SESSION_SECRET) !== sig) return null;
+  if (!safeEqual(sign(b64, e.SESSION_SECRET), sig)) return null;
   try {
     const payload = JSON.parse(Buffer.from(b64, "base64url").toString("utf-8")) as {
       uid?: unknown;

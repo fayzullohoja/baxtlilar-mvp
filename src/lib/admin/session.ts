@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import crypto from "node:crypto";
 import { env } from "@/lib/env";
+import { safeEqual } from "@/lib/crypto/safe-equal";
 
 const COOKIE = "bx_admin";
 const MAX_AGE_SEC = 60 * 60 * 8; // 8 часов
@@ -30,7 +31,7 @@ export async function getAdminSession(): Promise<AdminSession | null> {
   const val = c.get(COOKIE)?.value;
   if (!val) return null;
   const [b64, sig] = val.split(".");
-  if (!b64 || !sig || sign(b64) !== sig) return null;
+  if (!b64 || !sig || !safeEqual(sign(b64), sig)) return null;
   try {
     const p = JSON.parse(Buffer.from(b64, "base64url").toString("utf-8")) as Partial<AdminSession> & {
       iat?: number;
