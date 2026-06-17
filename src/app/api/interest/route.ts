@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { DAILY_LIMITS } from "@/lib/matching/quota";
 import { notifyUser } from "@/lib/telegram/notify";
 import { areBlocked } from "@/lib/safety/blocks";
+import { containsContact } from "@/lib/profile/schemas";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,6 +22,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   };
   if (!receiver_id || receiver_id === user.id)
     return NextResponse.json({ ok: false, error: "bad_target" }, { status: 400 });
+
+  // Та же анти-контакт политика, что и в чате (инвариант 1): нельзя протаскивать
+  // телефон/мессенджер/ссылку в сопроводительном сообщении интереса — иначе фильтр
+  // чата обходится через заявку, которую получатель видит в «Запросах».
+  if (message && containsContact(message))
+    return NextResponse.json({ ok: false, error: "contact_blocked" }, { status: 400 });
 
   const { data: target } = await sb
     .from("users")
