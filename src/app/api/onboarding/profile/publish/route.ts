@@ -42,10 +42,13 @@ export async function POST(): Promise<NextResponse> {
     .neq("status", "rejected");
   if (!count) return NextResponse.json({ ok: false, error: "no_photo" }, { status: 400 });
 
-  await sb
+  // Публикация — намеренное действие пользователя: если update не прошёл, нельзя
+  // отвечать «ok» и уводить на опрос — анкета осталась бы неопубликованной (невидимой).
+  const { error: pubErr } = await sb
     .from("user_profiles")
     .update({ status: "published", published_at: new Date().toISOString() })
     .eq("user_id", user.id);
+  if (pubErr) return NextResponse.json({ ok: false, error: "publish_failed" }, { status: 500 });
 
   const tr = await tryTransition(
     user.id,

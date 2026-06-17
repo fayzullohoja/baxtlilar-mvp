@@ -33,10 +33,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!patch.passport_path && !patch.selfie_path)
     return NextResponse.json({ ok: false, error: "no_file" }, { status: 400 });
 
-  await supabaseAdmin()
+  // Обновлённые файлы должны лечь в БД ДО возврата в модерацию.
+  const { error: saveErr } = await supabaseAdmin()
     .from("user_documents")
     .update({ ...patch, status: "pending_review", reject_reason: null, reject_target: null })
     .eq("user_id", user.id);
+  if (saveErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
   const tr = await tryTransition(
     user.id,

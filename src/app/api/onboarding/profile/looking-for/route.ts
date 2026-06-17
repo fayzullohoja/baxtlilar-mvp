@@ -29,9 +29,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "no_gender" }, { status: 409 });
   const looking_for_gender = ownGender === "m" ? "f" : "m";
 
-  await sb
+  const { error: saveErr } = await sb
     .from("user_profiles")
     .upsert({ user_id: user.id, ...parsed.data, looking_for_gender }, { onConflict: "user_id" });
+  if (saveErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
   const tr = await tryTransition(
     user.id,

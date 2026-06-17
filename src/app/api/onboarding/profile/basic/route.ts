@@ -19,9 +19,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { status: 400 },
     );
 
-  await supabaseAdmin()
+  // Сохраняем ДО перехода: если запись не легла, нельзя продвигать шаг — иначе
+  // данные анкеты теряются, а пользователь уходит дальше (и застрянет на публикации).
+  const { error: saveErr } = await supabaseAdmin()
     .from("user_profiles")
     .upsert({ user_id: user.id, ...parsed.data }, { onConflict: "user_id" });
+  if (saveErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
   const tr = await tryTransition(
     user.id,

@@ -16,9 +16,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!parsed.success)
     return NextResponse.json({ ok: false, error: "validation" }, { status: 400 });
 
-  await supabaseAdmin()
+  const { error: saveErr } = await supabaseAdmin()
     .from("user_profiles")
     .upsert({ user_id: user.id, ...parsed.data }, { onConflict: "user_id" });
+  if (saveErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
   const tr = await tryTransition(user.id, { onboarding_step: "profile_values" }, "anketa: family", {
     kind: "user",

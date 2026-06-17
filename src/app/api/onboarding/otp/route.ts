@@ -47,10 +47,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     if (taken) return NextResponse.json({ ok: false, error: "phone_taken" }, { status: 409 });
   }
 
-  await supabaseAdmin()
+  const { error: saveErr } = await supabaseAdmin()
     .from("users")
     .update({ phone_verified_at: new Date().toISOString() })
     .eq("id", user.id);
+  if (saveErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
   const tr = await tryTransition(
     user.id,

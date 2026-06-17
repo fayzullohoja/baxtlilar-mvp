@@ -21,12 +21,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const up = await uploadDocumentImage(user.id, "passport", await file.arrayBuffer());
   if (!up.ok) return NextResponse.json({ ok: false, error: up.error }, { status: 400 });
 
-  await supabaseAdmin()
+  // Путь к паспорту должен лечь в БД ДО продвижения шага (иначе селфи-шаг и
+  // модерация без записанного документа).
+  const { error: saveErr } = await supabaseAdmin()
     .from("user_documents")
     .upsert(
       { user_id: user.id, passport_path: up.path, status: "pending_review" },
       { onConflict: "user_id" },
     );
+  if (saveErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
   const tr = await tryTransition(
     user.id,

@@ -24,12 +24,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const up = await uploadDocumentImage(user.id, "selfie", await file.arrayBuffer());
   if (!up.ok) return NextResponse.json({ ok: false, error: up.error }, { status: 400 });
 
-  await supabaseAdmin()
+  // Путь к селфи должен лечь в БД ДО ухода в модерацию: иначе модератору нечего
+  // смотреть, а заявка уже в очереди (ложная заявка без артефакта).
+  const { error: saveErr } = await supabaseAdmin()
     .from("user_documents")
     .upsert(
       { user_id: user.id, selfie_path: up.path, status: "pending_review" },
       { onConflict: "user_id" },
     );
+  if (saveErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
   const tr = await tryTransition(
     user.id,

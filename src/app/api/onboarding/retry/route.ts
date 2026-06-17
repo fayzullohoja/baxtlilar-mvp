@@ -12,10 +12,11 @@ export async function POST(): Promise<NextResponse> {
   const { user, res } = await loadUserForStep("verification_rejected");
   if (res) return res;
 
-  await supabaseAdmin()
+  const { error: saveErr } = await supabaseAdmin()
     .from("user_documents")
     .update({ status: "pending_review", reject_reason: null, reject_target: null })
     .eq("user_id", user.id);
+  if (saveErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
   const tr = await tryTransition(
     user.id,

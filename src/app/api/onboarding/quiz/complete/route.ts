@@ -35,15 +35,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "incomplete_quiz" }, { status: 400 });
 
   const sb = supabaseAdmin();
-  await sb
+  // Ответы и вектор подбора должны лечь в БД ДО перехода в active: иначе пользователь
+  // становится активным без вектора → ломается выдача рекомендаций.
+  const { error: ansErr } = await sb
     .from("quiz_answers")
     .upsert(
       answers.map((a) => ({ user_id: user.id, question_id: a.question_id, answer_value: String(a.value) })),
       { onConflict: "user_id,question_id" },
     );
+  if (ansErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
   const vector = computeVector(answers);
-  await sb.from("quiz_results").upsert({ user_id: user.id, vector }, { onConflict: "user_id" });
+  const { error: resErr } = await sb
+    .from("quiz_results")
+    .upsert({ user_id: user.id, vector }, { onConflict: "user_id" });
+  if (resErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
   const tr = await tryTransition(
     user.id,

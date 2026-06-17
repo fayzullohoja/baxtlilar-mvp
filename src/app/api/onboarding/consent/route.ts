@@ -18,7 +18,7 @@ export async function POST(): Promise<NextResponse> {
   if (res) return res;
 
   // идемпотентно (BUG-2/ONB-5): UNIQUE(user_id, consent_type, consent_version) + ignore
-  await supabaseAdmin()
+  const { error: saveErr } = await supabaseAdmin()
     .from("consents")
     .upsert(
       CONSENT_TYPES.map((t) => ({
@@ -28,6 +28,8 @@ export async function POST(): Promise<NextResponse> {
       })),
       { onConflict: "user_id,consent_type,consent_version", ignoreDuplicates: true },
     );
+  // Согласие — юридически значимая запись: не продвигаем шаг, если оно не сохранилось.
+  if (saveErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
   const tr = await tryTransition(user.id, { onboarding_step: "phone_input" }, "accepted consents", {
     kind: "user",
