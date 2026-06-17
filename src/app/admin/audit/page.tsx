@@ -7,12 +7,22 @@ export const dynamic = "force-dynamic";
 export default async function AuditPage() {
   const session = await requireAdmin();
 
-  const { data: rows } = await supabaseAdmin()
+  const sb = supabaseAdmin();
+  const { data: rows } = await sb
     .from("admin_audit_log")
-    .select("created_at, action, entity, entity_id, reason, admin_id, admin_users(login)")
+    .select("created_at, action, entity, entity_id, reason, admin_id")
     .order("created_at", { ascending: false })
     .limit(100);
   const list = rows ?? [];
+
+  // Логины сотрудников — отдельным запросом и сшивкой (native-адаптер не делает
+  // embed admin_users(login); раньше это тихо обнуляло весь журнал).
+  const adminIds = [...new Set(list.map((r) => r.admin_id as string).filter(Boolean))];
+  const logins = new Map<string, string>();
+  if (adminIds.length) {
+    const { data: admins } = await sb.from("admin_users").select("id, login").in("id", adminIds);
+    for (const a of admins ?? []) logins.set(a.id as string, a.login as string);
+  }
 
   return (
     <AdminShell active="/admin/audit" role={session.role}>
@@ -30,13 +40,13 @@ export default async function AuditPage() {
           </thead>
           <tbody>
             {list.map((r, i) => {
-              const admin = r.admin_users as { login?: string } | null;
+              const adminLogin = logins.get(r.admin_id as string);
               return (
                 <tr key={i} className="border-t border-slate-100">
                   <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
                     {new Date(r.created_at as string).toLocaleString("ru-RU")}
                   </td>
-                  <td className="px-4 py-3 text-slate-700">{admin?.login ?? "—"}</td>
+                  <td className="px-4 py-3 text-slate-700">{adminLogin ?? "—"}</td>
                   <td className="px-4 py-3 text-slate-800 font-mono text-xs">{r.action as string}</td>
                   <td className="px-4 py-3 text-slate-500 font-mono text-xs">
                     {(r.entity as string)}:{((r.entity_id as string) ?? "").slice(0, 8)}

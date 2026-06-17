@@ -29,12 +29,7 @@ type UserRow = {
   lifecycle_state: string;
   verification_status: string;
   created_at: string;
-  user_profiles?: ProfileEmbed | ProfileEmbed[] | null;
 };
-function pickProfile(v: unknown): ProfileEmbed | null {
-  if (Array.isArray(v)) return (v[0] as ProfileEmbed) ?? null;
-  return (v as ProfileEmbed) ?? null;
-}
 
 export default async function UsersPage({
   searchParams,
@@ -46,22 +41,42 @@ export default async function UsersPage({
   const statusF = status ?? "all";
   const genderF = gender === "m" || gender === "f" ? gender : "all";
 
-  const sel =
-    "id, telegram_username, telegram_first_name, lifecycle_state, verification_status, created_at, " +
-    (genderF === "all"
-      ? "user_profiles(gender, birth_date, city)"
-      : "user_profiles!inner(gender, birth_date, city)");
+  const sb = supabaseAdmin();
 
-  let q = supabaseAdmin()
-    .from("users")
-    .select(sel)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false })
-    .limit(100);
-  if (statusF !== "all") q = q.eq("lifecycle_state", statusF);
-  if (genderF !== "all") q = q.eq("user_profiles.gender", genderF);
-  const { data: rows } = await q;
-  const list = (rows ?? []) as unknown as UserRow[];
+  // Фильтр по полу: native-адаптер не делает ни embed user_profiles(...), ни
+  // dotted-фильтр "user_profiles.gender". Поэтому сперва находим user_id нужного
+  // пола в user_profiles, затем ограничиваем выборку users по .in("id", …).
+  let genderIds: string[] | null = null;
+  if (genderF !== "all") {
+    const { data: gp } = await sb.from("user_profiles").select("user_id").eq("gender", genderF);
+    genderIds = (gp ?? []).map((r) => r.user_id as string);
+  }
+
+  let list: UserRow[] = [];
+  // Если по полу никто не найден — список заведомо пуст, лишний запрос не нужен.
+  if (genderF === "all" || (genderIds && genderIds.length)) {
+    let q = sb
+      .from("users")
+      .select("id, telegram_username, telegram_first_name, lifecycle_state, verification_status, created_at")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (statusF !== "all") q = q.eq("lifecycle_state", statusF);
+    if (genderIds) q = q.in("id", genderIds);
+    const { data: rows } = await q;
+    list = (rows ?? []) as unknown as UserRow[];
+  }
+
+  // Профили (пол/возраст/город) подтягиваем отдельным запросом и сшиваем в JS.
+  const profiles = new Map<string, ProfileEmbed>();
+  const ids = list.map((u) => u.id);
+  if (ids.length) {
+    const { data: ups } = await sb
+      .from("user_profiles")
+      .select("user_id, gender, birth_date, city")
+      .in("user_id", ids);
+    for (const p of ups ?? []) profiles.set(p.user_id as string, p as ProfileEmbed);
+  }
 
   // ссылки фильтров сохраняют второй параметр
   const hrefStatus = (k: string) => `/admin/users?status=${k}${genderF !== "all" ? `&gender=${genderF}` : ""}`;
@@ -116,7 +131,7 @@ export default async function UsersPage({
           </thead>
           <tbody>
             {list.map((u) => {
-              const p = pickProfile((u as { user_profiles?: unknown }).user_profiles);
+              const p = profiles.get(u.id) ?? null;
               const age = p?.birth_date ? ageFromDate(p.birth_date) : null;
               return (
                 <tr key={u.id as string} className="border-t border-slate-100">

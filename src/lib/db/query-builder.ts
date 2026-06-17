@@ -30,6 +30,19 @@ const IDENT = /^[a-z_][a-z0-9_]*$/i;
 function ident(name: string): string {
   const n = name.trim();
   if (n === "*") return "*";
+  // PostgREST-фичи, которых native-адаптер НЕ умеет, — это ошибки кода (а не данных).
+  // Раньше они тихо валились в swallowed {error} и call-site показывал пустую страницу.
+  // Теперь — внятный throw, который доходит до разработчика (см. run(): compile вне try/catch).
+  if (n.includes("("))
+    throw new Error(
+      `embedded resources are not supported by the native adapter (got "${name}"); ` +
+        `fetch the related table separately (.in(...)) and stitch in JS`,
+    );
+  if (n.includes("."))
+    throw new Error(
+      `dotted column paths (embedded filter/order) are not supported (got "${name}"); ` +
+        `filter the related table separately`,
+    );
   if (!IDENT.test(n)) throw new Error(`unsafe identifier: ${name}`);
   return `"${n}"`;
 }
@@ -266,9 +279,13 @@ export class Query implements PromiseLike<RowsResult> {
 
   // ───── execution ─────
   private async run(): Promise<DbResult<any>> {
+    // compile() бросает ТОЛЬКО на неподдерживаемом/небезопасном построении запроса —
+    // это баг кода, а не рантайм-условие. Намеренно НЕ глотаем: пусть падает громко
+    // (видимый 500), а не маскируется под «пустой результат». Это корень того, почему
+    // битый embed-запрос превращался в тихо пустую admin-страницу.
+    const { text, values } = this.compile();
     let res: { rows: any[]; rowCount: number | null };
     try {
-      const { text, values } = this.compile();
       res = await this.runner(text, values);
     } catch (e: unknown) {
       const err = e as { message?: string; code?: string };

@@ -169,11 +169,30 @@ describe("query-builder: rpc", () => {
 });
 
 describe("query-builder: safety + errors", () => {
-  it("rejects unsafe identifiers (caught → error)", async () => {
+  // Ошибки построения запроса (compile) — это баги кода, а не данных: они должны
+  // ПАДАТЬ ГРОМКО, а не маскироваться под пустой результат (см. фикс silent-empty admin-страниц).
+  it("throws loudly on unsafe identifiers (not swallowed)", async () => {
     const { runner } = rec([]);
-    const r = await createDbClient(runner).from("users").select("*").eq("id; DROP TABLE users; --", 1);
-    expect(r.error).not.toBeNull();
-    expect(r.data).toBeNull();
+    const db = createDbClient(runner);
+    await expect(db.from("users").select("*").eq("id; DROP TABLE users; --", 1)).rejects.toThrow(
+      /unsafe identifier/,
+    );
+  });
+
+  it("throws clear error on PostgREST embed syntax table(cols)", async () => {
+    const { runner } = rec([]);
+    const db = createDbClient(runner);
+    await expect(
+      db.from("profile_photos").select("id, user_id, users(telegram_first_name, telegram_username)"),
+    ).rejects.toThrow(/embedded resources are not supported/);
+  });
+
+  it("throws clear error on dotted embedded filter path", async () => {
+    const { runner } = rec([]);
+    const db = createDbClient(runner);
+    await expect(db.from("users").select("id").eq("user_profiles.gender", "f")).rejects.toThrow(
+      /dotted column paths/,
+    );
   });
 
   it("runner throw → error shape with message+code", async () => {
