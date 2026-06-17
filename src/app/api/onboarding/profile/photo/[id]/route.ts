@@ -24,7 +24,10 @@ export async function DELETE(
   if (!photo) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
 
   await sb.storage.from(BUCKET_PHOTOS).remove([photo.path as string]);
-  await sb.from("profile_photos").delete().eq("id", id);
+  const { error: delErr } = await sb.from("profile_photos").delete().eq("id", id);
+  // не отвечаем «ok», если строка не удалилась — иначе пользователь думает, что фото
+  // убрано, а оно осталось и продолжает показываться.
+  if (delErr) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
 
   // если удалили главное — назначить главным самое раннее из оставшихся (фикс «застрял без main»)
   if (photo.is_main) {

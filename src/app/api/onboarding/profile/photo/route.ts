@@ -16,11 +16,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const { data: existing } = await sb
     .from("profile_photos")
-    .select("id")
+    .select("ord")
     .eq("user_id", user.id);
   const count = existing?.length ?? 0;
   if (count >= MAX_PHOTOS)
     return NextResponse.json({ ok: false, error: "max_photos" }, { status: 400 });
+  // ord = max(ord)+1, а НЕ count: после удаления фото из середины count даёт «дырку»,
+  // и новый ord совпал бы с уже существующим (дубль порядка — уникального индекса на
+  // ord нет). Считаем следующий порядок явно.
+  const nextOrd = count
+    ? Math.max(...existing!.map((p) => (typeof p.ord === "number" ? p.ord : 0))) + 1
+    : 0;
 
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");
@@ -37,7 +43,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       path: up.path,
       is_main: count === 0,
       status: "under_review",
-      ord: count,
+      ord: nextOrd,
     })
     .select("id, is_main")
     .single();
