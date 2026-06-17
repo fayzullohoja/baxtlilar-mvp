@@ -26,7 +26,9 @@ export async function POST(
   const { data: report } = await sb.from("reports").select("id, target_user_id").eq("id", id).maybeSingle();
   if (!report) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
 
-  await sb.from("reports").update({ status }).eq("id", id);
+  // Аудит только после подтверждённого апдейта — не фиксируем фантомное решение.
+  const { error } = await sb.from("reports").update({ status }).eq("id", id);
+  if (error) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
   await adminAudit({
     adminId: session.adminId,
     action: `report_${status}`,

@@ -28,13 +28,16 @@ export async function POST(
     .maybeSingle();
   if (!photo) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
 
-  await supabaseAdmin()
+  // Сначала убеждаемся, что апдейт реально применился, и только потом пишем аудит —
+  // иначе журнал зафиксирует «фантомное» решение (approve/reject), которого в БД нет.
+  const { error } = await supabaseAdmin()
     .from("profile_photos")
     .update({
       status: action === "approve" ? "approved" : "rejected",
       reject_reason: action === "reject" ? (reason ?? null) : null,
     })
     .eq("id", id);
+  if (error) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
 
   await adminAudit({
     adminId: session.adminId,
