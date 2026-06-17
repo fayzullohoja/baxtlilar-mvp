@@ -186,5 +186,10 @@
     "default_reason": "Akkaunt platforma qoidalarini buzgani uchun bloklangan.",
     "support": "Agar bu xato deb hisoblasangiz — qoʻllab-quvvatlashga murojaat qiling.",
     "contact": "Qoʻllab-quvvatlashga yozish"
+  },
+  "Error": {
+    "title": "Xatolik yuz berdi",
+    "subtitle": "Kutilmagan xatolik yuz berdi. Qayta urinib koʻring.",
+    "retry": "Qayta urinish"
   }
 }

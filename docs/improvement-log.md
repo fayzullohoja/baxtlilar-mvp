@@ -313,4 +313,25 @@ exit 0 · **`pnpm build` успешно** (валидирует контракт
 **Бэклог:** локализованная `src/app/[locale]/error.tsx` (RU/UZ через next-intl — нужны
 ключи переводов) для пользовательской части Mini App; фото `ord = max(ord)+1`.
 
+## 2026-06-17 · Итерация 10 — локализованная граница ошибок Mini App (RU/UZ)
+
+**Что улучшили (UX, завершение итер.9).** В итер.9 добавлены `admin/error.tsx` и
+`global-error.tsx`, но пользовательская часть (`[locale]/**`) оставалась без
+сегментной границы — её throw показал бы сырую ошибку Next. Добавлен
+`src/app/[locale]/error.tsx`: рендерится внутри `[locale]/layout` (под
+`NextIntlClientProvider`), поэтому `useTranslations` доступен и текст
+**локализован**. Кнопка «Повторить» (`reset`), фирменные стили
+(`bg-baxt-pink-bg`/`text-baxt-navy`/`bg-baxt-coral`).
+
+Добавлен namespace `Error` (`title`/`subtitle`/`retry`) в **оба** словаря
+`messages/ru.json` и `messages/uz.json` (проверена паритетность ключей RU↔UZ).
+
+**Как проверили.** JSON обоих словарей валиден · ключи `Error` совпадают RU/UZ ·
+`pnpm typecheck` чисто · `pnpm test:run` 99 зелёных · `pnpm lint` exit 0 ·
+**`pnpm build` успешно** (46/46 страниц). Теперь покрытие границами ошибок полное:
+admin + global + пользовательский `[locale]`.
+
+**Бэклог:** фото `ord = max(ord)+1`; вторичный `user_documents`-апдейт в
+`admin/verifications` после успешного перехода (логировать, не падать).
+
 <!-- Новые записи цикла добавляются ниже (хронологически). -->
