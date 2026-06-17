@@ -79,6 +79,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       await sb.from(tbl).delete().eq("user_id", user.id);
     }
     await sb.from("match_views").delete().eq("viewer_id", user.id);
+    // отменяем висящие интересы удаляемого: отправленные → withdrawn (получатель
+    // не примет «призрака» в чат и не отправит ему уведомление), полученные →
+    // declined (отправитель не ждёт ответа от удалённого). Только pending.
+    await sb.from("match_requests").update({ status: "withdrawn" }).eq("sender_id", user.id).eq("status", "pending");
+    await sb.from("match_requests").update({ status: "declined" }).eq("receiver_id", user.id).eq("status", "pending");
+
     // свободный текст пользователя (содержит ПД): сообщения, заметка интереса, текст жалобы
     await sb.from("chat_messages").update({ body: "[удалено]" }).eq("sender_id", user.id);
     await sb.from("match_requests").update({ message: null }).eq("sender_id", user.id);

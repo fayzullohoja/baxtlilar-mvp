@@ -89,8 +89,15 @@ export async function POST(
   await sb.from("chats").update({ last_message_at: new Date().toISOString(), ...stopTyping }).eq("id", id);
 
   if (shouldPush) {
-    const { data: other } = await sb.from("users").select("telegram_id").eq("id", otherIdEarly).maybeSingle();
-    if (other) await notifyUser(other.telegram_id as number, "Новое сообщение в Baxtlilar.");
+    const { data: other } = await sb
+      .from("users")
+      .select("telegram_id, lifecycle_state")
+      .eq("id", otherIdEarly)
+      .maybeSingle();
+    // Не пушим тому, кто удалил аккаунт (строка обезличена, но telegram_id сохранён
+    // для аудита) — иначе удалившийся продолжает получать уведомления в Telegram.
+    if (other && other.lifecycle_state !== "deleted")
+      await notifyUser(other.telegram_id as number, "Новое сообщение в Baxtlilar.");
   }
   return NextResponse.json({ ok: true, message: inserted });
 }
