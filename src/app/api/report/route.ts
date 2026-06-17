@@ -21,12 +21,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "bad_target" }, { status: 400 });
   const reason = REASONS.includes(reason_code ?? "") ? reason_code : "other";
 
-  await supabaseAdmin().from("reports").insert({
+  // Жалоба — safety-critical: нельзя отвечать «ok», если запись не легла в очередь
+  // модерации (иначе сигнал о нарушении тихо теряется).
+  const { error } = await supabaseAdmin().from("reports").insert({
     reporter_id: user.id,
     target_user_id,
     chat_id: chat_id ?? null,
     reason_code: reason,
     comment: comment?.slice(0, 1000) ?? null,
   });
+  if (error) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

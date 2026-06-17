@@ -75,11 +75,15 @@ export async function POST(
     .is("read_at", null);
   const shouldPush = (unreadFromMe ?? 0) === 0;
 
-  const { data: inserted } = await sb
+  const { data: inserted, error: insertErr } = await sb
     .from("chat_messages")
     .insert({ chat_id: id, sender_id: user.id, body: text })
     .select("id, sender_id, body, created_at, read_at")
     .single();
+  // Нельзя отвечать «ok», если вставка не прошла: пользователь увидит, что
+  // сообщение «отправлено», а его нет (потеря данных). Не трогаем чат/пуш на сбое.
+  if (insertErr || !inserted)
+    return NextResponse.json({ ok: false, error: "send_failed" }, { status: 500 });
   // отправитель больше не «печатает» + обновляем время последнего сообщения
   const stopTyping = user.id === chat.user_a ? { typing_a_until: null } : { typing_b_until: null };
   await sb.from("chats").update({ last_message_at: new Date().toISOString(), ...stopTyping }).eq("id", id);

@@ -18,11 +18,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const sb = supabaseAdmin();
   if (action === "unblock") {
-    await sb.from("blocks").delete().eq("blocker_id", user.id).eq("blocked_id", target_id);
+    const { error } = await sb.from("blocks").delete().eq("blocker_id", user.id).eq("blocked_id", target_id);
+    if (error) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
     return NextResponse.json({ ok: true, blocked: false });
   }
-  await sb
+  // Блокировка — safety-critical: нельзя отвечать «blocked», если upsert не прошёл
+  // (иначе пользователь думает, что оградился от нарушителя, а на деле нет).
+  const { error } = await sb
     .from("blocks")
     .upsert({ blocker_id: user.id, blocked_id: target_id }, { onConflict: "blocker_id,blocked_id" });
+  if (error) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
   return NextResponse.json({ ok: true, blocked: true });
 }
