@@ -35,11 +35,13 @@ export async function POST(): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "profile_incomplete" }, { status: 400 });
 
   // нужно ≥1 НЕ отклонённого фото (approved/under_review), иначе анкета останется без видимого фото
-  const { count } = await sb
+  const { count, error: cntErr } = await sb
     .from("profile_photos")
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id)
     .neq("status", "rejected");
+  // сбой БД (500) ≠ «реально нет фото» (400): не блокируем публикацию ложным no_photo
+  if (cntErr) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
   if (!count) return NextResponse.json({ ok: false, error: "no_photo" }, { status: 400 });
 
   // Публикация — намеренное действие пользователя: если update не прошёл, нельзя

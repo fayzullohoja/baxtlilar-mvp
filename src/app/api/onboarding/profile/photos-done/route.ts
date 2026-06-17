@@ -12,10 +12,13 @@ export async function POST(): Promise<NextResponse> {
   const { user, res } = await loadUserForStep("profile_photos");
   if (res) return res;
 
-  const { count } = await supabaseAdmin()
+  const { count, error } = await supabaseAdmin()
     .from("profile_photos")
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id);
+  // сбой БД (500) ≠ «реально нет фото» (400): иначе при ошибке БД пользователь видит
+  // «нет фото» и застревает на шаге, хотя фото загружены.
+  if (error) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
   if (!count) return NextResponse.json({ ok: false, error: "no_photo" }, { status: 400 });
 
   const tr = await tryTransition(user.id, { onboarding_step: "profile_preview" }, "photos done", {
