@@ -293,6 +293,7 @@ export function ChatRoom({
             onKeyDown={onKeyDown}
             placeholder={t("placeholder")}
             rows={1}
+            maxLength={2000}
             className="max-h-28 flex-1 resize-none rounded-2xl border border-baxt-border bg-white px-3.5 py-2.5 text-sm outline-none focus:border-baxt-coral"
           />
           <button
