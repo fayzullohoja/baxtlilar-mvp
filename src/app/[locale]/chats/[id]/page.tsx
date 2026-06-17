@@ -26,12 +26,16 @@ export default async function ChatThread({
   const minis = await getMiniProfiles([otherId]);
   const other = minis[otherId];
 
-  const { data: messages } = await sb
+  // Берём ПОСЛЕДНИЕ 200 сообщений (desc+limit), затем разворачиваем в ASC для показа.
+  // Был order ASC limit 200 → в длинном чате (>200) показывались САМЫЕ СТАРЫЕ сообщения,
+  // а свежие не попадали в окно (и SSE-курсор стартовал со старого → дамп всех новых).
+  const { data: recent } = await sb
     .from("chat_messages")
     .select("id, sender_id, body, created_at")
     .eq("chat_id", id)
-    .order("created_at", { ascending: true })
+    .order("created_at", { ascending: false })
     .limit(200);
+  const messages = ((recent ?? []) as Msg[]).reverse();
 
   return (
     <main className="mx-auto flex h-[100dvh] max-w-screen-sm flex-col overflow-hidden bg-baxt-pink-bg">
@@ -55,7 +59,7 @@ export default async function ChatThread({
         <ChatMenu otherId={otherId} chatId={id} />
       </header>
 
-      <ChatRoom key={id} chatId={id} myId={user.id} initial={(messages ?? []) as Msg[]} safetyTip={t("safety_tip")} />
+      <ChatRoom key={id} chatId={id} myId={user.id} initial={messages} safetyTip={t("safety_tip")} />
     </main>
   );
 }
