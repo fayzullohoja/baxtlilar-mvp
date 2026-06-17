@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapOne } from "@/lib/db/unwrap";
 import { AdminShell } from "@/components/admin/shell";
 import { cityLabel, regionLabelOfCity } from "@/lib/profile/cities";
 import { LIFECYCLE_RU, VERIFICATION_RU } from "@/lib/admin/labels";
@@ -64,8 +65,8 @@ function MiniStat({ label, value, accent }: { label: string; value: number; acce
 
 export default async function AnalyticsPage() {
   const session = await requireAdmin();
-  const { data } = await supabaseAdmin().rpc("get_admin_demographics");
-  const d = (data ?? null) as Demographics | null;
+  // unwrapOne бросает на сбое БД; genuine «нет данных» (null) ниже даёт «Нет данных».
+  const d = unwrapOne(await supabaseAdmin().rpc("get_admin_demographics")) as Demographics | null;
 
   if (!d) {
     return (

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapRows } from "@/lib/db/unwrap";
 import { AdminShell } from "@/components/admin/shell";
 import { ReportActions } from "@/components/admin/report-actions";
 
@@ -36,20 +37,27 @@ export default async function ReportsModeration() {
   const session = await requireAdmin();
   const sb = supabaseAdmin();
 
-  const { data } = await sb
-    .from("reports")
-    .select("id, target_user_id, chat_id, reason_code, comment, status, created_at")
-    .in("status", OPEN)
-    .order("created_at", { ascending: true })
-    .limit(100);
-  const reports = (data ?? []) as Report[];
+  // unwrapRows бросает на сбое БД — иначе пустой список выглядит как «жалоб нет».
+  const reports = unwrapRows(
+    await sb
+      .from("reports")
+      .select("id, target_user_id, chat_id, reason_code, comment, status, created_at")
+      .in("status", OPEN)
+      .order("created_at", { ascending: true })
+      .limit(100),
+  ) as unknown as Report[];
 
   const targetIds = [...new Set(reports.map((r) => r.target_user_id))];
-  const { data: users } = targetIds.length
-    ? await sb.from("users").select("id, telegram_first_name, telegram_username, lifecycle_state").in("id", targetIds)
-    : { data: [] };
+  const users = targetIds.length
+    ? unwrapRows(
+        await sb
+          .from("users")
+          .select("id, telegram_first_name, telegram_username, lifecycle_state")
+          .in("id", targetIds),
+      )
+    : [];
   const userBy: Record<string, { name: string; banned: boolean }> = {};
-  for (const u of users ?? [])
+  for (const u of users)
     userBy[u.id as string] = {
       name:
         (u.telegram_first_name as string) ||

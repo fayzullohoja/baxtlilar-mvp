@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapRows } from "@/lib/db/unwrap";
 import { AdminShell } from "@/components/admin/shell";
 
 export const dynamic = "force-dynamic";
@@ -15,14 +16,16 @@ function overdueInfo(iso: string): { overdue: boolean; label: string } {
 
 export default async function VerificationsQueue() {
   const session = await requireAdmin();
-  const { data: rows } = await supabaseAdmin()
-    .from("users")
-    .select("id, telegram_username, telegram_first_name, phone_number, updated_at")
-    .eq("verification_status", "pending_review")
-    .order("updated_at", { ascending: true })
-    .limit(100);
-
-  const list = rows ?? [];
+  // unwrapRows бросает на сбое БД — иначе ошибка маскируется под «Очередь пуста»,
+  // и заявки на верификацию зависают незамеченными.
+  const list = unwrapRows(
+    await supabaseAdmin()
+      .from("users")
+      .select("id, telegram_username, telegram_first_name, phone_number, updated_at")
+      .eq("verification_status", "pending_review")
+      .order("updated_at", { ascending: true })
+      .limit(100),
+  );
 
   return (
     <AdminShell active="/admin/verifications" role={session.role}>

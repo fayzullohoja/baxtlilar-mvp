@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapOne } from "@/lib/db/unwrap";
 import { AdminShell } from "@/components/admin/shell";
 import { RevealDoc } from "@/components/admin/reveal-doc";
 import { DecisionForm } from "@/components/admin/decision-form";
@@ -21,13 +22,17 @@ export default async function VerificationCard({ params }: { params: Promise<{ i
   const session = await requireAdmin();
   const { id } = await params;
 
-  const { data: user } = await supabaseAdmin()
-    .from("users")
-    .select(
-      "id, telegram_id, telegram_username, telegram_first_name, telegram_last_name, phone_number, phone_verified, verification_status, onboarding_step, created_at",
-    )
-    .eq("id", id)
-    .maybeSingle();
+  // unwrapOne отделяет «реально нет такого пользователя» (null → notFound) от
+  // «БД упала» (throw → видимая ошибка). Без него сбой БД давал бы ложный 404.
+  const user = unwrapOne(
+    await supabaseAdmin()
+      .from("users")
+      .select(
+        "id, telegram_id, telegram_username, telegram_first_name, telegram_last_name, phone_number, phone_verified, verification_status, onboarding_step, created_at",
+      )
+      .eq("id", id)
+      .maybeSingle(),
+  );
   if (!user) notFound();
 
   const name =

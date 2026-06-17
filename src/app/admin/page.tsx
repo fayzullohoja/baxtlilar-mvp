@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapCount, unwrapOne } from "@/lib/db/unwrap";
 import { AdminShell } from "@/components/admin/shell";
 import Link from "next/link";
 
@@ -16,16 +17,21 @@ export default async function AdminDashboard() {
     sb.rpc("get_admin_demographics"),
     sb.from("reports").select("*", { count: "exact", head: true }).in("status", ["new", "in_progress", "requires_clarification", "escalated"]),
   ]);
-  const d = (demo.data ?? {}) as {
+  // unwrap* бросают на сбое БД (видимая ошибка) вместо тихих нулей/«нет данных»:
+  // ложный «0 заявок на проверке» прячет реальный бэклог модерации.
+  const pendingCount = unwrapCount(pending);
+  const photosCount = unwrapCount(photos);
+  const reportsCount = unwrapCount(reports);
+  const d = (unwrapOne(demo) ?? {}) as {
     total?: number;
     gender?: { m: number; f: number };
     lifecycle?: Record<string, number>;
   };
 
   const cards = [
-    { label: "Заявки на проверке", value: pending.count ?? 0, href: "/admin/verifications", accent: true },
-    { label: "Фото на проверке", value: photos.count ?? 0, href: "/admin/photos", accent: (photos.count ?? 0) > 0 },
-    { label: "Жалобы", value: reports.count ?? 0, href: "/admin/reports", accent: (reports.count ?? 0) > 0 },
+    { label: "Заявки на проверке", value: pendingCount, href: "/admin/verifications", accent: true },
+    { label: "Фото на проверке", value: photosCount, href: "/admin/photos", accent: photosCount > 0 },
+    { label: "Жалобы", value: reportsCount, href: "/admin/reports", accent: reportsCount > 0 },
     { label: "Всего пользователей", value: d.total ?? 0, href: "/admin/users" },
     { label: "Активных", value: d.lifecycle?.active ?? 0, href: "/admin/users?status=active" },
     { label: "Заблокировано", value: d.lifecycle?.blocked ?? 0, href: "/admin/users?status=blocked" },
