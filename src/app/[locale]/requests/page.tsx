@@ -24,6 +24,19 @@ function RequestTab({ k, label, isOut }: { k: string; label: string; isOut: bool
   );
 }
 
+/**
+ * Истёкший pending (auto_decline_at в прошлом) показываем как 'expired', хотя строка в
+ * БД ещё 'pending': истечение ленивое (транзишн происходит при следующем взаимодействии
+ * пары / при попытке принять). Без этого отправитель видит «Ожидает ответа» вечно.
+ * Date.now() вынесен из компонента (react-hooks/purity).
+ */
+function effectiveStatus(r: Record<string, unknown>): string {
+  const s = r.status as string;
+  const dl = r.auto_decline_at as string | undefined;
+  if (s === "pending" && dl && new Date(dl).getTime() <= Date.now()) return "expired";
+  return s;
+}
+
 export default async function RequestsPage({
   params,
   searchParams,
@@ -43,7 +56,7 @@ export default async function RequestsPage({
   if (isOut) {
     const { data } = await sb
       .from("match_requests")
-      .select("id, receiver_id, status, created_at")
+      .select("id, receiver_id, status, created_at, auto_decline_at")
       .eq("sender_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -93,12 +106,12 @@ export default async function RequestsPage({
                       {m?.age ? `, ${m.age}` : ""}
                     </div>
                     <div className="text-xs text-baxt-muted truncate">
-                      {isOut ? t(`status_${r.status as string}`) : ((r.message as string) || cityLabel(m?.city, locale))}
+                      {isOut ? t(`status_${effectiveStatus(r)}`) : ((r.message as string) || cityLabel(m?.city, locale))}
                     </div>
                   </div>
                 </Link>
                 {isOut ? (
-                  r.status === "pending" ? <RequestActions requestId={r.id as string} kind="outgoing" /> : null
+                  effectiveStatus(r) === "pending" ? <RequestActions requestId={r.id as string} kind="outgoing" /> : null
                 ) : (
                   <RequestActions requestId={r.id as string} kind="incoming" />
                 )}
