@@ -17,10 +17,16 @@ export async function setSession(userId: string): Promise<void> {
   const b64 = Buffer.from(payload).toString("base64url");
   const sig = sign(b64, e.SESSION_SECRET);
   const c = await cookies();
+  // F-010 / H5: bx_session ставится в third-party-контексте Telegram WebView
+  // (iframe web.telegram.org). SameSite=Lax там сбрасывает cookie → юзер
+  // не залогинен и валится в /open-in-telegram. SameSite=None+Secure работает
+  // в iframe + на любом нативном клиенте. CSRF-защита переходит на Origin-
+  // allowlist в proxy.ts (см. isAllowedOrigin).
+  const isProd = process.env.NODE_ENV === "production";
   c.set(COOKIE, `${b64}.${sig}`, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: isProd, // обязательно для SameSite=None
+    sameSite: isProd ? "none" : "lax", // dev на http://localhost не примет None+Secure
     path: "/",
     maxAge: MAX_AGE_SEC,
   });
