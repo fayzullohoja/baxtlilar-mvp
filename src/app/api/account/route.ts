@@ -17,7 +17,9 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const { user, res } = await loadActiveUserApi({ allowPaused: true });
   if (res) return res;
-  const { action } = (await req.json().catch(() => ({}))) as { action?: "pause" | "resume" | "delete" };
+  const { action } = (await req.json().catch(() => ({}))) as {
+    action?: "pause" | "resume" | "delete" | "export";
+  };
   const sb = supabaseAdmin();
 
   if (action === "pause") {
@@ -85,6 +87,93 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     await clearSession();
     return NextResponse.json({ ok: true });
+  }
+
+  if (action === "export") {
+    // F-118: право субъекта получить копию своих ПД (ст. 25 закона РУз "О ПД").
+    // Rate-limit 1/24h — иначе можно DoS'нуть сервер большими JSON-блобами.
+    // Возвращаем только данные, авторство которых принадлежит пользователю
+    // (его сообщения, заявки, жалобы); содержимое других сторон НЕ дублируем.
+    const EXPORT_COOLDOWN_MS = 24 * 3600 * 1000;
+    const { data: meta } = await sb
+      .from("users")
+      .select("exported_at")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (meta?.exported_at && Date.now() - new Date(meta.exported_at as string).getTime() < EXPORT_COOLDOWN_MS) {
+      return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
+    }
+
+    const [profile, photos, qAnswers, qResults, consents, docs, sentReqs, recvReqs, myMsgs, myReports, stateLog] =
+      await Promise.all([
+        sb.from("user_profiles").select("*").eq("user_id", user.id).maybeSingle(),
+        sb.from("profile_photos").select("id, ord, is_main, status, created_at").eq("user_id", user.id),
+        sb.from("quiz_answers").select("*").eq("user_id", user.id),
+        sb.from("quiz_results").select("*").eq("user_id", user.id),
+        sb
+          .from("consents")
+          .select("consent_type, consent_version, accepted_at, language, ip, user_agent")
+          .eq("user_id", user.id),
+        sb
+          .from("user_documents")
+          .select("status, passport_path, selfie_path, created_at, moderated_at, reject_reason")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        sb
+          .from("match_requests")
+          .select("id, receiver_id, status, message, created_at, auto_decline_at")
+          .eq("sender_id", user.id),
+        sb
+          .from("match_requests")
+          .select("id, sender_id, status, message, created_at, auto_decline_at")
+          .eq("receiver_id", user.id),
+        sb
+          .from("chat_messages")
+          .select("id, chat_id, body, created_at, read_at")
+          .eq("sender_id", user.id),
+        sb
+          .from("reports")
+          .select("id, target_user_id, reason, comment, status, created_at")
+          .eq("reporter_id", user.id),
+        sb
+          .from("user_state_transitions")
+          .select("from_state, to_state, reason, triggered_by_kind, created_at")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: true }),
+      ]);
+
+    await sb.from("users").update({ exported_at: new Date().toISOString() }).eq("id", user.id);
+
+    return NextResponse.json({
+      ok: true,
+      exported_at: new Date().toISOString(),
+      schema_version: 1,
+      data: {
+        user: {
+          id: user.id,
+          telegram_id: user.telegram_id,
+          telegram_username: user.telegram_username,
+          telegram_first_name: user.telegram_first_name,
+          phone_number: user.phone_number,
+          phone_verified: user.phone_verified,
+          language: user.language,
+          lifecycle_state: user.lifecycle_state,
+          onboarding_step: user.onboarding_step,
+          verification_status: user.verification_status,
+        },
+        profile: profile.data ?? null,
+        photos: photos.data ?? [],
+        quiz_answers: qAnswers.data ?? [],
+        quiz_results: qResults.data ?? [],
+        consents: consents.data ?? [],
+        documents: docs.data ?? null,
+        sent_requests: sentReqs.data ?? [],
+        received_requests: recvReqs.data ?? [],
+        my_messages: myMsgs.data ?? [],
+        my_reports: myReports.data ?? [],
+        state_transitions: stateLog.data ?? [],
+      },
+    });
   }
 
   return NextResponse.json({ ok: false, error: "bad_action" }, { status: 400 });

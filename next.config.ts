@@ -11,6 +11,9 @@ const TG_FRAME_ANCESTORS = [
   "https://t.me",
 ];
 
+// F-116 (CSP nonce) НЕ применён — требует middleware-нонс через next-intl
+// composition + ручной браузерный тест в TG WebView. Делаю когда будет
+// возможность прокликать. Пока — статический CSP с 'unsafe-inline'.
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -20,10 +23,9 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      // Next-гидрация = inline-скрипты; telegram-web-app.js грузится с telegram.org
       "script-src 'self' 'unsafe-inline' https://telegram.org",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https:", // signed URL фото/документов (same-origin /api/storage) + аватары TG
+      "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
       "connect-src 'self'",
       `frame-ancestors ${TG_FRAME_ANCESTORS.join(" ")}`,
