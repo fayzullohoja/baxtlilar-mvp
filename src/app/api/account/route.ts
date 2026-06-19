@@ -41,14 +41,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   if (action === "delete") {
-    // soft-delete: помечаем deleted, СТИРАЕМ все ПД и файлы, чистим сессию (строка users остаётся для аудита)
-    await tryTransition(user.id, { lifecycle_state: "deleted" }, "user deleted account", {
-      kind: "user",
-      id: user.id,
-    });
-
-    // F-006: до обнуления phone_number зафиксируем его хеш в blacklist на 90д.
-    // Бот в handleContact проверяет blacklist и отказывает в регистрации.
+    // F-006: до обнуления phone_number фиксируем хеш в blacklist на 90д.
     if (user.phone_number) {
       const until = new Date(Date.now() + PHONE_COOLDOWN_DAYS * 24 * 3600 * 1000).toISOString();
       const { error: bErr } = await sb.from("phone_blacklist").insert({
@@ -59,26 +52,29 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       if (bErr) console.error("[account.delete] phone_blacklist insert failed:", bErr.message);
     }
 
-    // обезличиваем users (телефон + telegram-профиль). telegram_id ОСТАЁТСЯ —
-    // он часть audit-trail; партиальный UNIQUE на (telegram_id WHERE
-    // lifecycle_state<>'deleted') позволяет тому же TG-аккаунту создать новую
-    // строку при re-register (см. миграцию 20260619200000).
-    await sb
-      .from("users")
-      .update({
-        deleted_at: new Date().toISOString(),
-        phone_number: null,
-        phone_verified: false,
-        telegram_username: null,
-        telegram_first_name: null,
-        telegram_last_name: null,
-      })
-      .eq("id", user.id);
+    // Storage paths собираем ДО erase_user — иначе строки profile_photos уже
+    // удалены и пути не вытащим.
+    const { data: photos } = await sb.from("profile_photos").select("path").eq("user_id", user.id);
+    const photoPaths = (photos ?? []).map((p) => p.path as string);
 
-    // фото и документы — из стораджа (ошибки не должны срывать всё стирание — try/catch)
+    // F-114/F-012: единая транзакция через erase_user RPC. Раньше десяток
+    // мутаций без .error-чека — частичный сбой возвращал {ok:true}, оставляя
+    // ПД в БД (нарушение права на стирание ст. 28 закона РУз).
+    const tr = await tryTransition(user.id, { lifecycle_state: "deleted" }, "user deleted account", {
+      kind: "user",
+      id: user.id,
+    });
+    if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
+
+    const { error: rpcErr } = await sb.rpc("erase_user", { p_user_id: user.id });
+    if (rpcErr) {
+      console.error("[account.delete] erase_user RPC failed:", rpcErr.message);
+      return NextResponse.json({ ok: false, error: "erase_failed" }, { status: 500 });
+    }
+
+    // Storage — best-effort после транзакционной части (storage не
+    // транзакционен; orphan-файлы лучше периодически чистить отдельным cron).
     try {
-      const { data: photos } = await sb.from("profile_photos").select("path").eq("user_id", user.id);
-      const photoPaths = (photos ?? []).map((p) => p.path as string);
       if (photoPaths.length) await sb.storage.from(BUCKET_PHOTOS).remove(photoPaths);
       const { data: docFiles } = await sb.storage.from(BUCKET_DOCUMENTS).list(user.id);
       if (docFiles?.length)
@@ -86,31 +82,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     } catch (e) {
       console.error("[account.delete] storage cleanup failed (continuing):", e);
     }
-
-    // ПД из всех таблиц (анкета, опрос, согласия, метаданные документов, квоты, OTP, просмотры)
-    for (const tbl of [
-      "profile_photos",
-      "user_profiles",
-      "quiz_answers",
-      "quiz_results",
-      "consents",
-      "user_documents",
-      "daily_request_quotas",
-      "otp_codes",
-    ] as const) {
-      await sb.from(tbl).delete().eq("user_id", user.id);
-    }
-    await sb.from("match_views").delete().eq("viewer_id", user.id);
-    // отменяем висящие интересы удаляемого: отправленные → withdrawn (получатель
-    // не примет «призрака» в чат и не отправит ему уведомление), полученные →
-    // declined (отправитель не ждёт ответа от удалённого). Только pending.
-    await sb.from("match_requests").update({ status: "withdrawn" }).eq("sender_id", user.id).eq("status", "pending");
-    await sb.from("match_requests").update({ status: "declined" }).eq("receiver_id", user.id).eq("status", "pending");
-
-    // свободный текст пользователя (содержит ПД): сообщения, заметка интереса, текст жалобы
-    await sb.from("chat_messages").update({ body: "[удалено]" }).eq("sender_id", user.id);
-    await sb.from("match_requests").update({ message: null }).eq("sender_id", user.id);
-    await sb.from("reports").update({ comment: null }).eq("reporter_id", user.id);
 
     await clearSession();
     return NextResponse.json({ ok: true });

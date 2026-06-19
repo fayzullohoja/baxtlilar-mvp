@@ -4,8 +4,14 @@ import { env } from "@/lib/env";
 /**
  * Отправка сообщения пользователю через бота (push-уведомление).
  * Best-effort: при ошибке не бросает (логирует), чтобы не ломать основной поток.
+ * Принимает nullable id: после F-012 erase_user обнуляет telegram_id у
+ * удалённых пользователей, и любой вызов с null'ом тихо отказывается.
  */
-export async function notifyUser(telegramId: number, text: string): Promise<boolean> {
+export async function notifyUser(
+  telegramId: number | null | undefined,
+  text: string,
+): Promise<boolean> {
+  if (!telegramId) return false;
   try {
     const res = await fetch(`https://api.telegram.org/bot${env().TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: "POST",

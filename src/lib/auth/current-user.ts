@@ -11,7 +11,10 @@ import type {
 
 export type DbUser = {
   id: string;
-  telegram_id: number;
+  // telegram_id nullable начиная с миграции 20260619300000 (P6/F-012): erase_user
+  // обнуляет его на soft-delete. На активных строках всегда не-null (валидируется
+  // партиальным UNIQUE WHERE lifecycle_state<>'deleted').
+  telegram_id: number | null;
   telegram_username: string | null;
   telegram_first_name: string | null;
   phone_number: string | null;
