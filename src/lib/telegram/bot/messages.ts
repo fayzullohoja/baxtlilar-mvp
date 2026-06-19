@@ -85,6 +85,13 @@ export const M = {
     ru: "Что-то пошло не так. Попробуй /start ещё раз.",
     uz: "Nimadir notoʻgʻri ketdi. /start ni qaytadan urinib koʻr.",
   },
+
+  // F-006: cooldown после удаления аккаунта. {until} подставляется ISO-датой
+  // (день; точная локализация не нужна).
+  phone_cooldown: {
+    ru: "Этот номер недавно использовался для удалённого аккаунта. Регистрация повторно — после {until}. Если ошибка — напишите в поддержку.",
+    uz: "Bu raqam yaqinda oʻchirilgan hisob uchun ishlatilgan. Qaytadan roʻyxatdan oʻtish {until} dan keyin. Xato boʻlsa — qoʻllab-quvvatlash xizmatiga yozing.",
+  },
 } as const;
 
 export type Lang = "ru" | "uz";

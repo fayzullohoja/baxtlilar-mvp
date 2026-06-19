@@ -4,6 +4,7 @@ import { env } from "@/lib/env";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { normalizeUzPhone, PhoneError } from "@/lib/phone";
 import { transition, tryTransition } from "@/lib/state-machine/transitions";
+import { hashPhone } from "@/lib/identity/hashing";
 import { signStartToken } from "../start-token";
 import { sendMessage, answerCallbackQuery } from "../bot-api";
 import type { InlineKeyboardMarkup, ReplyKeyboardMarkup } from "../bot-api";
@@ -64,16 +65,40 @@ type DbUser = {
 
 async function findByTg(tgId: number): Promise<DbUser | null> {
   const sb = supabaseAdmin();
+  // F-006: deleted-строки игнорируем — partial UNIQUE их допускает, и
+  // пользователь после delete должен иметь возможность создать новый аккаунт.
+  // (Cooldown по phone в phone_blacklist срабатывает только при попытке
+  // привязать тот же номер; здесь же — про телеграм.)
   const { data, error } = await sb
     .from("users")
     .select("id, telegram_id, language, lifecycle_state, onboarding_step, phone_number, phone_verified")
     .eq("telegram_id", tgId)
+    .neq("lifecycle_state", "deleted")
     .maybeSingle();
   if (error) {
     console.error("[bot] findByTg failed:", error.message);
     return null;
   }
   return (data as DbUser) ?? null;
+}
+
+async function isPhoneBlacklisted(phone: string): Promise<{ blocked: boolean; until?: string }> {
+  const sb = supabaseAdmin();
+  const h = hashPhone(phone);
+  const { data, error } = await sb
+    .from("phone_blacklist")
+    .select("until_at")
+    .eq("phone_hash", h)
+    .gt("until_at", new Date().toISOString())
+    .order("until_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.error("[bot] phone-blacklist check failed:", error.message);
+    return { blocked: false }; // fail-open: лучше пропустить, чем кричать о ложной блокировке
+  }
+  if (!data) return { blocked: false };
+  return { blocked: true, until: data.until_at as string };
 }
 
 async function createInitial(tg: TgUser): Promise<DbUser | null> {
@@ -407,6 +432,17 @@ async function handleContact(msg: TgMessage): Promise<void> {
       return;
     }
     throw e;
+  }
+
+  // F-006: cooldown после delete — этот номер мог быть свежеудалённым.
+  const blocklist = await isPhoneBlacklisted(phone);
+  if (blocklist.blocked) {
+    const untilDate = (blocklist.until ?? "").slice(0, 10);
+    await sendMessage(
+      chatId,
+      pick(M.phone_cooldown, user.language).replace("{until}", untilDate || "—"),
+    );
+    return;
   }
 
   // Проставляем phone + phone_verified=true (TG уже верифицировал) + ход на consent_pd.

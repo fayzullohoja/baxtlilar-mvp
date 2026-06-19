@@ -25,11 +25,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!up.ok) return NextResponse.json({ ok: false, error: up.error }, { status: 400 });
 
   // Путь к селфи должен лечь в БД ДО ухода в модерацию: иначе модератору нечего
-  // смотреть, а заявка уже в очереди (ложная заявка без артефакта).
+  // смотреть, а заявка уже в очереди (ложная заявка без артефакта). selfie_sha256 — F-007.
   const { error: saveErr } = await supabaseAdmin()
     .from("user_documents")
     .upsert(
-      { user_id: user.id, selfie_path: up.path, status: "pending_review" },
+      { user_id: user.id, selfie_path: up.path, selfie_sha256: up.sha256, status: "pending_review" },
       { onConflict: "user_id" },
     );
   if (saveErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });

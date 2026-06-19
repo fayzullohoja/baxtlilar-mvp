@@ -22,11 +22,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!up.ok) return NextResponse.json({ ok: false, error: up.error }, { status: 400 });
 
   // Путь к паспорту должен лечь в БД ДО продвижения шага (иначе селфи-шаг и
-  // модерация без записанного документа).
+  // модерация без записанного документа). passport_sha256 — F-007 (дедуп
+  // identity на admin-approve).
   const { error: saveErr } = await supabaseAdmin()
     .from("user_documents")
     .upsert(
-      { user_id: user.id, passport_path: up.path, status: "pending_review" },
+      { user_id: user.id, passport_path: up.path, passport_sha256: up.sha256, status: "pending_review" },
       { onConflict: "user_id" },
     );
   if (saveErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });

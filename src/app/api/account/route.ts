@@ -4,6 +4,12 @@ import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { clearSession } from "@/lib/auth/session";
 import { BUCKET_PHOTOS, BUCKET_DOCUMENTS } from "@/lib/uploads/storage";
+import { hashPhone } from "@/lib/identity/hashing";
+
+// F-006: окно cooldown после delete, в течение которого тот же телефон
+// нельзя привязать к новому аккаунту. 90 дней закрывает повторное
+// представление с теми же доками и обнуление жалоб/блоков жертвы.
+const PHONE_COOLDOWN_DAYS = 90;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,7 +46,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       kind: "user",
       id: user.id,
     });
-    // обезличиваем users (телефон + telegram-профиль)
+
+    // F-006: до обнуления phone_number зафиксируем его хеш в blacklist на 90д.
+    // Бот в handleContact проверяет blacklist и отказывает в регистрации.
+    if (user.phone_number) {
+      const until = new Date(Date.now() + PHONE_COOLDOWN_DAYS * 24 * 3600 * 1000).toISOString();
+      const { error: bErr } = await sb.from("phone_blacklist").insert({
+        phone_hash: hashPhone(user.phone_number),
+        until_at: until,
+        reason: "account_deleted",
+      });
+      if (bErr) console.error("[account.delete] phone_blacklist insert failed:", bErr.message);
+    }
+
+    // обезличиваем users (телефон + telegram-профиль). telegram_id ОСТАЁТСЯ —
+    // он часть audit-trail; партиальный UNIQUE на (telegram_id WHERE
+    // lifecycle_state<>'deleted') позволяет тому же TG-аккаунту создать новую
+    // строку при re-register (см. миграцию 20260619200000).
     await sb
       .from("users")
       .update({

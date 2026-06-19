@@ -18,17 +18,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const passport = form.get("passport");
   const selfie = form.get("selfie");
-  const patch: { passport_path?: string; selfie_path?: string } = {};
+  const patch: {
+    passport_path?: string;
+    selfie_path?: string;
+    passport_sha256?: string;
+    selfie_sha256?: string;
+  } = {};
 
   if (passport instanceof File) {
     const up = await uploadDocumentImage(user.id, "passport", await passport.arrayBuffer());
     if (!up.ok) return NextResponse.json({ ok: false, error: up.error }, { status: 400 });
     patch.passport_path = up.path;
+    patch.passport_sha256 = up.sha256;
   }
   if (selfie instanceof File) {
     const up = await uploadDocumentImage(user.id, "selfie", await selfie.arrayBuffer());
     if (!up.ok) return NextResponse.json({ ok: false, error: up.error }, { status: 400 });
     patch.selfie_path = up.path;
+    patch.selfie_sha256 = up.sha256;
   }
   if (!patch.passport_path && !patch.selfie_path)
     return NextResponse.json({ ok: false, error: "no_file" }, { status: 400 });

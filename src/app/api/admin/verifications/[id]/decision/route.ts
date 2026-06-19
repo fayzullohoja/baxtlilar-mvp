@@ -48,15 +48,52 @@ export async function POST(
   if (user.verification_status !== "pending_review")
     return NextResponse.json({ ok: false, error: "not_pending" }, { status: 409 });
 
-  // BUG-4: нельзя одобрить без загруженных паспорта и селфи
+  // BUG-4: нельзя одобрить без загруженных паспорта и селфи.
+  // F-007: при одобрении ищем тот же sha256 паспорта/селфи у ЛЮБОГО другого
+  // approved user_documents — это значит, тот же документ уже использован
+  // на другом аккаунте (катфиш / ферма аккаунтов). Отказываем модератора.
   if (action === "approve") {
-    const { data: doc } = await supabaseAdmin()
+    const sb = supabaseAdmin();
+    const { data: doc } = await sb
       .from("user_documents")
-      .select("passport_path, selfie_path")
+      .select("passport_path, selfie_path, passport_sha256, selfie_sha256")
       .eq("user_id", id)
       .maybeSingle();
     if (!doc?.passport_path || !doc?.selfie_path)
       return NextResponse.json({ ok: false, error: "documents_missing" }, { status: 409 });
+
+    if (doc.passport_sha256) {
+      const { data: dup } = await sb
+        .from("user_documents")
+        .select("user_id")
+        .eq("status", "approved")
+        .eq("passport_sha256", doc.passport_sha256)
+        .neq("user_id", id)
+        .limit(1)
+        .maybeSingle();
+      if (dup) {
+        return NextResponse.json(
+          { ok: false, error: "duplicate_identity", field: "passport", conflict_user_id: dup.user_id },
+          { status: 409 },
+        );
+      }
+    }
+    if (doc.selfie_sha256) {
+      const { data: dup } = await sb
+        .from("user_documents")
+        .select("user_id")
+        .eq("status", "approved")
+        .eq("selfie_sha256", doc.selfie_sha256)
+        .neq("user_id", id)
+        .limit(1)
+        .maybeSingle();
+      if (dup) {
+        return NextResponse.json(
+          { ok: false, error: "duplicate_identity", field: "selfie", conflict_user_id: dup.user_id },
+          { status: 409 },
+        );
+      }
+    }
   }
 
   let step: OnboardingStep;

@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { sha256Bytes } from "@/lib/identity/hashing";
 import { detectImageType, extForType, type AllowedImage } from "./mime-check";
 
 export const BUCKET_DOCUMENTS = "user-documents";
@@ -8,12 +9,13 @@ export const BUCKET_PHOTOS = "profile-photos";
 const MAX_BYTES = 12 * 1024 * 1024; // 12 МБ
 
 export type UploadResult =
-  | { ok: true; path: string; type: AllowedImage }
+  | { ok: true; path: string; type: AllowedImage; sha256: string }
   | { ok: false; error: "too_large" | "bad_type" | "upload_failed" };
 
 /**
  * Загрузка изображения в приватный бакет документов.
  * Проверяет размер и реальный тип по magic-байтам.
+ * Возвращает sha256 контента для дедупа identity (F-007).
  * @param kind 'passport' | 'selfie' — определяет имя файла.
  */
 export async function uploadDocumentImage(
@@ -31,7 +33,7 @@ export async function uploadDocumentImage(
     .storage.from(BUCKET_DOCUMENTS)
     .upload(path, bytes, { contentType: type, upsert: true });
   if (error) return { ok: false, error: "upload_failed" };
-  return { ok: true, path, type };
+  return { ok: true, path, type, sha256: sha256Bytes(bytes) };
 }
 
 export type PhotoUploadResult =
