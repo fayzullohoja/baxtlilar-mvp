@@ -8,8 +8,9 @@
 > - **2026-06-19** Block tear-down + анти-контакт v2 → закрывает **F-008** (loadChatRow проверяет areBlocked, chat-page SSR redirect, SSE цикл рвётся), **F-009** (underscore-separator, double-space, Cyrillic @-handle, расширенные TLD/messenger-словари, применение на display_name). Коммит e6a5f4b.
 > - **2026-06-19** erase_user RPC + telegram_id wipe → закрывает **F-012, F-114, P6, P9**. Коммит 4191658, миграция 20260619300000.
 > - **2026-06-19** statement_timeout + pool.on('error') + /api/account?action=export → закрывает **F-115, F-118**. Коммит 40f9f43, миграция 20260619400000.
+> - **2026-06-19** F-119 + F-120 + 7 adversarial-CONFIRMED-фиксов → закрывает **F-119** (two-person ban через admin_ban_propose/confirm/cancel + lazy expire-sweep), **F-120** (moderator scope: queue-only listing, /admin/audit own-actions, /admin/reports super-only, /admin/photos under_review-only, /admin/verifications/[id] page guard). Спроектировано 7-агентным workflow + проверено 4-агентным adversarial verify (verdict: hold + 7 CONFIRMED → все запатчены тем же релизом). Коммиты 9cfc4f3 → a17c22b, миграции 20260619500000 + 20260619500001.
 > - **F-116 (CSP nonce)** — отложен: требует ручного browser-смоука в TG WebView, чтобы убедиться что nonce пропагируется в hydration.
-> - **F-003, F-005, F-119, F-120, F-121** — юр-трек / архитектура криптографии / процедурные политики; код-only не закрывает.
+> - **F-003, F-005, F-121** — юр-трек / KMS-архитектура; код-only не закрывает.
 > - Подробности по коду — в `docs/improvement-log.md`.
 
 
