@@ -1,6 +1,7 @@
+import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/guard";
+import { requireAdmin, checkInQueueOrSuperPage } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { unwrapOne } from "@/lib/db/unwrap";
 import { AdminShell } from "@/components/admin/shell";
@@ -8,6 +9,15 @@ import { RevealDoc } from "@/components/admin/reveal-doc";
 import { DecisionForm } from "@/components/admin/decision-form";
 
 export const dynamic = "force-dynamic";
+
+function ipFromHeaders(h: Headers): string | null {
+  return (
+    h.get("x-envoy-external-address") ??
+    h.get("x-real-ip") ??
+    h.get("x-forwarded-for")?.split(",").pop()?.trim() ??
+    null
+  );
+}
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
@@ -21,6 +31,13 @@ function Row({ k, v }: { k: string; v: string }) {
 export default async function VerificationCard({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireAdmin();
   const { id } = await params;
+
+  // F-120 (R2-#1 verdict): без этой проверки moderator мог открыть детальную
+  // карточку любого юзера по UUID и увидеть telegram_*, phone, паспорт/селфи.
+  // checkInQueueOrSuperPage → notFound() единый ответ (без existence-oracle).
+  const ipAddr = ipFromHeaders(await headers());
+  const scope = await checkInQueueOrSuperPage(session, id, "user_view", ipAddr);
+  if ("hide" in scope) notFound();
 
   // unwrapOne отделяет «реально нет такого пользователя» (null → notFound) от
   // «БД упала» (throw → видимая ошибка). Без него сбой БД давал бы ложный 404.

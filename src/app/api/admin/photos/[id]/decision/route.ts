@@ -23,10 +23,21 @@ export async function POST(
 
   const { data: photo } = await supabaseAdmin()
     .from("profile_photos")
-    .select("id, user_id")
+    .select("id, user_id, status")
     .eq("id", id)
     .maybeSingle();
   if (!photo) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
+
+  // F-120 (R2-#3 verdict): moderator может действовать ТОЛЬКО над фото в
+  // активной модерации (status='under_review'/'uploaded'). approved/rejected
+  // фото уже-обработанного юзера → 403 (раньше moderator мог "deplatform"
+  // публичную фигуру, прокликав reject на всех её фото). Super-admin — без
+  // ограничений (incident-response).
+  if (session.role !== "superadmin") {
+    if (photo.status !== "under_review" && photo.status !== "uploaded") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+  }
 
   // Сначала убеждаемся, что апдейт реально применился, и только потом пишем аудит —
   // иначе журнал зафиксирует «фантомное» решение (approve/reject), которого в БД нет.

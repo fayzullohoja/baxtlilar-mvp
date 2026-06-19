@@ -63,7 +63,14 @@ export default async function UsersPage({
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(100);
-    if (statusF !== "all") q = q.eq("lifecycle_state", statusF);
+    // F-120 (R2-#2 verdict): moderator видит ТОЛЬКО юзеров в активной очереди
+    // модерации. Имя+город+возраст это уже dox-вектор без открытия паспорта.
+    // Status-фильтр игнорируется для moderator (только pending_review всегда).
+    if (session.role === "moderator") {
+      q = q.eq("verification_status", "pending_review").eq("lifecycle_state", "onboarding");
+    } else if (statusF !== "all") {
+      q = q.eq("lifecycle_state", statusF);
+    }
     if (genderIds) q = q.in("id", genderIds);
     list = unwrapRows(await q) as unknown as UserRow[];
   }

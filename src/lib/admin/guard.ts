@@ -300,6 +300,11 @@ async function recordScopeViolation(
  *   (verification_status='pending_review' AND lifecycle_state='onboarding').
  *   Иначе — 403 + запись в admin_scope_violations.
  *
+ * R2-#8 (verdict): возвращаем 403 ВО ВСЕХ нелигитимных случаях (включая
+ * "юзер не найден") — иначе 404 даёт existence-oracle (можно перебором UUID
+ * вычислять реальные id). User-not-exist для moderator = "за пределами scope"
+ * = тот же 403.
+ *
  * Возвращает {ok:true,userId} или {res:NextResponse} с 4xx.
  */
 export async function requireInQueueOrSuper(
@@ -308,7 +313,11 @@ export async function requireInQueueOrSuper(
   context: "doc_view" | "decision" | "user_view",
   req: NextRequest,
 ): Promise<{ ok: true; userId: string } | { res: NextResponse }> {
-  if (session.role === "superadmin") return { ok: true, userId };
+  if (session.role === "superadmin") {
+    // Для super-admin не делаем существование-чек тут — пускай route сам решит
+    // (обычно сразу будет .from(...).eq(id) → 404 от своего запроса).
+    return { ok: true, userId };
+  }
 
   const sb = supabaseAdmin();
   const { data: u } = await sb
@@ -316,21 +325,77 @@ export async function requireInQueueOrSuper(
     .select("id, verification_status, lifecycle_state")
     .eq("id", userId)
     .maybeSingle();
-  if (!u) {
-    return { res: NextResponse.json({ ok: false, error: "not_found" }, { status: 404 }) };
-  }
-  const inQueue = u.verification_status === "pending_review" && u.lifecycle_state === "onboarding";
+  const inQueue = !!u && u.verification_status === "pending_review" && u.lifecycle_state === "onboarding";
   if (inQueue) return { ok: true, userId };
 
-  await recordScopeViolation(
-    session.adminId,
-    userId,
-    context === "doc_view"
-      ? "out_of_queue_doc_view"
-      : context === "decision"
-        ? "out_of_queue_decision_attempt"
-        : "out_of_queue_user_view",
-    req,
-  );
+  // R2-#8: единый 403 для "не найден" и "вне очереди". Audit-запись пишем
+  // только если юзер существует (нет смысла логировать нарушение по
+  // несуществующему id — это шум при переборе).
+  if (u) {
+    await recordScopeViolation(
+      session.adminId,
+      userId,
+      context === "doc_view"
+        ? "out_of_queue_doc_view"
+        : context === "decision"
+          ? "out_of_queue_decision_attempt"
+          : "out_of_queue_user_view",
+      req,
+    );
+  }
   return { res: NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 }) };
+}
+
+/**
+ * Server-page вариант requireInQueueOrSuper. Без NextResponse — возвращает
+ * {ok:true} или {hide:true} (страница рисует notFound() сама, чтобы избежать
+ * existence-oracle через 403/404).
+ *
+ * Используется в admin-pages /admin/verifications/[id], /admin/users/[id] и т.п.
+ */
+export async function checkInQueueOrSuperPage(
+  session: AdminSession,
+  userId: string,
+  context: "user_view",
+  ipAddr: string | null,
+): Promise<{ ok: true } | { hide: true }> {
+  if (session.role === "superadmin") return { ok: true };
+
+  const sb = supabaseAdmin();
+  const { data: u } = await sb
+    .from("users")
+    .select("id, verification_status, lifecycle_state")
+    .eq("id", userId)
+    .maybeSingle();
+  const inQueue = !!u && u.verification_status === "pending_review" && u.lifecycle_state === "onboarding";
+  if (inQueue) return { ok: true };
+
+  if (u) {
+    await recordScopeViolationServerPage(session.adminId, userId, context, ipAddr);
+  }
+  return { hide: true };
+}
+
+/** Server-page вариант без NextRequest (нет в RSC). IP пробрасывается явно. */
+async function recordScopeViolationServerPage(
+  adminId: string,
+  userId: string,
+  action: "user_view",
+  ipAddr: string | null,
+): Promise<void> {
+  const sb = supabaseAdmin();
+  const { data: admitted, error: admitErr } = await sb.rpc("admin_scope_violation_admit", {
+    p_admin_id: adminId,
+  });
+  if (admitErr) {
+    console.error("[scope] admit RPC error (server-page):", admitErr.message);
+    return;
+  }
+  const finalAction = admitted === false ? "out_of_queue_rate_exceeded" : `out_of_queue_${action}`;
+  await sb.from("admin_scope_violations").insert({
+    admin_id: adminId,
+    action: finalAction,
+    entity_id_hash: hashEntityId(userId),
+    ip: ipAddr,
+  });
 }

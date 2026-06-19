@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { unwrapRows } from "@/lib/db/unwrap";
@@ -35,6 +36,11 @@ type Report = {
 
 export default async function ReportsModeration() {
   const session = await requireAdmin();
+  // F-120 (R2-#4 verdict): /admin/reports джойнит target_user PII (имя/статус
+  // блокировки) для любых таргетов. Через подачу жалобы на target X
+  // (legitimate user-side action) злоумышленник-модератор подсвечивает X в
+  // своей очереди — самоинициированный dox-вектор. Reports требуют super-admin.
+  if (session.role !== "superadmin") notFound();
   const sb = supabaseAdmin();
 
   // unwrapRows бросает на сбое БД — иначе пустой список выглядит как «жалоб нет».

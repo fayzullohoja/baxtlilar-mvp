@@ -9,13 +9,20 @@ export default async function AuditPage() {
   const session = await requireAdmin();
 
   const sb = supabaseAdmin();
-  const list = unwrapRows(
-    await sb
-      .from("admin_audit_log")
-      .select("created_at, action, entity, entity_id, reason, admin_id")
-      .order("created_at", { ascending: false })
-      .limit(100),
-  );
+  // F-120 (R2-#5 verdict): moderator видел entity_id любого admin_audit_log
+  // (даже 8-char prefix давал side-channel-re-identify: сравнить prefix с
+  // выгрузкой /admin/users → знать кто получил super-admin внимание).
+  // Moderator теперь видит ТОЛЬКО свои собственные действия. Super-admin —
+  // полный журнал.
+  let q = sb
+    .from("admin_audit_log")
+    .select("created_at, action, entity, entity_id, reason, admin_id")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (session.role !== "superadmin") {
+    q = q.eq("admin_id", session.adminId);
+  }
+  const list = unwrapRows(await q);
 
   // Логины сотрудников — отдельным запросом и сшивкой (native-адаптер не делает
   // embed admin_users(login); раньше это тихо обнуляло весь журнал).
