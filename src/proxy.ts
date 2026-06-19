@@ -16,17 +16,23 @@ function isAnonymousAllowed(pathname: string): boolean {
 export default function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // anonymous-allowed → проходят локализатор без auth-check
+  // /open-in-telegram живёт ВНЕ [locale]; intl-middleware иначе делает 307 →
+  // /ru/open-in-telegram. Пропускаем сразу.
+  if (pathname === "/open-in-telegram" || pathname.startsWith("/open-in-telegram/")) {
+    return NextResponse.next();
+  }
+
+  // /legal/* — anonymous-allowed и под locale. Проходят через next-intl.
   if (isAnonymousAllowed(pathname)) {
     return intl(req);
   }
 
-  // нет сессии → отдаём фолбэк-лендинг
+  // нет сессии → отдаём фолбэк-лендинг (rewrite — без 307, тот же URL)
   const session = req.cookies.get("bx_session");
   if (!session) {
     const url = req.nextUrl.clone();
     url.pathname = "/open-in-telegram";
-    url.search = "";
+    url.search = req.nextUrl.search; // сохраняем ?token=... из bot-deeplink
     return NextResponse.rewrite(url);
   }
 
