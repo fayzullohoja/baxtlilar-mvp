@@ -2,9 +2,15 @@
 
 > **Журнал закрытых пунктов (обновляется по мере исправлений):**
 >
-> - **2026-06-19** SMS-OTP rip + бот-регистрация → **закрывает F-002, F-101..F-105, F-117, F-004 (биометрия отдельным consent с IP/UA/text_hash), плюс direct-browser-block для мини-аппы**. Коммиты c477b34 + a065f25 + 9e5054a.
-> - **2026-06-19** Origin-allowlist CSRF + `SameSite=None; Secure` для `bx_session` + Railway IP → **закрывает F-010, F-011**. Коммит e05f677.
-> - Подробности — в `docs/improvement-log.md` (одна запись на пункт).
+> - **2026-06-19** SMS-OTP rip + бот-регистрация → закрывает F-002, F-101..F-105, F-117, F-004, плюс direct-browser-block. Коммиты c477b34 + a065f25 + 9e5054a.
+> - **2026-06-19** Origin-allowlist CSRF + `SameSite=None; Secure` + Railway IP → закрывает **F-010, F-011**. Коммит e05f677.
+> - **2026-06-19** Identity-binding → закрывает **F-006** (phone_blacklist 90д + partial UNIQUE telegram_id), **F-007** (passport/selfie sha256 дедуп на admin-approve). Коммит 92f5242, миграция 20260619200000.
+> - **2026-06-19** Block tear-down + анти-контакт v2 → закрывает **F-008** (loadChatRow проверяет areBlocked, chat-page SSR redirect, SSE цикл рвётся), **F-009** (underscore-separator, double-space, Cyrillic @-handle, расширенные TLD/messenger-словари, применение на display_name). Коммит e6a5f4b.
+> - **2026-06-19** erase_user RPC + telegram_id wipe → закрывает **F-012, F-114, P6, P9**. Коммит 4191658, миграция 20260619300000.
+> - **2026-06-19** statement_timeout + pool.on('error') + /api/account?action=export → закрывает **F-115, F-118**. Коммит 40f9f43, миграция 20260619400000.
+> - **F-116 (CSP nonce)** — отложен: требует ручного browser-смоука в TG WebView, чтобы убедиться что nonce пропагируется в hydration.
+> - **F-003, F-005, F-119, F-120, F-121** — юр-трек / архитектура криптографии / процедурные политики; код-only не закрывает.
+> - Подробности по коду — в `docs/improvement-log.md`.
 
 
 Параллельный аудит 10 независимых поверхностей (auth/sessions, onboarding-IDOR,
