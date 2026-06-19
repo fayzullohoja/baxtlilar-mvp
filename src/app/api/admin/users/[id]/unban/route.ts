@@ -19,9 +19,15 @@ export async function POST(
 
   const { data: u } = await supabaseAdmin()
     .from("users")
-    .select("quiz_completion")
+    .select("quiz_completion, lifecycle_state")
     .eq("id", id)
     .maybeSingle();
+  if (!u) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
+  // F-119: unban имеет смысл только для blocked. Для pending_ban есть отдельный
+  // action ban?action=cancel; для остальных — 409 not_blocked (раньше тихо
+  // переводил кого попало в active/onboarding).
+  if (u.lifecycle_state !== "blocked")
+    return NextResponse.json({ ok: false, error: "not_blocked", state: u.lifecycle_state }, { status: 409 });
   // Вернуть в active, если онбординг был завершён; иначе — назад в onboarding.
   const restored = u?.quiz_completion === "completed" ? "active" : "onboarding";
 

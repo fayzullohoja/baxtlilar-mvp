@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminApi, adminAudit } from "@/lib/admin/guard";
+import { requireAdminApi, adminAudit, requireInQueueOrSuper } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { notifyUser } from "@/lib/telegram/notify";
@@ -38,6 +38,10 @@ export async function POST(
     return NextResponse.json({ ok: false, error: "bad_action" }, { status: 400 });
   if ((action === "reject" || action === "needs_changes") && !body.reason?.trim())
     return NextResponse.json({ ok: false, error: "reason_required" }, { status: 400 });
+
+  // F-120: moderator должен действовать только над юзером в очереди.
+  const scope = await requireInQueueOrSuper(session, id, "decision", req);
+  if ("res" in scope) return scope.res;
 
   const { data: user } = await supabaseAdmin()
     .from("users")
