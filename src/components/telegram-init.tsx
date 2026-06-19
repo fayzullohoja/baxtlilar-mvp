@@ -3,18 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { clientNextPath } from "@/lib/state-machine/client-paths";
-
-type TgWebApp = {
-  initData: string;
-  ready: () => void;
-  expand: () => void;
-};
-
-declare global {
-  interface Window {
-    Telegram?: { WebApp?: TgWebApp };
-  }
-}
+import "@/lib/telegram/web-app-types";
 
 /**
  * При открытии Mini App внутри Telegram: читает initData → /api/auth/bootstrap
