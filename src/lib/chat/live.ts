@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { areBlocked } from "@/lib/safety/blocks";
 
 export type LiveMsg = {
   id: string;
@@ -17,7 +18,16 @@ export type ChatRow = {
 };
 export type LiveState = { messages: LiveMsg[]; read_through: string | null; typing: boolean };
 
-/** Загрузить чат с полями typing и проверить участие. null → нет доступа. */
+/**
+ * Загрузить чат с полями typing и проверить участие. null → нет доступа.
+ *
+ * F-008: дополнительно проверяем areBlocked обеих сторон. Если блок есть,
+ * возвращаем null — всё в чате (GET messages, POST messages, /read, /typing,
+ * SSE /stream) уже использует loadChatRow и автоматически 404'ит. SSE-цикл
+ * вызывает loadChatRow на каждом тике → стрим рвётся, как только блок
+ * появляется. Раньше блокирующий продолжал получать сообщения собеседника
+ * через уже открытое окно/SSE.
+ */
 export async function loadChatRow(chatId: string, userId: string): Promise<ChatRow | null> {
   const { data } = await supabaseAdmin()
     .from("chats")
@@ -26,6 +36,8 @@ export async function loadChatRow(chatId: string, userId: string): Promise<ChatR
     .maybeSingle();
   const chat = data as ChatRow | null;
   if (!chat || (chat.user_a !== userId && chat.user_b !== userId)) return null;
+  const other = chat.user_a === userId ? chat.user_b : chat.user_a;
+  if (await areBlocked(userId, other)) return null;
   return chat;
 }
 

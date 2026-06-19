@@ -26,24 +26,46 @@ export function ageFromDate(dateStr: string): number {
   return age;
 }
 
-/** Признаки контактов/ссылок/рекламы в «о себе» / сообщениях. */
+// F-009 v2: расширенный анти-контакт фильтр.
+//   - Underscore (_) в классе разделителей телефона → ловит "9_0_1_2_3..."
+//   - До 2 подряд разделителей между цифрами → ловит "9  0  1 ..." (двойной пробел),
+//     при этом "3 000 000 - 5 000 000" (диапазон через ' - ', 3 char) НЕ ловится.
+//   - @-handle принимает Cyrillic → ловит "@саша_2024" (homoglyph-обход)
+//   - Расширенный TLD-список → ловит wa.link, linktr.ee, bit.ly, t.co, signal.app и т.п.
+//   - Расширенный словарь мессенджеров (RU/UZ-сленг): телега, тг, инста,
+//     signal, discord, wickr, session.
+const PHONE_RE = /(\+?\d[ .()_\-]{0,2}){9,}/;
+const HANDLE_RE = /@[A-Za-zЀ-ӿ0-9_]{3,}/;
+const TLD_GROUP =
+  "uz|ru|com|net|org|me|app|io|xyz|tg|ly|ee|cc|co|am|gg|info|biz|link|net|app|tk|pw|cn|us";
+const LINK_RE = new RegExp(
+  `(https?:\\/\\/|www\\.|\\bt\\.me\\b|\\b\\S+\\.(?:${TLD_GROUP})\\b)`,
+  "i",
+);
+// JS-`\b` смотрит только на ASCII-word-char — для кириллических 'тг'/'телега'
+// он не срабатывает (пробел↔кириллица не считается границей слова). Поэтому
+// явные lookaround'ы через Unicode-категорию буквы/цифры.
+const MESSENGER_RE =
+  /(?<![\p{L}\d])(telegram|телеграм|телега|тг|instagram|инстаграм|инста|whats?app|вотсап|ватсап|воцап|viber|вайбер|signal|сигнал|discord|wickr|session|skype|скайп|messenger|мессенджер)(?![\p{L}\d])/u;
+
 export function containsContact(text: string): boolean {
   // нормализация: NFKC (полноширинные цифры → ascii) + удалить ТОЛЬКО zero-width вставки.
-  // Обычные пробелы НЕ убираем — иначе диапазоны «2018-2022» / «3 000 000 - 5 000 000» ложно ловятся.
-  const norm = text.normalize("NFKC").replace(/[​-‍﻿]/g, "");
+  // Обычные пробелы НЕ убираем — иначе легитимные диапазоны ловятся.
+  const norm = text.normalize("NFKC").replace(/[​-‏﻿]/g, "");
   const low = norm.toLowerCase();
-  // телефон: ≥9 «цифр с одиночным разделителем» подряд (узб. номер = 9 цифр). Год (4 цифры) и
-  // диапазоны через « - » не дают 9 в одном прогоне → не блокируются.
-  return (
-    /(\+?\d[ .()-]?){9,}/.test(norm) || // телефон
-    /@[A-Za-z0-9_]{3,}/.test(norm) || // @username
-    /(https?:\/\/|www\.|\bt\.me\b|\b\S+\.(?:uz|ru|com|net|org|me)\b)/i.test(norm) || // ссылки
-    /\b(telegram|телеграм|instagram|инстаграм|whats?app|вотсап|ватсап|viber|вайбер)\b/.test(low) // мессенджеры
-  );
+  return PHONE_RE.test(norm) || HANDLE_RE.test(norm) || LINK_RE.test(norm) || MESSENGER_RE.test(low);
 }
 
 export const basicSchema = z.object({
-  display_name: z.string().trim().min(2).max(50),
+  // F-009 v2: display_name тоже фильтруется на контакты — раньше нарушители
+  // прятали "@ali_2024" или номер в имя профиля, и оно появлялось в ленте/чате
+  // в обход bio/chat-фильтра.
+  display_name: z
+    .string()
+    .trim()
+    .min(2)
+    .max(50)
+    .refine((s) => !containsContact(s), { message: "name_has_contacts" }),
   gender: z.enum(tuple(vals(GENDER))),
   birth_date: z
     .string()

@@ -3,6 +3,7 @@ import { Link, redirect } from "@/i18n/navigation";
 import { requireActiveUser } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getMiniProfiles } from "@/lib/profile/mini";
+import { areBlocked } from "@/lib/safety/blocks";
 import { ChatRoom, type Msg } from "@/components/chat/chat-room";
 import { ChatMenu } from "@/components/chat/chat-menu";
 
@@ -23,6 +24,12 @@ export default async function ChatThread({
   if (!chat || (chat.user_a !== user.id && chat.user_b !== user.id)) redirect({ href: "/chats", locale });
 
   const otherId = chat!.user_a === user.id ? (chat!.user_b as string) : (chat!.user_a as string);
+
+  // F-008: блок закрывает уже-открытую комнату. SSR обрабатывает direct URL и
+  // редиректит на список (там SQL-фильтр уже скрыл этот чат). API-роуты
+  // (messages/read/typing/stream) тоже не пустят — loadChatRow проверяет areBlocked.
+  if (await areBlocked(user.id, otherId)) redirect({ href: "/chats", locale });
+
   const minis = await getMiniProfiles([otherId]);
   const other = minis[otherId];
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { loadActiveUserApi } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { loadChatRow } from "@/lib/chat/live";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,13 +13,13 @@ export async function POST(
   const { user, res } = await loadActiveUserApi({ allowPaused: true });
   if (res) return res;
   const { id } = await params;
-  const sb = supabaseAdmin();
 
-  const { data: chat } = await sb.from("chats").select("user_a, user_b").eq("id", id).maybeSingle();
-  if (!chat || (chat.user_a !== user.id && chat.user_b !== user.id))
-    return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
+  // F-008: loadChatRow возвращает null если есть блок — тогда /read даёт 404
+  // и не помечает чужие сообщения прочитанными после блока.
+  const chat = await loadChatRow(id, user.id);
+  if (!chat) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
 
-  await sb
+  await supabaseAdmin()
     .from("chat_messages")
     .update({ read_at: new Date().toISOString() })
     .eq("chat_id", id)

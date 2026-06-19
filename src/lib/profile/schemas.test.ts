@@ -34,6 +34,28 @@ describe("containsContact", () => {
     expect(containsContact("Доход 3 000 000 - 5 000 000 сум")).toBe(false));
   it("слово 'инстинкт' не ложноблок", () =>
     expect(containsContact("ценю инстинкт самосохранения")).toBe(false));
+
+  // F-009 v2 — обходы, которые раньше пропускались:
+  it("v2: подчёркивания как разделитель → ловит", () =>
+    expect(containsContact("звони 9_0_1_2_3_4_5_6_7")).toBe(true));
+  it("v2: двойные пробелы между цифрами → ловит", () =>
+    expect(containsContact("9  0  1 2 3 4 5 6 7")).toBe(true));
+  it("v2: @cyrillic-username → ловит", () =>
+    expect(containsContact("пиши @саша_2024")).toBe(true));
+  it("v2: wa.link → ловит", () => expect(containsContact("открой wa.link/abc")).toBe(true));
+  it("v2: linktr.ee → ловит", () => expect(containsContact("моя linktr.ee/ali")).toBe(true));
+  it("v2: bit.ly → ловит", () => expect(containsContact("ссылка bit.ly/x")).toBe(true));
+  it("v2: signal.app → ловит", () => expect(containsContact("я на signal.app")).toBe(true));
+  it("v2: 'тг' слово → ловит", () => expect(containsContact("напиши в тг")).toBe(true));
+  it("v2: 'телега' → ловит", () => expect(containsContact("моя телега алишер")).toBe(true));
+  it("v2: 'инста' → ловит", () => expect(containsContact("инста @ali")).toBe(true));
+  it("v2: signal → ловит", () => expect(containsContact("найди меня в signal")).toBe(true));
+  it("v2: discord → ловит", () => expect(containsContact("кинь discord")).toBe(true));
+  // не-ложноблок для регрессии после v2 расширения
+  it("v2: 'тренировка инструмента' не ложноблок", () =>
+    expect(containsContact("тренировка инструмента важна")).toBe(false));
+  it("v2: 'легендарная' не ложноблок (содержит 'ег')", () =>
+    expect(containsContact("это легендарная история")).toBe(false));
 });
 
 describe("basicSchema", () => {
