@@ -650,3 +650,56 @@ partial-unique `where status='pending'` не мешает (process_interest сп
 задача; здесь закрыт именно user-facing симптом без зависимости от планировщика.
 
 <!-- Новые записи цикла добавляется ниже (хронологически). -->
+
+## 2026-06-19 · Security audit + бот-регистрация заменила SMS-OTP + CSRF + Railway IP
+
+**Что нашли.** 10 параллельных аудиторов прочитали все 38 API-роутов и
+`src/lib/**`, 14 миграций и зависимости; около 150 находок до дедупа, ~80 после.
+6 P0-блокеров: legal-черновики, биометрия без отдельного consent, ПД не
+локализованы в УЗ, identity-reset loop, блок не закрывает чат-комнату, CSRF
+под TG. Полный отчёт + план — `_audit/2026-06-19-security-audit.md`.
+
+**Что починили (релиз c477b34 → e05f677).**
+
+1. **SMS-OTP полностью выпилен**, регистрация переехала в бот
+   `@baxtlilar_uz_bot`: язык → telegram-контакт (`request_contact`-кнопка, чек
+   `contact.user_id == sender.id` — принимаем только свой) → согласие ПД →
+   отдельное согласие на биометрию → кнопка `web_app:` с HMAC-токеном TTL 10мин
+   → мини-аппа стартует на шаге паспорта. Закрывает F-002 (mock OTP=123456),
+   F-101..F-105 (sendOtp race, verifyOtp/phone unbinding, отсутствие IP-rate-limit,
+   Eskiz hardening, mock-OTP в логах), F-004 (биометрия отдельным consent,
+   `consents.ip/user_agent/language/consent_text_sha256` — миграция 20260619100000).
+2. **Прямой браузер в мини-аппу заблокирован.** `proxy.ts` без `bx_session`
+   → rewrite на `/open-in-telegram` (новая страница вне `[locale]`,
+   server-component + client AutoBootstrap, читает `?token=` и `initData`).
+   welcome-страница удалена.
+3. **`/api/health` чистит ответ** до `{ok, db, ts}` — без `dbError`/`commit`.
+   Закрывает F-117.
+4. **`/api/auth/bootstrap` больше НЕ создаёт юзеров**: 403 `register_required`
+   если строки нет, либо `onboarding_step ∈ {bot_*, legacy SMS}`. Опционально
+   принимает start_param с проверкой `uid == user.id`.
+5. **CSRF (F-010).** `bx_session` теперь `SameSite=None; Secure` в проде (Lax в
+   dev) — необходимо для third-party iframe `web.telegram.org`. `bx_admin`
+   остался `Lax`. Защита переехала на Origin-allowlist
+   (`src/lib/http/origin-check.ts`): own APP_URL, все варианты
+   `web.telegram.org`, отсутствие Origin (нативный TG), host-match для dev.
+   Чек применён в proxy.ts ко всем POST/PUT/PATCH/DELETE на `/api/*` и
+   `/admin/*`; exempt — `/api/health` и `/api/telegram/webhook`.
+6. **Railway IP в trustedIp (F-011).** Раньше знал только Vercel-заголовки →
+   на Railway всем `"unknown"`, admin-throttle коллапсировал в одну корзину.
+   Теперь читает `x-envoy-external-address` (Envoy edge Railway, не
+   спуфабельный), fallback на Vercel, потом правый non-private XFF. Валидация
+   IPv4/IPv6.
+
+**Как проверили.** typecheck/lint чисто, 139/139 тестов. Прод-смоук:
+`/api/health` без SHA/dbError; анонимный `/` → 200 с landing; `?token=`
+пробрасывается через rewrite; webhook без secret → 401, с secret → 200;
+POST с evil-Origin на `/api/account` или `/api/admin/login` → 403 `cross_origin`;
+POST с own/TG-Origin или без Origin → 401 (нет сессии); webhook exempt от
+Origin-чека.
+
+**Что ещё ждёт по плану.** F-006/007 (passport_hash дедуп + phone-cooldown),
+F-008/009 (block tear-down + анти-контакт v2), F-114/116 (mutation `.error` +
+CSP nonce), F-115 (`statement_timeout`), F-118 (export ПД), F-119/120
+(two-person ban + moderator data scope), F-121 (envelope-encryption биометрии).
+Юр-трек — у юриста РУз.

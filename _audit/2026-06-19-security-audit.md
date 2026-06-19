@@ -1,5 +1,12 @@
 # Security audit — Baxtlilar — 2026-06-19
 
+> **Журнал закрытых пунктов (обновляется по мере исправлений):**
+>
+> - **2026-06-19** SMS-OTP rip + бот-регистрация → **закрывает F-002, F-101..F-105, F-117, F-004 (биометрия отдельным consent с IP/UA/text_hash), плюс direct-browser-block для мини-аппы**. Коммиты c477b34 + a065f25 + 9e5054a.
+> - **2026-06-19** Origin-allowlist CSRF + `SameSite=None; Secure` для `bx_session` + Railway IP → **закрывает F-010, F-011**. Коммит e05f677.
+> - Подробности — в `docs/improvement-log.md` (одна запись на пункт).
+
+
 Параллельный аудит 10 независимых поверхностей (auth/sessions, onboarding-IDOR,
 chat+safety+matching, admin/RBAC, storage/uploads, data-layer/SQLi,
 PII/privacy/legal, SMS/OTP, headers/CSP/proxy, deps/secrets/logs, business/abuse).
