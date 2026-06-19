@@ -3,10 +3,17 @@
 export type LifecycleState = "onboarding" | "active" | "paused" | "blocked" | "deleted";
 
 export type OnboardingStep =
+  // Бот-регистрация (2026-06-19 security pivot, заменяет SMS-OTP):
+  | "bot_language"
+  | "bot_contact"
+  | "bot_consent_pd"
+  | "bot_consent_biometric"
+  // Legacy SMS-flow — не используются, оставлены в enum для миграции:
   | "language"
   | "consent"
   | "phone_input"
   | "otp_pending"
+  // Mini-app onboarding:
   | "doc_upload"
   | "selfie_upload"
   | "moderation_pending"
@@ -39,21 +46,29 @@ export type QuizCompletion = "not_started" | "in_progress" | "completed";
  * Разрешённые переходы onboarding_step (MVP-порядок: телефон → паспорт → селфи → модерация).
  */
 export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
-  language: ["consent"],
-  consent: ["phone_input"],
-  phone_input: ["otp_pending"],
-  otp_pending: ["phone_input", "doc_upload"], // повтор кода или успех
+  // Бот-регистрация (актуальный путь):
+  bot_language: ["bot_contact"],
+  bot_contact: ["bot_consent_pd"],
+  bot_consent_pd: ["bot_consent_biometric"],
+  bot_consent_biometric: ["doc_upload"],
+  // Legacy SMS-шаги — terminal, новых переходов нет (но валидируются как enum
+  // на случай рестора старых строк):
+  language: [],
+  consent: [],
+  phone_input: [],
+  otp_pending: [],
+  // Mini-app onboarding:
   doc_upload: ["selfie_upload", "needs_changes"],
   selfie_upload: ["moderation_pending", "needs_changes"],
   moderation_pending: ["needs_changes", "verification_rejected", "profile_basic"],
   needs_changes: ["doc_upload", "selfie_upload", "moderation_pending"],
-  verification_rejected: ["doc_upload"], // повторная попытка, если разрешена
+  verification_rejected: ["doc_upload"],
   profile_basic: ["profile_family"],
   profile_family: ["profile_values"],
   profile_values: ["profile_looking_for"],
   profile_looking_for: ["profile_photos"],
   profile_photos: ["profile_preview"],
-  profile_preview: ["profile_basic", "quiz"], // edit (назад к началу анкеты) или publish
+  profile_preview: ["profile_basic", "quiz"],
   quiz: ["active"],
   active: [],
 };

@@ -18,9 +18,18 @@ describe("clientNextPath", () => {
   });
 
   it("onboarding → step path", () => {
-    expect(clientNextPath("onboarding", "consent")).toBe("/onboarding/consent");
-    expect(clientNextPath("onboarding", "phone_input")).toBe("/onboarding/phone");
+    expect(clientNextPath("onboarding", "doc_upload")).toBe("/onboarding/document");
+    expect(clientNextPath("onboarding", "selfie_upload")).toBe("/onboarding/selfie");
     expect(clientNextPath("onboarding", "active")).toBe("/main");
+  });
+
+  it("bot-шаги и legacy SMS-шаги ведут на /open-in-telegram", () => {
+    expect(clientNextPath("onboarding", "bot_language")).toBe("/open-in-telegram");
+    expect(clientNextPath("onboarding", "bot_contact")).toBe("/open-in-telegram");
+    expect(clientNextPath("onboarding", "bot_consent_pd")).toBe("/open-in-telegram");
+    expect(clientNextPath("onboarding", "bot_consent_biometric")).toBe("/open-in-telegram");
+    expect(clientNextPath("onboarding", "consent")).toBe("/open-in-telegram");
+    expect(clientNextPath("onboarding", "phone_input")).toBe("/open-in-telegram");
   });
 
   it("unknown step → /", () => {

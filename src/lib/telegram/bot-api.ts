@@ -1,0 +1,80 @@
+import "server-only";
+import { env } from "@/lib/env";
+
+// Тонкий клиент Telegram Bot API. Используется ботом-вебхуком (/api/telegram/webhook).
+// `fetch` с таймаутом 10с (Eskiz-урок: висящий fetch на upstream съедает функцию).
+// Ошибки не бросаются — best-effort, логируем.
+
+const API_BASE = "https://api.telegram.org";
+
+export type ReplyKeyboardButton = { text: string; request_contact?: boolean };
+export type InlineKeyboardButton = {
+  text: string;
+  callback_data?: string;
+  url?: string;
+  web_app?: { url: string };
+};
+
+export type ReplyKeyboardMarkup = {
+  keyboard: ReplyKeyboardButton[][];
+  resize_keyboard?: boolean;
+  one_time_keyboard?: boolean;
+  selective?: boolean;
+};
+
+export type InlineKeyboardMarkup = {
+  inline_keyboard: InlineKeyboardButton[][];
+};
+
+export type ReplyMarkup =
+  | ReplyKeyboardMarkup
+  | InlineKeyboardMarkup
+  | { remove_keyboard: true }
+  | undefined;
+
+async function call(method: string, payload: Record<string, unknown>): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/bot${env().TELEGRAM_BOT_TOKEN}/${method}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(`[bot-api] ${method} HTTP ${res.status}: ${body.slice(0, 200)}`);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error(`[bot-api] ${method} failed:`, e instanceof Error ? e.message : String(e));
+    return false;
+  }
+}
+
+export function sendMessage(
+  chatId: number,
+  text: string,
+  replyMarkup?: ReplyMarkup,
+): Promise<boolean> {
+  const payload: Record<string, unknown> = { chat_id: chatId, text };
+  // Без parse_mode: текст идёт plain — никакой HTML/MD-инъекции.
+  if (replyMarkup) payload.reply_markup = replyMarkup;
+  return call("sendMessage", payload);
+}
+
+export function answerCallbackQuery(callbackQueryId: string, text?: string): Promise<boolean> {
+  const payload: Record<string, unknown> = { callback_query_id: callbackQueryId };
+  if (text) payload.text = text;
+  return call("answerCallbackQuery", payload);
+}
+
+export function editMessageReplyMarkup(
+  chatId: number,
+  messageId: number,
+  replyMarkup?: InlineKeyboardMarkup,
+): Promise<boolean> {
+  const payload: Record<string, unknown> = { chat_id: chatId, message_id: messageId };
+  if (replyMarkup) payload.reply_markup = replyMarkup;
+  return call("editMessageReplyMarkup", payload);
+}

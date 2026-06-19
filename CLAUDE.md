@@ -53,11 +53,20 @@ railway up        # деплой на Railway (Nixpacks, healthcheck /api/health
 ```
 
 ## Env (обязательные)
-`DATABASE_URL` (Postgres), `STORAGE_DIR` (на Railway `/data`), `SESSION_SECRET` (32+), `TELEGRAM_BOT_TOKEN`, `SMS_PROVIDER`. Опц.: `APP_URL`, `SUPPORT_URL`, `PGSSL=require` (для внешнего Postgres).
+`DATABASE_URL` (Postgres), `STORAGE_DIR` (на Railway `/data`), `SESSION_SECRET` (32+), `TELEGRAM_BOT_TOKEN`, `BOT_USERNAME`, `BOT_WEBAPP_SHORT_NAME`, `TELEGRAM_WEBHOOK_SECRET` (16+). Опц.: `APP_URL`, `SUPPORT_URL`, `PGSSL=require` (для внешнего Postgres).
 
 ## Dev-флаги
 - `DEV_BYPASS_TG=1` — пропустить HMAC initData в браузере (только локально; в проде НЕ ставить).
-- `SMS_PROVIDER=mock` — код `123456` принимается всегда.
 
-## Порядок верификации MVP (важно!)
-`телефон+OTP → паспорт → селфи → модерация → одобрено → анкета → опрос → active`
+## Порядок регистрации/верификации MVP (security-pivot 2026-06-19)
+1) **В боте `@baxtlilar_uz_bot`:** `/start` → язык → контакт (TG-кнопка `request_contact`, телефон уже верифицирован самим Telegram) → согласие на ПД → отдельное согласие на биометрию → deep-link открывает мини-аппу.
+2) **В мини-аппе:** паспорт → селфи → модерация → одобрено → анкета → опрос → active.
+
+SMS/OTP **выпилены полностью** — телефон даёт Telegram через `Contact.user_id == sender.id`-чек. См. `_audit/2026-06-19-security-audit.md`.
+
+Регистрация webhook'а бота:
+```
+pnpm webhook:set    # читает .env.access/.env.local
+```
+
+Браузерный прямой вход в мини-аппу **заблокирован**: `proxy.ts` без `bx_session`-cookie рисует `/open-in-telegram` (кнопка → бот).

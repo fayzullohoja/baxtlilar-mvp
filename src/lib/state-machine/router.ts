@@ -6,10 +6,18 @@ import type { OnboardingStep } from "./types";
  * Источник истины: Чат 12 §6 / Чат 13 §1.3 (порядок MVP).
  */
 export const ONBOARDING_PATHS: Record<OnboardingStep, string> = {
-  language: "/",
-  consent: "/onboarding/consent",
-  phone_input: "/onboarding/phone",
-  otp_pending: "/onboarding/otp",
+  // bot-шаги — мини-аппа не должна показывать их UI; выкидываем на /open-in-telegram,
+  // там user попадёт обратно в бот через deep-link.
+  bot_language: "/open-in-telegram",
+  bot_contact: "/open-in-telegram",
+  bot_consent_pd: "/open-in-telegram",
+  bot_consent_biometric: "/open-in-telegram",
+  // Legacy SMS:
+  language: "/open-in-telegram",
+  consent: "/open-in-telegram",
+  phone_input: "/open-in-telegram",
+  otp_pending: "/open-in-telegram",
+  // Mini-app:
   doc_upload: "/onboarding/document",
   selfie_upload: "/onboarding/selfie",
   moderation_pending: "/onboarding/pending",

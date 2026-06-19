@@ -36,11 +36,20 @@ describe("ALLOWED_TRANSITIONS", () => {
     }
   });
 
-  it("MVP-порядок: телефон перед документами", () => {
-    expect(ALLOWED_TRANSITIONS.consent).toContain("phone_input");
-    expect(ALLOWED_TRANSITIONS.otp_pending).toContain("doc_upload");
+  it("bot-flow (2026-06-19): язык → контакт → ПД → биометрия → doc_upload", () => {
+    expect(ALLOWED_TRANSITIONS.bot_language).toContain("bot_contact");
+    expect(ALLOWED_TRANSITIONS.bot_contact).toContain("bot_consent_pd");
+    expect(ALLOWED_TRANSITIONS.bot_consent_pd).toContain("bot_consent_biometric");
+    expect(ALLOWED_TRANSITIONS.bot_consent_biometric).toContain("doc_upload");
     expect(ALLOWED_TRANSITIONS.doc_upload).toContain("selfie_upload");
     expect(ALLOWED_TRANSITIONS.selfie_upload).toContain("moderation_pending");
+  });
+
+  it("legacy SMS-шаги — terminal (новых переходов нет)", () => {
+    expect(ALLOWED_TRANSITIONS.language).toEqual([]);
+    expect(ALLOWED_TRANSITIONS.consent).toEqual([]);
+    expect(ALLOWED_TRANSITIONS.phone_input).toEqual([]);
+    expect(ALLOWED_TRANSITIONS.otp_pending).toEqual([]);
   });
 
   it("модератор может одобрить или вернуть с moderation_pending", () => {
@@ -55,18 +64,23 @@ describe("ALLOWED_TRANSITIONS", () => {
 });
 
 describe("ALLOWED_TRANSITIONS connectivity (анти-застревание)", () => {
-  it("нет тупиков в середине потока — терминален только active", () => {
-    const deadEnds = ALL_STEPS.filter((s) => s !== "active" && ALLOWED_TRANSITIONS[s].length === 0);
+  // Legacy-шаги намеренно terminal — это и есть способ "ничего не делать с
+  // унаследованными строками". Они исключены из проверки тупиков.
+  const LEGACY: ReadonlySet<string> = new Set(["language", "consent", "phone_input", "otp_pending"]);
+  const LIVE = ALL_STEPS.filter((s) => !LEGACY.has(s));
+
+  it("из live-шагов тупиков нет (терминален только active)", () => {
+    const deadEnds = LIVE.filter((s) => s !== "active" && ALLOWED_TRANSITIONS[s].length === 0);
     expect(deadEnds).toEqual([]);
   });
 
-  it("каждый шаг достижим из language (нет шагов-сирот)", () => {
-    const reached = reachableFrom("language");
-    const unreachable = ALL_STEPS.filter((s) => !reached.has(s));
+  it("каждый live-шаг достижим из bot_language (нет сирот)", () => {
+    const reached = reachableFrom("bot_language");
+    const unreachable = LIVE.filter((s) => !reached.has(s));
     expect(unreachable).toEqual([]);
   });
 
-  it("active достижим из language (happy-path замыкается)", () => {
-    expect(reachableFrom("language").has("active")).toBe(true);
+  it("active достижим из bot_language (happy-path замыкается)", () => {
+    expect(reachableFrom("bot_language").has("active")).toBe(true);
   });
 });

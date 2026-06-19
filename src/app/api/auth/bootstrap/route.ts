@@ -1,18 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { verifyInitData, InitDataError } from "@/lib/telegram/init-data";
+import { verifyStartToken } from "@/lib/telegram/start-token";
 import { setSession } from "@/lib/auth/session";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type BootstrapBody = { initData?: string };
+type BootstrapBody = { initData?: string; start_param?: string | null };
+
+// Шаги, на которых пользователь ЕЩЁ В БОТЕ и не имеет права получить сессию
+// мини-аппы. Бот сам ведёт через них; мини-аппа открывается только после
+// bot_consent_biometric → doc_upload.
+const BOT_OR_LEGACY_STEPS = new Set<string>([
+  "bot_language",
+  "bot_contact",
+  "bot_consent_pd",
+  "bot_consent_biometric",
+  // Legacy SMS-шаги (бывшие до 2026-06-19 pivot) — тоже не пускаем без перерегистрации в боте.
+  "language",
+  "consent",
+  "phone_input",
+  "otp_pending",
+]);
 
 /**
  * POST /api/auth/bootstrap
- * Принимает Telegram WebApp initData, валидирует HMAC, апсертит пользователя по telegram_id,
- * выставляет httpOnly-сессию. В dev (DEV_BYPASS_TG=1) пропускает проверку подписи.
+ *
+ * Обмен Telegram initData (+ опционально start_param) на сессионный cookie.
+ *
+ * После security-pivot 2026-06-19: пользователь ДОЛЖЕН быть предварительно
+ * зарегистрирован у бота. Если строки в users нет, либо она ещё на bot_*-шаге —
+ * возвращаем 403 register_required (фронт показывает кнопку deep-link на бота).
+ *
+ * start_param (если есть) — это HMAC-подписанный токен, который бот вшил в
+ * deep-link мини-аппы; защита от того, что чужой initData от случайного
+ * TG-пользователя кому-то даст вход без регистрации.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   let body: BootstrapBody;
@@ -29,9 +53,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const e = env();
   let parsed;
   try {
-    // SEC-4: bypass HMAC допустим ТОЛЬКО вне production, даже если флаг включён в env
     const bypass = e.DEV_BYPASS_TG && process.env.NODE_ENV !== "production";
-    // M4: сужаем окно свежести initData 24ч → 3ч (меньше окно реплея; долгие сессии ещё ок)
     parsed = verifyInitData(initData, { bypass, maxAgeSec: 3 * 3600 });
   } catch (err) {
     const code = err instanceof InitDataError ? err.message : "verify_failed";
@@ -44,71 +66,48 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const sb = supabaseAdmin();
   const tgId = parsed.user.id;
-  const tgPatch = {
-    telegram_username: parsed.user.username ?? null,
-    telegram_first_name: parsed.user.first_name ?? null,
-    telegram_last_name: parsed.user.last_name ?? null,
-  };
 
-  // upsert по telegram_id
-  const { data: existing, error: selErr } = await sb
+  const { data: row, error: selErr } = await sb
     .from("users")
     .select("id, onboarding_step, lifecycle_state")
     .eq("telegram_id", tgId)
     .maybeSingle();
   if (selErr) {
-    return NextResponse.json({ ok: false, error: selErr.message }, { status: 500 });
+    console.error("[bootstrap] select failed:", selErr.message);
+    return NextResponse.json({ ok: false, error: "db" }, { status: 500 });
+  }
+  if (!row) {
+    return NextResponse.json({ ok: false, error: "register_required" }, { status: 403 });
   }
 
-  let userId: string;
-  let onboardingStep: string = "language";
-  let lifecycleState: string = "onboarding";
-
-  if (existing) {
-    userId = existing.id;
-    onboardingStep = existing.onboarding_step;
-    lifecycleState = existing.lifecycle_state;
-    await sb.from("users").update(tgPatch).eq("id", userId);
-  } else {
-    const { data: created, error: insErr } = await sb
-      .from("users")
-      .insert({ telegram_id: tgId, ...tgPatch })
-      .select("id, onboarding_step, lifecycle_state")
-      .single();
-    if (insErr || !created) {
-      // BUG-7: гонка двух первых заходов — второй ловит unique(telegram_id) (23505).
-      // Перечитываем уже созданную строку вместо 500.
-      if (insErr && (insErr.code === "23505" || /duplicate|unique/i.test(insErr.message))) {
-        const { data: race } = await sb
-          .from("users")
-          .select("id, onboarding_step, lifecycle_state")
-          .eq("telegram_id", tgId)
-          .single();
-        if (race) {
-          await setSession(race.id as string);
-          return NextResponse.json({
-            ok: true,
-            userId: race.id,
-            onboarding_step: race.onboarding_step,
-            lifecycle_state: race.lifecycle_state,
-          });
-        }
-      }
-      return NextResponse.json(
-        { ok: false, error: insErr?.message ?? "insert_failed" },
-        { status: 500 },
-      );
+  // start_param (если был) — связываем uid с найденным user.id.
+  if (body.start_param) {
+    const v = verifyStartToken(body.start_param);
+    if (!v || v.uid !== row.id) {
+      return NextResponse.json({ ok: false, error: "bad_start_param" }, { status: 401 });
     }
-    userId = created.id;
-    onboardingStep = created.onboarding_step;
-    lifecycleState = created.lifecycle_state;
   }
 
-  await setSession(userId);
+  // Гейт: пользователь должен быть ПОСЛЕ бот-flow.
+  if (BOT_OR_LEGACY_STEPS.has(row.onboarding_step)) {
+    return NextResponse.json({ ok: false, error: "register_required" }, { status: 403 });
+  }
+
+  // Тонкий метаобновлятор tg-полей (имя/username могло смениться).
+  await sb
+    .from("users")
+    .update({
+      telegram_username: parsed.user.username ?? null,
+      telegram_first_name: parsed.user.first_name ?? null,
+      telegram_last_name: parsed.user.last_name ?? null,
+    })
+    .eq("id", row.id);
+
+  await setSession(row.id as string);
   return NextResponse.json({
     ok: true,
-    userId,
-    onboarding_step: onboardingStep,
-    lifecycle_state: lifecycleState,
+    userId: row.id,
+    onboarding_step: row.onboarding_step,
+    lifecycle_state: row.lifecycle_state,
   });
 }

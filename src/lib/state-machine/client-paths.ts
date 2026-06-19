@@ -1,9 +1,17 @@
 /** Клиентская копия маршрутов шагов (для редиректа из TelegramInit). Держать в синхроне с router.ts. */
 export const CLIENT_ONBOARDING_PATHS: Record<string, string> = {
-  language: "/",
-  consent: "/onboarding/consent",
-  phone_input: "/onboarding/phone",
-  otp_pending: "/onboarding/otp",
+  // bot-шаги пользователь проходит В БОТЕ; в мини-аппе они не должны
+  // показывать UI — фолбэк на /open-in-telegram, который кинет в бот.
+  bot_language: "/open-in-telegram",
+  bot_contact: "/open-in-telegram",
+  bot_consent_pd: "/open-in-telegram",
+  bot_consent_biometric: "/open-in-telegram",
+  // Legacy:
+  language: "/open-in-telegram",
+  consent: "/open-in-telegram",
+  phone_input: "/open-in-telegram",
+  otp_pending: "/open-in-telegram",
+  // Mini-app:
   doc_upload: "/onboarding/document",
   selfie_upload: "/onboarding/selfie",
   moderation_pending: "/onboarding/pending",
