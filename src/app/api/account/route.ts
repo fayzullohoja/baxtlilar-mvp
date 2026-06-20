@@ -77,15 +77,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const { data: photos } = await sb.from("profile_photos").select("path").eq("user_id", user.id);
     const photoPaths = (photos ?? []).map((p) => p.path as string);
 
-    // F-114/F-012: единая транзакция через erase_user RPC. Раньше десяток
-    // мутаций без .error-чека — частичный сбой возвращал {ok:true}, оставляя
-    // ПД в БД (нарушение права на стирание ст. 28 закона РУз).
-    const tr = await tryTransition(user.id, { lifecycle_state: "deleted" }, "user deleted account", {
-      kind: "user",
-      id: user.id,
-    });
-    if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-
+    // F-114/F-012 + H8 verdict-fix (split-window): lifecycle='deleted' перевод
+    // ТЕПЕРЬ ВНУТРИ erase_user RPC (см. миграцию 20260620920000). Раньше:
+    //   tryTransition(deleted) → COMMIT tx1
+    //   erase_user RPC          → если упал, lifecycle уже 'deleted', но
+    //                             docs/tombstone не записаны → catfish bypass.
+    // Сейчас всё в одной транзакции RPC. JS-route только запускает её и
+    // обрабатывает результат.
     const { error: rpcErr } = await sb.rpc("erase_user", { p_user_id: user.id });
     if (rpcErr) {
       console.error("[account.delete] erase_user RPC failed:", rpcErr.message);

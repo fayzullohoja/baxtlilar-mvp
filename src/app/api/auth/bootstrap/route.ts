@@ -12,7 +12,7 @@ type BootstrapBody = { initData?: string; start_param?: string | null };
 
 // Шаги, на которых пользователь ЕЩЁ В БОТЕ и не имеет права получить сессию
 // мини-аппы. Бот сам ведёт через них; мини-аппа открывается только после
-// bot_consent_biometric → doc_upload.
+// bot_consent_biometric → verification_intro.
 const BOT_OR_LEGACY_STEPS = new Set<string>([
   "bot_language",
   "bot_contact",
@@ -24,6 +24,12 @@ const BOT_OR_LEGACY_STEPS = new Set<string>([
   "phone_input",
   "otp_pending",
 ]);
+
+// H3 verdict-fix (HOLD после первого fix-batch): start_param стал ОБЯЗАТЕЛЬНЫМ
+// для всех bootstrap'ов. Раньше: украденный initData жертвы → атакующий шлёт
+// POST {initData} БЕЗ start_param → setSession. Сейчас: bind на telegram_id
+// + single-use jti — украденный initData без token бесполезен; украденный
+// token → single-use → второй вызов 401.
 
 /**
  * POST /api/auth/bootstrap
@@ -67,6 +73,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const sb = supabaseAdmin();
   const tgId = parsed.user.id;
 
+  // H3 verdict-fix: start_param ОБЯЗАТЕЛЕН. Без него — 401 missing_start_param.
+  // Раньше was optional → украденный initData жертвы давал session.
+  if (!body.start_param) {
+    return NextResponse.json({ ok: false, error: "missing_start_param" }, { status: 401 });
+  }
+
   const { data: row, error: selErr } = await sb
     .from("users")
     .select("id, onboarding_step, lifecycle_state")
@@ -80,15 +92,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "register_required" }, { status: 403 });
   }
 
-  // start_param (если был) — связываем uid с найденным user.id.
   // H3 verdict-fix: токен биндится к telegram_id юзера. Если v.tg ≠ initData
-  // user.id — украденный токен в чужой initData отвергаем (catfish A открыл
-  // мини-аппу под initData пользователя B со своим валидным token).
-  if (body.start_param) {
-    const v = verifyStartToken(body.start_param);
-    if (!v || v.uid !== row.id || v.tg !== tgId) {
-      return NextResponse.json({ ok: false, error: "bad_start_param" }, { status: 401 });
-    }
+  // user.id — украденный токен в чужой initData отвергаем.
+  const v = verifyStartToken(body.start_param);
+  if (!v || v.uid !== row.id || v.tg !== tgId) {
+    return NextResponse.json({ ok: false, error: "bad_start_param" }, { status: 401 });
+  }
+
+  // H3 verdict-fix (single-use): claim_start_token returns true только если
+  // jti ранее не использован. Replay одного и того же токена в TTL=10мин
+  // отвергаем (защита от XSS-кражи token из window.location и многократного
+  // обмена на cookie).
+  const { data: claimed, error: claimErr } = await sb.rpc("claim_start_token", {
+    p_jti: v.jti,
+    p_user_id: row.id,
+    p_telegram_id: tgId,
+  });
+  if (claimErr) {
+    console.error("[bootstrap] claim_start_token RPC failed:", claimErr.message);
+    return NextResponse.json({ ok: false, error: "db" }, { status: 500 });
+  }
+  if (!claimed) {
+    return NextResponse.json({ ok: false, error: "token_replay" }, { status: 401 });
   }
 
   // Гейт: пользователь должен быть ПОСЛЕ бот-flow.

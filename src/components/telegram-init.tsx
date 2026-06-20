@@ -17,12 +17,12 @@ export function TelegramInit() {
   useEffect(() => {
     let cancelled = false;
 
-    async function bootstrap(initData: string) {
+    async function bootstrap(initData: string, startParam: string) {
       try {
         const res = await fetch("/api/auth/bootstrap", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ initData }),
+          body: JSON.stringify({ initData, start_param: startParam }),
         });
         if (!res.ok || cancelled) return;
         const data = (await res.json()) as {
@@ -48,7 +48,13 @@ export function TelegramInit() {
         tg.ready?.();
         tg.expand?.();
         const initData = tg.initData ?? "";
-        if (initData) void bootstrap(initData);
+        // H3 verdict-fix: start_param теперь обязателен на стороне сервера.
+        // Источник: TG-deeplink startapp=<token> (initDataUnsafe.start_param)
+        // ИЛИ ?token=... в URL (используется на /open-in-telegram, не здесь).
+        // Без start_param silent bootstrap молча skip'аем — юзер должен открыть
+        // мини-аппу через web_app-кнопку бота, которая всегда даёт свежий token.
+        const startParam = tg.initDataUnsafe?.start_param ?? "";
+        if (initData && startParam) void bootstrap(initData, startParam);
       } else if (tries >= 15) {
         clearInterval(timer);
       }
