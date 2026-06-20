@@ -8,7 +8,7 @@
 // Bilingual (Russian + Uzbek-Latin). Uzbek orthography follows the app: oʻ, gʻ, ʻ.
 
 export type LegalDoc = {
-  slug: "terms" | "privacy" | "offer";
+  slug: "terms" | "privacy" | "offer" | "rules";
   version: string;
   title: { ru: string; uz: string };
   sections: {
@@ -17,9 +17,11 @@ export type LegalDoc = {
   }[];
 };
 
-export const LEGAL_VERSION = "2026-06-02";
+// Bump 2026-06-02 → 2026-06-19: добавили consent_type 'rules' (правила
+// сообщества), синхронизированный с бот-flow.
+export const LEGAL_VERSION = "2026-06-19";
 
-export const LEGAL_DOCS: Record<"terms" | "privacy" | "offer", LegalDoc> = {
+export const LEGAL_DOCS: Record<"terms" | "privacy" | "offer" | "rules", LegalDoc> = {
   terms: {
     slug: "terms",
     version: LEGAL_VERSION,
@@ -338,6 +340,54 @@ export const LEGAL_DOCS: Record<"terms" | "privacy" | "offer", LegalDoc> = {
         body: {
           ru: "[реквизиты оператора] — Наименование: [Наименование оператора]; адрес: [адрес]; ИНН: [ИНН]; электронная почта: [email]. Полные банковские и регистрационные реквизиты будут указаны в окончательной редакции документа.",
           uz: "[operator rekvizitlari] — Nomi: [Operator nomi]; manzil: [manzil]; STIR (INN): [INN]; elektron pochta: [email]. Toʻliq bank va roʻyxatga olish rekvizitlari hujjatning yakuniy tahririda koʻrsatiladi.",
+        },
+      },
+    ],
+  },
+  // ЧЕРНОВИК — требует юр-проверки. Правила сообщества: что можно/нельзя в
+  // чате и публичных полях. Воркфлоу из spec'а Экран 2 — требует консент на
+  // правила как отдельную галку (consent_type='rules').
+  rules: {
+    slug: "rules",
+    version: LEGAL_VERSION,
+    title: {
+      ru: "Правила сообщества",
+      uz: "Hamjamiyat qoidalari",
+    },
+    sections: [
+      {
+        heading: { ru: "1. Уважение и серьёзные намерения", uz: "1. Hurmat va jiddiy niyatlar" },
+        body: {
+          ru: "Baxtlilar — для пользователей, готовых к серьёзным отношениям и созданию семьи. Уважительный тон в общении обязателен.",
+          uz: "Baxtlilar — jiddiy munosabatlarga va oilani yaratishga tayyor foydalanuvchilar uchun. Muloqotda hurmatli ohang majburiy.",
+        },
+      },
+      {
+        heading: { ru: "2. Что запрещено", uz: "2. Nima taqiqlanadi" },
+        body: {
+          ru: "Запрещены: оскорбления, домогательства, угрозы, спам и реклама, попытки получить или раскрыть контактные данные в публичных полях, выдача себя за другое лицо, фейковые анкеты, упоминание или просьбы об интимных встречах без серьёзных намерений.",
+          uz: "Taqiqlanadi: haqorat, taʼqib, tahdid, spam va reklama, ommaviy maydonlarda kontakt maʼlumotlarini olishga yoki oshkor qilishga urinish, boshqa shaxs sifatida koʻrsatish, soxta anketalar, jiddiy niyatsiz yaqinlik haqida soʻrash.",
+        },
+      },
+      {
+        heading: { ru: "3. Защита приватности", uz: "3. Maxfiylik himoyasi" },
+        body: {
+          ru: "Не публикуйте свои или чужие телефоны, мессенджеры, адреса в анкете или открытых сообщениях до взаимного согласия. Анти-контакт фильтр удалит такие сообщения автоматически.",
+          uz: "Anketada yoki ochiq xabarlarda oʻzingizning yoki boshqalarning telefonini, messenjerlarini, manzillarini oʻzaro rozilik boʻlmaguncha eʼlon qilmang. Anti-kontakt filtr bunday xabarlarni avtomatik oʻchiradi.",
+        },
+      },
+      {
+        heading: { ru: "4. Жалобы и блокировки", uz: "4. Shikoyatlar va bloklash" },
+        body: {
+          ru: "При нарушении правил пользователь может отправить жалобу. Подтверждённое нарушение ведёт к ограничению функций, временной приостановке или блокировке аккаунта. Решение блокировки требует подтверждения двумя модераторами.",
+          uz: "Qoidalar buzilganda foydalanuvchi shikoyat yuborishi mumkin. Tasdiqlangan buzilish funksiyalarni cheklash, vaqtinchalik toʻxtatish yoki hisobni bloklashga olib keladi. Bloklash qarori ikki moderator tomonidan tasdiqlanishni talab qiladi.",
+        },
+      },
+      {
+        heading: { ru: "5. Несовершеннолетние и подделка возраста", uz: "5. Voyaga yetmaganlar va yoshni soxtalashtirish" },
+        body: {
+          ru: "Пользоваться сервисом могут только лица 18 лет и старше. Указание заведомо недостоверного возраста — основание для немедленной блокировки.",
+          uz: "Xizmatdan faqat 18 yoshdan oshganlar foydalanishi mumkin. Yoshni qasddan soxtalashtirish — darhol bloklash uchun asos.",
         },
       },
     ],

@@ -9,6 +9,7 @@ import { signStartToken } from "../start-token";
 import { sendMessage, answerCallbackQuery } from "../bot-api";
 import type { InlineKeyboardMarkup, ReplyKeyboardMarkup } from "../bot-api";
 import { M, pick, type Lang } from "./messages";
+import { LEGAL_VERSION } from "@/content/legal";
 
 // =====================================================================
 //  Telegram Update shapes (минимум, что нам реально нужен — без всей PI).
@@ -190,8 +191,6 @@ function bioConsentKeyboard(lang: Lang): InlineKeyboardMarkup {
 //  Запись consent с доказательством (F-013/F-004/P4)
 // =====================================================================
 
-const LEGAL_VERSION = "2026-06-19";
-
 async function recordConsent(
   userId: string,
   types: string[],
@@ -331,9 +330,11 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
         await sendMessage(chatId, pick(M.declined_pd, user.language));
         return;
       }
+      // Sprint-a: добавили consent_type 'rules' (правила сообщества) — теперь
+      // single PD-кнопка покрывает 4 документа: terms+privacy+pd+rules.
       await recordConsent(
         user.id,
-        ["terms", "privacy", "pd"],
+        ["terms", "privacy", "pd", "rules"],
         pick(M.pd_consent_ask, user.language),
         user.language,
       );

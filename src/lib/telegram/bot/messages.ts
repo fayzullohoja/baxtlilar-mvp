@@ -33,12 +33,16 @@ export const M = {
   pd_consent_ask: {
     ru:
       "Чтобы продолжить, нужно согласие на обработку персональных данных " +
-      `(имя, телефон, анкета).\n\nУсловия: ${APP_URL}/ru/legal/terms\n` +
-      `Политика: ${APP_URL}/ru/legal/privacy`,
+      `(имя, телефон, анкета) и на правила сообщества.\n\n` +
+      `Условия: ${APP_URL}/ru/legal/terms\n` +
+      `Политика: ${APP_URL}/ru/legal/privacy\n` +
+      `Правила: ${APP_URL}/ru/legal/rules`,
     uz:
-      "Davom etish uchun shaxsiy maʼlumotlarni qayta ishlashga rozilik kerak " +
-      `(ism, telefon, anketa).\n\nShartlar: ${APP_URL}/uz/legal/terms\n` +
-      `Maxfiylik: ${APP_URL}/uz/legal/privacy`,
+      "Davom etish uchun shaxsiy maʼlumotlarni qayta ishlashga (ism, telefon, " +
+      `anketa) va hamjamiyat qoidalariga rozilik kerak.\n\n` +
+      `Shartlar: ${APP_URL}/uz/legal/terms\n` +
+      `Maxfiylik: ${APP_URL}/uz/legal/privacy\n` +
+      `Qoidalar: ${APP_URL}/uz/legal/rules`,
   },
   pd_consent_yes: { ru: "✅ Согласен", uz: "✅ Roziman" },
   pd_consent_no: { ru: "❌ Отказаться", uz: "❌ Rad etish" },

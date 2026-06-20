@@ -6,6 +6,7 @@ export type TgWebApp = {
   initDataUnsafe?: { start_param?: string };
   ready?: () => void;
   expand?: () => void;
+  close?: () => void;
 };
 
 declare global {
