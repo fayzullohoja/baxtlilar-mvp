@@ -9,8 +9,22 @@
 > - **2026-06-19** erase_user RPC + telegram_id wipe → закрывает **F-012, F-114, P6, P9**. Коммит 4191658, миграция 20260619300000.
 > - **2026-06-19** statement_timeout + pool.on('error') + /api/account?action=export → закрывает **F-115, F-118**. Коммит 40f9f43, миграция 20260619400000.
 > - **2026-06-19** F-119 + F-120 + 7 adversarial-CONFIRMED-фиксов → закрывает **F-119** (two-person ban через admin_ban_propose/confirm/cancel + lazy expire-sweep), **F-120** (moderator scope: queue-only listing, /admin/audit own-actions, /admin/reports super-only, /admin/photos under_review-only, /admin/verifications/[id] page guard). Спроектировано 7-агентным workflow + проверено 4-агентным adversarial verify (verdict: hold + 7 CONFIRMED → все запатчены тем же релизом). Коммиты 9cfc4f3 → a17c22b, миграции 20260619500000 + 20260619500001.
+> - **2026-06-20** Sprint доводит онбординг до полного соответствия спеке + закрывает adversarial-CONFIRMED от R2/R3:
+>   - **Onboarding sprint-a (35ea285 + bb04286)**: UI копи на 4 экранах (doc/selfie/pending/anketa), push approve переписан без «знакомств», consent.rules добавлен (4 consent_type'а), LEGAL_VERSION 2026-06-19, /legal/rules route.
+>   - **Международные номера (97824aa)**: `normalizeInternationalPhone()` E.164 — диаспора УЗ может регистрироваться. Старая `normalizeUzPhone` оставлена для админ-аналитики, `isUzMobile` helper. +12 phone-тестов.
+>   - **MAJOR #1 verification_intro (e6d8dfe)**: новый шаг bot_consent_biometric → verification_intro → doc_upload. Снижает drop-off перед паспортом. 7-агентный workflow + adversarial.
+>   - **BotFather meta (f55efff)**: setMyDescription/ShortDescription/Commands через Bot API. Воспроизводимый `pnpm bot:meta`.
+>   - **MAJOR #2 reject categorization (0e9aefc)**: `user_documents.reject_category` text+CHECK ('technical'/'blocking'). Decision-form select + `window.confirm` на blocking. `/api/onboarding/retry` 403 на blocking + audit `retry_blocked`. Rejected page branch (blocking → нет retry в DOM). `validateDecisionBody` чистая функция + 12 unit тестов.
+>   - **R2/R3 phone+sha tombstone (6c25aed)**: blocking-reject → phone_blacklist 10-year row, F-007 sha-dedup расширен на blocking-rejected. После adversarial verdict (7 CONFIRMED) запатчено в e886b11 атомарным RPC `admin_blocking_reject` + 4 partial UNIQUE indexes + append-only `document_sha_blacklist` (переживает erase_user) + `sha_missing` guard на approve + `tombstone_pending` block на /api/account?action=delete.
+>   - **F-final-1..4 (5ef35c1)**: /unblock-verification RPC (super-admin может откатить blocking), phone_blacklist.linked_user_id (надёжный reverse-link), `isPhoneBlacklisted` split fail-policy (blocking=fail-closed, cooldown=fail-open), DB trigger `protect_blocking_category` (N1 invariant: direct UPDATE на category=technical при status=rejected блокируется), MAJOR #3 attribution (новый шаг quiz → attribution → active, 11 источников + skip, `users.attribution_source` text+CHECK).
 > - **F-116 (CSP nonce)** — отложен: требует ручного browser-смоука в TG WebView, чтобы убедиться что nonce пропагируется в hydration.
+> - **C7 (DB-trigger phone-blacklist на UPDATE)** — отложен: нужен `phone_hmac` в БД с SESSION_SECRET через vault. Отдельный followup.
 > - **F-003, F-005, F-121** — юр-трек / KMS-архитектура; код-only не закрывает.
+
+## Накопительный итог по аудиту (2026-06-19/20)
+**В коде закрыто (≥95% технических находок):** F-002, F-004 (архитектурно через бот), F-006, F-007, F-008, F-009, F-010, F-011, F-012, F-101..F-105, F-114, F-115, F-117, F-118, F-119, F-120 + все 12 verdict-CONFIRMED от R2/R3 + N1+N4 verified. MAJOR #1 + #2 + #3 из спеки. Международные номера. BotFather meta. /unblock recovery.
+
+**Отложено с обоснованием:** F-116 (CSP nonce, нужен TG WebView ручной smoke), C7 (DB-trigger phone-check, нужен phone_hmac в БД vault). Followup-тикеты: C9/C10/C12 уже закрыты, R3 sha backfill для 6 legacy approved (dev-данные, не критично), F-003 (юрист), F-005 (UZ-инфра), F-121 (KMS).
 > - Подробности по коду — в `docs/improvement-log.md`.
 
 
