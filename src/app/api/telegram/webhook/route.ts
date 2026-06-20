@@ -12,12 +12,14 @@ export const dynamic = "force-dynamic";
 // Ответ всегда 200 (даже на ошибку), чтобы TG не повторял доставку — обработка
 // best-effort, ошибки логируем.
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // env.ts требует TELEGRAM_WEBHOOK_SECRET (z.string().min(16)) — без него
+  // приложение не стартует (fail-closed на boot). Здесь — обычная проверка
+  // заголовка против ожидаемого секрета. Раньше был `if (expected)` который
+  // позволял fail-open при missing env — round-2 completeness flagged.
   const expected = env().TELEGRAM_WEBHOOK_SECRET;
-  if (expected) {
-    const got = req.headers.get("x-telegram-bot-api-secret-token");
-    if (got !== expected) {
-      return NextResponse.json({ ok: false }, { status: 401 });
-    }
+  const got = req.headers.get("x-telegram-bot-api-secret-token");
+  if (got !== expected) {
+    return NextResponse.json({ ok: false }, { status: 401 });
   }
 
   let update: TgUpdate;

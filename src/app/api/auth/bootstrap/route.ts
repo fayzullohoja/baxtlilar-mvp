@@ -121,6 +121,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "register_required" }, { status: 403 });
   }
 
+  // Defense-in-depth: забаненный/удалённый юзер НЕ получает session cookie,
+  // даже с валидным token. Раньше fall-through позволял setSession + redirect
+  // через requireActiveUser — если где-то забыли guard на endpoint'е, blocked
+  // user мог пройти. (round-2 completeness flag.)
+  if (row.lifecycle_state === "blocked" || row.lifecycle_state === "deleted") {
+    return NextResponse.json({ ok: false, error: "account_blocked" }, { status: 403 });
+  }
+
   // Тонкий метаобновлятор tg-полей (имя/username могло смениться).
   await sb
     .from("users")

@@ -18,8 +18,11 @@ const Env = z.object({
   // t.me/<BOT_USERNAME>/<BOT_WEBAPP_SHORT_NAME>?startapp=<token>
   BOT_WEBAPP_SHORT_NAME: z.string().default("app"),
   // Секрет для верификации webhook'а (X-Telegram-Bot-Api-Secret-Token).
-  // Передаём в setWebhook(secret_token=...). Без него любой может POST'ить в /api/telegram/webhook.
-  TELEGRAM_WEBHOOK_SECRET: z.string().min(16).optional(),
+  // Передаём в setWebhook(secret_token=...). Без него любой может POST'ить в
+  // /api/telegram/webhook → массовая фейк-регистрация ботом + автогенерация
+  // валидных start_token'ов в обход claim_start_token (он защищает от replay,
+  // не от фейк-регистрации). После round-2 verdict — REQUIRED, не optional.
+  TELEGRAM_WEBHOOK_SECRET: z.string().min(16),
   APP_URL: z.string().url().optional(),
   // Канал поддержки (например, https://t.me/baxtlilar_support) — показывается на тупиковых экранах.
   SUPPORT_URL: z.string().url().optional(),
