@@ -29,7 +29,7 @@ export default async function LegalPage({
   const { locale, slug } = await params;
 
   const doc: LegalDoc | undefined =
-    slug === "terms" || slug === "privacy" || slug === "offer"
+    slug === "terms" || slug === "privacy" || slug === "offer" || slug === "rules"
       ? LEGAL_DOCS[slug]
       : undefined;
 
