@@ -18,6 +18,7 @@ describe("clientNextPath", () => {
   });
 
   it("onboarding → step path", () => {
+    expect(clientNextPath("onboarding", "verification_intro")).toBe("/onboarding/verification-intro");
     expect(clientNextPath("onboarding", "doc_upload")).toBe("/onboarding/document");
     expect(clientNextPath("onboarding", "selfie_upload")).toBe("/onboarding/selfie");
     expect(clientNextPath("onboarding", "active")).toBe("/main");

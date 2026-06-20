@@ -20,7 +20,7 @@ export default async function NeedsChangesPage({ params }: { params: Promise<{ l
   const target = (doc?.reject_target as "passport" | "selfie" | "both" | null) ?? "both";
 
   return (
-    <Screen title={t("nc_title")} subtitle={t("nc_subtitle")} step={4} totalSteps={6}>
+    <Screen title={t("nc_title")} subtitle={t("nc_subtitle")} step={5} totalSteps={7}>
       {doc?.reject_reason ? (
         <div className="mb-4 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm">
           <div className="font-medium text-amber-800 mb-1">{t("nc_reason_label")}</div>

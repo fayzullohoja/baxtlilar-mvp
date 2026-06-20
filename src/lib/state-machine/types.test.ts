@@ -36,13 +36,22 @@ describe("ALLOWED_TRANSITIONS", () => {
     }
   });
 
-  it("bot-flow (2026-06-19): язык → контакт → ПД → биометрия → doc_upload", () => {
+  it("bot-flow (2026-06-19): язык → контакт → ПД → биометрия → verification_intro → doc_upload", () => {
     expect(ALLOWED_TRANSITIONS.bot_language).toContain("bot_contact");
     expect(ALLOWED_TRANSITIONS.bot_contact).toContain("bot_consent_pd");
     expect(ALLOWED_TRANSITIONS.bot_consent_pd).toContain("bot_consent_biometric");
-    expect(ALLOWED_TRANSITIONS.bot_consent_biometric).toContain("doc_upload");
+    // MAJOR #1: между биометрией и паспортом — intro-экран в мини-аппе.
+    expect(ALLOWED_TRANSITIONS.bot_consent_biometric).toEqual(["verification_intro"]);
+    expect(ALLOWED_TRANSITIONS.verification_intro).toEqual(["doc_upload"]);
     expect(ALLOWED_TRANSITIONS.doc_upload).toContain("selfie_upload");
     expect(ALLOWED_TRANSITIONS.selfie_upload).toContain("moderation_pending");
+  });
+
+  it("retry/fix минуют verification_intro (юзер уже видел его 1 раз)", () => {
+    expect(ALLOWED_TRANSITIONS.verification_rejected).toContain("doc_upload");
+    expect(ALLOWED_TRANSITIONS.verification_rejected).not.toContain("verification_intro");
+    expect(ALLOWED_TRANSITIONS.needs_changes).toContain("doc_upload");
+    expect(ALLOWED_TRANSITIONS.needs_changes).not.toContain("verification_intro");
   });
 
   it("legacy SMS-шаги — terminal (новых переходов нет)", () => {

@@ -87,7 +87,18 @@
     "rejected_title": "Tekshiruvdan oʻtmadi",
     "rejected_subtitle": "Shaxsingizni tasdiqlay olmadik.",
     "rejected_support": "Agar bu xato deb hisoblasangiz, qoʻllab-quvvatlashga murojaat qiling.",
-    "rejected_retry": "Tekshiruvni qaytadan oʻtish"
+    "rejected_retry": "Tekshiruvni qaytadan oʻtish",
+    "vi_title": "Profil tekshiruvi",
+    "vi_subtitle": "Bu platformada faqat jiddiy niyatli haqiqiy odamlar boʻlishi uchun kerak.",
+    "vi_bullets_title": "Nimani soʻraymiz",
+    "vi_bullet_1": "Hujjat fotosi — pasport yoki ID-karta",
+    "vi_bullet_2": "Selfi — hujjat sizniki ekanini tasdiqlash uchun",
+    "vi_bullet_3": "Keyin moderator tekshiradi — odatda 24 soatgacha",
+    "vi_time_note": "Taxminan 3 daqiqa vaqt oladi. Bir oʻtirishda yakunlang — saqlash shart emas.",
+    "vi_privacy": "Hujjat va selfini faqat moderator koʻradi. Shifrlangan saqlanadi va profilda koʻrsatilmaydi.",
+    "vi_cta": "Tekshiruvni boshlash",
+    "vi_cta_pending": "Ochilmoqda…",
+    "vi_error_retry": "Boʻlmadi. Yana urinib koʻring."
   },
   "Anketa": {
     "intro_title": "Anketa yarating",

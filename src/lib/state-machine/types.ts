@@ -14,6 +14,7 @@ export type OnboardingStep =
   | "phone_input"
   | "otp_pending"
   // Mini-app onboarding:
+  | "verification_intro"
   | "doc_upload"
   | "selfie_upload"
   | "moderation_pending"
@@ -50,7 +51,10 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   bot_language: ["bot_contact"],
   bot_contact: ["bot_consent_pd"],
   bot_consent_pd: ["bot_consent_biometric"],
-  bot_consent_biometric: ["doc_upload"],
+  bot_consent_biometric: ["verification_intro"],
+  // verification_intro живёт в мини-аппе (не в боте) — intro-экран перед
+  // загрузкой паспорта. Retry/needs_changes минуют его (см. ниже).
+  verification_intro: ["doc_upload"],
   // Legacy SMS-шаги — terminal, новых переходов нет (но валидируются как enum
   // на случай рестора старых строк):
   language: [],

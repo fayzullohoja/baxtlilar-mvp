@@ -18,6 +18,7 @@ export const ONBOARDING_PATHS: Record<OnboardingStep, string> = {
   phone_input: "/open-in-telegram",
   otp_pending: "/open-in-telegram",
   // Mini-app:
+  verification_intro: "/onboarding/verification-intro",
   doc_upload: "/onboarding/document",
   selfie_upload: "/onboarding/selfie",
   moderation_pending: "/onboarding/pending",

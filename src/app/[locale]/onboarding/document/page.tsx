@@ -14,7 +14,7 @@ export default async function DocumentPage({ params }: { params: Promise<{ local
   const reqs = [t("doc_req_1"), t("doc_req_2"), t("doc_req_3"), t("doc_req_4"), t("doc_req_5")];
 
   return (
-    <Screen title={t("doc_title")} subtitle={t("doc_subtitle")} step={4} totalSteps={6}>
+    <Screen title={t("doc_title")} subtitle={t("doc_subtitle")} step={5} totalSteps={7}>
       <div className="rounded-2xl border border-baxt-border bg-baxt-card p-4 mb-4">
         <div className="text-sm font-semibold text-baxt-navy mb-2">{t("doc_req_title")}</div>
         <ul className="space-y-1.5">

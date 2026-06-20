@@ -14,7 +14,7 @@ export default async function SelfiePage({ params }: { params: Promise<{ locale:
   const reqs = [t("selfie_req_1"), t("selfie_req_2"), t("selfie_req_3"), t("selfie_req_4"), t("selfie_req_5")];
 
   return (
-    <Screen title={t("selfie_title")} subtitle={t("selfie_subtitle")} step={5} totalSteps={6}>
+    <Screen title={t("selfie_title")} subtitle={t("selfie_subtitle")} step={6} totalSteps={7}>
       <div className="rounded-2xl bg-baxt-coral-bg px-4 py-3 mb-4">
         <div className="text-sm font-semibold text-baxt-navy mb-0.5">{t("selfie_how_works")}</div>
         <p className="text-xs text-baxt-muted leading-snug">{t("selfie_how_works_body")}</p>

@@ -369,12 +369,14 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
         pick(M.bio_consent_ask, user.language),
         user.language,
       );
-      // bot_consent_biometric → doc_upload (мини-аппа берёт дальше).
+      // bot_consent_biometric → verification_intro (мини-аппа берёт дальше).
+      // MAJOR #1: промежуточный intro-экран перед загрузкой паспорта снижает
+      // drop-off. С verification_intro по кнопке юзер переходит на doc_upload.
       // verification_status пишем сразу: phone_verified (раз есть phone_number).
       await transition(
         user.id,
         {
-          onboarding_step: "doc_upload",
+          onboarding_step: "verification_intro",
           verification_status: "phone_verified",
         },
         "bot:bio_accepted",

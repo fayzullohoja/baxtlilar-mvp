@@ -14,7 +14,7 @@ export default async function PendingPage({ params }: { params: Promise<{ locale
   const steps = [t("pending_step_1"), t("pending_step_2"), t("pending_step_3")];
 
   return (
-    <Screen title={t("pending_title")} subtitle={t("pending_subtitle")} step={6} totalSteps={6}>
+    <Screen title={t("pending_title")} subtitle={t("pending_subtitle")} step={7} totalSteps={7}>
       <div className="rounded-2xl bg-baxt-coral-bg px-4 py-4 text-sm mb-4">{t("pending_info")}</div>
       <p className="text-sm font-medium text-baxt-coral mb-5">{t("pending_status")}</p>
 
