@@ -27,6 +27,8 @@ export type OnboardingStep =
   | "profile_photos"
   | "profile_preview"
   | "quiz"
+  // MAJOR #3 (spec Экран 12): между quiz и active.
+  | "attribution"
   | "active";
 
 export type VerificationStatus =
@@ -73,7 +75,8 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   profile_looking_for: ["profile_photos"],
   profile_photos: ["profile_preview"],
   profile_preview: ["profile_basic", "quiz"],
-  quiz: ["active"],
+  quiz: ["attribution"],
+  attribution: ["active"],
   active: [],
 };
 

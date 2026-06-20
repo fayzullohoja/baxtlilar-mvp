@@ -83,23 +83,52 @@ async function findByTg(tgId: number): Promise<DbUser | null> {
   return (data as DbUser) ?? null;
 }
 
-async function isPhoneBlacklisted(phone: string): Promise<{ blocked: boolean; until?: string }> {
+async function isPhoneBlacklisted(
+  phone: string,
+): Promise<{ blocked: boolean; reason?: "blocking" | "cooldown" | "tombstone_check_failed"; until?: string }> {
+  // F-final-2 (C11 verdict): split fail-policy.
+  //   blocking-tombstone (verification_blocking_reject) → fail-closed:
+  //     при DB-error отказываем регистрацию. Лучше ложно заблокировать одного
+  //     legit-юзера на минуту, чем пустить катфиша через transient DB issue.
+  //   cooldown (account_deleted 90д) → fail-open:
+  //     UX-friendly для случайного self-delete. Не критично пустить, если БД лежит.
   const sb = supabaseAdmin();
   const h = hashPhone(phone);
-  const { data, error } = await sb
+  const now = new Date().toISOString();
+
+  // 1. Blocking tombstone first.
+  const blocking = await sb
     .from("phone_blacklist")
     .select("until_at")
     .eq("phone_hash", h)
-    .gt("until_at", new Date().toISOString())
+    .eq("reason", "verification_blocking_reject")
+    .gt("until_at", now)
+    .limit(1)
+    .maybeSingle();
+  if (blocking.error) {
+    console.error("[bot] phone-blacklist blocking check failed:", blocking.error.message);
+    return { blocked: true, reason: "tombstone_check_failed" }; // fail-closed
+  }
+  if (blocking.data) {
+    return { blocked: true, reason: "blocking", until: blocking.data.until_at as string };
+  }
+
+  // 2. Cooldown — fail-open.
+  const cooldown = await sb
+    .from("phone_blacklist")
+    .select("until_at")
+    .eq("phone_hash", h)
+    .neq("reason", "verification_blocking_reject")
+    .gt("until_at", now)
     .order("until_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (error) {
-    console.error("[bot] phone-blacklist check failed:", error.message);
-    return { blocked: false }; // fail-open: лучше пропустить, чем кричать о ложной блокировке
+  if (cooldown.error) {
+    console.error("[bot] phone-blacklist cooldown check failed:", cooldown.error.message);
+    return { blocked: false };
   }
-  if (!data) return { blocked: false };
-  return { blocked: true, until: data.until_at as string };
+  if (!cooldown.data) return { blocked: false };
+  return { blocked: true, reason: "cooldown", until: cooldown.data.until_at as string };
 }
 
 async function createInitial(tg: TgUser): Promise<DbUser | null> {
@@ -443,14 +472,19 @@ async function handleContact(msg: TgMessage): Promise<void> {
     throw e;
   }
 
-  // F-006: cooldown после delete — этот номер мог быть свежеудалённым.
+  // F-006 cooldown + R2 blocking-tombstone + C11 fail-closed-on-blocking.
   const blocklist = await isPhoneBlacklisted(phone);
   if (blocklist.blocked) {
-    const untilDate = (blocklist.until ?? "").slice(0, 10);
-    await sendMessage(
-      chatId,
-      pick(M.phone_cooldown, user.language).replace("{until}", untilDate || "—"),
-    );
+    let text: string;
+    if (blocklist.reason === "blocking") {
+      text = pick(M.phone_blocking, user.language);
+    } else if (blocklist.reason === "tombstone_check_failed") {
+      text = pick(M.phone_check_failed, user.language);
+    } else {
+      const untilDate = (blocklist.until ?? "").slice(0, 10);
+      text = pick(M.phone_cooldown, user.language).replace("{until}", untilDate || "—");
+    }
+    await sendMessage(chatId, text);
     return;
   }
 

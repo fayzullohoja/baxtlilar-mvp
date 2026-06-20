@@ -70,6 +70,11 @@ describe("ALLOWED_TRANSITIONS", () => {
   it("active — терминальный (для onboarding-цикла)", () => {
     expect(ALLOWED_TRANSITIONS.active).toEqual([]);
   });
+
+  it("MAJOR #3: quiz → attribution → active", () => {
+    expect(ALLOWED_TRANSITIONS.quiz).toEqual(["attribution"]);
+    expect(ALLOWED_TRANSITIONS.attribution).toEqual(["active"]);
+  });
 });
 
 describe("ALLOWED_TRANSITIONS connectivity (анти-застревание)", () => {

@@ -67,6 +67,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         phone_hash: hashPhone(user.phone_number),
         until_at: until,
         reason: "account_deleted",
+        linked_user_id: user.id, // F-final-2 (C10): reverse-link для /unblock
       });
       if (bErr) console.error("[account.delete] phone_blacklist insert failed:", bErr.message);
     }

@@ -25,6 +25,7 @@ export const CLIENT_ONBOARDING_PATHS: Record<string, string> = {
   profile_photos: "/onboarding/profile/photos",
   profile_preview: "/onboarding/profile/preview",
   quiz: "/onboarding/quiz",
+  attribution: "/onboarding/attribution",
   active: "/main",
 };
 

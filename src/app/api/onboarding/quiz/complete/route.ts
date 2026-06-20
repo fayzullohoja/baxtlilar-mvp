@@ -51,12 +51,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .upsert({ user_id: user.id, vector }, { onConflict: "user_id" });
   if (resErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
+  // MAJOR #3: после квиза не сразу в active, а через attribution-шаг.
   const tr = await tryTransition(
     user.id,
-    { onboarding_step: "active", lifecycle_state: "active", quiz_completion: "completed" },
-    "quiz completed → active",
+    { onboarding_step: "attribution", quiz_completion: "completed" },
+    "quiz completed → attribution",
     { kind: "user", id: user.id },
   );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.active });
+  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.attribution });
 }

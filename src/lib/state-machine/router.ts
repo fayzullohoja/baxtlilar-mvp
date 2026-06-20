@@ -31,6 +31,7 @@ export const ONBOARDING_PATHS: Record<OnboardingStep, string> = {
   profile_photos: "/onboarding/profile/photos",
   profile_preview: "/onboarding/profile/preview",
   quiz: "/onboarding/quiz",
+  attribution: "/onboarding/attribution",
   active: "/main",
 };
 

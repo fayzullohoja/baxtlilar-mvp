@@ -96,6 +96,17 @@ export const M = {
     ru: "Этот номер недавно использовался для удалённого аккаунта. Регистрация повторно — после {until}. Если ошибка — напишите в поддержку.",
     uz: "Bu raqam yaqinda oʻchirilgan hisob uchun ishlatilgan. Qaytadan roʻyxatdan oʻtish {until} dan keyin. Xato boʻlsa — qoʻllab-quvvatlash xizmatiga yozing.",
   },
+
+  // R2/C8/C11: blocking-tombstone от модератора. Не показываем until-дату
+  // (10 лет), чтобы не выглядело как «подождать год». Прямо — в поддержку.
+  phone_blocking: {
+    ru: "Регистрация с этим номером недоступна. Если вы считаете это ошибкой — напишите в поддержку.",
+    uz: "Bu raqam bilan roʻyxatdan oʻtish mumkin emas. Agar bu xato deb hisoblasangiz — qoʻllab-quvvatlash xizmatiga yozing.",
+  },
+  phone_check_failed: {
+    ru: "Не удалось проверить номер. Попробуйте чуть позже.",
+    uz: "Raqamni tekshirib boʻlmadi. Bir oz keyinroq urinib koʻring.",
+  },
 } as const;
 
 export type Lang = "ru" | "uz";
