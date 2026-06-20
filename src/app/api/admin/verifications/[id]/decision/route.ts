@@ -4,11 +4,17 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { notifyUser } from "@/lib/telegram/notify";
 import { trustedIp } from "@/lib/http/ip";
+import { hashPhone } from "@/lib/identity/hashing";
 import { validateDecisionBody, type DecisionBody } from "@/lib/admin/decision-validate";
 import type { OnboardingStep, VerificationStatus } from "@/lib/state-machine/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// R2 verdict-followup: blocking-reject = тяжёлый сигнал. Phone-tombstone на
+// 10 лет в phone_blacklist эквивалентен «фактически бессрочно» — закрывает
+// re-register с тем же номером через новый TG-аккаунт.
+const PHONE_BLOCKING_TOMBSTONE_DAYS = 365 * 10;
 
 // MAJOR #2: для reject 'blocking' — отдельный push без призыва к retry.
 // 'technical' → стандартный reject-текст с подсказкой переснять.
@@ -42,7 +48,7 @@ export async function POST(
 
   const { data: user } = await supabaseAdmin()
     .from("users")
-    .select("id, telegram_id, verification_status, onboarding_step")
+    .select("id, telegram_id, phone_number, verification_status, onboarding_step")
     .eq("id", id)
     .maybeSingle();
   if (!user) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
@@ -63,8 +69,13 @@ export async function POST(
     if (!doc?.passport_path || !doc?.selfie_path)
       return NextResponse.json({ ok: false, error: "documents_missing" }, { status: 409 });
 
+    // F-007 (approved-dup) + R3 verdict-followup (blocking-dup): один тот же
+    // паспорт/селфи не может быть approved У ДРУГОГО юзера ИЛИ висеть на
+    // blocking-rejected (катфиш с новым TG-аккаунтом, переиспользует доки
+    // друга, прошедшего blocking — F-006 phone-tombstone ловит по номеру,
+    // R3 ловит по содержимому файлов независимо от номера).
     if (doc.passport_sha256) {
-      const { data: dup } = await sb
+      const approvedDup = await sb
         .from("user_documents")
         .select("user_id")
         .eq("status", "approved")
@@ -72,15 +83,30 @@ export async function POST(
         .neq("user_id", id)
         .limit(1)
         .maybeSingle();
-      if (dup) {
+      if (approvedDup.data) {
         return NextResponse.json(
-          { ok: false, error: "duplicate_identity", field: "passport", conflict_user_id: dup.user_id },
+          { ok: false, error: "duplicate_identity", field: "passport", scope: "approved", conflict_user_id: approvedDup.data.user_id },
+          { status: 409 },
+        );
+      }
+      const blockedDup = await sb
+        .from("user_documents")
+        .select("user_id")
+        .eq("status", "rejected")
+        .eq("reject_category", "blocking")
+        .eq("passport_sha256", doc.passport_sha256)
+        .neq("user_id", id)
+        .limit(1)
+        .maybeSingle();
+      if (blockedDup.data) {
+        return NextResponse.json(
+          { ok: false, error: "duplicate_identity", field: "passport", scope: "blocking", conflict_user_id: blockedDup.data.user_id },
           { status: 409 },
         );
       }
     }
     if (doc.selfie_sha256) {
-      const { data: dup } = await sb
+      const approvedDup = await sb
         .from("user_documents")
         .select("user_id")
         .eq("status", "approved")
@@ -88,9 +114,24 @@ export async function POST(
         .neq("user_id", id)
         .limit(1)
         .maybeSingle();
-      if (dup) {
+      if (approvedDup.data) {
         return NextResponse.json(
-          { ok: false, error: "duplicate_identity", field: "selfie", conflict_user_id: dup.user_id },
+          { ok: false, error: "duplicate_identity", field: "selfie", scope: "approved", conflict_user_id: approvedDup.data.user_id },
+          { status: 409 },
+        );
+      }
+      const blockedDup = await sb
+        .from("user_documents")
+        .select("user_id")
+        .eq("status", "rejected")
+        .eq("reject_category", "blocking")
+        .eq("selfie_sha256", doc.selfie_sha256)
+        .neq("user_id", id)
+        .limit(1)
+        .maybeSingle();
+      if (blockedDup.data) {
+        return NextResponse.json(
+          { ok: false, error: "duplicate_identity", field: "selfie", scope: "blocking", conflict_user_id: blockedDup.data.user_id },
           { status: 409 },
         );
       }
@@ -145,6 +186,34 @@ export async function POST(
     reason: body.reason,
     ip: trustedIp(req),
   });
+
+  // R2 verdict-followup: blocking-reject → phone tombstone в phone_blacklist
+  // на 10 лет. Закрывает re-register с тем же номером через новый TG-аккаунт
+  // (F-006 cooldown 90д от self-delete недостаточен — катфиш мог НЕ удалить
+  // аккаунт и просто создать новый TG). idempotent: дубль-row в blacklist
+  // безвреден, любая выборка берёт max(until_at).
+  if (action === "reject" && rejectCategory === "blocking" && user.phone_number) {
+    const until = new Date(
+      Date.now() + PHONE_BLOCKING_TOMBSTONE_DAYS * 24 * 3600 * 1000,
+    ).toISOString();
+    const { error: bErr } = await supabaseAdmin().from("phone_blacklist").insert({
+      phone_hash: hashPhone(user.phone_number),
+      until_at: until,
+      reason: "verification_blocking_reject",
+    });
+    if (bErr) {
+      console.error("[decision] phone_blacklist tombstone insert failed:", bErr.message);
+    } else {
+      await adminAudit({
+        adminId: session.adminId,
+        action: "phone_tombstone",
+        entity: "user",
+        entityId: id,
+        newValue: { until_at: until, reason: "verification_blocking_reject" },
+        ip: trustedIp(req),
+      });
+    }
+  }
 
   // MAJOR #2: для reject 'blocking' юзер видит мягкий support-текст, БЕЗ
   // призыва к retry. Для 'technical' — стандарт «переснимите».
