@@ -14,7 +14,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "typecheck": "tsc --noEmit",
-    "webhook:set": "node scripts/set-webhook.mjs"
+    "webhook:set": "node scripts/set-webhook.mjs",
+    "bot:meta": "node scripts/set-bot-meta.mjs"
   },
   "dependencies": {
     "next": "16.2.6",
