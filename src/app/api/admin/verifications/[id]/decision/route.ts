@@ -4,21 +4,22 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { notifyUser } from "@/lib/telegram/notify";
 import { trustedIp } from "@/lib/http/ip";
+import { validateDecisionBody, type DecisionBody } from "@/lib/admin/decision-validate";
 import type { OnboardingStep, VerificationStatus } from "@/lib/state-machine/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Action = "approve" | "reject" | "needs_changes";
-
-const PUSH: Record<Action, string> = {
-  approve:
-    "✅ Ваш профиль успешно прошёл проверку.\nОткройте Baxtlilar, чтобы создать анкету. После публикации анкеты вам будут доступны рекомендации.",
-  reject:
-    "К сожалению, мы не смогли подтвердить вашу личность.\nЕсли вы считаете это ошибкой, обратитесь в поддержку.",
-  needs_changes:
-    "Нужно переснять данные для проверки.\nОткройте Baxtlilar, чтобы загрузить их заново.",
-};
+// MAJOR #2: для reject 'blocking' — отдельный push без призыва к retry.
+// 'technical' → стандартный reject-текст с подсказкой переснять.
+const PUSH_APPROVE =
+  "✅ Ваш профиль успешно прошёл проверку.\nОткройте Baxtlilar, чтобы создать анкету. После публикации анкеты вам будут доступны рекомендации.";
+const PUSH_REJECT_TECHNICAL =
+  "Нужно переснять документы — модератор не смог проверить ваши фото.\nОткройте Baxtlilar, чтобы попробовать снова.";
+const PUSH_REJECT_BLOCKING =
+  "К сожалению, мы не смогли подтвердить вашу личность.\nЕсли вы считаете это ошибкой, обратитесь в поддержку.";
+const PUSH_NEEDS_CHANGES =
+  "Нужно переснять данные для проверки.\nОткройте Baxtlilar, чтобы загрузить их заново.";
 
 export async function POST(
   req: NextRequest,
@@ -28,16 +29,12 @@ export async function POST(
   if (res) return res;
   const { id } = await params;
 
-  const body = (await req.json().catch(() => ({}))) as {
-    action?: Action;
-    reason?: string;
-    target?: "passport" | "selfie" | "both";
-  };
-  const action = body.action;
-  if (!action || !["approve", "reject", "needs_changes"].includes(action))
-    return NextResponse.json({ ok: false, error: "bad_action" }, { status: 400 });
-  if ((action === "reject" || action === "needs_changes") && !body.reason?.trim())
-    return NextResponse.json({ ok: false, error: "reason_required" }, { status: 400 });
+  const body = (await req.json().catch(() => ({}))) as DecisionBody;
+  const validation = validateDecisionBody(body);
+  if (!validation.ok)
+    return NextResponse.json({ ok: false, error: validation.error }, { status: 400 });
+  const action = validation.action;
+  const rejectCategory = validation.rejectCategory; // 'technical' | 'blocking' | null
 
   // F-120: moderator должен действовать только над юзером в очереди.
   const scope = await requireInQueueOrSuper(session, id, "decision", req);
@@ -132,6 +129,8 @@ export async function POST(
       status: docStatus,
       reject_reason: body.reason ?? null,
       reject_target: action === "needs_changes" ? body.target ?? "both" : null,
+      // MAJOR #2: при approve/needs_changes — NULL (CHECK constraint), при reject — категория.
+      reject_category: rejectCategory,
       moderated_by: session.adminId,
       moderated_at: new Date().toISOString(),
     })
@@ -142,15 +141,23 @@ export async function POST(
     action: `verification_${action}`,
     entity: "user",
     entityId: id,
-    newValue: { verification_status: vstatus, onboarding_step: step },
+    newValue: { verification_status: vstatus, onboarding_step: step, reject_category: rejectCategory },
     reason: body.reason,
     ip: trustedIp(req),
   });
 
+  // MAJOR #2: для reject 'blocking' юзер видит мягкий support-текст, БЕЗ
+  // призыва к retry. Для 'technical' — стандарт «переснимите».
   const pushText =
-    action === "needs_changes" && body.reason
-      ? `${PUSH.needs_changes}\n\nПричина: ${body.reason}`
-      : PUSH[action];
+    action === "approve"
+      ? PUSH_APPROVE
+      : action === "needs_changes"
+        ? body.reason
+          ? `${PUSH_NEEDS_CHANGES}\n\nПричина: ${body.reason}`
+          : PUSH_NEEDS_CHANGES
+        : rejectCategory === "blocking"
+          ? PUSH_REJECT_BLOCKING
+          : PUSH_REJECT_TECHNICAL;
   await notifyUser(user.telegram_id as number, pushText);
 
   return NextResponse.json({ ok: true });
