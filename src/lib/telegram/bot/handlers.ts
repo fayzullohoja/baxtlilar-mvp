@@ -2,7 +2,7 @@ import "server-only";
 import crypto from "node:crypto";
 import { env } from "@/lib/env";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { normalizeUzPhone, PhoneError } from "@/lib/phone";
+import { normalizeInternationalPhone, PhoneError } from "@/lib/phone";
 import { transition, tryTransition } from "@/lib/state-machine/transitions";
 import { hashPhone } from "@/lib/identity/hashing";
 import { signStartToken } from "../start-token";
@@ -423,13 +423,19 @@ async function handleContact(msg: TgMessage): Promise<void> {
     await sendMessage(chatId, pick(M.contact_not_yours, user.language));
     return;
   }
-  // Telegram иногда передаёт phone_number без "+" — нормализуем под UZ.
+  // Telegram иногда передаёт phone_number без "+" — нормализуем в E.164.
+  // 2026-06-20: больше НЕ требуем +998 — резиденты УЗ с иностранными SIM
+  // (диаспора, рабочие за границей) тоже должны проходить. Trust-якорь не
+  // в стране номера, а в чеке contact.user_id === sender.id выше.
   let phone: string;
   try {
-    phone = normalizeUzPhone(contact.phone_number);
+    phone = normalizeInternationalPhone(contact.phone_number);
   } catch (e) {
     if (e instanceof PhoneError) {
-      await sendMessage(chatId, "Номер должен быть узбекским (+998).\nUz raqami kerak (+998).");
+      await sendMessage(
+        chatId,
+        "Не удалось распознать номер. Попробуйте ещё раз.\nRaqam tushunilmadi. Qaytadan urinib koʻring.",
+      );
       return;
     }
     throw e;
