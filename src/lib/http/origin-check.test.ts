@@ -27,8 +27,17 @@ describe("isAllowedOrigin", () => {
     expect(isAllowedOrigin(req({ origin: "https://evil.com" }))).toBe(false);
   });
 
-  it("без Origin → allow (нативный TG-клиент / non-browser)", () => {
-    expect(isAllowedOrigin(req({}))).toBe(true);
+  it("без Origin + Sec-Fetch-Site=same-origin → allow", () => {
+    expect(isAllowedOrigin(req({ "sec-fetch-site": "same-origin" }))).toBe(true);
+  });
+  it("без Origin + Sec-Fetch-Site=none → allow (top-level navigation)", () => {
+    expect(isAllowedOrigin(req({ "sec-fetch-site": "none" }))).toBe(true);
+  });
+  it("без Origin + Sec-Fetch-Site=cross-site → reject", () => {
+    expect(isAllowedOrigin(req({ "sec-fetch-site": "cross-site" }))).toBe(false);
+  });
+  it("без Origin без Sec-Fetch-Site → reject (curl/node)", () => {
+    expect(isAllowedOrigin(req({}))).toBe(false);
   });
 
   it("совпадение по host (dev) → allow", () => {

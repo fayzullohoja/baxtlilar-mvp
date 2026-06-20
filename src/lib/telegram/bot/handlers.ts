@@ -157,20 +157,19 @@ async function createInitial(tg: TgUser): Promise<DbUser | null> {
   return data as DbUser;
 }
 
-function buildAppWebUrl(uid: string): string {
+function buildAppWebUrl(uid: string, telegramId: number): string {
   const appUrl = env().APP_URL ?? "https://baxtlilar-mvp-production.up.railway.app";
-  const token = signStartToken(uid);
-  // Запихиваем токен в URL мини-аппы как ?token=. Сам TG добавит свой
-  // tgWebAppData в hash; токен читаем из location.search в AutoBootstrap.
-  // Так не нужно настраивать short_name в BotFather (web_app-кнопка тянет
-  // любой HTTPS-URL).
+  // H3 verdict-fix: токен биндится к telegram_id юзера. /api/auth/bootstrap
+  // проверяет parsed.user.id === verifiedToken.tg — украденный токен в чужой
+  // initData больше не пройдёт.
+  const token = signStartToken(uid, telegramId);
   return `${appUrl.replace(/\/$/, "")}/open-in-telegram?token=${encodeURIComponent(token)}`;
 }
 
-function openAppButton(uid: string, lang: Lang): InlineKeyboardMarkup {
+function openAppButton(uid: string, telegramId: number, lang: Lang): InlineKeyboardMarkup {
   return {
     inline_keyboard: [
-      [{ text: pick(M.open_app, lang), web_app: { url: buildAppWebUrl(uid) } }],
+      [{ text: pick(M.open_app, lang), web_app: { url: buildAppWebUrl(uid, telegramId) } }],
     ],
   };
 }
@@ -237,7 +236,15 @@ async function recordConsent(
     language: lang,
     consent_text_sha256: sha,
   }));
-  const { error } = await sb.from("consents").insert(rows);
+  // H12 verdict-fix: idempotent upsert. UNIQUE(user_id, consent_type,
+  // consent_version) даёт дедуп даже при retry/двойном callback'е TG.
+  // ignoreDuplicates: true → 23505 не бросается, тихо пропускается.
+  const { error } = await sb
+    .from("consents")
+    .upsert(rows, {
+      onConflict: "user_id,consent_type,consent_version",
+      ignoreDuplicates: true,
+    });
   if (error) {
     console.error("[bot] consent insert failed:", error.message);
     throw error;
@@ -258,7 +265,7 @@ async function promptStep(chatId: number, user: DbUser): Promise<void> {
     await sendMessage(
       chatId,
       pick(M.already_active, user.language),
-      openAppButton(user.id, user.language),
+      openAppButton(user.id, user.telegram_id, user.language),
     );
     return;
   }
@@ -288,7 +295,7 @@ async function promptStep(chatId: number, user: DbUser): Promise<void> {
       await sendMessage(
         chatId,
         pick(M.ready, user.language),
-        openAppButton(user.id, user.language),
+        openAppButton(user.id, user.telegram_id, user.language),
       );
       return;
   }
@@ -415,7 +422,7 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
       await sendMessage(
         chatId,
         pick(M.ready, user.language),
-        openAppButton(user.id, user.language),
+        openAppButton(user.id, user.telegram_id, user.language),
       );
       return;
     }

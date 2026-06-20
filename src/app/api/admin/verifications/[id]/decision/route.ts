@@ -4,7 +4,6 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { notifyUser } from "@/lib/telegram/notify";
 import { trustedIp } from "@/lib/http/ip";
-import { hashPhone } from "@/lib/identity/hashing";
 import { validateDecisionBody, type DecisionBody } from "@/lib/admin/decision-validate";
 import type { OnboardingStep, VerificationStatus } from "@/lib/state-machine/types";
 
@@ -152,18 +151,11 @@ export async function POST(
   }
 
   // BUG-3: сначала авторитетный переход (атомарно + аудит). При гонке — 409, ничего не меняем.
-  // C1/C2 verdict-fix: blocking-reject — атомарный RPC (transition + docs +
-  // phone_blacklist + sha_blacklist в одной транзакции). Любая ошибка → ROLLBACK
-  // всего → route отдаёт 500. Раньше: 4 отдельных шага; lambda OOM/timeout
-  // между ними оставлял tombstone отсутствующим — bypass R2 silent.
+  // C1/C2 verdict-fix: blocking-reject — атомарный RPC. H9 verdict-fix: RPC
+  // теперь сам читает phone_number / sha256 ИЗ БД (не доверяет route'у).
+  // Compromised route больше не может скрыть tombstone передавая null.
   if (action === "reject" && rejectCategory === "blocking") {
     const sb = supabaseAdmin();
-    const { data: doc } = await sb
-      .from("user_documents")
-      .select("passport_sha256, selfie_sha256")
-      .eq("user_id", id)
-      .maybeSingle();
-    const phoneHash = user.phone_number ? hashPhone(user.phone_number) : null;
     const until = new Date(
       Date.now() + PHONE_BLOCKING_TOMBSTONE_DAYS * 24 * 3600 * 1000,
     ).toISOString();
@@ -172,10 +164,7 @@ export async function POST(
       p_user_id: id,
       p_admin_id: session.adminId,
       p_reason: body.reason!,
-      p_phone_hash: phoneHash,
       p_phone_until_at: until,
-      p_passport_sha256: doc?.passport_sha256 ?? null,
-      p_selfie_sha256: doc?.selfie_sha256 ?? null,
       p_expected_updated_at: cur?.updated_at,
     });
     if (error) {

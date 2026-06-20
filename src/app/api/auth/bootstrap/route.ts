@@ -81,9 +81,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // start_param (если был) — связываем uid с найденным user.id.
+  // H3 verdict-fix: токен биндится к telegram_id юзера. Если v.tg ≠ initData
+  // user.id — украденный токен в чужой initData отвергаем (catfish A открыл
+  // мини-аппу под initData пользователя B со своим валидным token).
   if (body.start_param) {
     const v = verifyStartToken(body.start_param);
-    if (!v || v.uid !== row.id) {
+    if (!v || v.uid !== row.id || v.tg !== tgId) {
       return NextResponse.json({ ok: false, error: "bad_start_param" }, { status: 401 });
     }
   }

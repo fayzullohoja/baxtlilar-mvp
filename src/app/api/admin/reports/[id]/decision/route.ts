@@ -17,6 +17,10 @@ export async function POST(
 ): Promise<NextResponse> {
   const { session, res } = await requireAdminApi();
   if (res) return res;
+  // C3 verdict-fix: /admin/reports страница уже notFound() для moderator
+  // (F-120), но API эндпойнт принимал curl от moderator. Закрываем regression.
+  if (session.role !== "superadmin")
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   const { id } = await params;
   const { status, reason } = (await req.json().catch(() => ({}))) as { status?: Status; reason?: string };
   if (!status || !ALLOWED.includes(status))

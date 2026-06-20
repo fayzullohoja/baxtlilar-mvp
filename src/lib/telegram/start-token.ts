@@ -8,10 +8,14 @@ import { env } from "@/lib/env";
 // TTL 10 минут — внутри окна пользователь должен открыть мини-аппу.
 // Используется в /api/auth/bootstrap для обмена токена на сессию.
 
-const NS = "starttoken:v1:";
+const NS = "starttoken:v2:";
 const TTL_SEC = 600;
 
-type Payload = { uid: string; iat: number };
+// H3 verdict-fix: payload bind to telegram_id of the user, плюс уникальный jti.
+// uid (БД user_id) ОДИН известен боту, telegram_id ДОЛЖЕН быть равен
+// initData.user.id из bootstrap — токен без правильного tg-биндинга не пройдёт
+// проверку. jti для single-use revocation через бутстрап-таблицу.
+type Payload = { uid: string; tg: number; jti: string; iat: number };
 
 function b64urlEncode(buf: Buffer): string {
   return buf.toString("base64url");
@@ -27,9 +31,15 @@ function sign(payloadB64: string): string {
   return b64urlEncode(h.digest());
 }
 
-export function signStartToken(uid: string, now: number = Math.floor(Date.now() / 1000)): string {
+export function signStartToken(
+  uid: string,
+  telegramId: number,
+  now: number = Math.floor(Date.now() / 1000),
+): string {
   if (!uid) throw new Error("uid required");
-  const payload: Payload = { uid, iat: now };
+  if (!telegramId) throw new Error("telegramId required");
+  const jti = crypto.randomBytes(16).toString("base64url");
+  const payload: Payload = { uid, tg: telegramId, jti, iat: now };
   const payloadB64 = b64urlEncode(Buffer.from(JSON.stringify(payload), "utf8"));
   const sig = sign(payloadB64);
   return `${payloadB64}.${sig}`;
@@ -38,7 +48,7 @@ export function signStartToken(uid: string, now: number = Math.floor(Date.now() 
 export function verifyStartToken(
   token: string | undefined | null,
   now: number = Math.floor(Date.now() / 1000),
-): { uid: string } | null {
+): { uid: string; tg: number; jti: string } | null {
   if (!token || typeof token !== "string") return null;
   const dot = token.indexOf(".");
   if (dot <= 0 || dot === token.length - 1) return null;
@@ -58,9 +68,12 @@ export function verifyStartToken(
   } catch {
     return null;
   }
-  if (!payload?.uid || typeof payload.uid !== "string" || !payload.iat) return null;
+  if (!payload?.uid || typeof payload.uid !== "string") return null;
+  if (typeof payload.tg !== "number" || !payload.tg) return null;
+  if (typeof payload.jti !== "string" || !payload.jti) return null;
+  if (!payload.iat) return null;
   const ageSec = now - payload.iat;
   if (ageSec < -5) return null;
   if (ageSec > TTL_SEC) return null;
-  return { uid: payload.uid };
+  return { uid: payload.uid, tg: payload.tg, jti: payload.jti };
 }

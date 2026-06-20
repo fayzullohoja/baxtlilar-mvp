@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi, adminAudit } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { hashPhone } from "@/lib/identity/hashing";
 import { trustedIp } from "@/lib/http/ip";
 
 export const runtime = "nodejs";
@@ -30,17 +29,15 @@ export async function POST(
   const sb = supabaseAdmin();
   const { data: user } = await sb
     .from("users")
-    .select("id, phone_number, updated_at, verification_status, lifecycle_state")
+    .select("id, updated_at, verification_status, lifecycle_state")
     .eq("id", id)
     .maybeSingle();
   if (!user) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
 
-  const phoneHash = user.phone_number ? hashPhone(user.phone_number) : null;
-
+  // H10 verdict-fix: RPC чистит только по linked_user_id (legacy fallback убран).
   const { data, error } = await sb.rpc("admin_unblock_verification", {
     p_user_id: id,
     p_admin_id: session.adminId,
-    p_phone_hash: phoneHash,
     p_expected_updated_at: user.updated_at,
   });
   if (error) {

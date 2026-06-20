@@ -108,19 +108,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   if (action === "export") {
-    // F-118: право субъекта получить копию своих ПД (ст. 25 закона РУз "О ПД").
-    // Rate-limit 1/24h — иначе можно DoS'нуть сервер большими JSON-блобами.
-    // Возвращаем только данные, авторство которых принадлежит пользователю
-    // (его сообщения, заявки, жалобы); содержимое других сторон НЕ дублируем.
-    const EXPORT_COOLDOWN_MS = 24 * 3600 * 1000;
-    const { data: meta } = await sb
-      .from("users")
-      .select("exported_at")
-      .eq("id", user.id)
-      .maybeSingle();
-    if (meta?.exported_at && Date.now() - new Date(meta.exported_at as string).getTime() < EXPORT_COOLDOWN_MS) {
-      return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
+    // F-118 + H11 verdict-fix: атомарный rate-limit через RPC
+    // claim_export_window (UPDATE...WHERE...RETURNING внутри). N параллельных
+    // запросов: ровно 1 пройдёт, остальные → 429. ДО Promise.all SELECTs —
+    // иначе DoS amplification 10× per request.
+    const { data: claimed, error: claimErr } = await sb.rpc("claim_export_window", {
+      p_user_id: user.id,
+      p_cooldown_seconds: 24 * 3600,
+    });
+    if (claimErr) {
+      console.error("[account.export] claim failed:", claimErr.message);
+      return NextResponse.json({ ok: false, error: "db" }, { status: 500 });
     }
+    if (!claimed) return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
 
     const [profile, photos, qAnswers, qResults, consents, docs, sentReqs, recvReqs, myMsgs, myReports, stateLog] =
       await Promise.all([
@@ -151,7 +151,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           .eq("sender_id", user.id),
         sb
           .from("reports")
-          .select("id, target_user_id, reason, comment, status, created_at")
+          .select("id, target_user_id, reason_code, comment, status, created_at")
           .eq("reporter_id", user.id),
         sb
           .from("user_state_transitions")
@@ -160,7 +160,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           .order("created_at", { ascending: true }),
       ]);
 
-    await sb.from("users").update({ exported_at: new Date().toISOString() }).eq("id", user.id);
+    // H11: exported_at уже выставлен атомарным UPDATE WHERE выше (claim-step).
 
     return NextResponse.json({
       ok: true,

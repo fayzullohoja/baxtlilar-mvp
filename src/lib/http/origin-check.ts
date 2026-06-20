@@ -31,8 +31,14 @@ function originFromUrl(u: string | undefined): string | null {
 
 export function isAllowedOrigin(req: Request): boolean {
   const origin = req.headers.get("origin");
-  // Нет Origin → не-браузер. CSRF-атаки из браузера всегда несут Origin.
-  if (!origin) return true;
+  // C2 verdict-fix: убрали `if (!origin) return true`. Sec-Fetch-Site (Fetch
+  // Metadata, поддержан всеми современными браузерами) — резерв для случаев,
+  // когда Origin не приходит (некоторые edge-прокси, navigation requests).
+  // curl/node-fetch без Origin → reject (нет легитимного use-case).
+  const secFetchSite = req.headers.get("sec-fetch-site");
+  if (!origin) {
+    return secFetchSite === "same-origin" || secFetchSite === "none";
+  }
 
   if (TELEGRAM_ORIGINS.has(origin)) return true;
 

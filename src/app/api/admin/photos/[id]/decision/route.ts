@@ -28,13 +28,21 @@ export async function POST(
     .maybeSingle();
   if (!photo) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
 
-  // F-120 (R2-#3 verdict): moderator может действовать ТОЛЬКО над фото в
-  // активной модерации (status='under_review'/'uploaded'). approved/rejected
-  // фото уже-обработанного юзера → 403 (раньше moderator мог "deplatform"
-  // публичную фигуру, прокликав reject на всех её фото). Super-admin — без
-  // ограничений (incident-response).
+  // F-120 + C4 verdict-fix: moderator может действовать только над фото,
+  // которое (1) в активной модерации (status='under_review'/'uploaded') И
+  // (2) принадлежит юзеру, который сам находится в одобренном или активном
+  // lifecycle (не deleted/blocked). Без owner-scope-чека moderator мог
+  // "deplatform" любого через массовый reject.
   if (session.role !== "superadmin") {
     if (photo.status !== "under_review" && photo.status !== "uploaded") {
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    }
+    const { data: owner } = await supabaseAdmin()
+      .from("users")
+      .select("lifecycle_state")
+      .eq("id", photo.user_id)
+      .maybeSingle();
+    if (!owner || owner.lifecycle_state === "deleted" || owner.lifecycle_state === "blocked") {
       return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
     }
   }
