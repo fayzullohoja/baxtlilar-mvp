@@ -56,9 +56,12 @@ export async function POST(
     return NextResponse.json({ ok: false, error: "not_pending" }, { status: 409 });
 
   // BUG-4: нельзя одобрить без загруженных паспорта и селфи.
-  // F-007: при одобрении ищем тот же sha256 паспорта/селфи у ЛЮБОГО другого
-  // approved user_documents — это значит, тот же документ уже использован
-  // на другом аккаунте (катфиш / ферма аккаунтов). Отказываем модератора.
+  // F-007 + R3 + verdict C3/C5: при approve проверяем sha-дубли в 3 источниках:
+  //  - user_documents approved (F-007 baseline)
+  //  - user_documents rejected+blocking (R3 — catfish с новым TG/телефоном)
+  //  - document_sha_blacklist (C5 — survives erase_user/retry)
+  // sha NULL → 409 sha_missing (C3): legacy pre-migration документы — модератор
+  // должен сначала перезалить, иначе F-007 пропускает дубли.
   if (action === "approve") {
     const sb = supabaseAdmin();
     const { data: doc } = await sb
@@ -69,72 +72,65 @@ export async function POST(
     if (!doc?.passport_path || !doc?.selfie_path)
       return NextResponse.json({ ok: false, error: "documents_missing" }, { status: 409 });
 
-    // F-007 (approved-dup) + R3 verdict-followup (blocking-dup): один тот же
-    // паспорт/селфи не может быть approved У ДРУГОГО юзера ИЛИ висеть на
-    // blocking-rejected (катфиш с новым TG-аккаунтом, переиспользует доки
-    // друга, прошедшего blocking — F-006 phone-tombstone ловит по номеру,
-    // R3 ловит по содержимому файлов независимо от номера).
-    if (doc.passport_sha256) {
-      const approvedDup = await sb
-        .from("user_documents")
-        .select("user_id")
-        .eq("status", "approved")
-        .eq("passport_sha256", doc.passport_sha256)
-        .neq("user_id", id)
-        .limit(1)
-        .maybeSingle();
-      if (approvedDup.data) {
-        return NextResponse.json(
-          { ok: false, error: "duplicate_identity", field: "passport", scope: "approved", conflict_user_id: approvedDup.data.user_id },
-          { status: 409 },
-        );
-      }
-      const blockedDup = await sb
-        .from("user_documents")
-        .select("user_id")
-        .eq("status", "rejected")
-        .eq("reject_category", "blocking")
-        .eq("passport_sha256", doc.passport_sha256)
-        .neq("user_id", id)
-        .limit(1)
-        .maybeSingle();
-      if (blockedDup.data) {
-        return NextResponse.json(
-          { ok: false, error: "duplicate_identity", field: "passport", scope: "blocking", conflict_user_id: blockedDup.data.user_id },
-          { status: 409 },
-        );
-      }
+    // C3: sha NULL → reject. До MAJOR #2 миграции (20260619200000) sha-колонки
+    // не существовали → legacy rows с NULL. Approving такие даёт false-negative
+    // sha-dedup. Только модератор может разрешить, и только перезалив.
+    if (!doc.passport_sha256 || !doc.selfie_sha256) {
+      return NextResponse.json(
+        { ok: false, error: "sha_missing", field: !doc.passport_sha256 ? "passport" : "selfie" },
+        { status: 409 },
+      );
     }
-    if (doc.selfie_sha256) {
+
+    // F-007 (approved-dup) + R3 (blocking-dup) + C5 (sha_blacklist)
+    async function checkDup(field: "passport" | "selfie", sha: string) {
       const approvedDup = await sb
         .from("user_documents")
         .select("user_id")
         .eq("status", "approved")
-        .eq("selfie_sha256", doc.selfie_sha256)
+        .eq(`${field}_sha256`, sha)
         .neq("user_id", id)
         .limit(1)
         .maybeSingle();
-      if (approvedDup.data) {
-        return NextResponse.json(
-          { ok: false, error: "duplicate_identity", field: "selfie", scope: "approved", conflict_user_id: approvedDup.data.user_id },
-          { status: 409 },
-        );
-      }
+      if (approvedDup.data) return { scope: "approved" as const, conflict: approvedDup.data.user_id };
+
       const blockedDup = await sb
         .from("user_documents")
         .select("user_id")
         .eq("status", "rejected")
         .eq("reject_category", "blocking")
-        .eq("selfie_sha256", doc.selfie_sha256)
+        .eq(`${field}_sha256`, sha)
         .neq("user_id", id)
         .limit(1)
         .maybeSingle();
-      if (blockedDup.data) {
-        return NextResponse.json(
-          { ok: false, error: "duplicate_identity", field: "selfie", scope: "blocking", conflict_user_id: blockedDup.data.user_id },
-          { status: 409 },
-        );
-      }
+      if (blockedDup.data) return { scope: "blocking" as const, conflict: blockedDup.data.user_id };
+
+      // C5: append-only sha_blacklist — переживает erase_user / retry.
+      const tomb = await sb
+        .from("document_sha_blacklist")
+        .select("source_user_id")
+        .eq("kind", field)
+        .eq("sha256", sha)
+        .limit(1)
+        .maybeSingle();
+      if (tomb.data) return { scope: "tombstone" as const, conflict: tomb.data.source_user_id };
+
+      return null;
+    }
+
+    const passportDup = await checkDup("passport", doc.passport_sha256);
+    if (passportDup) {
+      return NextResponse.json(
+        { ok: false, error: "duplicate_identity", field: "passport", ...passportDup },
+        { status: 409 },
+      );
+    }
+    const selfieDup = await checkDup("selfie", doc.selfie_sha256);
+    if (selfieDup) {
+      return NextResponse.json(
+        { ok: false, error: "duplicate_identity", field: "selfie", ...selfieDup },
+        { status: 409 },
+      );
     }
   }
 
@@ -156,54 +152,53 @@ export async function POST(
   }
 
   // BUG-3: сначала авторитетный переход (атомарно + аудит). При гонке — 409, ничего не меняем.
-  const tr = await tryTransition(
-    id,
-    { verification_status: vstatus, onboarding_step: step },
-    `moderation: ${action}${body.reason ? " — " + body.reason : ""}`,
-    { kind: "admin", id: session.adminId },
-  );
-  if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-
-  await supabaseAdmin()
-    .from("user_documents")
-    .update({
-      status: docStatus,
-      reject_reason: body.reason ?? null,
-      reject_target: action === "needs_changes" ? body.target ?? "both" : null,
-      // MAJOR #2: при approve/needs_changes — NULL (CHECK constraint), при reject — категория.
-      reject_category: rejectCategory,
-      moderated_by: session.adminId,
-      moderated_at: new Date().toISOString(),
-    })
-    .eq("user_id", id);
-
-  await adminAudit({
-    adminId: session.adminId,
-    action: `verification_${action}`,
-    entity: "user",
-    entityId: id,
-    newValue: { verification_status: vstatus, onboarding_step: step, reject_category: rejectCategory },
-    reason: body.reason,
-    ip: trustedIp(req),
-  });
-
-  // R2 verdict-followup: blocking-reject → phone tombstone в phone_blacklist
-  // на 10 лет. Закрывает re-register с тем же номером через новый TG-аккаунт
-  // (F-006 cooldown 90д от self-delete недостаточен — катфиш мог НЕ удалить
-  // аккаунт и просто создать новый TG). idempotent: дубль-row в blacklist
-  // безвреден, любая выборка берёт max(until_at).
-  if (action === "reject" && rejectCategory === "blocking" && user.phone_number) {
+  // C1/C2 verdict-fix: blocking-reject — атомарный RPC (transition + docs +
+  // phone_blacklist + sha_blacklist в одной транзакции). Любая ошибка → ROLLBACK
+  // всего → route отдаёт 500. Раньше: 4 отдельных шага; lambda OOM/timeout
+  // между ними оставлял tombstone отсутствующим — bypass R2 silent.
+  if (action === "reject" && rejectCategory === "blocking") {
+    const sb = supabaseAdmin();
+    const { data: doc } = await sb
+      .from("user_documents")
+      .select("passport_sha256, selfie_sha256")
+      .eq("user_id", id)
+      .maybeSingle();
+    const phoneHash = user.phone_number ? hashPhone(user.phone_number) : null;
     const until = new Date(
       Date.now() + PHONE_BLOCKING_TOMBSTONE_DAYS * 24 * 3600 * 1000,
     ).toISOString();
-    const { error: bErr } = await supabaseAdmin().from("phone_blacklist").insert({
-      phone_hash: hashPhone(user.phone_number),
-      until_at: until,
-      reason: "verification_blocking_reject",
+    const { data: cur } = await sb.from("users").select("updated_at").eq("id", id).single();
+    const { data, error } = await sb.rpc("admin_blocking_reject", {
+      p_user_id: id,
+      p_admin_id: session.adminId,
+      p_reason: body.reason!,
+      p_phone_hash: phoneHash,
+      p_phone_until_at: until,
+      p_passport_sha256: doc?.passport_sha256 ?? null,
+      p_selfie_sha256: doc?.selfie_sha256 ?? null,
+      p_expected_updated_at: cur?.updated_at,
     });
-    if (bErr) {
-      console.error("[decision] phone_blacklist tombstone insert failed:", bErr.message);
-    } else {
+    if (error) {
+      console.error("[decision] admin_blocking_reject RPC failed:", error.message);
+      return NextResponse.json({ ok: false, error: "internal" }, { status: 500 });
+    }
+    const r = data as { ok: boolean; error?: string; phone_tombstone_written?: boolean };
+    if (!r.ok) return NextResponse.json({ ok: false, error: r.error }, { status: 409 });
+
+    await adminAudit({
+      adminId: session.adminId,
+      action: "verification_reject",
+      entity: "user",
+      entityId: id,
+      newValue: {
+        verification_status: "rejected",
+        onboarding_step: "verification_rejected",
+        reject_category: "blocking",
+      },
+      reason: body.reason,
+      ip: trustedIp(req),
+    });
+    if (r.phone_tombstone_written) {
       await adminAudit({
         adminId: session.adminId,
         action: "phone_tombstone",
@@ -212,7 +207,65 @@ export async function POST(
         newValue: { until_at: until, reason: "verification_blocking_reject" },
         ip: trustedIp(req),
       });
+    } else {
+      // C8 verdict-fix: NULL phone — silent skip раньше. Теперь audit-trail
+      // аномалии (модератор уверен что номер забанен, но tombstone отсутствует).
+      await adminAudit({
+        adminId: session.adminId,
+        action: "phone_tombstone_skipped",
+        entity: "user",
+        entityId: id,
+        newValue: { reason: "no_phone_on_user" },
+        ip: trustedIp(req),
+      });
     }
+
+    // push сразу после успешного RPC (см. ниже общий блок)
+  } else {
+    // approve / reject(technical) / needs_changes — старая логика (не атомар-
+    // ная, но безопасная: эти ветки не пишут в защитные tombstone-таблицы).
+    const tr = await tryTransition(
+      id,
+      { verification_status: vstatus, onboarding_step: step },
+      `moderation: ${action}${body.reason ? " — " + body.reason : ""}`,
+      { kind: "admin", id: session.adminId },
+    );
+    if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
+
+    // C4 verdict-fix: partial UNIQUE на approved-sha может бросить 23505 при
+    // одновременном approve дублей двумя модераторами. Ловим → 409.
+    const { error: docErr } = await supabaseAdmin()
+      .from("user_documents")
+      .update({
+        status: docStatus,
+        reject_reason: body.reason ?? null,
+        reject_target: action === "needs_changes" ? body.target ?? "both" : null,
+        reject_category: rejectCategory,
+        moderated_by: session.adminId,
+        moderated_at: new Date().toISOString(),
+      })
+      .eq("user_id", id);
+    if (docErr) {
+      const code = (docErr as { code?: string }).code;
+      if (code === "23505") {
+        return NextResponse.json(
+          { ok: false, error: "duplicate_identity_race" },
+          { status: 409 },
+        );
+      }
+      console.error("[decision] user_documents update failed:", docErr.message);
+      return NextResponse.json({ ok: false, error: "internal" }, { status: 500 });
+    }
+
+    await adminAudit({
+      adminId: session.adminId,
+      action: `verification_${action}`,
+      entity: "user",
+      entityId: id,
+      newValue: { verification_status: vstatus, onboarding_step: step, reject_category: rejectCategory },
+      reason: body.reason,
+      ip: trustedIp(req),
+    });
   }
 
   // MAJOR #2: для reject 'blocking' юзер видит мягкий support-текст, БЕЗ

@@ -43,6 +43,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   if (action === "delete") {
+    // C6 verdict-fix: blocking-rejected юзер НЕ может удалить аккаунт. Иначе
+    // erase_user сносит user_documents.sha → R3 защита теряется (sha_blacklist
+    // в admin_blocking_reject частично закрывает, но это последняя линия —
+    // удаление аккаунта = молчаливый bypass для модератора). Юзер должен
+    // обратиться в поддержку для unblock-flow.
+    const { data: docCheck } = await sb
+      .from("user_documents")
+      .select("reject_category")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (docCheck?.reject_category === "blocking") {
+      return NextResponse.json(
+        { ok: false, error: "tombstone_pending", message: "contact_support" },
+        { status: 409 },
+      );
+    }
+
     // F-006: до обнуления phone_number фиксируем хеш в blacklist на 90д.
     if (user.phone_number) {
       const until = new Date(Date.now() + PHONE_COOLDOWN_DAYS * 24 * 3600 * 1000).toISOString();
