@@ -1,3 +1,4 @@
+import Script from "next/script";
 import { AutoBootstrap } from "./auto-bootstrap";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,14 @@ export default function OpenInTelegramPage() {
   const botDeepLink = `https://t.me/${BOT_USERNAME}`;
   return (
     <main className="min-h-screen flex items-center justify-center px-5 py-8 bg-baxt-bg">
+      {/* TG Desktop НЕ auto-инжектит window.Telegram.WebApp надёжно — нужен
+          явный script-tag. /open-in-telegram вне [locale]-layout где он уже
+          подгружается, поэтому добавляем сюда. beforeInteractive чтобы
+          AutoBootstrap.useEffect успел увидеть window.Telegram. */}
+      <Script
+        src="https://telegram.org/js/telegram-web-app.js"
+        strategy="beforeInteractive"
+      />
       <AutoBootstrap />
       <div className="w-full max-w-sm bg-baxt-card border border-baxt-border rounded-3xl shadow-sm p-8 text-center">
         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-baxt-coral flex items-center justify-center text-white text-3xl font-bold shadow-[0_8px_24px_-8px_rgba(226,82,107,0.5)]">
