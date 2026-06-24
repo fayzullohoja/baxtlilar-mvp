@@ -60,6 +60,14 @@
 | `DB_COMPETITORS` | `3898dc27-4fcc-8141-8397-fd2d4db171d7` | 🏛️ Competitors | Name (title), Category, Region, Verified ID required, Visual feel, What to steal, What to avoid, Decode link |
 | `DB_DECISIONS` | `3898dc27-4fcc-8160-8a34-eedf0d3b6eff` | 🤝 Decisions Log | Decision (title), Date, Status, Type (Product/Design/ADR/Business/Legal), Owner, Context, Consequences |
 
+## Visual Direction concepts (children of `DESIGN_VISUAL`)
+
+| Ключ | ID | Заголовок |
+|---|---|---|
+| `CONCEPT_A_EDITORIAL` | `3898dc27-4fcc-81ba-885e-c01ba44ced6e` | 📰 A. Editorial Premium |
+| `CONCEPT_B_QUIET` | `3898dc27-4fcc-8146-8b5f-e3616cbf1f15` | 🌙 B. Quiet Confidence |
+| `CONCEPT_C_TASHKENT` | `3898dc27-4fcc-81d7-8a68-c2eccf6ed35e` | 🏛️ C. Tashkent Modernist |
+
 ## Использование из новой сессии
 
 ```bash
