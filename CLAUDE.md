@@ -7,6 +7,21 @@ Telegram Mini App для серьёзных знакомств в Узбекис
 **Полные спеки:** `~/Desktop/Baxtlilar/` (Чат 1–13 + Excel-бэклог + пояснительная записка).
 **План разработки:** `~/.claude/plans/sequential-popping-crayon.md`.
 
+## Документация: где что живёт (с 2026-06-21)
+
+| Где | Что |
+|---|---|
+| `docs/adr/` | Architecture Decision Records — технические развилки (БД, auth, framework). Новое значимое решение → новая ADR. Старые не редактируются, только статус. |
+| `docs/runbooks/` | Операционные сценарии: deploy, DB ops, инциденты. |
+| `docs/security/` | Сводка security-постуры; полные аудиты остаются в `_audit/`. |
+| `docs/ARCHITECTURE.md` | Single-source-of-truth по архитектуре. |
+| `docs/improvement-log.md` | Журнал /loop-цикла улучшений. |
+| `_audit/` (корень) | Полные security/onboarding-аудиты, история раундов adversarial verify. |
+| **Notion workspace «Baxtlilar»** | Продуктовая стратегия, user research, design system, IA, roadmap, decisions (продуктовые), meeting notes, юр-вопросы. Структура: Home → Product / Design / Competitors (DB) / Decisions Log (DB) / Engineering (зеркало docs/) / Legal. |
+
+**Правило:** код → ADR в repo; продукт → Notion. Если новая значимая дизайн-решение
+обсуждается с юристом — туда же в Notion → Legal. Если pure-tech — ADR.
+
 ## Стек
 - Next.js 16 (App Router, **async** cookies/headers/params; Server Actions возвращают void/Promise<void>)
 - React 19 · TypeScript strict · Tailwind v4
