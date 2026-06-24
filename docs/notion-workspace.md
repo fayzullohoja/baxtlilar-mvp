@@ -9,6 +9,7 @@
 |---|---|---|
 | `ROOT` | `3838dc27-4fcc-8096-a6cc-c320d19addc9` | Существующая страница «Mini App Baxtlilar 1.0.0» (spec v1) — не трогать |
 | `HOME` | `3898dc27-4fcc-81e8-914c-c429fa04f88b` | 🏠 Home — Baxtlilar v2 (overview/TOC) |
+| `DOC_STANDARDS` | `3898dc27-4fcc-8127-86a8-f58aabb139af` | 🗂 Doc Standards & Audit (taxonomy + signal/water audit) |
 
 ## Top-level редизайн-папки
 
