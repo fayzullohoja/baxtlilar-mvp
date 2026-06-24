@@ -10,6 +10,25 @@
 | `ROOT` | `3838dc27-4fcc-8096-a6cc-c320d19addc9` | Существующая страница «Mini App Baxtlilar 1.0.0» (spec v1) — не трогать |
 | `HOME` | `3898dc27-4fcc-81e8-914c-c429fa04f88b` | 🏠 Home — Baxtlilar v2 (overview/TOC) |
 | `DOC_STANDARDS` | `3898dc27-4fcc-8127-86a8-f58aabb139af` | 🗂 Doc Standards & Audit (taxonomy + signal/water audit) |
+| `QUESTIONNAIRE` | `3898dc27-4fcc-81fd-bf68-dc78c0b78060` | 🔍 Foundational Questionnaire (9 blocks + DB) |
+
+## Foundational Questionnaire — children of `QUESTIONNAIRE`
+
+9 итерационных блоков + Truth-Compass + Q&A Sessions DB (178/179 вопросов pre-populated).
+
+| Ключ | ID | Заголовок |
+|---|---|---|
+| `Q_BLOCK_1` | `3898dc27-4fcc-81b8-971d-f058ec4195a3` | 🏦 Block 1 — Business Reality Check |
+| `Q_BLOCK_2` | `3898dc27-4fcc-81c1-b25f-c4692bb01bd8` | 👥 Block 2 — User Reality |
+| `Q_BLOCK_3` | `3898dc27-4fcc-815c-a7c3-cb566c24abdb` | ⚙️ Block 3 — Tech Reality Check |
+| `Q_BLOCK_4` | `3898dc27-4fcc-8127-8f96-db545897bcf0` | 🎨 Block 4 — Brand & Positioning |
+| `Q_BLOCK_5` | `3898dc27-4fcc-81e3-9e83-ffe9eba56f33` | 📦 Block 5 — Product Scope |
+| `Q_BLOCK_6` | `3898dc27-4fcc-814f-8a2c-d6ce9045992b` | 🚪 Block 6 — Onboarding / Verification / Safety |
+| `Q_BLOCK_7` | `3898dc27-4fcc-81a4-b5be-ee9531952d66` | 📣 Block 7 — GTM / Acquisition / CAC |
+| `Q_BLOCK_8` | `3898dc27-4fcc-8140-bbca-f1f7680e3b30` | 🖼️ Block 8 — Visual Identity & Design System |
+| `Q_BLOCK_9` | `3898dc27-4fcc-8112-94b4-d3125c59e984` | 🎯 Block 9 — Concept Choice & Validation |
+| `TRUTH_COMPASS` | `3898dc27-4fcc-8159-8f76-c45cfe9f7f39` | 🧭 Truth-Finding Compass (TBV/CONFLICT/BLOCKER механики) |
+| `DB_QA_SESSIONS` | `3898dc27-4fcc-81c3-9ef3-faf2a5fd7b20` | 🗃 Q&A Sessions Log (178 rows, columns: Question/Block/Dimension/Source/Cost/Status/Owner/Answer/Deadline/Unlocks) |
 
 ## Top-level редизайн-папки
 
