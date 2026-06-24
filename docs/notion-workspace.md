@@ -68,6 +68,38 @@
 | `CONCEPT_B_QUIET` | `3898dc27-4fcc-8146-8b5f-e3616cbf1f15` | 🌙 B. Quiet Confidence |
 | `CONCEPT_C_TASHKENT` | `3898dc27-4fcc-81d7-8a68-c2eccf6ed35e` | 🏛️ C. Tashkent Modernist |
 
+## Reference v1 (Original Spec) — children of `PRODUCT`
+
+Полный объём оригинальной спеки MVP. Конвертировано из .docx через pandoc.
+Оригинальные файлы лежат на `~/Desktop/Все файлы/02. Baxtlilar/`.
+
+| Ключ | ID | Заголовок |
+|---|---|---|
+| `REF_V1` | `3898dc27-4fcc-81b4-94a7-d18ec89efb1b` | 📚 Reference v1 (Original Spec) — parent |
+| `CHAT_1` | `3898dc27-4fcc-81c6-8cbb-eb308512f0ff` | 🚪 Чат 1 — Onboarding |
+| `CHAT_2` | `3898dc27-4fcc-81ef-bdd9-fe90004f6888` | 📋 Чат 2 — Анкета |
+| `CHAT_3` | `3898dc27-4fcc-8181-bc7b-ce80380a9be0` | 💞 Чат 3 — Matching - Алгоритм |
+| `CHAT_4` | `3898dc27-4fcc-81c9-b06c-cc8b7ed2c5d8` | 💎 Чат 4 — Premium |
+| `CHAT_5` | `3898dc27-4fcc-8104-ae64-dd6ff948cf60` | 🛡 Чат 5 — Safety - Trust system |
+| `CHAT_6` | `3898dc27-4fcc-8127-b843-c9609800bb48` | 🌐 Чат 6 — Website - Сайт Baxtlilar |
+| `CHAT_7` | `3898dc27-4fcc-8138-ae82-edd4fc97582e` | 👮 Чат 7 — Admin Panel |
+| `CHAT_8` | `3898dc27-4fcc-81d6-822e-d582b832571f` | ⚖️ Чат 8 — Legal - Юридическая часть |
+| `CHAT_9` | `3898dc27-4fcc-8106-8678-d15ea74c8c42` | 🤝 Чат 9 — Partnerships |
+| `CHAT_10` | `3898dc27-4fcc-818b-b34d-ccba367390b0` | 📊 Чат 10 — Analytics - Метрики |
+| `CHAT_11` | `3898dc27-4fcc-81be-bcb9-dc39f7538a71` | 🔄 Чат 11 — Бизнес-процессы |
+| `CHAT_12` | `3898dc27-4fcc-81b9-9fdf-e5ff7618b560` | 📐 Чат 12 — PRD и Backlog MVP |
+| `CHAT_13` | `3898dc27-4fcc-8154-a46e-c26e8e81aa40` | 🎨 Чат 13 — Системные артефакты MVP |
+
+## Standalone docs (siblings под parent'ами)
+
+| Ключ | ID | Parent | Заголовок |
+|---|---|---|---|
+| `PROSTYMI_SLOVAMI` | `3898dc27-4fcc-81ae-9686-d67992f3c627` | PRODUCT | 📖 Простыми словами (TL;DR) |
+| `OWNER_DECISION` | `3898dc27-4fcc-81b0-bc32-e01f156273fe` | LEGAL | 📜 Решение учредителя 07.06.2026 (OD-1..OD-20) |
+| `ARCH_V1` | `3898dc27-4fcc-8132-a776-dee7a19ea17a` | ENGINEERING | 🏗 Архитектура и бизнес-процесс v1.0 |
+| `OFFER_INTEG_SPEC` | `3898dc27-4fcc-819f-a15e-dbb16289d5d0` | LEGAL | ⚖️ Спецификация интеграции оферты |
+| `PUBLIC_OFFER_DRAFT` | `3898dc27-4fcc-8133-bc00-dd5c3538662c` | LEGAL | 📝 Публичная оферта — черновик v0.1 |
+
 ## Использование из новой сессии
 
 ```bash
