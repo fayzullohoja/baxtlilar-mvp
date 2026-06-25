@@ -1,0 +1,134 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "@/i18n/navigation";
+import { Button } from "./Button";
+import { Field, TextInput, TextArea, Select, CitySelect } from "./AnketaFields";
+import { GENDER } from "@/lib/profile/options";
+
+/**
+ * V2 Anketa Basic form (Blueprint §3.3 B1).
+ * Поля: имя, пол, дата рождения, город, bio.
+ * API: /api/onboarding/profile/basic (без изменений).
+ */
+
+const ERR_COPY: Record<string, string> = {
+  bio_has_contacts: "В тексте нашёлся контакт (телефон, ник, ссылка). Удали — здесь это не работает.",
+  name_has_contacts: "В имени нашёлся контакт. Только имя без ссылок.",
+  bio_too_short: "Расскажи побольше — минимум 20 символов.",
+  bio_too_long: "Слишком длинно — максимум 1000 символов.",
+  must_be_18: "Возраст должен быть 18 лет и больше.",
+  invalid_age: "Проверь дату рождения.",
+  validation: "Проверь заполненные поля.",
+  failed: "Не получилось сохранить. Попробуй ещё раз.",
+};
+
+export function V2AnketaBasicForm({
+  defaultName,
+  locale,
+}: {
+  defaultName?: string;
+  locale: string;
+}) {
+  const router = useRouter();
+  const [name, setName] = useState(defaultName ?? "");
+  const [gender, setGender] = useState("");
+  const [birth, setBirth] = useState("");
+  const [city, setCity] = useState("");
+  const [bio, setBio] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function submit() {
+    if (busy) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch("/api/onboarding/profile/basic", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          display_name: name,
+          gender,
+          birth_date: birth,
+          city,
+          bio,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok: boolean;
+        next?: string;
+        detail?: string;
+        error?: string;
+      };
+      if (data.ok && data.next) {
+        router.replace(data.next);
+        return;
+      }
+      setErr(data.detail ?? data.error ?? "failed");
+    } catch {
+      setErr("failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const valid =
+    name.trim().length >= 2 && !!gender && !!birth && !!city && bio.trim().length >= 20;
+
+  return (
+    <div>
+      <Field label="Имя">
+        <TextInput
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={50}
+          placeholder="Так тебя увидят другие"
+        />
+      </Field>
+      <Field label="Пол">
+        <Select options={GENDER} value={gender} onChange={setGender} locale={locale} />
+      </Field>
+      <Field label="Дата рождения">
+        <TextInput type="date" value={birth} onChange={(e) => setBirth(e.target.value)} />
+      </Field>
+      <Field label="Город">
+        <CitySelect value={city} onChange={setCity} placeholder="Где живёшь" locale={locale} />
+      </Field>
+      <Field
+        label="О себе"
+        hint="Что важно знать про тебя. Не реквизиты — характер, привычки, чем живёшь."
+      >
+        <TextArea
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+          rows={5}
+          maxLength={1000}
+          placeholder="Например: люблю длинные прогулки, читаю историческую нонфикшн, ценю прямоту"
+        />
+      </Field>
+
+      {err ? (
+        <div
+          style={{
+            padding: "10px 14px",
+            background: "rgba(180, 50, 50, 0.08)",
+            border: "1px solid rgba(180, 50, 50, 0.3)",
+            borderRadius: "var(--v2-radius-md)",
+            fontSize: "13px",
+            color: "var(--color-v2-ink-200)",
+            fontFamily: "var(--font-v2-body)",
+            marginBottom: "16px",
+            lineHeight: "1.5",
+          }}
+        >
+          {ERR_COPY[err] ?? ERR_COPY.failed}
+        </div>
+      ) : null}
+
+      <Button onClick={submit} disabled={busy || !valid} variant="primary">
+        {busy ? "Сохраняю…" : "Дальше"}
+      </Button>
+    </div>
+  );
+}

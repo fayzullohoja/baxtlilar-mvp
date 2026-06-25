@@ -24,9 +24,11 @@ export const ONBOARDING_PATHS: Record<OnboardingStep, string> = {
   moderation_pending: "/onboarding/pending",
   needs_changes: "/onboarding/needs-changes",
   verification_rejected: "/onboarding/rejected",
-  profile_basic: "/onboarding/profile/basic",
-  profile_family: "/onboarding/profile/family",
-  profile_values: "/onboarding/profile/values",
+  // V2 Sprint 9: profile_basic/family/values переехали на /v2/anketa.
+  profile_basic: "/v2/anketa/basic",
+  profile_family: "/v2/anketa/family",
+  profile_values: "/v2/anketa/values",
+  // V2 Sprint 10: остальные шаги ещё в V1 (looking-for/photos/preview).
   profile_looking_for: "/onboarding/profile/looking-for",
   profile_photos: "/onboarding/profile/photos",
   profile_preview: "/onboarding/profile/preview",
