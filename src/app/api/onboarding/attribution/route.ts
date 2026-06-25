@@ -23,8 +23,13 @@ const ALLOWED_SOURCES = new Set<string>([
 
 /**
  * MAJOR #3 (spec Экран 12): пользователь выбирает источник привлечения ИЛИ
- * skip. В любом случае переходим в active. attribution_source enum-валидно
- * через CHECK constraint, поэтому NULL=skip абсолютно валидно для БД.
+ * skip. attribution_source enum-валидно через CHECK constraint, NULL=skip
+ * также валидно.
+ *
+ * V2 (2026-06-25): после attribution идём не в active, а в tutorial_intro.
+ * Lifecycle_state остаётся 'onboarding' до окончания тура (см. tutorial route).
+ * ALLOWED_TRANSITIONS.attribution позволяет ["tutorial_intro", "active"] —
+ * "active" сохранён для legacy fallback, но новые регистрации идут в тур.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const { user, res } = await loadUserForStep("attribution");
@@ -43,7 +48,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     source = body.source;
   }
 
-  // Сохраняем source (или NULL при skip) до перехода в active.
+  // Сохраняем source (или NULL при skip) до перехода в tutorial_intro.
   const { error: upErr } = await supabaseAdmin()
     .from("users")
     .update({ attribution_source: source })
@@ -55,10 +60,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const tr = await tryTransition(
     user.id,
-    { onboarding_step: "active", lifecycle_state: "active" },
-    source ? `attribution: ${source}` : "attribution: skip",
+    { onboarding_step: "tutorial_intro" },
+    source ? `attribution: ${source} → tutorial` : "attribution: skip → tutorial",
     { kind: "user", id: user.id },
   );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.active });
+  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.tutorial_intro });
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadActiveUserApi } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requirePermissionForRequest } from "@/lib/v2/with-permission";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,10 +9,14 @@ const REASONS = ["fake", "offensive", "contacts", "spam", "inappropriate", "othe
 // статусы «открытой» жалобы — те же, что в очереди модерации (/admin/reports)
 const OPEN_REPORT_STATUSES = ["new", "in_progress", "requires_clarification", "escalated"];
 
-/** Пожаловаться на пользователя/чат (анонимно для нарушителя) → очередь модерации. */
+/**
+ * Пожаловаться на пользователя/чат (анонимно для нарушителя) → очередь модерации.
+ * V2 gate: report_user (verified + paused — safety floor сохраняется на паузе).
+ */
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const { user, res } = await loadActiveUserApi({ allowPaused: true });
-  if (res) return res;
+  const gate = await requirePermissionForRequest("report_user");
+  if ("response" in gate) return gate.response;
+  const { user } = gate;
   const { target_user_id, reason_code, comment, chat_id } = (await req.json().catch(() => ({}))) as {
     target_user_id?: string;
     reason_code?: string;

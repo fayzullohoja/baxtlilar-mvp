@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
-/* Бренд Baxtlilar — кораллово-розовый на белом (см. Чат 13 §4.3 Branding) */
+/* ============================================================================
+ * V1 Brand tokens — кораллово-розовый, оставляем для совместимости с старыми
+ * экранами пока идёт миграция на V2. После полного V2 sweep удалить.
+ * ============================================================================ */
 @theme {
   --color-baxt-coral: #e2526b;
   --color-baxt-coral-dk: #c8364f;
@@ -12,8 +15,100 @@
   --color-baxt-muted: #6b7280;
 }
 
+/* ============================================================================
+ * V2 — Editorial Premium DNA (2026-06-25)
+ *
+ * Источник: Discovery → Concept A "Editorial Premium"
+ * Tagline: "Журнал, который знакомит людей — не приложение, в которое заходят свайпать"
+ *
+ * Принципы:
+ *   - Trust through restraint, not theatre
+ *   - One object per screen (низкая плотность)
+ *   - Words carry the room (typography как hero)
+ *   - Local without kitsch
+ *   - Verified is the floor, not the badge
+ * ============================================================================ */
+@theme {
+  /* --- Цвет: тёплый off-white фон + глубокий ink + один аметистовый акцент --- */
+  --color-v2-paper: #faf6f1; /* основной фон — бумажный off-white */
+  --color-v2-paper-2: #f4efe8; /* secondary surface */
+  --color-v2-paper-3: #ece7df; /* tertiary surface */
+  --color-v2-ink-100: #0a0908; /* near-black для headlines */
+  --color-v2-ink-200: #1a1614; /* body text */
+  --color-v2-ink-300: #4a4541; /* secondary text */
+  --color-v2-ink-400: #807a75; /* tertiary text / muted */
+  --color-v2-border: #e0d9cf;
+
+  /* Аметистовый accent — единственный цвет для CTA / лайков / state */
+  --color-v2-accent: #4a2c5a;
+  --color-v2-accent-soft: rgba(74, 44, 90, 0.08);
+  --color-v2-accent-hover: #5d3a73;
+
+  /* Семантические цвета (использовать СКРОМНО — только для критичных состояний) */
+  --color-v2-success: #2a6f4a;
+  --color-v2-warning: #c7541e;
+  --color-v2-danger: #b8362a;
+
+  /* --- Типография: кириллический serif для headlines + sans для UI --- */
+  /* Headlines: Druk Cyrillic / Kazimir Cyrillic (будет лицензировано),
+     fallback на качественные default serif. */
+  --font-v2-display: "Druk Cyrillic Text", "Kazimir Cyrillic", "PT Serif Pro",
+    Georgia, "Times New Roman", serif;
+  --font-v2-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Helvetica Neue", Arial, sans-serif;
+  --font-v2-mono: "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas,
+    "Courier New", monospace;
+
+  /* --- Размеры и spacing — щедрый whitespace, низкая плотность --- */
+  --v2-space-unit: 4px; /* 4px grid */
+  --v2-radius-sm: 4px;
+  --v2-radius-md: 8px;
+  --v2-radius-lg: 16px;
+  --v2-radius-card: 24px; /* prompt-cards и hero */
+
+  /* --- Размеры экрана --- */
+  --v2-max-width: 420px; /* mini-app в TG WebView обычно ~420px */
+  --v2-screen-padding: 24px;
+}
+
+/* ============================================================================
+ * V1 body — старый розовый фон. V2 экраны переопределяют через MiniAppShell.
+ * ============================================================================ */
 body {
-  font-family: var(--font-sans), system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, "Helvetica Neue",
+    Arial, sans-serif;
   background: var(--color-baxt-pink-bg);
   color: var(--color-baxt-navy);
+}
+
+/* ============================================================================
+ * V2 root — применяется через <body data-v2="true"> или класс на shell
+ * ============================================================================ */
+[data-v2="true"],
+.v2-root {
+  background: var(--color-v2-paper);
+  color: var(--color-v2-ink-100);
+  font-family: var(--font-v2-body);
+  font-feature-settings: "ss01", "cv01", "cv02"; /* Inter stylistic alternates */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* V2 headlines — serif всегда */
+[data-v2="true"] h1,
+.v2-root h1,
+[data-v2="true"] h2,
+.v2-root h2,
+[data-v2="true"] .v2-display,
+.v2-root .v2-display {
+  font-family: var(--font-v2-display);
+  font-feature-settings: "ss01";
+  letter-spacing: -0.02em;
+}
+
+/* V2 body text — sans */
+[data-v2="true"] body,
+.v2-root body,
+[data-v2="true"] p,
+.v2-root p {
+  font-family: var(--font-v2-body);
 }

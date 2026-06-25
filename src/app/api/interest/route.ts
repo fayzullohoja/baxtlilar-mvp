@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadActiveUserApi } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { DAILY_LIMITS } from "@/lib/matching/quota";
 import { notifyUser } from "@/lib/telegram/notify";
 import { areBlocked } from "@/lib/safety/blocks";
 import { containsContact } from "@/lib/profile/schemas";
+import { requirePermissionForRequest } from "@/lib/v2/with-permission";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,8 +12,11 @@ export const dynamic = "force-dynamic";
 const AUTO_DECLINE_HOURS = 72;
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const { user, res } = await loadActiveUserApi();
-  if (res) return res;
+  // V2 Phase A: единый permission gate (вместо ручной проверки роли).
+  const gate = await requirePermissionForRequest("send_interest");
+  if ("response" in gate) return gate.response;
+  const { user } = gate;
+
   const sb = supabaseAdmin();
 
   const { receiver_id, message } = (await req.json().catch(() => ({}))) as {

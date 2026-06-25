@@ -17,21 +17,29 @@ export const ONBOARDING_PATHS: Record<OnboardingStep, string> = {
   consent: "/open-in-telegram",
   phone_input: "/open-in-telegram",
   otp_pending: "/open-in-telegram",
-  // Mini-app:
-  verification_intro: "/onboarding/verification-intro",
-  doc_upload: "/onboarding/document",
-  selfie_upload: "/onboarding/selfie",
+  // Mini-app (V2 Sprint 8: verification переехало на /v2/verify):
+  verification_intro: "/v2/verify/intro",
+  doc_upload: "/v2/verify/doc",
+  selfie_upload: "/v2/verify/selfie",
   moderation_pending: "/onboarding/pending",
   needs_changes: "/onboarding/needs-changes",
   verification_rejected: "/onboarding/rejected",
-  profile_basic: "/onboarding/profile/basic",
-  profile_family: "/onboarding/profile/family",
-  profile_values: "/onboarding/profile/values",
-  profile_looking_for: "/onboarding/profile/looking-for",
-  profile_photos: "/onboarding/profile/photos",
-  profile_preview: "/onboarding/profile/preview",
-  quiz: "/onboarding/quiz",
-  attribution: "/onboarding/attribution",
+  // V2 Sprint 9/10: вся анкета переехала на /v2/anketa.
+  profile_basic: "/v2/anketa/basic",
+  profile_family: "/v2/anketa/family",
+  profile_values: "/v2/anketa/values",
+  profile_looking_for: "/v2/anketa/looking-for",
+  profile_photos: "/v2/anketa/photos",
+  profile_preview: "/v2/anketa/preview",
+  // V2 Sprint 11: quiz + attribution на /v2.
+  quiz: "/v2/quiz",
+  attribution: "/v2/attribution",
+  // V2 tutorial tour (после attribution, параллельно с фоновой верификацией)
+  tutorial_intro: "/v2/tutorial/intro",
+  tutorial_swipe: "/v2/tutorial/swipe",
+  tutorial_chat: "/v2/tutorial/chat",
+  tutorial_safety: "/v2/tutorial/safety",
+  ready: "/v2/welcome", // транзитный — RPC сам переводит в active
   active: "/main",
 };
 

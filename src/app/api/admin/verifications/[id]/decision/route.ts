@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi, adminAudit, requireInQueueOrSuper } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { tryTransition } from "@/lib/state-machine/transitions";
-import { notifyUser } from "@/lib/telegram/notify";
 import { trustedIp } from "@/lib/http/ip";
 import { validateDecisionBody, type DecisionBody } from "@/lib/admin/decision-validate";
 import type { OnboardingStep, VerificationStatus } from "@/lib/state-machine/types";
+import {
+  tryDeliverNow,
+  type OutboxEventType,
+} from "@/lib/v2/tg-outbox-worker";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,16 +18,8 @@ export const dynamic = "force-dynamic";
 // re-register с тем же номером через новый TG-аккаунт.
 const PHONE_BLOCKING_TOMBSTONE_DAYS = 365 * 10;
 
-// MAJOR #2: для reject 'blocking' — отдельный push без призыва к retry.
-// 'technical' → стандартный reject-текст с подсказкой переснять.
-const PUSH_APPROVE =
-  "✅ Ваш профиль успешно прошёл проверку.\nОткройте Baxtlilar, чтобы создать анкету. После публикации анкеты вам будут доступны рекомендации.";
-const PUSH_REJECT_TECHNICAL =
-  "Нужно переснять документы — модератор не смог проверить ваши фото.\nОткройте Baxtlilar, чтобы попробовать снова.";
-const PUSH_REJECT_BLOCKING =
-  "К сожалению, мы не смогли подтвердить вашу личность.\nЕсли вы считаете это ошибкой, обратитесь в поддержку.";
-const PUSH_NEEDS_CHANGES =
-  "Нужно переснять данные для проверки.\nОткройте Baxtlilar, чтобы загрузить их заново.";
+// V2 Sprint 6: push-тексты теперь живут в tg-outbox-worker (RU + UZ).
+// Здесь выбираем тип события — worker рендерит и шлёт.
 
 export async function POST(
   req: NextRequest,
@@ -257,19 +252,24 @@ export async function POST(
     });
   }
 
-  // MAJOR #2: для reject 'blocking' юзер видит мягкий support-текст, БЕЗ
-  // призыва к retry. Для 'technical' — стандарт «переснимите».
-  const pushText =
+  // V2 Sprint 6: enqueue в tg_outbox → sync-доставка best-effort.
+  // Падение → запись остаётся pending → cron retry. i18n рендерится воркером
+  // по user.language. Audit trail хранится в tg_outbox строке.
+  const eventType: OutboxEventType =
     action === "approve"
-      ? PUSH_APPROVE
+      ? "verification_approved"
       : action === "needs_changes"
-        ? body.reason
-          ? `${PUSH_NEEDS_CHANGES}\n\nПричина: ${body.reason}`
-          : PUSH_NEEDS_CHANGES
-        : rejectCategory === "blocking"
-          ? PUSH_REJECT_BLOCKING
-          : PUSH_REJECT_TECHNICAL;
-  await notifyUser(user.telegram_id as number, pushText);
+        ? "verification_needs_changes"
+        : "verification_rejected";
+  const { data: outboxId } = await supabaseAdmin().rpc("enqueue_tg_outbox", {
+    p_user_id: id,
+    p_event_type: eventType,
+    p_payload: {
+      reason: body.reason ?? null,
+      reject_category: rejectCategory ?? null,
+    },
+  });
+  await tryDeliverNow(outboxId as string | null);
 
   return NextResponse.json({ ok: true });
 }

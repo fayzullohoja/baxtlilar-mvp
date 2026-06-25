@@ -34,6 +34,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   if (saveErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
+  // V2 (2026-06-25): фиксируем момент первой подачи. ETA для shadow-плашки
+  // считается от этого таймстампа. UPDATE идемпотентен через WHERE IS NULL —
+  // повторная подача после needs_changes не перетирает оригинальное время.
+  const { error: tsErr } = await supabaseAdmin()
+    .from("users")
+    .update({ verification_submitted_at: new Date().toISOString() })
+    .eq("id", user.id)
+    .is("verification_submitted_at", null);
+  if (tsErr) {
+    console.error("[selfie] verification_submitted_at update failed:", tsErr.message);
+    // Не критично — ETA просто не покажется в плашке.
+  }
+
   const tr = await tryTransition(
     user.id,
     { verification_status: "pending_review", onboarding_step: "moderation_pending" },

@@ -1,7 +1,7 @@
 import { requireAdmin } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { unwrapRows } from "@/lib/db/unwrap";
-import { AdminShell } from "@/components/admin/shell";
+import { V2AdminShell, AdminH1 } from "@/components/v2/AdminShell";
 import { UserActions } from "@/components/admin/user-actions";
 import { ageFromDate } from "@/lib/profile/schemas";
 import { cityLabel } from "@/lib/profile/cities";
@@ -18,8 +18,8 @@ const STATUS_FILTERS = [
 ];
 const GENDER_FILTERS = [
   { key: "all", label: "Любой пол" },
-  { key: "m", label: "♂ Мужчины" },
-  { key: "f", label: "♀ Женщины" },
+  { key: "m", label: "Мужчины" },
+  { key: "f", label: "Женщины" },
 ];
 
 type ProfileEmbed = { gender: string | null; birth_date: string | null; city: string | null };
@@ -32,6 +32,11 @@ type UserRow = {
   created_at: string;
 };
 
+/**
+ * V2 Admin · Users (Blueprint §4.6).
+ * Editorial table + filter pills. F-120 RBAC: moderator видит только
+ * pending_review-онбординг — фильтры status игнорируются для moderator.
+ */
 export default async function UsersPage({
   searchParams,
 }: {
@@ -41,31 +46,25 @@ export default async function UsersPage({
   const { status, gender } = await searchParams;
   const statusF = status ?? "all";
   const genderF = gender === "m" || gender === "f" ? gender : "all";
-
   const sb = supabaseAdmin();
 
-  // Фильтр по полу: native-адаптер не делает ни embed user_profiles(...), ни
-  // dotted-фильтр "user_profiles.gender". Поэтому сперва находим user_id нужного
-  // пола в user_profiles, затем ограничиваем выборку users по .in("id", …).
   let genderIds: string[] | null = null;
   if (genderF !== "all") {
-    genderIds = unwrapRows(await sb.from("user_profiles").select("user_id").eq("gender", genderF)).map(
-      (r) => r.user_id as string,
-    );
+    genderIds = unwrapRows(
+      await sb.from("user_profiles").select("user_id").eq("gender", genderF),
+    ).map((r) => r.user_id as string);
   }
 
   let list: UserRow[] = [];
-  // Если по полу никто не найден — список заведомо пуст, лишний запрос не нужен.
   if (genderF === "all" || (genderIds && genderIds.length)) {
     let q = sb
       .from("users")
-      .select("id, telegram_username, telegram_first_name, lifecycle_state, verification_status, created_at")
+      .select(
+        "id, telegram_username, telegram_first_name, lifecycle_state, verification_status, created_at",
+      )
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(100);
-    // F-120 (R2-#2 verdict): moderator видит ТОЛЬКО юзеров в активной очереди
-    // модерации. Имя+город+возраст это уже dox-вектор без открытия паспорта.
-    // Status-фильтр игнорируется для moderator (только pending_review всегда).
     if (session.role === "moderator") {
       q = q.eq("verification_status", "pending_review").eq("lifecycle_state", "onboarding");
     } else if (statusF !== "all") {
@@ -75,7 +74,6 @@ export default async function UsersPage({
     list = unwrapRows(await q) as unknown as UserRow[];
   }
 
-  // Профили (пол/возраст/город) подтягиваем отдельным запросом и сшиваем в JS.
   const profiles = new Map<string, ProfileEmbed>();
   const ids = list.map((u) => u.id);
   if (ids.length) {
@@ -85,55 +83,72 @@ export default async function UsersPage({
     for (const p of ups) profiles.set(p.user_id as string, p as ProfileEmbed);
   }
 
-  // ссылки фильтров сохраняют второй параметр
-  const hrefStatus = (k: string) => `/admin/users?status=${k}${genderF !== "all" ? `&gender=${genderF}` : ""}`;
-  const hrefGender = (k: string) => `/admin/users?gender=${k}${statusF !== "all" ? `&status=${statusF}` : ""}`;
+  const hrefStatus = (k: string) =>
+    `/admin/users?status=${k}${genderF !== "all" ? `&gender=${genderF}` : ""}`;
+  const hrefGender = (k: string) =>
+    `/admin/users?gender=${k}${statusF !== "all" ? `&status=${statusF}` : ""}`;
 
   return (
-    <AdminShell active="/admin/users" role={session.role}>
-      <h1 className="mb-4 text-2xl font-bold text-slate-900">Пользователи</h1>
+    <V2AdminShell active="/admin/users" role={session.role}>
+      <AdminH1
+        subtitle={
+          session.role === "moderator"
+            ? "Только пользователи в очереди модерации (F-120 RBAC scope)."
+            : `${list.length} пользователей в выборке.`
+        }
+      >
+        Пользователи
+      </AdminH1>
 
-      <div className="mb-3 flex flex-wrap gap-2">
-        {STATUS_FILTERS.map((f) => (
-          <Link
-            key={f.key}
-            href={hrefStatus(f.key)}
-            className={
-              "rounded-full px-3 py-1.5 text-sm " +
-              (statusF === f.key ? "bg-slate-900 text-white" : "border border-slate-200 bg-white text-slate-600")
-            }
-          >
-            {f.label}
-          </Link>
-        ))}
-      </div>
-      <div className="mb-5 flex flex-wrap gap-2">
-        {GENDER_FILTERS.map((f) => (
-          <Link
-            key={f.key}
-            href={hrefGender(f.key)}
-            className={
-              "rounded-full px-3 py-1.5 text-sm " +
-              (genderF === f.key ? "bg-baxt-coral text-white" : "border border-slate-200 bg-white text-slate-600")
-            }
-          >
-            {f.label}
-          </Link>
-        ))}
-      </div>
+      {/* Filter pills */}
+      {session.role !== "moderator" ? (
+        <>
+          <FilterPills>
+            {STATUS_FILTERS.map((f) => (
+              <Pill key={f.key} href={hrefStatus(f.key)} active={statusF === f.key}>
+                {f.label}
+              </Pill>
+            ))}
+          </FilterPills>
+          <FilterPills mt={12}>
+            {GENDER_FILTERS.map((f) => (
+              <Pill key={f.key} href={hrefGender(f.key)} active={genderF === f.key}>
+                {f.label}
+              </Pill>
+            ))}
+          </FilterPills>
+        </>
+      ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        <table className="w-full min-w-[760px] text-sm">
-          <thead className="bg-slate-50 text-left text-slate-500">
-            <tr>
-              <th className="px-4 py-3 font-medium">Пользователь</th>
-              <th className="px-4 py-3 font-medium">Пол</th>
-              <th className="px-4 py-3 font-medium">Возраст</th>
-              <th className="px-4 py-3 font-medium">Город</th>
-              <th className="px-4 py-3 font-medium">Статус</th>
-              <th className="px-4 py-3 font-medium">Верификация</th>
-              <th className="px-4 py-3 font-medium">Регистрация</th>
-              <th className="px-4 py-3 font-medium"></th>
+      {/* Table */}
+      <div
+        style={{
+          marginTop: "32px",
+          border: "1px solid var(--color-v2-ink-500)",
+          borderRadius: "var(--v2-radius-md)",
+          overflow: "auto",
+          background: "var(--color-v2-paper)",
+        }}
+      >
+        <table
+          style={{
+            width: "100%",
+            minWidth: "760px",
+            borderCollapse: "collapse",
+            fontFamily: "var(--font-v2-body)",
+            fontSize: "13px",
+          }}
+        >
+          <thead>
+            <tr style={{ borderBottom: "1px solid var(--color-v2-ink-500)" }}>
+              <Th>Пользователь</Th>
+              <Th>Пол</Th>
+              <Th>Возраст</Th>
+              <Th>Город</Th>
+              <Th>Статус</Th>
+              <Th>Верификация</Th>
+              <Th>Регистрация</Th>
+              <Th>{""}</Th>
             </tr>
           </thead>
           <tbody>
@@ -141,29 +156,130 @@ export default async function UsersPage({
               const p = profiles.get(u.id) ?? null;
               const age = p?.birth_date ? ageFromDate(p.birth_date) : null;
               return (
-                <tr key={u.id as string} className="border-t border-slate-100">
-                  <td className="px-4 py-3 text-slate-800">
+                <tr
+                  key={u.id as string}
+                  style={{ borderTop: "1px solid var(--color-v2-ink-600)" }}
+                >
+                  <Td>
                     {(u.telegram_first_name as string) ||
-                      (u.telegram_username ? "@" + u.telegram_username : (u.id as string).slice(0, 8))}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{genderRu(p?.gender)}</td>
-                  <td className="px-4 py-3 text-slate-600">{age && age > 0 ? age : "—"}</td>
-                  <td className="px-4 py-3 text-slate-600">{p?.city ? cityLabel(p.city, "ru") : "—"}</td>
-                  <td className="px-4 py-3 text-slate-600">{lifecycleRu(u.lifecycle_state)}</td>
-                  <td className="px-4 py-3 text-slate-600">{verificationRu(u.verification_status)}</td>
-                  <td className="px-4 py-3 text-slate-500">
-                    {new Date(u.created_at as string).toLocaleDateString("ru-RU")}
-                  </td>
-                  <td className="px-4 py-3 text-right">
+                      (u.telegram_username
+                        ? "@" + u.telegram_username
+                        : (u.id as string).slice(0, 8))}
+                  </Td>
+                  <Td muted>{genderRu(p?.gender)}</Td>
+                  <Td muted>{age && age > 0 ? age : "—"}</Td>
+                  <Td muted>{p?.city ? cityLabel(p.city, "ru") : "—"}</Td>
+                  <Td muted>{lifecycleRu(u.lifecycle_state)}</Td>
+                  <Td muted>{verificationRu(u.verification_status)}</Td>
+                  <Td muted>{new Date(u.created_at as string).toLocaleDateString("ru-RU")}</Td>
+                  <Td align="right">
                     <UserActions userId={u.id as string} blocked={u.lifecycle_state === "blocked"} />
-                  </td>
+                  </Td>
                 </tr>
               );
             })}
           </tbody>
         </table>
-        {list.length === 0 ? <p className="p-6 text-sm text-slate-400">Нет пользователей.</p> : null}
+        {list.length === 0 ? (
+          <p
+            style={{
+              padding: "32px",
+              fontSize: "14px",
+              color: "var(--color-v2-ink-400)",
+              fontFamily: "var(--font-v2-body)",
+              textAlign: "center",
+            }}
+          >
+            Нет пользователей в этой выборке.
+          </p>
+        ) : null}
       </div>
-    </AdminShell>
+    </V2AdminShell>
+  );
+}
+
+function FilterPills({ children, mt = 0 }: { children: React.ReactNode; mt?: number }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "8px",
+        marginTop: mt + "px",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Pill({
+  href,
+  active,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      style={{
+        padding: "6px 14px",
+        fontSize: "13px",
+        fontFamily: "var(--font-v2-body)",
+        color: active ? "var(--color-v2-paper)" : "var(--color-v2-ink-200)",
+        background: active ? "var(--color-v2-ink-100)" : "transparent",
+        border: `1px solid ${active ? "var(--color-v2-ink-100)" : "var(--color-v2-ink-500)"}`,
+        borderRadius: "999px",
+        textDecoration: "none",
+        transition: "all 0.12s ease",
+      }}
+    >
+      {children}
+    </Link>
+  );
+}
+
+function Th({ children }: { children: React.ReactNode }) {
+  return (
+    <th
+      style={{
+        padding: "12px 16px",
+        textAlign: "left",
+        fontSize: "10px",
+        textTransform: "uppercase",
+        letterSpacing: "0.12em",
+        color: "var(--color-v2-ink-400)",
+        fontWeight: 500,
+      }}
+    >
+      {children}
+    </th>
+  );
+}
+
+function Td({
+  children,
+  muted,
+  align = "left",
+}: {
+  children: React.ReactNode;
+  muted?: boolean;
+  align?: "left" | "right";
+}) {
+  return (
+    <td
+      style={{
+        padding: "12px 16px",
+        textAlign: align,
+        color: muted ? "var(--color-v2-ink-300)" : "var(--color-v2-ink-100)",
+        fontFamily: "var(--font-v2-body)",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </td>
   );
 }

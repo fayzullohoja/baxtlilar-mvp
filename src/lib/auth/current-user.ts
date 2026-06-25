@@ -26,6 +26,9 @@ export type DbUser = {
   profile_completion: ProfileCompletion;
   quiz_completion: QuizCompletion;
   blocked_reason: string | null;
+  // V2 (2026-06-25): timestamps для Shadow Active flow.
+  verification_submitted_at: string | null;
+  tutorial_seen_at: string | null;
   updated_at: string;
 };
 

@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadActiveUserApi } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requirePermissionForRequest } from "@/lib/v2/with-permission";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Заблокировать/разблокировать пользователя (взаимное скрытие, без уведомления). */
+/**
+ * Заблокировать/разблокировать пользователя (взаимное скрытие, без уведомления).
+ * V2 gate: block_user (verified + paused). Shadow не блокирует — он никого
+ * не видит, блокировать некого.
+ */
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const { user, res } = await loadActiveUserApi({ allowPaused: true });
-  if (res) return res;
+  const gate = await requirePermissionForRequest("block_user");
+  if ("response" in gate) return gate.response;
+  const { user } = gate;
   const { target_id, action } = (await req.json().catch(() => ({}))) as {
     target_id?: string;
     action?: "block" | "unblock";

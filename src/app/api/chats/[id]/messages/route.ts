@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadActiveUserApi } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { containsContact } from "@/lib/profile/schemas";
 import { notifyUser } from "@/lib/telegram/notify";
 import { loadChatRow, getLiveState } from "@/lib/chat/live";
 import { areBlocked } from "@/lib/safety/blocks";
+import { requirePermissionForRequest } from "@/lib/v2/with-permission";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,13 +15,16 @@ const RATE_MAX = 10; // не больше 10 сообщений за 10с в о�
 /**
  * Дозагрузка живого состояния чата (фолбэк-опрос, когда нет SSE).
  * ?after=<ISO> → новые сообщения; всегда возвращает read_through (галочки) и typing.
+ *
+ * V2 gate: open_chat (verified + paused — paused читает старые чаты).
  */
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
-  const { user, res } = await loadActiveUserApi({ allowPaused: true });
-  if (res) return res;
+  const gate = await requirePermissionForRequest("open_chat");
+  if ("response" in gate) return gate.response;
+  const { user } = gate;
   const { id } = await params;
   const chat = await loadChatRow(id, user.id);
   if (!chat) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
@@ -31,12 +34,14 @@ export async function GET(
   return NextResponse.json({ ok: true, ...state });
 }
 
+/** V2 gate: send_message (verified + paused). */
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
-  const { user, res } = await loadActiveUserApi({ allowPaused: true });
-  if (res) return res;
+  const gate = await requirePermissionForRequest("send_message");
+  if ("response" in gate) return gate.response;
+  const { user } = gate;
   const { id } = await params;
   const { body } = (await req.json().catch(() => ({}))) as { body?: string };
   const text = (body ?? "").trim();

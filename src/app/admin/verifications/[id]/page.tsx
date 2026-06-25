@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { requireAdmin, checkInQueueOrSuperPage } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { unwrapOne } from "@/lib/db/unwrap";
-import { AdminShell } from "@/components/admin/shell";
+import { V2AdminShell } from "@/components/v2/AdminShell";
 import { RevealDoc } from "@/components/admin/reveal-doc";
 import { DecisionForm } from "@/components/admin/decision-form";
 
@@ -19,33 +19,29 @@ function ipFromHeaders(h: Headers): string | null {
   );
 }
 
-function Row({ k, v }: { k: string; v: string }) {
-  return (
-    <div className="flex justify-between py-1.5 border-b border-slate-100 text-sm">
-      <span className="text-slate-500">{k}</span>
-      <span className="text-slate-800">{v}</span>
-    </div>
-  );
-}
-
+/**
+ * V2 Admin · Verification Detail (Blueprint §4.3.2).
+ *
+ * Split layout: passport+selfie слева, decision form справа.
+ * F-120 (in-queue scope) и F-119 (two-person rule) сохраняются на бэке.
+ *
+ * RevealDoc + DecisionForm — V1 client components с complex business
+ * logic, оставляем как есть (только wrap-styling меняется).
+ */
 export default async function VerificationCard({ params }: { params: Promise<{ id: string }> }) {
   const session = await requireAdmin();
   const { id } = await params;
 
-  // F-120 (R2-#1 verdict): без этой проверки moderator мог открыть детальную
-  // карточку любого юзера по UUID и увидеть telegram_*, phone, паспорт/селфи.
-  // checkInQueueOrSuperPage → notFound() единый ответ (без existence-oracle).
   const ipAddr = ipFromHeaders(await headers());
   const scope = await checkInQueueOrSuperPage(session, id, "user_view", ipAddr);
   if ("hide" in scope) notFound();
 
-  // unwrapOne отделяет «реально нет такого пользователя» (null → notFound) от
-  // «БД упала» (throw → видимая ошибка). Без него сбой БД давал бы ложный 404.
   const user = unwrapOne(
     await supabaseAdmin()
       .from("users")
       .select(
-        "id, telegram_id, telegram_username, telegram_first_name, telegram_last_name, phone_number, phone_verified, verification_status, onboarding_step, created_at",
+        "id, telegram_id, telegram_username, telegram_first_name, telegram_last_name, " +
+          "phone_number, phone_verified, verification_status, onboarding_step, created_at",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -58,36 +54,141 @@ export default async function VerificationCard({ params }: { params: Promise<{ i
   const pending = user.verification_status === "pending_review";
 
   return (
-    <AdminShell active="/admin/verifications" role={session.role}>
-      <Link href="/admin/verifications" className="text-sm text-slate-500 hover:underline">
+    <V2AdminShell active="/admin/verifications" role={session.role}>
+      <Link
+        href="/admin/verifications"
+        style={{
+          fontSize: "13px",
+          color: "var(--color-v2-ink-400)",
+          textDecoration: "none",
+          fontFamily: "var(--font-v2-body)",
+        }}
+      >
         ← К очереди
       </Link>
-      <h1 className="text-2xl font-bold text-slate-900 mt-2 mb-1">{name}</h1>
-      <p className="text-sm text-slate-500 mb-6">
-        Статус: {pending ? "на проверке" : (user.verification_status as string)}
-      </p>
 
-      <div className="grid md:grid-cols-2 gap-5">
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <div className="font-medium text-slate-800 mb-2">Данные пользователя</div>
+      <header style={{ marginTop: "12px", marginBottom: "32px" }}>
+        <h1
+          style={{
+            fontFamily: "var(--font-v2-display)",
+            fontSize: "32px",
+            lineHeight: "1.15",
+            fontWeight: 500,
+            letterSpacing: "-0.02em",
+            color: "var(--color-v2-ink-100)",
+            margin: 0,
+          }}
+        >
+          {name}
+        </h1>
+        <div
+          style={{
+            marginTop: "10px",
+            fontSize: "11px",
+            textTransform: "uppercase",
+            letterSpacing: "0.12em",
+            color: "var(--color-v2-ink-400)",
+            fontFamily: "var(--font-v2-body)",
+          }}
+        >
+          Статус · {pending ? "на проверке" : (user.verification_status as string)}
+        </div>
+      </header>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+          gap: "24px",
+          alignItems: "start",
+        }}
+      >
+        {/* Left: user data + docs */}
+        <div
+          style={{
+            background: "var(--color-v2-paper)",
+            border: "1px solid var(--color-v2-ink-500)",
+            borderRadius: "var(--v2-radius-md)",
+            padding: "24px",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "11px",
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              color: "var(--color-v2-ink-400)",
+              marginBottom: "16px",
+              fontFamily: "var(--font-v2-body)",
+            }}
+          >
+            Данные пользователя
+          </div>
           <Row k="Telegram" v={user.telegram_username ? "@" + user.telegram_username : "—"} />
           <Row k="Телефон" v={(user.phone_number as string) ?? "—"} />
-          <Row k="Телефон подтверждён" v={user.phone_verified ? "да" : "нет"} />
-          <Row k="Регистрация" v={new Date(user.created_at as string).toLocaleString("ru-RU")} />
+          <Row k="Подтверждён" v={user.phone_verified ? "да" : "нет"} />
+          <Row
+            k="Регистрация"
+            v={new Date(user.created_at as string).toLocaleString("ru-RU")}
+          />
         </div>
-        <div className="space-y-4">
+
+        {/* Right: docs reveal */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <RevealDoc userId={id} kind="passport" label="Паспорт / ID" />
           <RevealDoc userId={id} kind="selfie" label="Селфи" />
         </div>
       </div>
 
-      <div className="mt-6 max-w-xl">
+      {/* Decision form full-width below */}
+      <div style={{ marginTop: "32px", maxWidth: "640px" }}>
         {pending ? (
-          <DecisionForm userId={id} />
+          <>
+            <div
+              style={{
+                fontSize: "11px",
+                textTransform: "uppercase",
+                letterSpacing: "0.12em",
+                color: "var(--color-v2-ink-400)",
+                marginBottom: "12px",
+                fontFamily: "var(--font-v2-body)",
+              }}
+            >
+              Решение модератора
+            </div>
+            <DecisionForm userId={id} />
+          </>
         ) : (
-          <p className="text-slate-400 text-sm">Заявка уже обработана ({user.verification_status as string}).</p>
+          <p
+            style={{
+              fontSize: "14px",
+              color: "var(--color-v2-ink-400)",
+              fontFamily: "var(--font-v2-body)",
+            }}
+          >
+            Заявка уже обработана ({user.verification_status as string}).
+          </p>
         )}
       </div>
-    </AdminShell>
+    </V2AdminShell>
+  );
+}
+
+function Row({ k, v }: { k: string; v: string }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        gap: "16px",
+        padding: "12px 0",
+        borderBottom: "1px solid var(--color-v2-ink-600)",
+        fontSize: "14px",
+        fontFamily: "var(--font-v2-body)",
+      }}
+    >
+      <span style={{ color: "var(--color-v2-ink-400)" }}>{k}</span>
+      <span style={{ color: "var(--color-v2-ink-100)", textAlign: "right" }}>{v}</span>
+    </div>
   );
 }

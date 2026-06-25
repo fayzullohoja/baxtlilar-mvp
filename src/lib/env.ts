@@ -26,6 +26,10 @@ const Env = z.object({
   APP_URL: z.string().url().optional(),
   // Канал поддержки (например, https://t.me/baxtlilar_support) — показывается на тупиковых экранах.
   SUPPORT_URL: z.string().url().optional(),
+  // V2 Sprint 6: секрет для /api/cron/tg-outbox. Внешний cron (Railway scheduled
+  // job или GitHub Actions) должен присылать X-Cron-Secret заголовок. Optional —
+  // если не задан, route отдаёт 503 (не работает без секрета).
+  CRON_SECRET: z.string().min(16).optional(),
 });
 
 export type EnvShape = z.infer<typeof Env>;

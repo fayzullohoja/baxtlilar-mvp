@@ -1,55 +1,98 @@
-import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
+import { setRequestLocale } from "next-intl/server";
 import { requireActiveUser } from "@/lib/auth/active-guard";
-import { getRecommendations } from "@/lib/matching/recommend";
-import { cityLabel } from "@/lib/profile/cities";
 import { getUnreadTotal } from "@/lib/chat/list";
 import { BottomNav } from "@/components/bottom-nav";
+import { deriveRole, hasPermission } from "@/lib/v2/permissions";
+import { MiniAppShell } from "@/components/v2/MiniAppShell";
+import { VerificationPlashka } from "@/components/v2/VerificationPlashka";
+import { Headline, Lead } from "@/components/v2/Headline";
+import { ProgressiveProfile } from "@/components/v2/ProgressiveProfile";
+import { MatchStoryCard } from "@/components/v2/MatchStoryCard";
+import { InterestActions } from "@/components/v2/InterestActions";
+import { getMatchOfTheDay } from "@/lib/v2/match-of-the-day";
 
 export const dynamic = "force-dynamic";
 
-export default async function FeedPage({ params }: { params: Promise<{ locale: string }> }) {
+/**
+ * V2 (2026-06-25) /main — главный экран.
+ *
+ *   Shadow user (lifecycle=active, verification!=approved)
+ *     → MiniAppShell + VerificationPlashka (empty state)
+ *
+ *   Verified user
+ *     → MiniAppShell + (ProgressiveProfile + MatchStoryCard) ИЛИ empty
+ *       Не лента. Одна рекомендация на сегодня + объяснение.
+ *
+ * Источник истины (продуктовое решение): см. memory
+ * [[project-baxtlilar-v2-matching-model]].
+ */
+export default async function MainPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const user = await requireActiveUser(locale);
-  const t = await getTranslations("Feed");
-  const candidates = await getRecommendations(user.id, 20);
+  const role = deriveRole(user.lifecycle_state, user.verification_status);
+  const unread = await getUnreadTotal(user.id);
+
+  // Shadow Active — empty + плашка.
+  if (!hasPermission(role, "view_feed")) {
+    return (
+      <>
+        <MiniAppShell eyebrow="Baxtlilar" align="top" footer={null}>
+          <VerificationPlashka
+            status={user.verification_status}
+            submittedAt={user.verification_submitted_at}
+          />
+        </MiniAppShell>
+        <BottomNav active="feed" unread={unread} />
+      </>
+    );
+  }
+
+  // Verified — match of the day.
+  const match = await getMatchOfTheDay(user.id);
+
+  if (!match) {
+    return (
+      <>
+        <MiniAppShell eyebrow="Сегодня · подбор" align="top" footer={null}>
+          <Headline size="lg" as="h1">
+            Алгоритм ищет подходящего человека.
+          </Headline>
+          <Lead>
+            Пока нет анкеты, которая бы достаточно совпадала с твоей. Это
+            нормально — мы не показываем кого попало. Загляни через сутки.
+          </Lead>
+          <Lead style={{ marginTop: "20px" }}>
+            А пока — можешь дополнить свою анкету или психо-портрет. Чем точнее
+            данные, тем точнее подбор.
+          </Lead>
+        </MiniAppShell>
+        <BottomNav active="feed" unread={unread} />
+      </>
+    );
+  }
+
+  const candidateFirstName =
+    match.candidate.profile.display_name.trim().split(/\s+/)[0] ?? "";
 
   return (
-    <main className="min-h-screen pb-20 bg-baxt-pink-bg">
-      <header className="px-5 pt-6 pb-3">
-        <h1 className="text-2xl font-bold text-baxt-navy">{t("title")}</h1>
-        <p className="text-sm text-baxt-muted">{t("subtitle")}</p>
-      </header>
-
-      {candidates.length === 0 ? (
-        <div className="px-5 py-16 text-center text-baxt-muted text-sm">{t("empty")}</div>
-      ) : (
-        <div className="grid grid-cols-2 gap-3 px-4">
-          {candidates.map((c) => (
-            <Link
-              key={c.user_id}
-              href={`/profile/${c.user_id}`}
-              className="rounded-2xl overflow-hidden bg-white border border-baxt-border"
-            >
-              <div className="aspect-[3/4] bg-baxt-coral-bg">
-                {c.photoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={c.photoUrl} alt="" className="w-full h-full object-cover" />
-                ) : null}
-              </div>
-              <div className="p-2.5">
-                <div className="text-sm font-semibold text-baxt-navy">
-                  {c.display_name}, {c.age}
-                </div>
-                <div className="text-xs text-baxt-muted">{cityLabel(c.city, locale)}</div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
-
-      <BottomNav active="feed" unread={await getUnreadTotal(user.id)} />
-    </main>
+    <>
+      <MiniAppShell
+        eyebrow="Сегодня · подбор"
+        align="top"
+        footer={
+          <InterestActions
+            candidateId={match.candidate.user_id}
+            candidateFirstName={candidateFirstName}
+          />
+        }
+      >
+        <ProgressiveProfile profile={match.candidate.profile} locale={locale} />
+        <MatchStoryCard story={match.story} candidateName={candidateFirstName} />
+        {/* Spacer чтобы footer-actions не накрывали bottom часть карточки */}
+        <div style={{ height: "80px" }} />
+      </MiniAppShell>
+      <BottomNav active="feed" unread={unread} />
+    </>
   );
 }
