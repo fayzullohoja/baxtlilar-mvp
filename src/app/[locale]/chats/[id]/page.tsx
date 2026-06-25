@@ -1,72 +1,16 @@
-import { setRequestLocale, getTranslations } from "next-intl/server";
-import { Link, redirect } from "@/i18n/navigation";
-import { requireActiveUser } from "@/lib/auth/active-guard";
-import { supabaseAdmin } from "@/lib/supabase/admin";
-import { getMiniProfiles } from "@/lib/profile/mini";
-import { areBlocked } from "@/lib/safety/blocks";
-import { ChatRoom, type Msg } from "@/components/chat/chat-room";
-import { ChatMenu } from "@/components/chat/chat-menu";
+/**
+ * V1 → V2 redirect. Chat detail переехал на /v2/chats/[id].
+ */
+
+import { redirect } from "@/i18n/navigation";
 
 export const dynamic = "force-dynamic";
 
-export default async function ChatThread({
+export default async function ChatThreadRedirect({
   params,
 }: {
   params: Promise<{ locale: string; id: string }>;
 }) {
   const { locale, id } = await params;
-  setRequestLocale(locale);
-  const user = await requireActiveUser(locale, { allowPaused: true });
-  const t = await getTranslations("Chat");
-  const sb = supabaseAdmin();
-
-  const { data: chat } = await sb.from("chats").select("id, user_a, user_b").eq("id", id).maybeSingle();
-  if (!chat || (chat.user_a !== user.id && chat.user_b !== user.id)) redirect({ href: "/chats", locale });
-
-  const otherId = chat!.user_a === user.id ? (chat!.user_b as string) : (chat!.user_a as string);
-
-  // F-008: блок закрывает уже-открытую комнату. SSR обрабатывает direct URL и
-  // редиректит на список (там SQL-фильтр уже скрыл этот чат). API-роуты
-  // (messages/read/typing/stream) тоже не пустят — loadChatRow проверяет areBlocked.
-  if (await areBlocked(user.id, otherId)) redirect({ href: "/chats", locale });
-
-  const minis = await getMiniProfiles([otherId]);
-  const other = minis[otherId];
-
-  // Берём ПОСЛЕДНИЕ 200 сообщений (desc+limit), затем разворачиваем в ASC для показа.
-  // Был order ASC limit 200 → в длинном чате (>200) показывались САМЫЕ СТАРЫЕ сообщения,
-  // а свежие не попадали в окно (и SSE-курсор стартовал со старого → дамп всех новых).
-  const { data: recent } = await sb
-    .from("chat_messages")
-    .select("id, sender_id, body, created_at")
-    .eq("chat_id", id)
-    .order("created_at", { ascending: false })
-    .limit(200);
-  const messages = ((recent ?? []) as Msg[]).reverse();
-
-  return (
-    <main className="mx-auto flex h-[100dvh] max-w-screen-sm flex-col overflow-hidden bg-baxt-pink-bg">
-      <header className="flex shrink-0 items-center gap-2 border-b border-baxt-border bg-white px-2 py-2">
-        <Link
-          href="/chats"
-          aria-label="Назад"
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-lg text-baxt-navy hover:bg-baxt-pink-bg"
-        >
-          ←
-        </Link>
-        <Link href={`/profile/${otherId}`} className="flex min-w-0 flex-1 items-center gap-2.5">
-          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-baxt-coral-bg">
-            {other?.photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={other.photoUrl} alt="" className="h-full w-full object-cover" />
-            ) : null}
-          </div>
-          <span className="truncate text-sm font-semibold text-baxt-navy">{other?.name}</span>
-        </Link>
-        <ChatMenu otherId={otherId} chatId={id} />
-      </header>
-
-      <ChatRoom key={id} chatId={id} myId={user.id} initial={messages} safetyTip={t("safety_tip")} />
-    </main>
-  );
+  redirect({ href: `/v2/chats/${id}`, locale });
 }
