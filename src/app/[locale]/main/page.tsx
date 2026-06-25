@@ -5,6 +5,9 @@ import { getRecommendations } from "@/lib/matching/recommend";
 import { cityLabel } from "@/lib/profile/cities";
 import { getUnreadTotal } from "@/lib/chat/list";
 import { BottomNav } from "@/components/bottom-nav";
+import { deriveRole, hasPermission } from "@/lib/v2/permissions";
+import { MiniAppShell } from "@/components/v2/MiniAppShell";
+import { VerificationPlashka } from "@/components/v2/VerificationPlashka";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +15,30 @@ export default async function FeedPage({ params }: { params: Promise<{ locale: s
   const { locale } = await params;
   setRequestLocale(locale);
   const user = await requireActiveUser(locale);
+  const role = deriveRole(user.lifecycle_state, user.verification_status);
+
+  // V2 Shadow Active: lifecycle=active НО verification!=approved → плашка вместо ленты.
+  // Permission gate fail-closed: если роль не имеет view_feed, не зовём
+  // getRecommendations (защита от утечки данных через permission bug).
+  if (!hasPermission(role, "view_feed")) {
+    return (
+      <>
+        <MiniAppShell
+          eyebrow="Baxtlilar"
+          align="top"
+          footer={null}
+        >
+          <VerificationPlashka
+            status={user.verification_status}
+            submittedAt={user.verification_submitted_at}
+          />
+        </MiniAppShell>
+        <BottomNav active="feed" unread={await getUnreadTotal(user.id)} />
+      </>
+    );
+  }
+
+  // Verified path (legacy V1 styling — будет переделано в Sprint 3).
   const t = await getTranslations("Feed");
   const candidates = await getRecommendations(user.id, 20);
 
