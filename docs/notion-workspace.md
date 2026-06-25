@@ -11,6 +11,7 @@
 | `HOME` | `3898dc27-4fcc-81e8-914c-c429fa04f88b` | 🏠 Home — Baxtlilar v2 (overview/TOC) |
 | `DOC_STANDARDS` | `3898dc27-4fcc-8127-86a8-f58aabb139af` | 🗂 Doc Standards & Audit (taxonomy + signal/water audit) |
 | `QUESTIONNAIRE` | `3898dc27-4fcc-81fd-bf68-dc78c0b78060` | 🔍 Foundational Questionnaire (9 blocks + DB) |
+| `V2_BLUEPRINT` | `38a8dc27-4fcc-8168-8fe5-ee8d22b1c30e` | 📐 V2 Architecture Blueprint (Shadow Active модель + 5 секций + 12 open decisions) |
 
 ## Foundational Questionnaire — children of `QUESTIONNAIRE`
 
