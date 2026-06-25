@@ -1,20 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadActiveUserApi } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ensureChat } from "@/lib/matching/chat";
 import { notifyUser } from "@/lib/telegram/notify";
+import { requirePermissionForRequest } from "@/lib/v2/with-permission";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type Action = "accept" | "decline" | "withdraw";
 
+/**
+ * V2 gate: view_received_interests (есть только у verified).
+ * Sender's withdraw — тоже verified-only. Shadow попадает в 403.
+ */
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
-  const { user, res } = await loadActiveUserApi();
-  if (res) return res;
+  const gate = await requirePermissionForRequest("view_received_interests");
+  if ("response" in gate) return gate.response;
+  const { user } = gate;
   const { id } = await params;
   const { action } = (await req.json().catch(() => ({}))) as { action?: Action };
   if (!["accept", "decline", "withdraw"].includes(action ?? ""))

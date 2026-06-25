@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadActiveUserApi } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { loadChatRow } from "@/lib/chat/live";
+import { requirePermissionForRequest } from "@/lib/v2/with-permission";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** V2 gate: view_chat_list (verified + paused читают/помечают свои чаты). */
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
-  const { user, res } = await loadActiveUserApi({ allowPaused: true });
-  if (res) return res;
+  const gate = await requirePermissionForRequest("view_chat_list");
+  if ("response" in gate) return gate.response;
+  const { user } = gate;
   const { id } = await params;
 
   // F-008: loadChatRow возвращает null если есть блок — тогда /read даёт 404

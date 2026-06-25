@@ -89,10 +89,14 @@ describe("ROLE_PERMISSIONS — fail-closed gate matrix", () => {
     expect(ROLE_PERMISSIONS.deleted).toEqual([]);
   });
 
-  it("paused → нет send_interest, есть view_chat_list (архив)", () => {
+  it("paused → нет send_interest/be_visible, есть существующие чаты + safety", () => {
     expect(hasPermission("paused", "send_interest")).toBe(false);
     expect(hasPermission("paused", "be_visible_in_feed")).toBe(false);
     expect(hasPermission("paused", "view_chat_list")).toBe(true);
+    expect(hasPermission("paused", "open_chat")).toBe(true);
+    expect(hasPermission("paused", "send_message")).toBe(true);
+    expect(hasPermission("paused", "block_user")).toBe(true);
+    expect(hasPermission("paused", "report_user")).toBe(true);
     expect(hasPermission("paused", "resume_account")).toBe(true);
   });
 });
@@ -121,5 +125,17 @@ describe("Permission matrix invariants", () => {
   it("только verified виден в feed (Shadow Active core constraint)", () => {
     const granted = ALL_ROLES.filter((r) => hasPermission(r, "be_visible_in_feed"));
     expect(granted).toEqual(["verified"]);
+  });
+
+  it("send_message — verified + paused (existing chats), не shadow/rejected/blocked", () => {
+    const granted = ALL_ROLES.filter((r) => hasPermission(r, "send_message"));
+    expect(granted).toEqual(["verified", "paused"]);
+  });
+
+  it("block_user / report_user — verified + paused (safety floor), не shadow", () => {
+    const blockers = ALL_ROLES.filter((r) => hasPermission(r, "block_user"));
+    const reporters = ALL_ROLES.filter((r) => hasPermission(r, "report_user"));
+    expect(blockers).toEqual(["verified", "paused"]);
+    expect(reporters).toEqual(["verified", "paused"]);
   });
 });

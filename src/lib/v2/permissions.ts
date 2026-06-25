@@ -136,13 +136,20 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     "view_privacy_settings",
   ],
   paused: [
-    // Аналог verified но НЕ виден другим, НЕ может send_interest
+    // Аналог verified но НЕ виден другим, НЕ может send_interest.
+    // V2 Sprint 5 уточнение: paused сохраняет возможность отвечать в
+    // существующих чатах и safety-actions (block/report) — отказ от этого
+    // ломал бы текущие отношения пользователя на паузе.
     "view_own_profile",
     "edit_own_profile",
     "delete_account",
     "export_account",
     "resume_account",
-    "view_chat_list", // архив старых чатов виден
+    "view_chat_list",
+    "open_chat",
+    "send_message",
+    "block_user",
+    "report_user",
     "edit_settings",
     "view_privacy_settings",
   ],
