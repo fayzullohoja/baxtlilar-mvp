@@ -1,40 +1,37 @@
-import { getTranslations, setRequestLocale } from "next-intl/server";
+/**
+ * V1 → V2 Shadow Active fix. Юзер закончил селфи → попадал сюда (wait wall).
+ *
+ * V2 модель (Sprint 2 продуктовое решение): пока модератор проверяет
+ * паспорт + селфи, юзер ПАРАЛЛЕЛЬНО заполняет анкету. Wait-wall убран.
+ *
+ * Стратегия: на этой странице атомарно перевести onboarding_step
+ * moderation_pending → profile_basic (state machine allowed) и редиректнуть
+ * на /v2/anketa/basic. verification_status остаётся pending_review —
+ * модератор увидит в очереди.
+ */
+
+import { redirect } from "@/i18n/navigation";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
-import { Screen } from "@/components/ui/screen";
-import { PendingActions } from "@/components/onboarding/pending-actions";
+import { tryTransition } from "@/lib/state-machine/transitions";
 
 export const dynamic = "force-dynamic";
 
-export default async function PendingPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function PendingAutoAdvancePage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
   const { locale } = await params;
-  setRequestLocale(locale);
-  await requireUserAtStep(locale, "moderation_pending");
-  const t = await getTranslations("Onboarding");
+  const user = await requireUserAtStep(locale, "moderation_pending");
 
-  const steps = [t("pending_step_1"), t("pending_step_2"), t("pending_step_3")];
-
-  return (
-    <Screen title={t("pending_title")} subtitle={t("pending_subtitle")} step={7} totalSteps={7}>
-      <div className="rounded-2xl bg-baxt-coral-bg px-4 py-4 text-sm mb-4">{t("pending_info")}</div>
-      <p className="text-sm font-medium text-baxt-coral mb-5">{t("pending_status")}</p>
-
-      <div className="rounded-2xl border border-baxt-border bg-baxt-card p-4 mb-4">
-        <div className="text-sm font-semibold text-baxt-navy mb-2">{t("pending_steps_title")}</div>
-        <ol className="space-y-2">
-          {steps.map((s, i) => (
-            <li key={i} className="flex items-start gap-3 text-sm text-baxt-navy">
-              <span className="mt-0.5 grid w-5 h-5 place-items-center rounded-full bg-baxt-coral text-white text-[11px] font-bold shrink-0">
-                {i + 1}
-              </span>
-              <span>{s}</span>
-            </li>
-          ))}
-        </ol>
-      </div>
-
-      <p className="text-xs text-baxt-muted mb-2">{t("pending_delay_note")}</p>
-
-      <PendingActions closeLabel={t("pending_cta_close")} homeLabel={t("pending_cta_home")} />
-    </Screen>
+  // Атомарный переход в profile_basic. ALLOWED_TRANSITIONS уже допускает
+  // moderation_pending → profile_basic.
+  await tryTransition(
+    user.id,
+    { onboarding_step: "profile_basic", profile_completion: "in_progress" },
+    "shadow active: user advances to anketa while moderator reviews",
+    { kind: "system", id: "shadow_active_autoadvance" },
   );
+
+  redirect({ href: "/v2/anketa/basic", locale });
 }
