@@ -1,0 +1,36 @@
+name: Cron · tg-outbox drain
+
+# V2 Sprint 22: external cron для tg_outbox drain.
+# Каждые 5 минут вызывает /api/cron/tg-outbox, который шлёт pending
+# push-уведомления через Bot API.
+#
+# Secret CRON_SECRET должен совпадать с Railway env CRON_SECRET.
+
+on:
+  schedule:
+    # GitHub Actions минимум 5 минут. */5 = каждые 5 минут (~12 раз в час).
+    - cron: "*/5 * * * *"
+  # Manual trigger для дебага.
+  workflow_dispatch:
+
+jobs:
+  drain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Call cron endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST \
+            "https://baxtlilar-mvp-production.up.railway.app/api/cron/tg-outbox" \
+            -H "X-Cron-Secret: ${CRON_SECRET}" \
+            -H "Content-Type: application/json")
+          STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
+          echo "HTTP Status: $STATUS"
+          echo "Body: $BODY"
+          if [ "$STATUS" != "200" ]; then
+            echo "::error::Cron call failed with status $STATUS"
+            exit 1
+          fi
