@@ -55,38 +55,16 @@ create index if not exists tg_outbox_user_idx
   on tg_outbox (user_id, created_at desc);
 
 -- =============================================================================
--- 4. Constraint update для нового onboarding_step
+-- 4. Enum extension для нового onboarding_step
 -- =============================================================================
--- Текущий constraint (если есть) удаляем и пересоздаём с новыми значениями
-do $$
-begin
-  if exists (
-    select 1 from pg_constraint
-    where conname = 'users_onboarding_step_check'
-  ) then
-    alter table users drop constraint users_onboarding_step_check;
-  end if;
-end $$;
-
-alter table users
-  add constraint users_onboarding_step_check check (
-    onboarding_step in (
-      -- Bot flow
-      'bot_language', 'bot_contact', 'bot_consent_pd', 'bot_consent_biometric',
-      -- Legacy SMS (deprecated, kept for migration)
-      'language', 'consent', 'phone_input', 'otp_pending',
-      -- Mini-app verification V1 (частично deprecated в V2)
-      'verification_intro', 'doc_upload', 'selfie_upload', 'moderation_pending',
-      'needs_changes', 'verification_rejected',
-      -- Profile + quiz
-      'profile_basic', 'profile_family', 'profile_values', 'profile_looking_for',
-      'profile_photos', 'profile_preview', 'quiz', 'attribution',
-      -- V2 tutorial tour (new)
-      'tutorial_intro', 'tutorial_swipe', 'tutorial_chat', 'tutorial_safety',
-      -- V2 terminal
-      'ready', 'active'
-    )
-  );
+-- onboarding_step — Postgres enum type (а не text+CHECK). Расширяем через
+-- ALTER TYPE ADD VALUE IF NOT EXISTS. Постгрес 12+ позволяет это в
+-- транзакции; новые значения становятся видимыми после commit.
+alter type onboarding_step add value if not exists 'tutorial_intro';
+alter type onboarding_step add value if not exists 'tutorial_swipe';
+alter type onboarding_step add value if not exists 'tutorial_chat';
+alter type onboarding_step add value if not exists 'tutorial_safety';
+alter type onboarding_step add value if not exists 'ready';
 
 -- =============================================================================
 -- 5. Индекс для Shadow Active фильтрации
