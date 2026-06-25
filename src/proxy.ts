@@ -16,11 +16,31 @@ function isAnonymousAllowed(pathname: string): boolean {
 // Маршруты, которым НЕ нужен CSRF-чек (внешний контракт):
 //  - /api/health: read-only GET (но если PATCH/PUT придёт — отвергнем как метод).
 //  - /api/telegram/webhook: TG-сервер шлёт без Origin, защита через secret-token.
+//  - /api/cron/*: внешний cron шлёт без Origin, защита через X-Cron-Secret.
 function isCsrfExempt(pathname: string): boolean {
-  return pathname === "/api/health" || pathname === "/api/telegram/webhook";
+  return (
+    pathname === "/api/health" ||
+    pathname === "/api/telegram/webhook" ||
+    pathname.startsWith("/api/cron/")
+  );
+}
+
+// V2 Sprint 7+22: пути доступные анонимно для /api/* (не требуют bx_session).
+// Используется для раннего отказа 401 при /api/* мутациях без сессии.
+function isPublicApi(pathname: string): boolean {
+  return (
+    pathname.startsWith("/api/auth/bootstrap") ||
+    pathname.startsWith("/api/health") ||
+    pathname.startsWith("/api/cron/") ||
+    pathname.startsWith("/api/telegram/webhook") ||
+    pathname.startsWith("/api/admin/login") ||
+    pathname.startsWith("/api/admin/logout") ||
+    pathname.startsWith("/api/storage/o/")
+  );
 }
 
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const SESSION_COOKIE = "bx_session";
 
 export default function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -39,9 +59,31 @@ export default function middleware(req: NextRequest) {
     }
   }
 
-  // 2) /api/* и /admin/* без intl-роутинга/auth-гейта (выше уже отфильтровали CSRF)
+  // 2) /api/* и /admin/* без intl-роутинга/auth-гейта (выше уже отфильтровали CSRF).
+  //    V2 Sprint 22 merge: x-request-id header для tracing (Web Crypto API).
   if (pathname.startsWith("/api/") || pathname.startsWith("/admin")) {
-    return NextResponse.next();
+    // /api/admin/* использует admin_session — пропускаем без сессионной проверки.
+    if (pathname.startsWith("/api/admin/")) {
+      const res = NextResponse.next();
+      res.headers.set("x-request-id", crypto.randomUUID());
+      return res;
+    }
+    // /api/* protected — нужен bx_session cookie (раннее 401 до route handler).
+    if (pathname.startsWith("/api/") && !isPublicApi(pathname)) {
+      const cookie = req.cookies.get(SESSION_COOKIE);
+      if (!cookie) {
+        return new NextResponse(
+          JSON.stringify({ ok: false, error: "no_session", request_id: crypto.randomUUID() }),
+          {
+            status: 401,
+            headers: { "content-type": "application/json" },
+          },
+        );
+      }
+    }
+    const res = NextResponse.next();
+    res.headers.set("x-request-id", crypto.randomUUID());
+    return res;
   }
 
   // 3) /open-in-telegram — вне [locale]; intl-middleware иначе делает 307.
