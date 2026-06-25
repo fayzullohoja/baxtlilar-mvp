@@ -17,10 +17,10 @@ export const ONBOARDING_PATHS: Record<OnboardingStep, string> = {
   consent: "/open-in-telegram",
   phone_input: "/open-in-telegram",
   otp_pending: "/open-in-telegram",
-  // Mini-app:
-  verification_intro: "/onboarding/verification-intro",
-  doc_upload: "/onboarding/document",
-  selfie_upload: "/onboarding/selfie",
+  // Mini-app (V2 Sprint 8: verification переехало на /v2/verify):
+  verification_intro: "/v2/verify/intro",
+  doc_upload: "/v2/verify/doc",
+  selfie_upload: "/v2/verify/selfie",
   moderation_pending: "/onboarding/pending",
   needs_changes: "/onboarding/needs-changes",
   verification_rejected: "/onboarding/rejected",

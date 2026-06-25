@@ -17,10 +17,10 @@ describe("clientNextPath", () => {
     expect(clientNextPath("deleted", "consent")).toBe("/");
   });
 
-  it("onboarding → step path", () => {
-    expect(clientNextPath("onboarding", "verification_intro")).toBe("/onboarding/verification-intro");
-    expect(clientNextPath("onboarding", "doc_upload")).toBe("/onboarding/document");
-    expect(clientNextPath("onboarding", "selfie_upload")).toBe("/onboarding/selfie");
+  it("onboarding → step path (V2 Sprint 8: verification переехало на /v2/verify)", () => {
+    expect(clientNextPath("onboarding", "verification_intro")).toBe("/v2/verify/intro");
+    expect(clientNextPath("onboarding", "doc_upload")).toBe("/v2/verify/doc");
+    expect(clientNextPath("onboarding", "selfie_upload")).toBe("/v2/verify/selfie");
     expect(clientNextPath("onboarding", "active")).toBe("/main");
   });
 
