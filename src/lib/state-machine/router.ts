@@ -31,8 +31,9 @@ export const ONBOARDING_PATHS: Record<OnboardingStep, string> = {
   profile_looking_for: "/v2/anketa/looking-for",
   profile_photos: "/v2/anketa/photos",
   profile_preview: "/v2/anketa/preview",
-  quiz: "/onboarding/quiz",
-  attribution: "/onboarding/attribution",
+  // V2 Sprint 11: quiz + attribution на /v2.
+  quiz: "/v2/quiz",
+  attribution: "/v2/attribution",
   // V2 tutorial tour (после attribution, параллельно с фоновой верификацией)
   tutorial_intro: "/v2/tutorial/intro",
   tutorial_swipe: "/v2/tutorial/swipe",
