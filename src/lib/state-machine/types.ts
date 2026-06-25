@@ -29,6 +29,13 @@ export type OnboardingStep =
   | "quiz"
   // MAJOR #3 (spec Экран 12): между quiz и active.
   | "attribution"
+  // V2 (2026-06-25 Shadow Active redesign): tutorial tour ПОСЛЕ анкеты,
+  // ПАРАЛЛЕЛЬНО с фоновой верификацией. Юзер не блокируется на moderation_pending.
+  | "tutorial_intro" // Welcome-экран + объяснение Shadow Active модели
+  | "tutorial_swipe" // Как работает feed / interest / like-on-specific
+  | "tutorial_chat" // Как чат открывается после mutual interest
+  | "tutorial_safety" // Правила безопасности + что НЕ делать
+  | "ready" // V2 терминал onboarding → trigger transition в lifecycle=active
   | "active";
 
 export type VerificationStatus =
@@ -76,7 +83,17 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   profile_photos: ["profile_preview"],
   profile_preview: ["profile_basic", "quiz"],
   quiz: ["attribution"],
-  attribution: ["active"],
+  // V2: attribution ведёт в tutorial_intro (а не сразу в active как было в V1).
+  // V1 fallback: attribution → active оставлен для legacy users.
+  attribution: ["tutorial_intro", "active"],
+  // V2 tutorial — 4 шага. Skip разрешён для returning users (default decision #4).
+  tutorial_intro: ["tutorial_swipe", "ready"],
+  tutorial_swipe: ["tutorial_chat", "ready"],
+  tutorial_chat: ["tutorial_safety", "ready"],
+  tutorial_safety: ["ready"],
+  // ready — терминал onboarding. Trigger: lifecycle_state → 'active'
+  // (verification_status может быть submitted/pending — Shadow Active).
+  ready: ["active"],
   active: [],
 };
 

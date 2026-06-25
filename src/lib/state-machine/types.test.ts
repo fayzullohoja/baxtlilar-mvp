@@ -71,9 +71,28 @@ describe("ALLOWED_TRANSITIONS", () => {
     expect(ALLOWED_TRANSITIONS.active).toEqual([]);
   });
 
-  it("MAJOR #3: quiz → attribution → active", () => {
+  it("MAJOR #3: quiz → attribution", () => {
     expect(ALLOWED_TRANSITIONS.quiz).toEqual(["attribution"]);
-    expect(ALLOWED_TRANSITIONS.attribution).toEqual(["active"]);
+    // V2 (2026-06-25): attribution ведёт в tutorial_intro (новый путь)
+    // ИЛИ active (legacy fallback для уже зарегистрированных).
+    expect(ALLOWED_TRANSITIONS.attribution).toEqual(["tutorial_intro", "active"]);
+  });
+
+  it("V2 tutorial tour: 4 шага + ready как терминал onboarding", () => {
+    // Каждый tutorial-шаг разрешает либо следующий, либо ready (skip-возможность).
+    expect(ALLOWED_TRANSITIONS.tutorial_intro).toContain("tutorial_swipe");
+    expect(ALLOWED_TRANSITIONS.tutorial_intro).toContain("ready");
+
+    expect(ALLOWED_TRANSITIONS.tutorial_swipe).toContain("tutorial_chat");
+    expect(ALLOWED_TRANSITIONS.tutorial_swipe).toContain("ready");
+
+    expect(ALLOWED_TRANSITIONS.tutorial_chat).toContain("tutorial_safety");
+    expect(ALLOWED_TRANSITIONS.tutorial_chat).toContain("ready");
+
+    expect(ALLOWED_TRANSITIONS.tutorial_safety).toEqual(["ready"]);
+
+    // ready — переход в lifecycle=active (RPC устанавливает).
+    expect(ALLOWED_TRANSITIONS.ready).toEqual(["active"]);
   });
 });
 

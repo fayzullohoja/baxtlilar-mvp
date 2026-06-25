@@ -32,6 +32,12 @@ export const ONBOARDING_PATHS: Record<OnboardingStep, string> = {
   profile_preview: "/onboarding/profile/preview",
   quiz: "/onboarding/quiz",
   attribution: "/onboarding/attribution",
+  // V2 tutorial tour (после attribution, параллельно с фоновой верификацией)
+  tutorial_intro: "/v2/tutorial/intro",
+  tutorial_swipe: "/v2/tutorial/swipe",
+  tutorial_chat: "/v2/tutorial/chat",
+  tutorial_safety: "/v2/tutorial/safety",
+  ready: "/v2/welcome", // транзитный — RPC сам переводит в active
   active: "/main",
 };
 
