@@ -8,6 +8,7 @@ import { VerificationPlashka } from "@/components/v2/VerificationPlashka";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { ProgressiveProfile } from "@/components/v2/ProgressiveProfile";
 import { MatchStoryCard } from "@/components/v2/MatchStoryCard";
+import { InterestActions } from "@/components/v2/InterestActions";
 import { getMatchOfTheDay } from "@/lib/v2/match-of-the-day";
 
 export const dynamic = "force-dynamic";
@@ -76,9 +77,20 @@ export default async function MainPage({ params }: { params: Promise<{ locale: s
 
   return (
     <>
-      <MiniAppShell eyebrow="Сегодня · подбор" align="top" footer={null}>
+      <MiniAppShell
+        eyebrow="Сегодня · подбор"
+        align="top"
+        footer={
+          <InterestActions
+            candidateId={match.candidate.user_id}
+            candidateFirstName={candidateFirstName}
+          />
+        }
+      >
         <ProgressiveProfile profile={match.candidate.profile} locale={locale} />
         <MatchStoryCard story={match.story} candidateName={candidateFirstName} />
+        {/* Spacer чтобы footer-actions не накрывали bottom часть карточки */}
+        <div style={{ height: "80px" }} />
       </MiniAppShell>
       <BottomNav active="feed" unread={unread} />
     </>

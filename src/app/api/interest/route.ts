@@ -5,6 +5,7 @@ import { DAILY_LIMITS } from "@/lib/matching/quota";
 import { notifyUser } from "@/lib/telegram/notify";
 import { areBlocked } from "@/lib/safety/blocks";
 import { containsContact } from "@/lib/profile/schemas";
+import { deriveRole, hasPermission } from "@/lib/v2/permissions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,6 +15,14 @@ const AUTO_DECLINE_HOURS = 72;
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const { user, res } = await loadActiveUserApi();
   if (res) return res;
+
+  // V2 (2026-06-25) permission gate fail-closed. Shadow user НЕ может
+  // отправлять интересы — только verified. Защищает от прямых POST в обход UI.
+  const role = deriveRole(user.lifecycle_state, user.verification_status);
+  if (!hasPermission(role, "send_interest")) {
+    return NextResponse.json({ ok: false, error: "no_interest_permission" }, { status: 403 });
+  }
+
   const sb = supabaseAdmin();
 
   const { receiver_id, message } = (await req.json().catch(() => ({}))) as {
