@@ -49,7 +49,10 @@ export function AttributionForm({
         setError(errorLabel);
         return;
       }
-      router.replace("/main");
+      const data = (await res.json()) as { ok: boolean; next?: string };
+      // V2: сервер возвращает next-путь (/v2/tutorial/intro). На fallback
+      // legacy юзера ведём в /main.
+      router.replace(data.next ?? "/main");
     });
   }
 
