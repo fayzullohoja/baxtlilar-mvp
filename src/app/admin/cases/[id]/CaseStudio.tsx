@@ -28,6 +28,16 @@ export function CaseStudio({
   );
   const [claiming, setClaiming] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
+  // H-3: живой токен оптимистичной блокировки. Инициализируется значением с
+  // сервера и ре-синкается при каждой перезагрузке кейса (claim → router.refresh
+  // меняет updated_at), а автосейв черновика двигает его вперёд через onDraftSaved.
+  // DecisionPanel шлёт ИМЕННО его, а не замороженный loadedCase.updated_at.
+  const [currentUpdatedAt, setCurrentUpdatedAt] = useState(
+    loadedCase.updated_at,
+  );
+  useEffect(() => {
+    setCurrentUpdatedAt(loadedCase.updated_at);
+  }, [loadedCase.updated_at]);
 
   useEffect(() => {
     if (loadedCase.assignee_id) return;
@@ -119,6 +129,7 @@ export function CaseStudio({
         <PassportDataEntryForm
           caseId={loadedCase.case_id}
           initialPayload={initialDraft}
+          onDraftSaved={setCurrentUpdatedAt}
           onProceed={(payload) => {
             setEnteredPayload(payload);
             setStep(3);
@@ -140,7 +151,7 @@ export function CaseStudio({
           caseId={loadedCase.case_id}
           userId={loadedCase.user.id}
           payload={enteredPayload}
-          expectedUpdatedAt={loadedCase.updated_at}
+          expectedUpdatedAt={currentUpdatedAt}
           onBack={() => setStep(3)}
         />
       ) : null}

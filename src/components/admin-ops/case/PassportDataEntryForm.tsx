@@ -28,12 +28,21 @@ export type PassportFormProps = {
   caseId: string;
   initialPayload: Partial<PassportPayload>;
   onProceed: (payload: PassportPayload) => void;
+  /**
+   * Вызывается после КАЖДОГО успешного сохранения черновика с актуальным
+   * verification_cases.updated_at. Студия использует это значение как
+   * expected_updated_at в decision-RPC — иначе автосейв двигает updated_at
+   * через триггер, а замороженный на загрузке токен ловит stale_case 409
+   * (H-3: «счастливый путь» одобрения ронял сам себя).
+   */
+  onDraftSaved?: (updatedAt: string) => void;
 };
 
 export function PassportDataEntryForm({
   caseId,
   initialPayload,
   onProceed,
+  onDraftSaved,
 }: PassportFormProps) {
   const [p, setP] = useState<Partial<PassportPayload>>(initialPayload);
   const [savingState, setSavingState] = useState<
@@ -52,24 +61,40 @@ export function PassportDataEntryForm({
   useEffect(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     if (Object.keys(p).length === 0) return;
-    saveTimer.current = setTimeout(async () => {
-      setSavingState("saving");
-      try {
-        const r = await fetch(`/api/admin/cases/${caseId}/draft`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ payload: p }),
-        });
-        const d = await r.json();
-        setSavingState(d.ok ? "saved" : "error");
-      } catch {
-        setSavingState("error");
-      }
+    saveTimer.current = setTimeout(() => {
+      void saveDraft();
     }, 1500);
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p, caseId]);
+
+  async function saveDraft(): Promise<void> {
+    setSavingState("saving");
+    try {
+      const r = await fetch(`/api/admin/cases/${caseId}/draft`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payload: p }),
+      });
+      const d = await r.json();
+      if (d.ok && d.updated_at) onDraftSaved?.(d.updated_at as string);
+      setSavingState(d.ok ? "saved" : "error");
+    } catch {
+      setSavingState("error");
+    }
+  }
+
+  // H-3: перед переходом на шаг 3 сбрасываем debounce и делаем финальное
+  // синхронное сохранение, чтобы (1) поднять последний updated_at в студию и
+  // (2) гарантировать, что ни один отложенный сейв не двинет updated_at уже
+  // ПОСЛЕ того как студия зафиксировала токен.
+  async function flushAndProceed(): Promise<void> {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    if (Object.keys(p).length > 0) await saveDraft();
+    onProceed(p as PassportPayload);
+  }
 
   function set<K extends keyof PassportPayload>(
     k: K,
@@ -308,8 +333,8 @@ export function PassportDataEntryForm({
         </div>
         <Button
           variant="primary"
-          disabled={blockerCount > 0}
-          onClick={() => onProceed(p as PassportPayload)}
+          disabled={blockerCount > 0 || savingState === "saving"}
+          onClick={() => void flushAndProceed()}
         >
           → Шаг 3: сверка лица
         </Button>
