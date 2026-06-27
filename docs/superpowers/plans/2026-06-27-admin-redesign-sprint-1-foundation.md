@@ -3897,7 +3897,38 @@ git commit -m "docs: mark Sprint 1 admin redesign complete"
 
 ## Status
 
-- [ ] Sprint 1 in-progress
-- [ ] Sprint 2 plan: TBD after Sprint 1 lands
+- [x] Sprint 1 implementation complete 2026-06-27 (branch `feat/admin-redesign-sprint-1`)
+  - 5 миграций applied to prod, 4 RPCs, 34 unit tests added (292/292 total green)
+  - OpsShell + 5-group sidebar, Dialog/Button/Field/StatusPill primitives
+  - 3-step studio: queue → case detail → docs → 11-field passport entry → face match → decision
+  - Client card MVP: hero (avatar=selfie) + Identity tab с 11 паспортными полями + provenance
+  - Production build clean
+  - **Not yet smoke-tested through full UI flow** — учредитель должен пройти end-to-end на staging/prod после merge
+- [ ] Sprint 2 plan: TBD after Sprint 1 smoke-test
 - [ ] Sprint 3 plan: TBD
 - [ ] Sprint 4 plan: TBD
+
+## Deferred from Sprint 1 → later
+
+- Field-level edit с reason (super only) → Sprint 4
+- Blocking-reject с F-119 two-person rule → Sprint 3
+- Watchers, SLA pills, Just-landed realtime → Sprint 3
+- Photo moderation table → Sprint 2
+- Clients directory с search → Sprint 2
+- Audit log UI с filters → Sprint 3
+- Analytics rewrite → Sprint 4
+- Cmd+K, hotkeys, undo, density modes → Sprint 4
+
+## Migration script сборка для воспроизведения
+
+Все 5 миграций применены последовательно:
+```
+psql "$DATABASE_PUBLIC_URL" -f supabase/migrations/20260627100000_admin_design_foundation.sql
+psql "$DATABASE_PUBLIC_URL" -f supabase/migrations/20260627100100_verification_cases.sql
+psql "$DATABASE_PUBLIC_URL" -f supabase/migrations/20260627100200_user_identity.sql
+psql "$DATABASE_PUBLIC_URL" -f supabase/migrations/20260627100300_admin_reason_templates.sql
+psql "$DATABASE_PUBLIC_URL" -f supabase/migrations/20260627100400_admin_case_rpcs.sql
+psql "$DATABASE_PUBLIC_URL" -f supabase/migrations/20260627100500_pg_trgm_search.sql
+```
+
+Backfill: 2 cases created (Jakhongir CL-1b78f4ea + Nodirbek CL-b09819ab).
