@@ -9,6 +9,7 @@ import { Headline, Lead } from "@/components/v2/Headline";
 import { ProgressiveProfile } from "@/components/v2/ProgressiveProfile";
 import { MatchStoryCard } from "@/components/v2/MatchStoryCard";
 import { InterestActions } from "@/components/v2/InterestActions";
+import { PausedResume } from "@/components/v2/PausedResume";
 import { getMatchOfTheDay } from "@/lib/v2/match-of-the-day";
 
 export const dynamic = "force-dynamic";
@@ -29,9 +30,36 @@ export const dynamic = "force-dynamic";
 export default async function MainPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const user = await requireActiveUser(locale);
+  // allowPaused: paused — first-class state. БЕЗ него router (paused→/main) и
+  // гард (отвергает paused) образуют бесконечную петлю редиректов: юзер на
+  // паузе намертво заперт и не может сняться. C1.
+  const user = await requireActiveUser(locale, { allowPaused: true });
   const role = deriveRole(user.lifecycle_state, user.verification_status);
   const unread = await getUnreadTotal(user.id);
+
+  // Пауза («общаюсь с кем-то») — отдельный экран с кнопкой «Возобновить».
+  // Должен идти ДО проверки view_feed, иначе paused провалился бы в shadow-ветку
+  // и увидел бы неуместную VerificationPlashka.
+  if (role === "paused") {
+    return (
+      <>
+        <MiniAppShell eyebrow="Пауза" align="top" footer={null}>
+          <Headline size="lg" as="h1">
+            Ты на паузе.
+          </Headline>
+          <Lead>
+            Тебя не показывают в подборе, новые интересы не приходят. Существующие
+            чаты остаются — можно отвечать. Сними паузу, когда будешь готов(а)
+            продолжить.
+          </Lead>
+          <div style={{ marginTop: "28px" }}>
+            <PausedResume />
+          </div>
+        </MiniAppShell>
+        <BottomNav active="feed" unread={unread} />
+      </>
+    );
+  }
 
   // Shadow Active — empty + плашка.
   if (!hasPermission(role, "view_feed")) {

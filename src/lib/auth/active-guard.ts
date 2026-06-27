@@ -3,10 +3,12 @@ import { NextResponse } from "next/server";
 import { redirect } from "@/i18n/navigation";
 import { getCurrentUser, type DbUser } from "@/lib/auth/current-user";
 import { nextScreenFor } from "@/lib/state-machine/router";
+import { isActiveAccessAllowed } from "@/lib/auth/active-access";
 
 /**
  * Гард active-страниц. По умолчанию пускает только active.
- * allowPaused=true — для чатов/настроек (paused может отвечать в существующих чатах).
+ * allowPaused=true — для чатов/настроек/главной (paused может отвечать в
+ * существующих чатах и должен иметь достижимый экран — см. C1 / active-access).
  */
 export async function requireActiveUser(
   locale: string,
@@ -15,8 +17,8 @@ export async function requireActiveUser(
   const user = await getCurrentUser();
   if (!user) redirect({ href: "/", locale });
   if (user!.lifecycle_state === "blocked") redirect({ href: "/blocked", locale });
-  const ok = user!.lifecycle_state === "active" || (opts?.allowPaused && user!.lifecycle_state === "paused");
-  if (!ok) redirect({ href: nextScreenFor(user!), locale });
+  if (!isActiveAccessAllowed(user!.lifecycle_state, opts))
+    redirect({ href: nextScreenFor(user!), locale });
   return user!;
 }
 
@@ -27,7 +29,7 @@ export async function loadActiveUserApi(opts?: {
   if (!user) return { res: NextResponse.json({ ok: false, error: "no_session" }, { status: 401 }) };
   if (user.lifecycle_state === "blocked")
     return { res: NextResponse.json({ ok: false, error: "blocked" }, { status: 403 }) };
-  const ok = user.lifecycle_state === "active" || (opts?.allowPaused && user.lifecycle_state === "paused");
-  if (!ok) return { res: NextResponse.json({ ok: false, error: "not_active" }, { status: 403 }) };
+  if (!isActiveAccessAllowed(user.lifecycle_state, opts))
+    return { res: NextResponse.json({ ok: false, error: "not_active" }, { status: 403 }) };
   return { user };
 }

@@ -7,17 +7,27 @@ import { cityLabel } from "@/lib/profile/cities";
 import { getUnreadTotal } from "@/lib/chat/list";
 import { BottomNav } from "@/components/bottom-nav";
 import { RequestActions } from "@/components/requests/request-actions";
+import { MiniAppShell } from "@/components/v2/MiniAppShell";
+import { Headline } from "@/components/v2/Headline";
 
 export const dynamic = "force-dynamic";
 
 function RequestTab({ k, label, isOut }: { k: string; label: string; isOut: boolean }) {
+  const active = (k === "outgoing") === isOut;
   return (
     <Link
       href={`/requests?tab=${k}`}
-      className={
-        "flex-1 text-center py-2 text-sm rounded-full " +
-        ((k === "outgoing") === isOut ? "bg-baxt-coral text-white" : "text-baxt-muted")
-      }
+      style={{
+        flex: 1,
+        textAlign: "center",
+        padding: "8px 0",
+        fontSize: "14px",
+        borderRadius: 999,
+        textDecoration: "none",
+        fontWeight: active ? 600 : 500,
+        background: active ? "var(--color-v2-ink-100)" : "transparent",
+        color: active ? "var(--color-v2-paper)" : "var(--color-v2-ink-400)",
+      }}
     >
       {label}
     </Link>
@@ -74,53 +84,130 @@ export default async function RequestsPage({
   }
   const otherIds = reqs.map((r) => (isOut ? r.receiver_id : r.sender_id) as string);
   const minis = await getMiniProfiles(otherIds);
+  const unread = await getUnreadTotal(user.id);
 
   return (
-    <main className="min-h-screen pb-20 bg-baxt-pink-bg">
-      <header className="px-5 pt-6 pb-3">
-        <h1 className="text-2xl font-bold text-baxt-navy mb-3">{t("title")}</h1>
-        <div className="flex gap-1 bg-white border border-baxt-border rounded-full p-1">
+    <>
+      <MiniAppShell eyebrow="Baxtlilar" align="top" footer={null}>
+        <Headline size="lg" as="h1">
+          {t("title")}
+        </Headline>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 4,
+            padding: 4,
+            marginTop: 20,
+            marginBottom: 24,
+            background: "var(--color-v2-paper-2)",
+            border: "1px solid var(--color-v2-border)",
+            borderRadius: 999,
+          }}
+        >
           <RequestTab k="incoming" label={t("incoming")} isOut={isOut} />
           <RequestTab k="outgoing" label={t("outgoing")} isOut={isOut} />
         </div>
-      </header>
 
-      {reqs.length === 0 ? (
-        <div className="px-5 py-16 text-center text-baxt-muted text-sm">{t("empty")}</div>
-      ) : (
-        <ul className="px-4 space-y-2">
-          {reqs.map((r) => {
-            const m = minis[(isOut ? r.receiver_id : r.sender_id) as string];
-            return (
-              <li key={r.id as string} className="bg-white border border-baxt-border rounded-2xl p-3 flex items-center gap-3">
-                <Link href={`/profile/${m?.id}`} className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="w-12 h-12 rounded-full bg-baxt-coral-bg overflow-hidden shrink-0">
-                    {m?.photoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={m.photoUrl} alt="" className="w-full h-full object-cover" />
-                    ) : null}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-baxt-navy truncate">
-                      {m?.name}
-                      {m?.age ? `, ${m.age}` : ""}
+        {reqs.length === 0 ? (
+          <div
+            style={{
+              padding: "56px 0",
+              textAlign: "center",
+              color: "var(--color-v2-ink-400)",
+              fontSize: 14,
+            }}
+          >
+            {t("empty")}
+          </div>
+        ) : (
+          <ul style={{ display: "flex", flexDirection: "column", gap: 8, listStyle: "none", padding: 0, margin: 0 }}>
+            {reqs.map((r) => {
+              const m = minis[(isOut ? r.receiver_id : r.sender_id) as string];
+              return (
+                <li
+                  key={r.id as string}
+                  style={{
+                    background: "var(--color-v2-paper-2)",
+                    border: "1px solid var(--color-v2-border)",
+                    borderRadius: "var(--v2-radius-lg)",
+                    padding: 14,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                  }}
+                >
+                  <Link
+                    href={`/v2/profile/${m?.id}`}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      flex: 1,
+                      minWidth: 0,
+                      textDecoration: "none",
+                      color: "inherit",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 48,
+                        height: 48,
+                        flexShrink: 0,
+                        borderRadius: 999,
+                        overflow: "hidden",
+                        background: "var(--color-v2-paper-3)",
+                      }}
+                    >
+                      {m?.photoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={m.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : null}
                     </div>
-                    <div className="text-xs text-baxt-muted truncate">
-                      {isOut ? t(`status_${effectiveStatus(r)}`) : ((r.message as string) || cityLabel(m?.city, locale))}
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 500,
+                          color: "var(--color-v2-ink-100)",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {m?.name}
+                        {m?.age ? `, ${m.age}` : ""}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          color: "var(--color-v2-ink-400)",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {isOut
+                          ? t(`status_${effectiveStatus(r)}`)
+                          : (r.message as string) || cityLabel(m?.city, locale)}
+                      </div>
                     </div>
-                  </div>
-                </Link>
-                {isOut ? (
-                  effectiveStatus(r) === "pending" ? <RequestActions requestId={r.id as string} kind="outgoing" /> : null
-                ) : (
-                  <RequestActions requestId={r.id as string} kind="incoming" />
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      <BottomNav active="requests" unread={await getUnreadTotal(user.id)} />
-    </main>
+                  </Link>
+                  {isOut ? (
+                    effectiveStatus(r) === "pending" ? (
+                      <RequestActions requestId={r.id as string} kind="outgoing" />
+                    ) : null
+                  ) : (
+                    <RequestActions requestId={r.id as string} kind="incoming" />
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <div style={{ height: 80 }} />
+      </MiniAppShell>
+      <BottomNav active="requests" unread={unread} />
+    </>
   );
 }

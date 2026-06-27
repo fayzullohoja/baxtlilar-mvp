@@ -91,35 +91,37 @@ export function AutoBootstrap() {
     };
   }, []);
 
-  // F-final-5b debug banner — поможет диагностировать прод-bootstrap.
-  // Скрыть после выяснения root cause.
-  const msg = (() => {
-    switch (diag.kind) {
-      case "mounting":
-        return "[diag] mounting";
-      case "polling":
-        return `[diag] polling try ${diag.tries}/15 tg=${diag.tgAvailable ? "yes" : "no"} initDataLen=${diag.initDataLen}`;
-      case "fetching":
-        return `[diag] fetching initDataLen=${diag.initDataLen} startParamLen=${diag.startParamLen}`;
-      case "no_initdata_timeout":
-        return "[diag] no initData after 3s — не в TG WebView или TG не populated initData";
-      case "fetch_error":
-        return `[diag] fetch error: ${diag.msg}`;
-      case "bootstrap_error":
-        return `[diag] bootstrap ${diag.status}: ${diag.error}`;
-      case "register_required":
-        return "Сначала пройдите регистрацию в боте · Avval botda roʻyxatdan oʻting";
-      case "ok":
-        return "[diag] ok — редирект";
-    }
-  })();
+  // Пока идёт авто-вход внутри Telegram (initData читается / bootstrap в полёте /
+  // успех перед редиректом) — показываем чистый брендовый лоадер ПОВЕРХ фолбэка.
+  // Так юзер не видит ни технических диагностик, ни мигающей карточки «открой в
+  // Telegram» (он уже в Telegram).
+  const working =
+    diag.kind === "mounting" ||
+    diag.kind === "polling" ||
+    diag.kind === "fetching" ||
+    diag.kind === "ok";
+
+  // Нужна регистрация в боте → понятное сообщение поверх фолбэка (у карточки
+  // ниже уже есть кнопка-deep-link на бота).
+  if (diag.kind === "register_required") {
+    return (
+      <div className="absolute inset-x-0 top-0 z-50 px-5 pt-6 text-center">
+        <p className="text-sm text-baxt-navy">Сначала пройдите регистрацию в боте.</p>
+        <p className="text-sm text-baxt-muted">Avval botda roʻyxatdan oʻting.</p>
+      </div>
+    );
+  }
+
+  // initData так и не появился (обычный браузер) или ошибка bootstrap — рендерим
+  // null, показывается серверный фолбэк-лендинг с кнопкой на бота.
+  if (!working) return null;
 
   return (
-    <div
-      className="absolute top-0 left-0 right-0 bg-baxt-coral/10 text-baxt-coral text-center text-xs py-2 px-4 z-50"
-      style={{ wordBreak: "break-word" }}
-    >
-      {msg}
+    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-baxt-bg">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-baxt-coral text-2xl font-bold text-white shadow-[0_8px_24px_-8px_rgba(226,82,107,0.5)] motion-safe:animate-pulse">
+        B
+      </div>
+      <p className="text-sm text-baxt-muted">Загрузка · Yuklanmoqda</p>
     </div>
   );
 }
