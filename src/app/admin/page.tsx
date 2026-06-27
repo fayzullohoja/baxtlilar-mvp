@@ -81,14 +81,14 @@ export default async function AdminDashboard() {
 
       <Section label="Население">
         <Grid>
-          <StatCard href="/admin/users" label="Всего пользователей" value={d.total ?? 0} />
+          <StatCard href="/admin/clients" label="Всего пользователей" value={d.total ?? 0} />
           <StatCard
-            href="/admin/users?status=active"
+            href="/admin/clients?status=active"
             label="Активных"
             value={d.lifecycle?.active ?? 0}
           />
           <StatCard
-            href="/admin/users?status=blocked"
+            href="/admin/clients?status=blocked"
             label="Заблокировано"
             value={d.lifecycle?.blocked ?? 0}
           />
@@ -97,8 +97,8 @@ export default async function AdminDashboard() {
 
       <Section label="Демография">
         <Grid>
-          <StatCard href="/admin/users?gender=m" label="Мужчин" value={d.gender?.m ?? 0} />
-          <StatCard href="/admin/users?gender=f" label="Женщин" value={d.gender?.f ?? 0} />
+          <StatCard href="/admin/clients?gender=m" label="Мужчин" value={d.gender?.m ?? 0} />
+          <StatCard href="/admin/clients?gender=f" label="Женщин" value={d.gender?.f ?? 0} />
         </Grid>
       </Section>
     </OpsShell>

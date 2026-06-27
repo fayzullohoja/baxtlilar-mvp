@@ -7,7 +7,6 @@ import {
   IconPhoto,
   IconFlag,
   IconUsers,
-  IconId,
   IconChartBar,
   IconHistory,
   IconLogout,
@@ -43,7 +42,6 @@ const GROUPS: Group[] = [
     label: "РЕЕСТР",
     items: [
       { href: "/admin/clients", label: "Клиенты", icon: IconUsers, superOnly: true },
-      { href: "/admin/users", label: "Пользователи", icon: IconId },
     ],
   },
   {

@@ -37,20 +37,48 @@ function maskPhone(p: string): string {
  * RPC зависит от pg_trgm extension + индексов (миграции 100500/110000); её сбой
  * поднимается явно, а не маскируется пустой директорией.
  */
+export type ClientFilters = { status?: string; gender?: string };
+
 export async function searchClients(
   q: string,
   limit = 50,
+  filters?: ClientFilters,
 ): Promise<{ rows: ClientRow[] }> {
   const sb = supabaseAdmin();
+  const statusF = filters?.status && filters.status !== "all" ? filters.status : null;
+  const genderF =
+    filters?.gender === "m" || filters?.gender === "f" ? filters.gender : null;
 
-  const { data: rpcData, error: rpcErr } = await sb.rpc("admin_search_clients", {
-    p_q: q ?? "",
-    p_limit: limit,
-  });
-  if (rpcErr) {
-    throw new Error(`admin_search_clients failed: ${rpcErr.message}`);
+  let ids: string[];
+  if (q.trim() === "" && (statusF || genderF)) {
+    // Просмотр с фильтрами (как было в /admin/users): запрос users напрямую,
+    // RPC поиска не нужен. pg_trgm-поиск (по q) фильтры не применяет.
+    let genderIds: string[] | null = null;
+    if (genderF) {
+      genderIds = unwrapRows(
+        await sb.from("user_profiles").select("user_id").eq("gender", genderF),
+      ).map((r) => r.user_id as string);
+      if (genderIds.length === 0) return { rows: [] };
+    }
+    let uq = sb
+      .from("users")
+      .select("id")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (statusF) uq = uq.eq("lifecycle_state", statusF);
+    if (genderIds) uq = uq.in("id", genderIds);
+    ids = unwrapRows(await uq).map((r) => r.id as string);
+  } else {
+    const { data: rpcData, error: rpcErr } = await sb.rpc(
+      "admin_search_clients",
+      { p_q: q ?? "", p_limit: limit },
+    );
+    if (rpcErr) {
+      throw new Error(`admin_search_clients failed: ${rpcErr.message}`);
+    }
+    ids = Array.isArray(rpcData) ? (rpcData as string[]) : [];
   }
-  const ids = Array.isArray(rpcData) ? (rpcData as string[]) : [];
   if (ids.length === 0) return { rows: [] };
 
   const [usersRes, profilesRes, identsRes] = await Promise.all([

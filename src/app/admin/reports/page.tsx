@@ -151,7 +151,7 @@ export default async function ReportsModeration() {
                 <tr key={r.id} style={{ borderBottom: `1px solid ${ADMIN.border}` }}>
                   <td style={{ padding: "10px 12px", fontSize: 13 }}>
                     <Link
-                      href="/admin/users"
+                      href={`/admin/clients/${r.target_user_id}`}
                       style={{ color: ADMIN.ink900, textDecoration: "none" }}
                     >
                       {u?.name ?? r.target_user_id.slice(0, 8)}
