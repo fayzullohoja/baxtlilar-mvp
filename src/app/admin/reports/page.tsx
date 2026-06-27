@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { unwrapRows } from "@/lib/db/unwrap";
-import { V2AdminShell, AdminH1 } from "@/components/v2/AdminShell";
+import { OpsShell } from "@/components/admin-ops/OpsShell";
+import { StatusPill } from "@/components/admin-ops/StatusPill";
+import { ADMIN } from "@/lib/admin/admin-tokens";
 import { ReportActions } from "@/components/admin/report-actions";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +25,15 @@ const STATUS_RU: Record<string, string> = {
   requires_clarification: "Нужны уточнения",
   escalated: "Эскалация",
 };
+const STATUS_KIND: Record<
+  string,
+  "new" | "warning" | "pending" | "rejected"
+> = {
+  new: "new",
+  in_progress: "warning",
+  requires_clarification: "pending",
+  escalated: "rejected",
+};
 
 type Report = {
   id: string;
@@ -34,16 +45,31 @@ type Report = {
   created_at: string;
 };
 
+const th = {
+  textAlign: "left" as const,
+  padding: "10px 12px",
+  fontSize: 11,
+  color: ADMIN.ink500,
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.04em",
+  fontWeight: 500,
+};
+
 /**
- * V2 Admin · Reports (Blueprint §4.5).
+ * Admin · Reports (Blueprint §4.5).
  *
- * Editorial list cards: serif target name, soft-tag статус, count-badge
- * только если >1. Super-admin only (F-120).
+ * Open reports queue. Sender identity hidden. Super-admin only (F-120).
  */
 export default async function ReportsModeration() {
   const session = await requireAdmin();
   if (session.role !== "superadmin") notFound();
   const sb = supabaseAdmin();
+
+  const { data: admin } = await sb
+    .from("admin_users")
+    .select("login")
+    .eq("id", session.adminId)
+    .maybeSingle();
 
   const reports = unwrapRows(
     await sb
@@ -75,134 +101,109 @@ export default async function ReportsModeration() {
   for (const r of reports) countBy[r.target_user_id] = (countBy[r.target_user_id] ?? 0) + 1;
 
   return (
-    <V2AdminShell active="/admin/reports" role={session.role}>
-      <AdminH1 subtitle={`${reports.length} открытых · отправитель скрыт.`}>
-        Жалобы
-      </AdminH1>
+    <OpsShell adminName={admin?.login ?? "—"} adminRole={session.role}>
+      <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 4 }}>Жалобы</h1>
+      <p style={{ color: ADMIN.ink500, fontSize: 13, marginBottom: 24 }}>
+        {reports.length} открытых · отправитель скрыт
+      </p>
 
       {reports.length === 0 ? (
-        <p
+        <div
           style={{
-            fontSize: "15px",
-            color: "var(--color-v2-ink-400)",
-            fontFamily: "var(--font-v2-body)",
-            padding: "60px 0",
+            padding: 24,
+            color: ADMIN.ink500,
+            fontSize: 13,
             textAlign: "center",
+            border: `1px solid ${ADMIN.border}`,
+            borderRadius: 8,
+            background: ADMIN.surface,
           }}
         >
-          Открытых жалоб нет. Хороший день у юзеров.
-        </p>
+          Открытых жалоб нет.
+        </div>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: "12px" }}>
-          {reports.map((r) => {
-            const u = userBy[r.target_user_id];
-            const reportCount = countBy[r.target_user_id];
-            return (
-              <li
-                key={r.id}
-                style={{
-                  background: "var(--color-v2-paper)",
-                  border: "1px solid var(--color-v2-ink-500)",
-                  borderRadius: "var(--v2-radius-md)",
-                  padding: "20px",
-                  fontFamily: "var(--font-v2-body)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                    gap: "10px",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <Link
-                    href="/admin/users"
-                    style={{
-                      fontFamily: "var(--font-v2-display)",
-                      fontSize: "18px",
-                      color: "var(--color-v2-ink-100)",
-                      textDecoration: "none",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {u?.name ?? r.target_user_id.slice(0, 8)}
-                  </Link>
-                  {u?.banned ? (
-                    <span style={{ fontSize: "11px", color: "#b8475e", fontWeight: 500 }}>
-                      заблокирован
-                    </span>
-                  ) : null}
-                  {reportCount > 1 ? (
-                    <span
-                      style={{
-                        padding: "2px 10px",
-                        background: "var(--color-v2-ink-100)",
-                        color: "var(--color-v2-paper)",
-                        fontSize: "11px",
-                        borderRadius: "999px",
-                        fontWeight: 500,
-                      }}
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            background: ADMIN.surface,
+            border: `1px solid ${ADMIN.border}`,
+            borderRadius: 8,
+            overflow: "hidden",
+          }}
+        >
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${ADMIN.border}` }}>
+              {["Пользователь", "Причина", "Комментарий", "Чат", "Статус", "Создана", "Действия"].map(
+                (h) => (
+                  <th key={h} style={th}>
+                    {h}
+                  </th>
+                ),
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {reports.map((r) => {
+              const u = userBy[r.target_user_id];
+              const reportCount = countBy[r.target_user_id];
+              return (
+                <tr key={r.id} style={{ borderBottom: `1px solid ${ADMIN.border}` }}>
+                  <td style={{ padding: "10px 12px", fontSize: 13 }}>
+                    <Link
+                      href="/admin/users"
+                      style={{ color: ADMIN.ink900, textDecoration: "none" }}
                     >
-                      жалоб: {reportCount}
-                    </span>
-                  ) : null}
-                  <span
+                      {u?.name ?? r.target_user_id.slice(0, 8)}
+                    </Link>
+                    <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                      {u?.banned ? <StatusPill kind="banned">заблокирован</StatusPill> : null}
+                      {reportCount > 1 ? (
+                        <StatusPill kind="warning">жалоб: {reportCount}</StatusPill>
+                      ) : null}
+                    </div>
+                  </td>
+                  <td style={{ padding: "10px 12px", fontSize: 13, color: ADMIN.ink700 }}>
+                    {REASON_RU[r.reason_code] ?? r.reason_code}
+                  </td>
+                  <td
                     style={{
-                      padding: "2px 10px",
-                      background: "transparent",
-                      border: "1px solid var(--color-v2-ink-500)",
-                      color: "var(--color-v2-ink-300)",
-                      fontSize: "11px",
-                      borderRadius: "999px",
+                      padding: "10px 12px",
+                      fontSize: 13,
+                      color: ADMIN.ink500,
+                      fontStyle: r.comment ? "italic" : "normal",
+                      maxWidth: 280,
                     }}
                   >
-                    {STATUS_RU[r.status] ?? r.status}
-                  </span>
-                  <span
+                    {r.comment ? `«${r.comment}»` : "—"}
+                  </td>
+                  <td
                     style={{
-                      marginLeft: "auto",
-                      fontSize: "11px",
-                      color: "var(--color-v2-ink-400)",
+                      padding: "10px 12px",
+                      fontSize: 12,
+                      fontFamily: ADMIN.fontMono,
+                      color: ADMIN.ink500,
                     }}
                   >
+                    {r.chat_id ? `${r.chat_id.slice(0, 8)}…` : "—"}
+                  </td>
+                  <td style={{ padding: "10px 12px" }}>
+                    <StatusPill kind={STATUS_KIND[r.status] ?? "new"}>
+                      {STATUS_RU[r.status] ?? r.status}
+                    </StatusPill>
+                  </td>
+                  <td style={{ padding: "10px 12px", fontSize: 12, color: ADMIN.ink500 }}>
                     {new Date(r.created_at).toLocaleString("ru-RU")}
-                  </span>
-                </div>
-                <div
-                  style={{
-                    fontSize: "14px",
-                    color: "var(--color-v2-ink-200)",
-                    marginBottom: r.comment ? "6px" : "12px",
-                  }}
-                >
-                  {REASON_RU[r.reason_code] ?? r.reason_code}
-                </div>
-                {r.comment ? (
-                  <p
-                    style={{
-                      fontSize: "13px",
-                      color: "var(--color-v2-ink-400)",
-                      fontStyle: "italic",
-                      marginBottom: "12px",
-                      lineHeight: "1.55",
-                    }}
-                  >
-                    «{r.comment}»
-                  </p>
-                ) : null}
-                {r.chat_id ? (
-                  <p style={{ fontSize: "11px", color: "var(--color-v2-ink-400)", marginBottom: "12px" }}>
-                    чат: {r.chat_id.slice(0, 8)}…
-                  </p>
-                ) : null}
-                <ReportActions reportId={r.id} />
-              </li>
-            );
-          })}
-        </ul>
+                  </td>
+                  <td style={{ padding: "10px 12px" }}>
+                    <ReportActions reportId={r.id} />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       )}
-    </V2AdminShell>
+    </OpsShell>
   );
 }

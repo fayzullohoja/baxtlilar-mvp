@@ -64,6 +64,22 @@ export async function signedPhotoUrls(
   return out;
 }
 
+/** Подписанные URL пачкой из приватного бакета ДОКУМЕНТОВ (аватар = одобренное
+ * селфи лежит здесь, не в profile-photos). path → signedUrl, один round-trip. */
+export async function signedDocumentUrls(
+  paths: (string | null | undefined)[],
+  ttl = 300,
+): Promise<Record<string, string>> {
+  const uniq = [...new Set(paths.filter((p): p is string => !!p))];
+  if (!uniq.length) return {};
+  const { data } = await supabaseAdmin()
+    .storage.from(BUCKET_DOCUMENTS)
+    .createSignedUrls(uniq, ttl);
+  const out: Record<string, string> = {};
+  for (const it of data ?? []) if (it.path && it.signedUrl) out[it.path] = it.signedUrl;
+  return out;
+}
+
 /**
  * Загрузка фото профиля в приватный бакет. Возвращает подписанный URL для немедленного показа.
  * @param idx порядковый индекс фото (имя файла), чтобы хранить до 3 фото.

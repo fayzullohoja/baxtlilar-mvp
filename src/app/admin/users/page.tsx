@@ -1,11 +1,13 @@
 import { requireAdmin } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { unwrapRows } from "@/lib/db/unwrap";
-import { V2AdminShell, AdminH1 } from "@/components/v2/AdminShell";
+import { OpsShell } from "@/components/admin-ops/OpsShell";
+import { StatusPill } from "@/components/admin-ops/StatusPill";
 import { UserActions } from "@/components/admin/user-actions";
 import { ageFromDate } from "@/lib/profile/schemas";
 import { cityLabel } from "@/lib/profile/cities";
 import { lifecycleRu, verificationRu, genderRu } from "@/lib/admin/labels";
+import { ADMIN } from "@/lib/admin/admin-tokens";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +24,23 @@ const GENDER_FILTERS = [
   { key: "f", label: "Женщины" },
 ];
 
+type Pill = "verified" | "pending" | "rejected" | "banned" | "paused" | "active" | "new" | "warning";
+
+const LIFECYCLE_KIND: Record<string, Pill> = {
+  onboarding: "new",
+  active: "active",
+  paused: "paused",
+  blocked: "banned",
+  deleted: "rejected",
+};
+const VERIFICATION_KIND: Record<string, Pill> = {
+  approved: "verified",
+  pending_review: "pending",
+  needs_changes: "warning",
+  rejected: "rejected",
+  revoked: "rejected",
+};
+
 type ProfileEmbed = { gender: string | null; birth_date: string | null; city: string | null };
 type UserRow = {
   id: string;
@@ -32,10 +51,20 @@ type UserRow = {
   created_at: string;
 };
 
+const th = {
+  textAlign: "left" as const,
+  padding: "10px 12px",
+  fontSize: 11,
+  color: ADMIN.ink500,
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.04em",
+  fontWeight: 500,
+};
+
 /**
- * V2 Admin · Users (Blueprint §4.6).
- * Editorial table + filter pills. F-120 RBAC: moderator видит только
- * pending_review-онбординг — фильтры status игнорируются для moderator.
+ * Admin · Users (OpsShell). Editorial table → dense OpsShell table + filter
+ * pills. F-120 RBAC: moderator видит только pending_review-онбординг —
+ * фильтры status игнорируются для moderator.
  */
 export default async function UsersPage({
   searchParams,
@@ -47,6 +76,12 @@ export default async function UsersPage({
   const statusF = status ?? "all";
   const genderF = gender === "m" || gender === "f" ? gender : "all";
   const sb = supabaseAdmin();
+
+  const { data: admin } = await sb
+    .from("admin_users")
+    .select("login")
+    .eq("id", session.adminId)
+    .maybeSingle();
 
   let genderIds: string[] | null = null;
   if (genderF !== "all") {
@@ -89,131 +124,137 @@ export default async function UsersPage({
     `/admin/users?gender=${k}${statusF !== "all" ? `&status=${statusF}` : ""}`;
 
   return (
-    <V2AdminShell active="/admin/users" role={session.role}>
-      <AdminH1
-        subtitle={
-          session.role === "moderator"
-            ? "Только пользователи в очереди модерации (F-120 RBAC scope)."
-            : `${list.length} пользователей в выборке.`
-        }
-      >
-        Пользователи
-      </AdminH1>
+    <OpsShell adminName={admin?.login ?? "—"} adminRole={session.role}>
+      <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 4 }}>Пользователи</h1>
+      <p style={{ color: ADMIN.ink500, fontSize: 13, marginBottom: 24 }}>
+        {session.role === "moderator"
+          ? "Только пользователи в очереди модерации (F-120 RBAC scope)."
+          : `${list.length} пользователей в выборке.`}
+      </p>
 
       {/* Filter pills */}
       {session.role !== "moderator" ? (
         <>
           <FilterPills>
             {STATUS_FILTERS.map((f) => (
-              <Pill key={f.key} href={hrefStatus(f.key)} active={statusF === f.key}>
+              <FilterPill key={f.key} href={hrefStatus(f.key)} active={statusF === f.key}>
                 {f.label}
-              </Pill>
+              </FilterPill>
             ))}
           </FilterPills>
-          <FilterPills mt={12}>
+          <FilterPills mt={8}>
             {GENDER_FILTERS.map((f) => (
-              <Pill key={f.key} href={hrefGender(f.key)} active={genderF === f.key}>
+              <FilterPill key={f.key} href={hrefGender(f.key)} active={genderF === f.key}>
                 {f.label}
-              </Pill>
+              </FilterPill>
             ))}
           </FilterPills>
         </>
       ) : null}
 
       {/* Table */}
-      <div
-        style={{
-          marginTop: "32px",
-          border: "1px solid var(--color-v2-ink-500)",
-          borderRadius: "var(--v2-radius-md)",
-          overflow: "auto",
-          background: "var(--color-v2-paper)",
-        }}
-      >
-        <table
+      {list.length === 0 ? (
+        <div
           style={{
-            width: "100%",
-            minWidth: "760px",
-            borderCollapse: "collapse",
-            fontFamily: "var(--font-v2-body)",
-            fontSize: "13px",
+            marginTop: 24,
+            padding: 24,
+            color: ADMIN.ink500,
+            fontSize: 13,
+            textAlign: "center",
+            border: `1px solid ${ADMIN.border}`,
+            borderRadius: 8,
+            background: ADMIN.surface,
           }}
         >
-          <thead>
-            <tr style={{ borderBottom: "1px solid var(--color-v2-ink-500)" }}>
-              <Th>Пользователь</Th>
-              <Th>Пол</Th>
-              <Th>Возраст</Th>
-              <Th>Город</Th>
-              <Th>Статус</Th>
-              <Th>Верификация</Th>
-              <Th>Регистрация</Th>
-              <Th>{""}</Th>
-            </tr>
-          </thead>
-          <tbody>
-            {list.map((u) => {
-              const p = profiles.get(u.id) ?? null;
-              const age = p?.birth_date ? ageFromDate(p.birth_date) : null;
-              return (
-                <tr
-                  key={u.id as string}
-                  style={{ borderTop: "1px solid var(--color-v2-ink-600)" }}
-                >
-                  <Td>
-                    {(u.telegram_first_name as string) ||
-                      (u.telegram_username
-                        ? "@" + u.telegram_username
-                        : (u.id as string).slice(0, 8))}
-                  </Td>
-                  <Td muted>{genderRu(p?.gender)}</Td>
-                  <Td muted>{age && age > 0 ? age : "—"}</Td>
-                  <Td muted>{p?.city ? cityLabel(p.city, "ru") : "—"}</Td>
-                  <Td muted>{lifecycleRu(u.lifecycle_state)}</Td>
-                  <Td muted>{verificationRu(u.verification_status)}</Td>
-                  <Td muted>{new Date(u.created_at as string).toLocaleDateString("ru-RU")}</Td>
-                  <Td align="right">
-                    <UserActions userId={u.id as string} blocked={u.lifecycle_state === "blocked"} />
-                  </Td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {list.length === 0 ? (
-          <p
+          Нет пользователей в этой выборке.
+        </div>
+      ) : (
+        <div style={{ marginTop: 24, overflow: "auto" }}>
+          <table
             style={{
-              padding: "32px",
-              fontSize: "14px",
-              color: "var(--color-v2-ink-400)",
-              fontFamily: "var(--font-v2-body)",
-              textAlign: "center",
+              width: "100%",
+              minWidth: 760,
+              borderCollapse: "collapse",
+              background: ADMIN.surface,
+              border: `1px solid ${ADMIN.border}`,
+              borderRadius: 8,
+              overflow: "hidden",
             }}
           >
-            Нет пользователей в этой выборке.
-          </p>
-        ) : null}
-      </div>
-    </V2AdminShell>
+            <thead>
+              <tr style={{ borderBottom: `1px solid ${ADMIN.border}` }}>
+                {["Пользователь", "Пол", "Возраст", "Город", "Статус", "Верификация", "Регистрация", ""].map(
+                  (h, i) => (
+                    <th key={i} style={th}>
+                      {h}
+                    </th>
+                  ),
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((u) => {
+                const p = profiles.get(u.id) ?? null;
+                const age = p?.birth_date ? ageFromDate(p.birth_date) : null;
+                const lifeKind = LIFECYCLE_KIND[u.lifecycle_state];
+                const verKind = VERIFICATION_KIND[u.verification_status];
+                return (
+                  <tr key={u.id} style={{ borderBottom: `1px solid ${ADMIN.border}` }}>
+                    <td style={{ padding: "10px 12px", fontSize: 13, color: ADMIN.ink900, whiteSpace: "nowrap" }}>
+                      {u.telegram_first_name ||
+                        (u.telegram_username ? "@" + u.telegram_username : u.id.slice(0, 8))}
+                    </td>
+                    <td style={{ padding: "10px 12px", fontSize: 12, color: ADMIN.ink700 }}>
+                      {genderRu(p?.gender)}
+                    </td>
+                    <td style={{ padding: "10px 12px", fontSize: 12, color: ADMIN.ink700 }}>
+                      {age && age > 0 ? age : "—"}
+                    </td>
+                    <td style={{ padding: "10px 12px", fontSize: 12, color: ADMIN.ink700 }}>
+                      {p?.city ? cityLabel(p.city, "ru") : "—"}
+                    </td>
+                    <td style={{ padding: "10px 12px" }}>
+                      {lifeKind ? (
+                        <StatusPill kind={lifeKind}>{lifecycleRu(u.lifecycle_state)}</StatusPill>
+                      ) : (
+                        <span style={{ fontSize: 12, color: ADMIN.ink500 }}>
+                          {lifecycleRu(u.lifecycle_state)}
+                        </span>
+                      )}
+                    </td>
+                    <td style={{ padding: "10px 12px" }}>
+                      {verKind ? (
+                        <StatusPill kind={verKind}>{verificationRu(u.verification_status)}</StatusPill>
+                      ) : (
+                        <span style={{ fontSize: 12, color: ADMIN.ink500 }}>
+                          {verificationRu(u.verification_status)}
+                        </span>
+                      )}
+                    </td>
+                    <td style={{ padding: "10px 12px", fontSize: 12, color: ADMIN.ink500 }}>
+                      {new Date(u.created_at).toLocaleDateString("ru-RU")}
+                    </td>
+                    <td style={{ padding: "8px 12px", textAlign: "right", whiteSpace: "nowrap" }}>
+                      <UserActions userId={u.id} blocked={u.lifecycle_state === "blocked"} />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </OpsShell>
   );
 }
 
 function FilterPills({ children, mt = 0 }: { children: React.ReactNode; mt?: number }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "8px",
-        marginTop: mt + "px",
-      }}
-    >
-      {children}
-    </div>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: mt }}>{children}</div>
   );
 }
 
-function Pill({
+function FilterPill({
   href,
   active,
   children,
@@ -226,60 +267,18 @@ function Pill({
     <Link
       href={href}
       style={{
-        padding: "6px 14px",
-        fontSize: "13px",
-        fontFamily: "var(--font-v2-body)",
-        color: active ? "var(--color-v2-paper)" : "var(--color-v2-ink-200)",
-        background: active ? "var(--color-v2-ink-100)" : "transparent",
-        border: `1px solid ${active ? "var(--color-v2-ink-100)" : "var(--color-v2-ink-500)"}`,
-        borderRadius: "999px",
+        padding: "5px 12px",
+        fontSize: 13,
+        fontFamily: ADMIN.fontSans,
+        color: active ? "#ffffff" : ADMIN.ink700,
+        background: active ? ADMIN.accent : ADMIN.surface,
+        border: `1px solid ${active ? ADMIN.accent : ADMIN.border}`,
+        borderRadius: 6,
         textDecoration: "none",
-        transition: "all 0.12s ease",
+        transition: "background 0.12s ease",
       }}
     >
       {children}
     </Link>
-  );
-}
-
-function Th({ children }: { children: React.ReactNode }) {
-  return (
-    <th
-      style={{
-        padding: "12px 16px",
-        textAlign: "left",
-        fontSize: "10px",
-        textTransform: "uppercase",
-        letterSpacing: "0.12em",
-        color: "var(--color-v2-ink-400)",
-        fontWeight: 500,
-      }}
-    >
-      {children}
-    </th>
-  );
-}
-
-function Td({
-  children,
-  muted,
-  align = "left",
-}: {
-  children: React.ReactNode;
-  muted?: boolean;
-  align?: "left" | "right";
-}) {
-  return (
-    <td
-      style={{
-        padding: "12px 16px",
-        textAlign: align,
-        color: muted ? "var(--color-v2-ink-300)" : "var(--color-v2-ink-100)",
-        fontFamily: "var(--font-v2-body)",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {children}
-    </td>
   );
 }

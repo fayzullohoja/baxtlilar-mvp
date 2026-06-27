@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ADMIN } from "@/lib/admin/admin-tokens";
+import { Button } from "@/components/admin-ops/Button";
 
 /**
- * V2 Admin Login (Blueprint §4.1).
+ * Admin Login (OpsShell aesthetic, pre-auth standalone — no sidebar).
  *
- * Editorial DNA: paper фон, serif Headline, underline inputs, ink button.
- * Без shadow card — просто чистая форма по центру.
+ * ADMIN.bg фон, Inter, центрированная карточка на ADMIN.surface с ADMIN.border,
+ * slate-blue primary-кнопка, поля как admin-ops Field.
  */
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -46,59 +48,47 @@ export default function AdminLoginPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "24px",
-        background: "var(--color-v2-paper)",
-        fontFamily: "var(--font-v2-body)",
+        padding: 24,
+        background: ADMIN.bg,
+        fontFamily: ADMIN.fontSans,
+        color: ADMIN.ink900,
       }}
     >
       <form
         onSubmit={submit}
         style={{
           width: "100%",
-          maxWidth: "380px",
+          maxWidth: 380,
+          background: ADMIN.surface,
+          border: `1px solid ${ADMIN.border}`,
+          borderRadius: 10,
+          padding: 32,
         }}
       >
-        <div style={{ marginBottom: "32px" }}>
+        <div style={{ marginBottom: 28 }}>
           <div
             style={{
-              fontSize: "11px",
+              fontSize: 11,
+              fontWeight: 500,
               textTransform: "uppercase",
-              letterSpacing: "0.16em",
-              color: "var(--color-v2-ink-400)",
-              marginBottom: "10px",
+              letterSpacing: "0.08em",
+              color: ADMIN.ink500,
+              marginBottom: 10,
             }}
           >
             Baxtlilar · Админ-панель
           </div>
-          <h1
-            style={{
-              fontFamily: "var(--font-v2-display)",
-              fontSize: "32px",
-              lineHeight: "1.15",
-              fontWeight: 500,
-              letterSpacing: "-0.02em",
-              color: "var(--color-v2-ink-100)",
-              margin: 0,
-            }}
-          >
-            Вход для модерации.
+          <h1 style={{ fontSize: 22, fontWeight: 500, margin: 0 }}>
+            Вход для модерации
           </h1>
         </div>
 
-        <div style={{ marginBottom: "20px" }}>
-          <label
-            style={{
-              display: "block",
-              fontSize: "11px",
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              color: "var(--color-v2-ink-400)",
-              marginBottom: "8px",
-            }}
-          >
+        <div style={{ marginBottom: 18 }}>
+          <label htmlFor="login" style={labelStyle}>
             Логин
           </label>
           <input
+            id="login"
             value={login}
             onChange={(e) => setLogin(e.target.value)}
             autoComplete="username"
@@ -106,20 +96,12 @@ export default function AdminLoginPage() {
           />
         </div>
 
-        <div style={{ marginBottom: "32px" }}>
-          <label
-            style={{
-              display: "block",
-              fontSize: "11px",
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              color: "var(--color-v2-ink-400)",
-              marginBottom: "8px",
-            }}
-          >
+        <div style={{ marginBottom: 24 }}>
+          <label htmlFor="password" style={labelStyle}>
             Пароль
           </label>
           <input
+            id="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -132,52 +114,55 @@ export default function AdminLoginPage() {
           <div
             style={{
               padding: "10px 14px",
-              marginBottom: "16px",
-              background: "rgba(180, 50, 50, 0.08)",
-              border: "1px solid rgba(180, 50, 50, 0.3)",
-              borderRadius: "var(--v2-radius-md)",
-              fontSize: "13px",
-              color: "var(--color-v2-ink-200)",
+              marginBottom: 16,
+              background: "#fcf0f3",
+              border: `1px solid ${ADMIN.danger}`,
+              borderRadius: 6,
+              fontSize: 13,
+              color: ADMIN.danger,
             }}
           >
             {error}
           </div>
         ) : null}
 
-        <button
+        <Button
           type="submit"
+          variant="primary"
           disabled={busy || !login || !password}
           style={{
             width: "100%",
-            padding: "14px 24px",
-            fontFamily: "var(--font-v2-body)",
-            fontSize: "15px",
-            fontWeight: 500,
-            color: "var(--color-v2-paper)",
-            background: "var(--color-v2-ink-100)",
-            border: "none",
-            borderRadius: "var(--v2-radius-md)",
-            cursor: busy || !login || !password ? "not-allowed" : "pointer",
-            opacity: busy || !login || !password ? 0.4 : 1,
-            transition: "background 0.12s ease",
+            height: 40,
+            justifyContent: "center",
+            fontSize: 14,
           }}
         >
           {busy ? "Вход…" : "Войти"}
-        </button>
+        </Button>
       </form>
     </main>
   );
 }
 
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  fontSize: 11,
+  fontWeight: 500,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  color: ADMIN.ink500,
+  marginBottom: 6,
+};
+
 const inputStyle: React.CSSProperties = {
+  height: 36,
   width: "100%",
-  padding: "10px 0 12px",
-  fontFamily: "var(--font-v2-body)",
-  fontSize: "17px",
-  color: "var(--color-v2-ink-100)",
-  background: "transparent",
-  border: "none",
-  borderBottom: "1px solid var(--color-v2-ink-500)",
+  padding: "0 10px",
+  fontFamily: ADMIN.fontSans,
+  fontSize: 14,
+  background: ADMIN.surface,
+  color: ADMIN.ink900,
+  border: `1px solid ${ADMIN.border}`,
+  borderRadius: 4,
   outline: "none",
-  borderRadius: 0,
 };

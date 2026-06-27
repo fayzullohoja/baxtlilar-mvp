@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/admin-ops/Button";
+import { ADMIN } from "@/lib/admin/admin-tokens";
 
 export function UserActions({ userId, blocked }: { userId: string; blocked: boolean }) {
   const router = useRouter();
@@ -38,34 +40,44 @@ export function UserActions({ userId, blocked }: { userId: string; blocked: bool
 
   if (blocked) {
     return (
-      <button onClick={unban} disabled={busy} className="text-green-700 hover:underline text-sm">
+      <Button variant="secondary" size="sm" onClick={unban} disabled={busy}>
         Разблокировать
-      </button>
+      </Button>
     );
   }
 
   if (asking) {
     return (
-      <span className="inline-flex items-center gap-1">
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
         <input
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           placeholder="причина"
-          className="rounded border border-slate-300 px-2 py-1 text-xs w-28"
+          style={{
+            height: 28,
+            width: 112,
+            padding: "0 8px",
+            fontFamily: ADMIN.fontSans,
+            fontSize: 12,
+            color: ADMIN.ink900,
+            background: ADMIN.surface,
+            border: `1px solid ${ADMIN.border}`,
+            borderRadius: 6,
+          }}
         />
-        <button onClick={ban} disabled={busy || !reason.trim()} className="text-red-600 text-sm">
+        <Button variant="danger" size="sm" onClick={ban} disabled={busy || !reason.trim()}>
           ✓
-        </button>
-        <button onClick={() => setAsking(false)} className="text-slate-400 text-sm">
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => setAsking(false)} disabled={busy}>
           ✕
-        </button>
+        </Button>
       </span>
     );
   }
 
   return (
-    <button onClick={() => setAsking(true)} className="text-red-600 hover:underline text-sm">
+    <Button variant="danger" size="sm" onClick={() => setAsking(true)}>
       Заблокировать
-    </button>
+    </Button>
   );
 }

@@ -1,7 +1,8 @@
 import { requireAdmin } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { unwrapOne } from "@/lib/db/unwrap";
-import { AdminShell } from "@/components/admin/shell";
+import { OpsShell } from "@/components/admin-ops/OpsShell";
+import { ADMIN } from "@/lib/admin/admin-tokens";
 import { cityLabel, regionLabelOfCity } from "@/lib/profile/cities";
 import { LIFECYCLE_RU, VERIFICATION_RU } from "@/lib/admin/labels";
 
@@ -26,54 +27,135 @@ function pct(part: number, whole: number): string {
   return Math.round((part / whole) * 100) + "%";
 }
 
-/** Полоса соотношения мужчины/женщины. */
+const cardStyle = {
+  border: `1px solid ${ADMIN.border}`,
+  borderRadius: 8,
+  background: ADMIN.surface,
+  padding: 20,
+} as const;
+
+const th = {
+  textAlign: "left" as const,
+  padding: "10px 12px",
+  fontSize: 11,
+  color: ADMIN.ink500,
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.04em",
+  fontWeight: 500,
+};
+
+const td = { padding: "10px 12px", fontSize: 13, color: ADMIN.ink700 } as const;
+const tdNum = {
+  padding: "10px 12px",
+  fontSize: 13,
+  color: ADMIN.ink500,
+  fontFamily: ADMIN.fontMono,
+} as const;
+
+/** Полоса соотношения мужчины/женщины (slate-blue, без cyan/pink). */
 function GenderBar({ m, f }: { m: number; f: number }) {
   const total = m + f;
   const mPct = total > 0 ? (m / total) * 100 : 0;
   const fPct = total > 0 ? (f / total) * 100 : 0;
   return (
     <div>
-      <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-100">
-        <div className="bg-sky-500" style={{ width: `${mPct}%` }} />
-        <div className="bg-baxt-coral" style={{ width: `${fPct}%` }} />
+      <div
+        style={{
+          display: "flex",
+          height: 12,
+          width: "100%",
+          overflow: "hidden",
+          borderRadius: 999,
+          background: ADMIN.surface2,
+        }}
+      >
+        <div style={{ width: `${mPct}%`, background: ADMIN.accent }} />
+        <div style={{ width: `${fPct}%`, background: ADMIN.ink300 }} />
       </div>
-      <div className="mt-2 flex justify-between text-sm">
-        <span className="text-sky-600">♂ Мужчины — {m} ({pct(m, total)})</span>
-        <span className="text-baxt-coral">♀ Женщины — {f} ({pct(f, total)})</span>
+      <div
+        style={{
+          marginTop: 8,
+          display: "flex",
+          justifyContent: "space-between",
+          fontSize: 13,
+        }}
+      >
+        <span style={{ color: ADMIN.accent }}>
+          ♂ Мужчины — {m} ({pct(m, total)})
+        </span>
+        <span style={{ color: ADMIN.ink500 }}>
+          ♀ Женщины — {f} ({pct(f, total)})
+        </span>
       </div>
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5">
-      <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</h2>
+    <section style={cardStyle}>
+      <h2
+        style={{
+          marginBottom: 16,
+          fontSize: 11,
+          fontWeight: 500,
+          textTransform: "uppercase",
+          letterSpacing: "0.04em",
+          color: ADMIN.ink500,
+        }}
+      >
+        {title}
+      </h2>
       {children}
     </section>
   );
 }
 
-function MiniStat({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
+function MiniStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5">
-      <div className={"text-3xl font-bold " + (accent ? "text-baxt-coral" : "text-slate-900")}>{value}</div>
-      <div className="mt-1 text-sm text-slate-500">{label}</div>
+    <div style={cardStyle}>
+      <div
+        style={{ fontSize: 28, fontWeight: 600, color: ADMIN.ink900, lineHeight: 1.1 }}
+      >
+        {value}
+      </div>
+      <div style={{ marginTop: 6, fontSize: 13, color: ADMIN.ink500 }}>{label}</div>
     </div>
   );
 }
 
+function noData() {
+  return <p style={{ fontSize: 13, color: ADMIN.ink500 }}>Нет данных.</p>;
+}
+
 export default async function AnalyticsPage() {
   const session = await requireAdmin();
+
+  const { data: admin } = await supabaseAdmin()
+    .from("admin_users")
+    .select("login")
+    .eq("id", session.adminId)
+    .maybeSingle();
+
   // unwrapOne бросает на сбое БД; genuine «нет данных» (null) ниже даёт «Нет данных».
-  const d = unwrapOne(await supabaseAdmin().rpc("get_admin_demographics")) as Demographics | null;
+  const d = unwrapOne(
+    await supabaseAdmin().rpc("get_admin_demographics"),
+  ) as Demographics | null;
 
   if (!d) {
     return (
-      <AdminShell active="/admin/analytics" role={session.role}>
-        <h1 className="mb-6 text-2xl font-bold text-slate-900">Демография</h1>
-        <p className="text-slate-400">Нет данных.</p>
-      </AdminShell>
+      <OpsShell adminName={admin?.login ?? "—"} adminRole={session.role}>
+        <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 16 }}>
+          Демография
+        </h1>
+        <p style={{ fontSize: 13, color: ADMIN.ink500 }}>Нет данных.</p>
+      </OpsShell>
     );
   }
 
@@ -91,53 +173,92 @@ export default async function AnalyticsPage() {
   const topCities = [...d.cities].sort((a, b) => b.n - a.n).slice(0, 12);
 
   return (
-    <AdminShell active="/admin/analytics" role={session.role}>
-      <h1 className="mb-6 text-2xl font-bold text-slate-900">Демография</h1>
+    <OpsShell adminName={admin?.login ?? "—"} adminRole={session.role}>
+      <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 4 }}>Демография</h1>
+      <p style={{ color: ADMIN.ink500, fontSize: 13, marginBottom: 24 }}>
+        Состав аудитории, пол, возраст, география и статусы
+      </p>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          gap: 16,
+        }}
+      >
         <MiniStat label="Всего пользователей" value={d.total} />
         <MiniStat label="С анкетой" value={d.with_profile} />
-        <MiniStat label="Новых за 7 дней" value={d.reg_7d} accent />
+        <MiniStat label="Новых за 7 дней" value={d.reg_7d} />
         <MiniStat label="Сегодня" value={d.reg_today} />
       </div>
 
-      <div className="mt-6 grid gap-6 md:grid-cols-2">
+      <div
+        style={{
+          marginTop: 24,
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: 24,
+        }}
+      >
         <Section title="Пол (среди заполнивших анкету)">
           <GenderBar m={d.gender.m} f={d.gender.f} />
-          <p className="mt-3 text-xs text-slate-400">
+          <p style={{ marginTop: 12, fontSize: 12, color: ADMIN.ink500 }}>
             Пол определяется на шаге анкеты. Пользователи без анкеты сюда не входят.
           </p>
         </Section>
 
         <Section title="Активные по полу">
           <GenderBar m={d.active_gender.m} f={d.active_gender.f} />
-          <p className="mt-3 text-xs text-slate-400">
+          <p style={{ marginTop: 12, fontSize: 12, color: ADMIN.ink500 }}>
             Только пользователи в статусе «Активные» (готовы к подбору).
           </p>
         </Section>
       </div>
 
-      <div className="mt-6 grid gap-6 md:grid-cols-2">
+      <div
+        style={{
+          marginTop: 24,
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: 24,
+        }}
+      >
         <Section title="Возраст по полу">
           {d.age_buckets.length === 0 ? (
-            <p className="text-sm text-slate-400">Нет данных.</p>
+            noData()
           ) : (
-            <table className="w-full text-sm">
-              <thead className="text-left text-slate-500">
-                <tr>
-                  <th className="py-1.5 font-medium">Возраст</th>
-                  <th className="py-1.5 font-medium text-sky-600">♂ М</th>
-                  <th className="py-1.5 font-medium text-baxt-coral">♀ Ж</th>
-                  <th className="py-1.5 font-medium">Всего</th>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+              }}
+            >
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${ADMIN.border}` }}>
+                  <th style={th}>Возраст</th>
+                  <th style={th}>♂ М</th>
+                  <th style={th}>♀ Ж</th>
+                  <th style={th}>Всего</th>
                 </tr>
               </thead>
               <tbody>
                 {d.age_buckets.map((b) => (
-                  <tr key={b.bucket} className="border-t border-slate-100">
-                    <td className="py-1.5 text-slate-700">{b.bucket}</td>
-                    <td className="py-1.5 text-slate-600">{b.m}</td>
-                    <td className="py-1.5 text-slate-600">{b.f}</td>
-                    <td className="py-1.5 font-medium text-slate-800">{b.n}</td>
+                  <tr
+                    key={b.bucket}
+                    style={{ borderBottom: `1px solid ${ADMIN.border}` }}
+                  >
+                    <td style={td}>{b.bucket}</td>
+                    <td style={tdNum}>{b.m}</td>
+                    <td style={tdNum}>{b.f}</td>
+                    <td
+                      style={{
+                        ...tdNum,
+                        color: ADMIN.ink900,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {b.n}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -147,24 +268,29 @@ export default async function AnalyticsPage() {
 
         <Section title="География (по областям)">
           {regions.length === 0 ? (
-            <p className="text-sm text-slate-400">Нет данных.</p>
+            noData()
           ) : (
-            <table className="w-full text-sm">
-              <thead className="text-left text-slate-500">
-                <tr>
-                  <th className="py-1.5 font-medium">Область</th>
-                  <th className="py-1.5 font-medium text-sky-600">♂ М</th>
-                  <th className="py-1.5 font-medium text-baxt-coral">♀ Ж</th>
-                  <th className="py-1.5 font-medium">Всего</th>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${ADMIN.border}` }}>
+                  <th style={th}>Область</th>
+                  <th style={th}>♂ М</th>
+                  <th style={th}>♀ Ж</th>
+                  <th style={th}>Всего</th>
                 </tr>
               </thead>
               <tbody>
                 {regions.map(([region, v]) => (
-                  <tr key={region} className="border-t border-slate-100">
-                    <td className="py-1.5 text-slate-700">{region}</td>
-                    <td className="py-1.5 text-slate-600">{v.m}</td>
-                    <td className="py-1.5 text-slate-600">{v.f}</td>
-                    <td className="py-1.5 font-medium text-slate-800">{v.n}</td>
+                  <tr
+                    key={region}
+                    style={{ borderBottom: `1px solid ${ADMIN.border}` }}
+                  >
+                    <td style={td}>{region}</td>
+                    <td style={tdNum}>{v.m}</td>
+                    <td style={tdNum}>{v.f}</td>
+                    <td style={{ ...tdNum, color: ADMIN.ink900, fontWeight: 500 }}>
+                      {v.n}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -173,17 +299,39 @@ export default async function AnalyticsPage() {
         </Section>
       </div>
 
-      <div className="mt-6 grid gap-6 md:grid-cols-2">
+      <div
+        style={{
+          marginTop: 24,
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+          gap: 24,
+        }}
+      >
         <Section title="Топ городов">
           {topCities.length === 0 ? (
-            <p className="text-sm text-slate-400">Нет данных.</p>
+            noData()
           ) : (
-            <ul className="space-y-1.5 text-sm">
+            <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
               {topCities.map((c) => (
-                <li key={c.city} className="flex justify-between">
-                  <span className="text-slate-700">{cityLabel(c.city, "ru")}</span>
-                  <span className="text-slate-500">
-                    {c.n} <span className="text-xs">(♂{c.m} / ♀{c.f})</span>
+                <li
+                  key={c.city}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "6px 0",
+                    fontSize: 13,
+                  }}
+                >
+                  <span style={{ color: ADMIN.ink700 }}>
+                    {cityLabel(c.city, "ru")}
+                  </span>
+                  <span
+                    style={{ color: ADMIN.ink500, fontFamily: ADMIN.fontMono }}
+                  >
+                    {c.n}{" "}
+                    <span style={{ fontSize: 11 }}>
+                      (♂{c.m} / ♀{c.f})
+                    </span>
                   </span>
                 </li>
               ))}
@@ -192,28 +340,82 @@ export default async function AnalyticsPage() {
         </Section>
 
         <Section title="Статусы и верификация">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              columnGap: 24,
+              rowGap: 6,
+              fontSize: 13,
+            }}
+          >
             <div>
-              <div className="mb-1 text-xs font-medium uppercase text-slate-400">Жизненный цикл</div>
+              <div
+                style={{
+                  marginBottom: 6,
+                  fontSize: 11,
+                  fontWeight: 500,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  color: ADMIN.ink500,
+                }}
+              >
+                Жизненный цикл
+              </div>
               {Object.entries(d.lifecycle).map(([k, v]) => (
-                <div key={k} className="flex justify-between">
-                  <span className="text-slate-600">{LIFECYCLE_RU[k] ?? k}</span>
-                  <span className="text-slate-800">{v}</span>
+                <div
+                  key={k}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "3px 0",
+                  }}
+                >
+                  <span style={{ color: ADMIN.ink700 }}>{LIFECYCLE_RU[k] ?? k}</span>
+                  <span
+                    style={{ color: ADMIN.ink900, fontFamily: ADMIN.fontMono }}
+                  >
+                    {v}
+                  </span>
                 </div>
               ))}
             </div>
             <div>
-              <div className="mb-1 text-xs font-medium uppercase text-slate-400">Верификация</div>
+              <div
+                style={{
+                  marginBottom: 6,
+                  fontSize: 11,
+                  fontWeight: 500,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em",
+                  color: ADMIN.ink500,
+                }}
+              >
+                Верификация
+              </div>
               {Object.entries(d.verification).map(([k, v]) => (
-                <div key={k} className="flex justify-between">
-                  <span className="text-slate-600">{VERIFICATION_RU[k] ?? k}</span>
-                  <span className="text-slate-800">{v}</span>
+                <div
+                  key={k}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "3px 0",
+                  }}
+                >
+                  <span style={{ color: ADMIN.ink700 }}>
+                    {VERIFICATION_RU[k] ?? k}
+                  </span>
+                  <span
+                    style={{ color: ADMIN.ink900, fontFamily: ADMIN.fontMono }}
+                  >
+                    {v}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
         </Section>
       </div>
-    </AdminShell>
+    </OpsShell>
   );
 }
