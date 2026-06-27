@@ -5,9 +5,10 @@
  * composer. Логика SSE/poll/optimistic — те же что V1.
  *
  * Safety:
- *   - lifecycle != active в любую сторону → /v2/chats
- *   - block в любую сторону → /v2/chats
  *   - chat row отсутствует или не моя → /v2/chats
+ *   - block в любую сторону → /v2/chats
+ *   - собеседник deleted/blocked → «призрак»-экран без композера (E2).
+ *     paused собеседник — ОК, он может отвечать в существующих чатах.
  */
 
 import { setRequestLocale } from "next-intl/server";
@@ -48,6 +49,18 @@ export default async function V2ChatThreadPage({
 
   if (await areBlocked(user.id, otherId)) {
     redirect({ href: "/v2/chats", locale });
+  }
+
+  // E2: собеседник удалил аккаунт или забанен → «призрак»-чат. Раньше код пускал
+  // в тред (composer работал) — юзер писал в пустоту без всякого сигнала. paused
+  // НЕ ghost: на паузе можно отвечать в существующих чатах.
+  const { data: otherUser } = await sb
+    .from("users")
+    .select("lifecycle_state")
+    .eq("id", otherId)
+    .maybeSingle();
+  if (!otherUser || otherUser.lifecycle_state === "deleted" || otherUser.lifecycle_state === "blocked") {
+    return <GhostChat />;
   }
 
   const minis = await getMiniProfiles([otherId]);
@@ -154,6 +167,64 @@ export default async function V2ChatThreadPage({
       </header>
 
       <V2ChatRoom chatId={id} myId={user.id} initial={messages} />
+    </main>
+  );
+}
+
+/**
+ * E2: терминальный экран чата, когда собеседник покинул Baxtlilar
+ * (deleted/blocked). Без композера — писать некому. История не показывается,
+ * но и не теряется (остаётся в БД).
+ */
+function GhostChat() {
+  return (
+    <main
+      style={{
+        height: "100dvh",
+        display: "flex",
+        flexDirection: "column",
+        maxWidth: "var(--v2-max-width)",
+        margin: "0 auto",
+        background: "var(--color-v2-paper)",
+        fontFamily: "var(--font-v2-body)",
+      }}
+    >
+      <header
+        style={{
+          flexShrink: 0,
+          padding: "14px 20px",
+          borderBottom: "1px solid var(--color-v2-ink-500)",
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+        }}
+      >
+        <Link
+          href="/v2/chats"
+          aria-label="Назад"
+          style={{
+            display: "grid",
+            placeItems: "center",
+            width: "32px",
+            height: "32px",
+            fontSize: "20px",
+            color: "var(--color-v2-ink-200)",
+            textDecoration: "none",
+          }}
+        >
+          ←
+        </Link>
+      </header>
+      <div style={{ flex: 1, display: "grid", placeItems: "center", padding: "0 32px", textAlign: "center" }}>
+        <div>
+          <p style={{ fontSize: "16px", color: "var(--color-v2-ink-200)" }}>
+            Собеседник больше не на Baxtlilar.
+          </p>
+          <p style={{ marginTop: "8px", fontSize: "14px", color: "var(--color-v2-ink-400)" }}>
+            Переписка недоступна.
+          </p>
+        </div>
+      </div>
     </main>
   );
 }

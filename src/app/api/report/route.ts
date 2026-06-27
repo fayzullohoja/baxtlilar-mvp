@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { blockUser } from "@/lib/safety/blocks";
 import { requirePermissionForRequest } from "@/lib/v2/with-permission";
 
 export const runtime = "nodejs";
@@ -28,6 +29,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const reason = REASONS.includes(reason_code ?? "") ? reason_code : "other";
 
   const sb = supabaseAdmin();
+
+  // E1: жалоба ОБРЫВАЕТ контакт. Пользователь жмёт «Пожаловаться», ожидая, что
+  // нарушитель перестанет писать — поэтому одновременно блокируем (глушит чат
+  // через areBlocked-гард + рвёт pending-заявки). Идемпотентно; делаем ДО дедупа,
+  // чтобы повторная жалоба тоже гарантировала блок. Обратимо через разблокировку.
+  const cut = await blockUser(user.id, target_user_id);
+  if (!cut) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
 
   // дедуп: один ОТКРЫТЫЙ репорт на пару (reporter,target). Иначе один пользователь
   // накрутит счётчик «жалоб: N» на странице модерации (по нему приоритизируют/банят) —

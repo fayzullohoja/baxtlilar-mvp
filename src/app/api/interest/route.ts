@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { DAILY_LIMITS } from "@/lib/matching/quota";
-import { notifyUser } from "@/lib/telegram/notify";
+import { enqueueAndDeliver } from "@/lib/v2/tg-outbox-worker";
 import { areBlocked } from "@/lib/safety/blocks";
 import { containsContact } from "@/lib/profile/schemas";
 import { requirePermissionForRequest } from "@/lib/v2/with-permission";
@@ -56,10 +56,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   switch (row?.result) {
     case "mutual":
-      await notifyUser(target.telegram_id as number, "Ваш интерес взаимен — чат открыт в Baxtlilar.");
+      await enqueueAndDeliver(receiver_id, "mutual_match");
       return NextResponse.json({ ok: true, mutual: true, next: `/chats/${row.chat_id}` });
     case "sent":
-      await notifyUser(target.telegram_id as number, "У вас новый интерес в Baxtlilar. Откройте «Запросы».");
+      await enqueueAndDeliver(receiver_id, "new_interest");
       return NextResponse.json({ ok: true, mutual: false });
     case "blocked":
       return NextResponse.json({ ok: false, error: "blocked" }, { status: 403 });

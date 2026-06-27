@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ensureChat } from "@/lib/matching/chat";
-import { notifyUser } from "@/lib/telegram/notify";
+import { enqueueAndDeliver } from "@/lib/v2/tg-outbox-worker";
 import { requirePermissionForRequest } from "@/lib/v2/with-permission";
 
 export const runtime = "nodejs";
@@ -81,11 +81,8 @@ export async function POST(
   if (accErr) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
   if (!acc?.length) return NextResponse.json({ ok: false, error: "not_pending" }, { status: 409 });
   const chatId = await ensureChat(r.sender_id as string, r.receiver_id as string);
-  const { data: sender } = await sb
-    .from("users")
-    .select("telegram_id")
-    .eq("id", r.sender_id as string)
-    .maybeSingle();
-  if (sender) await notifyUser(sender.telegram_id as number, "Ваш интерес принят — чат открыт в Baxtlilar.");
+  // F1: уведомление о принятии — через retry-safe outbox (worker сам найдёт
+  // telegram_id и пропустит deleted), а не fire-and-forget notifyUser.
+  await enqueueAndDeliver(r.sender_id as string, "interest_accepted");
   return NextResponse.json({ ok: true, next: `/chats/${chatId}` });
 }

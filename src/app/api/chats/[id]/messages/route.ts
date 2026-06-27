@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { containsContact } from "@/lib/profile/schemas";
-import { notifyUser } from "@/lib/telegram/notify";
+import { enqueueAndDeliver } from "@/lib/v2/tg-outbox-worker";
 import { loadChatRow, getLiveState } from "@/lib/chat/live";
 import { areBlocked } from "@/lib/safety/blocks";
 import { requirePermissionForRequest } from "@/lib/v2/with-permission";
@@ -94,15 +94,9 @@ export async function POST(
   await sb.from("chats").update({ last_message_at: new Date().toISOString(), ...stopTyping }).eq("id", id);
 
   if (shouldPush) {
-    const { data: other } = await sb
-      .from("users")
-      .select("telegram_id, lifecycle_state")
-      .eq("id", otherIdEarly)
-      .maybeSingle();
-    // Не пушим тому, кто удалил аккаунт (строка обезличена, но telegram_id сохранён
-    // для аудита) — иначе удалившийся продолжает получать уведомления в Telegram.
-    if (other && other.lifecycle_state !== "deleted")
-      await notifyUser(other.telegram_id as number, "Новое сообщение в Baxtlilar.");
+    // F1: через retry-safe outbox. Worker сам резолвит telegram_id, пропускает
+    // deleted-аккаунты и рендерит текст на локали получателя.
+    await enqueueAndDeliver(otherIdEarly, "new_message");
   }
   return NextResponse.json({ ok: true, message: inserted });
 }

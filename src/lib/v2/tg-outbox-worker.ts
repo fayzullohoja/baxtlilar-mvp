@@ -22,7 +22,12 @@ export type OutboxEventType =
   | "verification_approved"
   | "verification_needs_changes"
   | "verification_rejected"
-  | "tutorial_reminder";
+  | "tutorial_reminder"
+  // F1: match/chat события теперь тоже через outbox (retry-safe + локаль получателя)
+  | "mutual_match"
+  | "new_interest"
+  | "interest_accepted"
+  | "new_message";
 
 export type OutboxPayload = {
   // Свободная форма, ивент-специфичная (например reason при rejected).
@@ -77,6 +82,22 @@ const TEMPLATES: Record<OutboxEventType, { ru: (p: OutboxPayload) => string; uz:
       "Ты ещё не закончил знакомство с приложением.\nЭто займёт пару минут — и можно начинать.",
     uz: () =>
       "Ilova bilan tanishishni hali tugatmadingiz.\nBu bir necha daqiqa vaqt oladi.",
+  },
+  mutual_match: {
+    ru: () => "Ваш интерес взаимен — чат открыт в Baxtlilar.",
+    uz: () => "Qiziqishingiz o‘zaro bo‘ldi — Baxtlilar’da chat ochildi.",
+  },
+  new_interest: {
+    ru: () => "У вас новый интерес в Baxtlilar. Откройте «Запросы».",
+    uz: () => "Baxtlilar’da sizga yangi qiziqish bor. «So‘rovlar»ni oching.",
+  },
+  interest_accepted: {
+    ru: () => "Ваш интерес принят — чат открыт в Baxtlilar.",
+    uz: () => "Qiziqishingiz qabul qilindi — Baxtlilar’da chat ochildi.",
+  },
+  new_message: {
+    ru: () => "Новое сообщение в Baxtlilar.",
+    uz: () => "Baxtlilar’da yangi xabar.",
   },
 };
 
@@ -224,4 +245,24 @@ export async function tryDeliverNow(outboxId: string | null | undefined): Promis
   } catch (e) {
     console.error("[tg-outbox] tryDeliverNow failed:", e);
   }
+}
+
+/**
+ * F1: положить событие в outbox + best-effort sync-доставка. Заменяет прямой
+ * notifyUser в sender-роутах — теперь матч/новый интерес/принятие/новое
+ * сообщение идут через retry-safe очередь (не теряются при сбое/бане бота) и
+ * рендерятся на локали получателя. Принимает user_id (uuid), не telegram_id —
+ * telegram_id и пропуск deleted делает worker.
+ */
+export async function enqueueAndDeliver(
+  userId: string,
+  eventType: OutboxEventType,
+  payload: OutboxPayload = {},
+): Promise<void> {
+  const { data } = await supabaseAdmin().rpc("enqueue_tg_outbox", {
+    p_user_id: userId,
+    p_event_type: eventType,
+    p_payload: payload,
+  });
+  await tryDeliverNow((data as string | null) ?? null);
 }

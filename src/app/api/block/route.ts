@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { blockUser } from "@/lib/safety/blocks";
 import { requirePermissionForRequest } from "@/lib/v2/with-permission";
 
 export const runtime = "nodejs";
@@ -29,26 +30,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
   // Блокировка — safety-critical: нельзя отвечать «blocked», если upsert не прошёл
   // (иначе пользователь думает, что оградился от нарушителя, а на деле нет).
-  const { error } = await sb
-    .from("blocks")
-    .upsert({ blocker_id: user.id, blocked_id: target_id }, { onConflict: "blocker_id,blocked_id" });
-  if (error) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
-
-  // Блок рвёт висящие интересы между парой (как при удалении аккаунта, итер.5):
-  // входящая заявка нарушителя → declined (исчезает из «Запросов», её нельзя принять
-  // в «призрак»-чат), своя к нему → withdrawn. Только pending — историю не трогаем.
-  await sb
-    .from("match_requests")
-    .update({ status: "declined" })
-    .eq("sender_id", target_id)
-    .eq("receiver_id", user.id)
-    .eq("status", "pending");
-  await sb
-    .from("match_requests")
-    .update({ status: "withdrawn" })
-    .eq("sender_id", user.id)
-    .eq("receiver_id", target_id)
-    .eq("status", "pending");
+  // blockUser также рвёт висящие pending-заявки между парой.
+  const ok = await blockUser(user.id, target_id);
+  if (!ok) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
 
   return NextResponse.json({ ok: true, blocked: true });
 }
