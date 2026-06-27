@@ -14,10 +14,15 @@ export async function POST(
   const { session, res } = await requireAdminApi();
   if (res) return res;
   const { id } = await params;
-  const { action, reason } = (await req.json().catch(() => ({}))) as {
+  const body = (await req.json().catch(() => ({}))) as {
     action?: "approve" | "reject";
-    reason?: string;
+    reason?: string; // legacy shape
+    reason_code?: string; // new shape (reason templates)
+    reason_text?: string;
   };
+  const action = body.action;
+  const reasonText = body.reason_text ?? body.reason ?? null;
+  const reasonCode = body.reason_code ?? null;
   if (action !== "approve" && action !== "reject")
     return NextResponse.json({ ok: false, error: "bad_action" }, { status: 400 });
 
@@ -53,7 +58,7 @@ export async function POST(
     .from("profile_photos")
     .update({
       status: action === "approve" ? "approved" : "rejected",
-      reject_reason: action === "reject" ? (reason ?? null) : null,
+      reject_reason: action === "reject" ? reasonText : null,
     })
     .eq("id", id);
   if (error) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
@@ -63,7 +68,8 @@ export async function POST(
     action: `photo_${action}`,
     entity: "profile_photo",
     entityId: id,
-    reason,
+    newValue: { status: action, reason_code: reasonCode, reason_text: reasonText },
+    reason: reasonText ?? undefined,
     ip: trustedIp(req),
   });
   return NextResponse.json({ ok: true });
