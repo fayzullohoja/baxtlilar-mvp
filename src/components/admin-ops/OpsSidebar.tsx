@@ -2,22 +2,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  IconInbox,
-  IconStack2,
-  IconEye,
+  IconLayoutDashboard,
   IconShieldCheck,
   IconPhoto,
   IconFlag,
   IconUsers,
   IconId,
-  IconBan,
   IconChartBar,
-  IconClock,
-  IconUsersGroup,
-  IconDatabaseCog,
   IconHistory,
-  IconAlertOctagon,
-  IconLock,
   IconLogout,
 } from "@tabler/icons-react";
 import { ADMIN } from "@/lib/admin/admin-tokens";
@@ -32,109 +24,33 @@ type Item = {
 };
 type Group = { label: string; items: Item[] };
 
+// ЕДИНАЯ навигация: только реально существующие рабочие страницы (без 404).
+// Каждый модуль один раз. Все рендерятся в OpsShell → один дизайн.
 const GROUPS: Group[] = [
   {
-    label: "INBOX",
+    label: "ОБЗОР",
+    items: [{ href: "/admin", label: "Дашборд", icon: IconLayoutDashboard }],
+  },
+  {
+    label: "МОДЕРАЦИЯ",
     items: [
-      { href: "/admin/queue/mine", label: "Моя очередь", icon: IconInbox },
-      {
-        href: "/admin/queue/unassigned",
-        label: "Без владельца",
-        icon: IconStack2,
-      },
-      {
-        href: "/admin/queue/watching",
-        label: "Я наблюдаю",
-        icon: IconEye,
-        superOnly: true,
-      },
+      { href: "/admin/queue/mine", label: "Верификации", icon: IconShieldCheck },
+      { href: "/admin/photos", label: "Фото", icon: IconPhoto },
+      { href: "/admin/reports", label: "Жалобы", icon: IconFlag, superOnly: true },
     ],
   },
   {
-    label: "CASES",
+    label: "РЕЕСТР",
     items: [
-      {
-        href: "/admin/cases?type=verification",
-        label: "Верификации",
-        icon: IconShieldCheck,
-      },
-      { href: "/admin/cases?type=photo", label: "Фото", icon: IconPhoto },
-      {
-        href: "/admin/cases?type=report",
-        label: "Жалобы",
-        icon: IconFlag,
-        superOnly: true,
-      },
+      { href: "/admin/clients", label: "Клиенты", icon: IconUsers, superOnly: true },
+      { href: "/admin/users", label: "Пользователи", icon: IconId },
     ],
   },
   {
-    label: "REGISTRY",
+    label: "АНАЛИТИКА",
     items: [
-      { href: "/admin/clients", label: "Клиенты", icon: IconUsers },
-      {
-        href: "/admin/documents",
-        label: "Документы",
-        icon: IconId,
-        superOnly: true,
-      },
-      {
-        href: "/admin/blocklist",
-        label: "Блок-лист",
-        icon: IconBan,
-        superOnly: true,
-      },
-    ],
-  },
-  {
-    label: "INSIGHTS",
-    items: [
-      {
-        href: "/admin/analytics",
-        label: "Аналитика",
-        icon: IconChartBar,
-        superOnly: true,
-      },
-      {
-        href: "/admin/insights/sla",
-        label: "SLA-отчёт",
-        icon: IconClock,
-        superOnly: true,
-      },
-      {
-        href: "/admin/insights/team",
-        label: "Команда",
-        icon: IconUsersGroup,
-        superOnly: true,
-      },
-      {
-        href: "/admin/insights/data-quality",
-        label: "Качество данных",
-        icon: IconDatabaseCog,
-        superOnly: true,
-      },
-    ],
-  },
-  {
-    label: "AUDIT",
-    items: [
-      {
-        href: "/admin/audit",
-        label: "Журнал действий",
-        icon: IconHistory,
-        superOnly: true,
-      },
-      {
-        href: "/admin/audit/scope-violations",
-        label: "Эскалации",
-        icon: IconAlertOctagon,
-        superOnly: true,
-      },
-      {
-        href: "/admin/audit/pending-bans",
-        label: "Pending bans",
-        icon: IconLock,
-        superOnly: true,
-      },
+      { href: "/admin/analytics", label: "Аналитика", icon: IconChartBar, superOnly: true },
+      { href: "/admin/audit", label: "Журнал", icon: IconHistory, superOnly: true },
     ],
   },
 ];
@@ -147,8 +63,12 @@ export function OpsSidebar({
   adminRole: "moderator" | "superadmin";
 }) {
   const path = usePathname();
-  const isActive = (href: string) =>
-    path?.startsWith(href.split("?")[0]) ?? false;
+  const isActive = (href: string) => {
+    const base = href.split("?")[0];
+    // /admin (дашборд) — точное совпадение, иначе подсветится на всех под-роутах.
+    if (base === "/admin") return path === "/admin";
+    return path?.startsWith(base) ?? false;
+  };
 
   return (
     <nav

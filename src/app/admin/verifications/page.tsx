@@ -2,7 +2,9 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { unwrapRows } from "@/lib/db/unwrap";
-import { V2AdminShell, AdminH1 } from "@/components/v2/AdminShell";
+import { OpsShell } from "@/components/admin-ops/OpsShell";
+import { StatusPill } from "@/components/admin-ops/StatusPill";
+import { ADMIN } from "@/lib/admin/admin-tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -13,12 +15,25 @@ function overdueInfo(iso: string): { overdue: boolean; label: string } {
   return { overdue: waited > OVERDUE_MS, label: new Date(iso).toLocaleString("ru-RU") };
 }
 
-/**
- * V2 Admin · Verifications Queue (Blueprint §4.3.1).
- * Editorial list table: serif column headers, ink borders, no zebra.
- */
+const th = {
+  textAlign: "left" as const,
+  padding: "10px 12px",
+  fontSize: 11,
+  color: ADMIN.ink500,
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.04em",
+  fontWeight: 500,
+};
+
 export default async function VerificationsQueue() {
   const session = await requireAdmin();
+
+  const { data: admin } = await supabaseAdmin()
+    .from("admin_users")
+    .select("login")
+    .eq("id", session.adminId)
+    .maybeSingle();
+
   const list = unwrapRows(
     await supabaseAdmin()
       .from("users")
@@ -29,95 +44,101 @@ export default async function VerificationsQueue() {
   );
 
   return (
-    <V2AdminShell active="/admin/verifications" role={session.role}>
-      <AdminH1 subtitle={`${list.length} ${pluralize(list.length, "заявка", "заявки", "заявок")} на проверке`}>
-        Очередь верификации
-      </AdminH1>
+    <OpsShell adminName={admin?.login ?? "—"} adminRole={session.role}>
+      <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 4 }}>Очередь верификации</h1>
+      <p style={{ color: ADMIN.ink500, fontSize: 13, marginBottom: 24 }}>
+        {`${list.length} ${pluralize(list.length, "заявка", "заявки", "заявок")} на проверке`}
+      </p>
 
       {list.length === 0 ? (
-        <p
+        <div
           style={{
-            fontSize: "15px",
-            color: "var(--color-v2-ink-400)",
-            fontFamily: "var(--font-v2-body)",
-            padding: "60px 0",
+            padding: 24,
+            color: ADMIN.ink500,
+            fontSize: 13,
             textAlign: "center",
+            border: `1px solid ${ADMIN.border}`,
+            borderRadius: 8,
+            background: ADMIN.surface,
           }}
         >
           Очередь пуста. Возвращайся когда новые заявки прилетят.
-        </p>
+        </div>
       ) : (
-        <div
+        <table
           style={{
-            border: "1px solid var(--color-v2-ink-500)",
-            borderRadius: "var(--v2-radius-md)",
+            width: "100%",
+            borderCollapse: "collapse",
+            background: ADMIN.surface,
+            border: `1px solid ${ADMIN.border}`,
+            borderRadius: 8,
             overflow: "hidden",
-            background: "var(--color-v2-paper)",
           }}
         >
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              fontFamily: "var(--font-v2-body)",
-              fontSize: "14px",
-            }}
-          >
-            <thead>
-              <tr style={{ borderBottom: "1px solid var(--color-v2-ink-500)" }}>
-                <Th>Пользователь</Th>
-                <Th>Ожидает с</Th>
-                <Th>Статус</Th>
-                <Th align="right">{""}</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((u) => {
-                const { overdue, label } = overdueInfo(u.updated_at as string);
-                const name =
-                  (u.telegram_first_name as string) ||
-                  (u.telegram_username ? "@" + u.telegram_username : null) ||
-                  (u.id as string).slice(0, 8);
-                return (
-                  <tr
-                    key={u.id as string}
-                    style={{ borderTop: "1px solid var(--color-v2-ink-600)" }}
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${ADMIN.border}` }}>
+              {["Пользователь", "Ожидает с", "Статус", ""].map((h, i) => (
+                <th
+                  key={h || `col-${i}`}
+                  style={i === 3 ? { ...th, textAlign: "right" } : th}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((u) => {
+              const { overdue, label } = overdueInfo(u.updated_at as string);
+              const name =
+                (u.telegram_first_name as string) ||
+                (u.telegram_username ? "@" + u.telegram_username : null) ||
+                (u.id as string).slice(0, 8);
+              return (
+                <tr
+                  key={u.id as string}
+                  style={{ borderBottom: `1px solid ${ADMIN.border}` }}
+                >
+                  <td style={{ padding: "10px 12px", fontSize: 13 }}>
+                    <Link
+                      href={`/admin/verifications/${u.id}`}
+                      style={{ color: ADMIN.ink900, textDecoration: "none" }}
+                    >
+                      {name}
+                    </Link>
+                  </td>
+                  <td
+                    style={{
+                      padding: "10px 12px",
+                      fontSize: 12,
+                      color: overdue ? ADMIN.danger : ADMIN.ink500,
+                      fontFamily: ADMIN.fontMono,
+                    }}
                   >
-                    <Td>{name}</Td>
-                    <Td>
-                      <span style={{ color: "var(--color-v2-ink-400)" }}>{label}</span>
-                    </Td>
-                    <Td>
-                      {overdue ? (
-                        <span style={{ color: "#b8475e", fontWeight: 500 }}>
-                          Просрочено &gt; 24ч
-                        </span>
-                      ) : (
-                        <span style={{ color: "var(--color-v2-ink-400)" }}>В норме</span>
-                      )}
-                    </Td>
-                    <Td align="right">
-                      <Link
-                        href={`/admin/verifications/${u.id}`}
-                        style={{
-                          color: "var(--color-v2-ink-100)",
-                          textDecoration: "none",
-                          fontWeight: 500,
-                          borderBottom: "1px solid var(--color-v2-ink-300)",
-                          paddingBottom: "1px",
-                        }}
-                      >
-                        Открыть →
-                      </Link>
-                    </Td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    {label}
+                  </td>
+                  <td style={{ padding: "10px 12px" }}>
+                    {overdue ? (
+                      <StatusPill kind="rejected">Просрочено &gt; 24ч</StatusPill>
+                    ) : (
+                      <StatusPill kind="pending">В норме</StatusPill>
+                    )}
+                  </td>
+                  <td style={{ padding: "10px 12px", textAlign: "right" }}>
+                    <Link
+                      href={`/admin/verifications/${u.id}`}
+                      style={{ color: ADMIN.accent, textDecoration: "none", fontSize: 13, fontWeight: 500 }}
+                    >
+                      Открыть →
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       )}
-    </V2AdminShell>
+    </OpsShell>
   );
 }
 
@@ -128,36 +149,4 @@ function pluralize(n: number, one: string, few: string, many: string): string {
   if (u === 1) return one;
   if (u >= 2 && u <= 4) return few;
   return many;
-}
-
-function Th({ children, align = "left" }: { children: React.ReactNode; align?: "left" | "right" }) {
-  return (
-    <th
-      style={{
-        padding: "14px 20px",
-        textAlign: align,
-        fontSize: "11px",
-        textTransform: "uppercase",
-        letterSpacing: "0.12em",
-        color: "var(--color-v2-ink-400)",
-        fontWeight: 500,
-      }}
-    >
-      {children}
-    </th>
-  );
-}
-
-function Td({ children, align = "left" }: { children: React.ReactNode; align?: "left" | "right" }) {
-  return (
-    <td
-      style={{
-        padding: "16px 20px",
-        textAlign: align,
-        color: "var(--color-v2-ink-100)",
-      }}
-    >
-      {children}
-    </td>
-  );
 }

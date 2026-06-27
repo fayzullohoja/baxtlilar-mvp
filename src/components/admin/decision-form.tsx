@@ -2,9 +2,29 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ADMIN } from "@/lib/admin/admin-tokens";
+import { Button } from "@/components/admin-ops/Button";
 
 type Mode = null | "reject" | "needs_changes";
 type RejectCategory = "technical" | "blocking";
+
+const cardStyle = {
+  borderRadius: 8,
+  border: `1px solid ${ADMIN.border}`,
+  background: ADMIN.surface,
+  padding: 20,
+} as const;
+
+const fieldStyle = {
+  width: "100%",
+  borderRadius: 6,
+  border: `1px solid ${ADMIN.border}`,
+  background: ADMIN.surface,
+  padding: "8px 10px",
+  fontSize: 13,
+  fontFamily: ADMIN.fontSans,
+  color: ADMIN.ink900,
+} as const;
 
 export function DecisionForm({ userId }: { userId: string }) {
   const router = useRouter();
@@ -54,15 +74,15 @@ export function DecisionForm({ userId }: { userId: string }) {
 
   if (mode) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-3">
-        <div className="font-medium text-slate-800">
+      <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ fontWeight: 500, color: ADMIN.ink900, fontSize: 14 }}>
           {mode === "reject" ? "Отклонить заявку" : "Вернуть на исправление"}
         </div>
         {mode === "needs_changes" && (
           <select
             value={target}
             onChange={(e) => setTarget(e.target.value as typeof target)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            style={fieldStyle}
           >
             <option value="passport">Переснять паспорт</option>
             <option value="selfie">Переснять селфи</option>
@@ -70,23 +90,34 @@ export function DecisionForm({ userId }: { userId: string }) {
           </select>
         )}
         {mode === "reject" && (
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">Категория отказа</label>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <label style={{ fontSize: 13, fontWeight: 500, color: ADMIN.ink700 }}>
+              Категория отказа
+            </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as RejectCategory)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              style={fieldStyle}
             >
               <option value="technical">Технические причины (плохое фото, блики, размытие)</option>
               <option value="blocking">Подозрение на подделку / возраст / катфиш</option>
             </select>
-            <p className="text-xs text-slate-500">
+            <p style={{ fontSize: 12, color: ADMIN.ink500 }}>
               {category === "technical"
                 ? "Пользователь сможет переснять и попробовать снова."
                 : "Retry будет заблокирован. Пользователь увидит контакт поддержки."}
             </p>
             {category === "blocking" && (
-              <div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800">
+              <div
+                style={{
+                  borderRadius: 6,
+                  border: `1px solid ${ADMIN.danger}`,
+                  background: "#fbe7ec",
+                  padding: "8px 10px",
+                  fontSize: 12,
+                  color: ADMIN.danger,
+                }}
+              >
                 Это решение блокирует пользователя от повторной верификации в текущей анкете.
                 Основания: фейковый документ, лицо не совпадает с паспортом, виден несовершеннолетний.
               </div>
@@ -98,49 +129,44 @@ export function DecisionForm({ userId }: { userId: string }) {
           onChange={(e) => setReason(e.target.value)}
           placeholder="Причина (увидит пользователь)"
           rows={3}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          style={{ ...fieldStyle, resize: "vertical" }}
         />
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        <div className="flex gap-2">
-          <button
+        {error ? <p style={{ fontSize: 13, color: ADMIN.danger }}>{error}</p> : null}
+        <div style={{ display: "flex", gap: 8 }}>
+          <Button
+            variant="primary"
+            size="md"
             disabled={busy || !reason.trim()}
             onClick={onConfirm}
-            className="rounded-lg bg-slate-900 text-white px-4 py-2 text-sm disabled:opacity-50"
           >
             Подтвердить
-          </button>
-          <button onClick={() => setMode(null)} className="rounded-lg border px-4 py-2 text-sm">
+          </Button>
+          <Button variant="secondary" size="md" onClick={() => setMode(null)}>
             Отмена
-          </button>
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5">
-      <div className="font-medium text-slate-800 mb-3">Решение модератора</div>
-      {error ? <p className="text-sm text-red-600 mb-3">{error}</p> : null}
-      <div className="flex flex-wrap gap-2">
-        <button
-          disabled={busy}
-          onClick={() => send("approve")}
-          className="rounded-lg bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm disabled:opacity-50"
-        >
+    <div style={cardStyle}>
+      <div style={{ fontWeight: 500, color: ADMIN.ink900, fontSize: 14, marginBottom: 12 }}>
+        Решение модератора
+      </div>
+      {error ? (
+        <p style={{ fontSize: 13, color: ADMIN.danger, marginBottom: 12 }}>{error}</p>
+      ) : null}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <Button variant="primary" size="md" disabled={busy} onClick={() => send("approve")}>
           ✓ Одобрить
-        </button>
-        <button
-          onClick={() => setMode("needs_changes")}
-          className="rounded-lg bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 text-sm"
-        >
+        </Button>
+        <Button variant="secondary" size="md" onClick={() => setMode("needs_changes")}>
           ↩ Вернуть на исправление
-        </button>
-        <button
-          onClick={() => setMode("reject")}
-          className="rounded-lg bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm"
-        >
+        </Button>
+        <Button variant="danger" size="md" onClick={() => setMode("reject")}>
           ✕ Отклонить
-        </button>
+        </Button>
       </div>
     </div>
   );

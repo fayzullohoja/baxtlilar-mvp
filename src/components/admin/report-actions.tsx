@@ -2,11 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/admin-ops/Button";
 
-const ACTIONS: { status: string; label: string; cls: string }[] = [
-  { status: "in_progress", label: "В работу", cls: "text-slate-700" },
-  { status: "action_taken", label: "Меры приняты", cls: "text-green-700" },
-  { status: "not_confirmed", label: "Отклонить", cls: "text-slate-500" },
+const ACTIONS: {
+  status: string;
+  label: string;
+  variant: "primary" | "secondary" | "danger" | "ghost";
+}[] = [
+  { status: "in_progress", label: "В работу", variant: "secondary" },
+  { status: "action_taken", label: "Меры приняты", variant: "primary" },
+  { status: "not_confirmed", label: "Отклонить", variant: "ghost" },
 ];
 
 export function ReportActions({ reportId }: { reportId: string }) {
@@ -29,11 +34,17 @@ export function ReportActions({ reportId }: { reportId: string }) {
   }
 
   return (
-    <div className="flex flex-wrap gap-3 text-sm">
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
       {ACTIONS.map((a) => (
-        <button key={a.status} onClick={() => decide(a.status)} disabled={busy} className={a.cls + " hover:underline"}>
+        <Button
+          key={a.status}
+          variant={a.variant}
+          size="sm"
+          disabled={busy}
+          onClick={() => decide(a.status)}
+        >
           {a.label}
-        </button>
+        </Button>
       ))}
     </div>
   );
