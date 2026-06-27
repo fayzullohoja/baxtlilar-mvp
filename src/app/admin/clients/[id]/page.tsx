@@ -8,9 +8,9 @@ import { ClientHero } from "./ClientHero";
 import { IdentityTab } from "./IdentityTab";
 import { ClientTabs } from "@/components/admin-ops/ClientTabs";
 import { PhotosTab } from "./PhotosTab";
+import { ProfileTab } from "./ProfileTab";
 import { ActivityTab } from "./ActivityTab";
 import { ModerationTab } from "./ModerationTab";
-import { ADMIN } from "@/lib/admin/admin-tokens";
 
 export const dynamic = "force-dynamic";
 
@@ -69,14 +69,10 @@ export default async function Page({
       <ClientHero client={c} />
       <ClientTabs clientId={id} active={tab} />
       {tab === "identity" ? <IdentityTab identity={c.identity} /> : null}
+      {tab === "profile" ? <ProfileTab userId={id} /> : null}
       {tab === "photos" ? <PhotosTab userId={id} /> : null}
       {tab === "activity" ? <ActivityTab userId={id} /> : null}
       {tab === "moderation" ? <ModerationTab userId={id} /> : null}
-      {tab === "profile" ? (
-        <div style={{ padding: 24, color: ADMIN.ink500, fontSize: 13 }}>
-          Profile tab (анкета знакомств) — Sprint 3.
-        </div>
-      ) : null}
     </OpsShell>
   );
 }
