@@ -59,7 +59,7 @@ export default async function AdminDashboard() {
       <Section label="Очередь модерации">
         <Grid>
           <StatCard
-            href="/admin/verifications"
+            href="/admin/queue/mine"
             label="Заявки на проверке"
             value={pendingCount}
             accent={pendingCount > 0}
