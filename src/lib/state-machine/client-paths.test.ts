@@ -12,9 +12,9 @@ describe("clientNextPath", () => {
     expect(clientNextPath("paused", "active")).toBe("/main");
   });
 
-  it("deleted → / (NOT /main — must match server nextScreenFor, else redirect loop)", () => {
-    expect(clientNextPath("deleted", "active")).toBe("/");
-    expect(clientNextPath("deleted", "consent")).toBe("/");
+  it("deleted → /deleted (терминал; раньше '/' давал петлю редиректов — C4)", () => {
+    expect(clientNextPath("deleted", "active")).toBe("/deleted");
+    expect(clientNextPath("deleted", "consent")).toBe("/deleted");
   });
 
   it("onboarding → step path (V2 Sprint 8: verification переехало на /v2/verify)", () => {

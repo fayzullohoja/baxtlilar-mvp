@@ -40,9 +40,9 @@ export const CLIENT_ONBOARDING_PATHS: Record<string, string> = {
 export function clientNextPath(lifecycle: string, step: string): string {
   if (lifecycle === "blocked") return "/blocked";
   if (lifecycle === "active" || lifecycle === "paused") return "/main";
-  // Должно совпадать с server nextScreenFor: deleted → "/". Иначе deleted-юзер со
-  // step="active" уезжает на /main, гард шлёт его назад на "/" — бесконечная петля
-  // редиректов (вернувшийся после удаления пользователь застревает).
-  if (lifecycle === "deleted") return "/";
+  // Должно совпадать с server nextScreenFor: deleted → терминальный /deleted
+  // (C4). Раньше было "/", что давало бесконечную петлю редиректов у
+  // вернувшегося после удаления пользователя.
+  if (lifecycle === "deleted") return "/deleted";
   return CLIENT_ONBOARDING_PATHS[step] ?? "/";
 }

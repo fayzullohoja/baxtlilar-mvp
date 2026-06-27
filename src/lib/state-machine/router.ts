@@ -52,7 +52,10 @@ export function nextScreenFor(user: DbUser): string {
     case "paused":
       return "/main";
     case "deleted":
-      return "/";
+      // Терминальный экран (C4). Раньше "/" → LocaleIndexPage снова считал
+      // nextScreenFor(deleted)="/" → бесконечная петля для вернувшегося
+      // удалённого юзера.
+      return "/deleted";
     case "onboarding":
     default:
       return ONBOARDING_PATHS[user.onboarding_step] ?? "/";
