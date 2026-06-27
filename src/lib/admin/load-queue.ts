@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapRows } from "@/lib/db/unwrap";
 
 export type QueueCase = {
   case_id: string;
@@ -40,50 +41,73 @@ function shape(r: RawRow): QueueCase {
   };
 }
 
-const SELECT_COLS = `
-  id, user_id, state, created_at, updated_at,
-  users!verification_cases_user_id_fkey(telegram_first_name, telegram_username)
-`;
+// Без embed: native query-builder НЕ умеет `users!fk(...)` — кидает loud throw
+// (был 500 на /admin/queue/mine). Тянем связанные строки отдельными .in-запросами
+// и сшиваем в JS (см. baxtlilar-db-error-discipline).
+const SELECT_COLS = "id, user_id, state, created_at, updated_at";
 
-async function attachProfiles(rows: RawRow[]): Promise<RawRow[]> {
+async function attachRelated(rows: RawRow[]): Promise<RawRow[]> {
   if (rows.length === 0) return rows;
-  const userIds = rows.map((r) => r.user_id);
-  const { data: profiles } = await supabaseAdmin()
-    .from("user_profiles")
-    .select("user_id, display_name")
-    .in("user_id", userIds);
-  const byUser = new Map(
-    (profiles ?? []).map((p) => [p.user_id as string, p.display_name as string | null]),
+  const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
+  const [profilesRes, usersRes] = await Promise.all([
+    supabaseAdmin()
+      .from("user_profiles")
+      .select("user_id, display_name")
+      .in("user_id", userIds),
+    supabaseAdmin()
+      .from("users")
+      .select("id, telegram_first_name, telegram_username")
+      .in("id", userIds),
+  ]);
+  const displayByUser = new Map(
+    unwrapRows(profilesRes).map((p) => [
+      p.user_id as string,
+      (p.display_name as string | null) ?? null,
+    ]),
   );
-  return rows.map((r) => ({
-    ...r,
-    user_profiles: { display_name: byUser.get(r.user_id) ?? null },
-  }));
+  const userById = new Map(
+    unwrapRows(usersRes).map((u) => [u.id as string, u]),
+  );
+  return rows.map((r) => {
+    const u = userById.get(r.user_id);
+    return {
+      ...r,
+      user_profiles: { display_name: displayByUser.get(r.user_id) ?? null },
+      users: u
+        ? {
+            telegram_first_name: (u.telegram_first_name as string | null) ?? null,
+            telegram_username: (u.telegram_username as string | null) ?? null,
+          }
+        : null,
+    };
+  });
 }
 
 export async function loadMyQueue(
   adminId: string,
   limit = 50,
 ): Promise<QueueCase[]> {
-  const { data: rows } = await supabaseAdmin()
-    .from("verification_cases")
-    .select(SELECT_COLS)
-    .eq("assignee_id", adminId)
-    .neq("state", "closed")
-    .order("created_at", { ascending: true })
-    .limit(limit);
-  const withProfiles = await attachProfiles((rows ?? []) as RawRow[]);
-  return withProfiles.map(shape);
+  const rows = unwrapRows(
+    await supabaseAdmin()
+      .from("verification_cases")
+      .select(SELECT_COLS)
+      .eq("assignee_id", adminId)
+      .neq("state", "closed")
+      .order("created_at", { ascending: true })
+      .limit(limit),
+  ) as RawRow[];
+  return (await attachRelated(rows)).map(shape);
 }
 
 export async function loadUnassignedQueue(limit = 50): Promise<QueueCase[]> {
-  const { data: rows } = await supabaseAdmin()
-    .from("verification_cases")
-    .select(SELECT_COLS)
-    .is("assignee_id", null)
-    .eq("state", "new")
-    .order("created_at", { ascending: true })
-    .limit(limit);
-  const withProfiles = await attachProfiles((rows ?? []) as RawRow[]);
-  return withProfiles.map(shape);
+  const rows = unwrapRows(
+    await supabaseAdmin()
+      .from("verification_cases")
+      .select(SELECT_COLS)
+      .is("assignee_id", null)
+      .eq("state", "new")
+      .order("created_at", { ascending: true })
+      .limit(limit),
+  ) as RawRow[];
+  return (await attachRelated(rows)).map(shape);
 }
