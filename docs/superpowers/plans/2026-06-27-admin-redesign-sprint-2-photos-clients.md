@@ -2175,4 +2175,25 @@ git commit -m "docs: mark Sprint 2 complete"
 
 ## Status
 
-- [ ] Sprint 2 in-progress
+- [x] Sprint 2 COMPLETE (2026-06-27, branch `feat/admin-redesign-sprint-1`, не смержена)
+
+**Реализовано:** Phase A (photo dense table + drawer + DB reason templates),
+Phase B (clients directory + `admin_search_clients` RPC), Phase C (Photos/
+Activity/Moderation tabs). 296/296 тестов · tsc · build зелёные.
+
+**Отклонения от плана (по факту реальной схемы/кода):**
+- Поиск перенесён в RPC `admin_search_clients` (миграция 20260627110000,
+  применена на прод) — нативный query-builder НЕ умеет `.or`/`.ilike`/JOIN,
+  план бы упал в рантайме. Использует pg_trgm индексы из Sprint 1.
+- 3 колонки в плане не совпадали со схемой: `match_requests.sender_id/
+  receiver_id`, `chats.user_a/user_b`, `reports.reason_code/comment`.
+- Курсор-пагинация фото: `.gt` (план ошибочно `.lt` при ASC-порядке).
+- Таб `mine` фото убран (у фото нет claim-модели).
+- **F-120**: директория + search = super-only; карточка `/admin/clients/[id]`
+  гейтится `checkInQueueOrSuperPage` (как `/admin/verifications/[id]`).
+
+**Дополнительно к плану:** починен H-3 (студия approve self-409), и закрыты
+6 находок adversarial-ревью (1 high F-120 + 5 med). См. коммиты 7c045f0..a6c8ff5.
+
+**До merge:** ручной smoke (нужен admin-логин). Deferred → Sprint 3: ProfileTab,
+F-119 blocking-reject, moderator-scope карточки под Shadow Active, watchers/SLA.
