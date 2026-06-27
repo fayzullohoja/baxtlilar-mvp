@@ -7,7 +7,18 @@ import { Dialog } from "@/components/admin-ops/Dialog";
 import { ReasonPicker } from "@/components/admin-ops/ReasonPicker";
 import type { PassportPayload } from "@/lib/admin/passport-validation";
 
-type DecisionMode = null | "approve" | "needs_changes" | "reject_technical";
+type DecisionMode =
+  | null
+  | "approve"
+  | "needs_changes"
+  | "reject_technical"
+  | "blocking";
+
+const BLOCK_CATEGORIES: { value: "fake" | "minor" | "catfish"; label: string }[] = [
+  { value: "fake", label: "Фейковый документ" },
+  { value: "minor", label: "Несовершеннолетний" },
+  { value: "catfish", label: "Catfish — чужие фото/личность" },
+];
 
 export function DecisionPanel({
   caseId,
@@ -32,10 +43,37 @@ export function DecisionPanel({
   const [reasonText, setReasonText] = useState<string>(
     reasonTemplates[0]?.text ?? "",
   );
+  const [blockCategory, setBlockCategory] = useState<
+    "fake" | "minor" | "catfish"
+  >("fake");
+  const [blockReason, setBlockReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function submit(action: NonNullable<DecisionMode>) {
+  async function submitBlocking() {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await fetch(`/api/admin/cases/${caseId}/blocking-reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: blockReason, category: blockCategory }),
+      });
+      const d = await r.json();
+      if (!d.ok) {
+        setError(d.error ?? "unknown_error");
+        setBusy(false);
+        return;
+      }
+      router.push("/admin/queue/mine");
+      router.refresh();
+    } catch {
+      setError("network");
+      setBusy(false);
+    }
+  }
+
+  async function submit(action: "approve" | "needs_changes" | "reject_technical") {
     setBusy(true);
     setError(null);
     const body: Record<string, unknown> = {
@@ -139,9 +177,16 @@ export function DecisionPanel({
           ✕ Reject technical — можно повторить
         </Button>
 
-        <div style={{ marginTop: 12, color: ADMIN.ink500, fontSize: 12 }}>
-          Blocking-reject (fake/minor/catfish) — добавлен в Sprint 3
-          (требует second-admin подтверждения по F-119).
+        <Button
+          variant="danger"
+          onClick={() => setMode("blocking")}
+          disabled={busy}
+        >
+          ⛔ Blocking-reject — фейк / несовершеннолетний / catfish
+        </Button>
+        <div style={{ marginTop: 4, color: ADMIN.ink500, fontSize: 12 }}>
+          Перманентная блокировка + телефон в чёрный список на 10 лет.
+          Не снимается обычным разблоком.
         </div>
 
         <div style={{ marginTop: 20 }}>
@@ -205,7 +250,10 @@ export function DecisionPanel({
             </Button>
             <Button
               variant="primary"
-              onClick={() => mode && submit(mode)}
+              onClick={() =>
+                (mode === "needs_changes" || mode === "reject_technical") &&
+                submit(mode)
+              }
               disabled={busy || reasonText.length < 3}
             >
               {busy ? "Отправляем…" : "Подтвердить"}
@@ -226,6 +274,86 @@ export function DecisionPanel({
           <div style={{ fontSize: 12, color: ADMIN.ink500 }}>
             Этот текст увидит юзер. Минимум 3 символа.
           </div>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={mode === "blocking"}
+        onClose={() => !busy && setMode(null)}
+        title="⛔ Blocking-reject (необратимо)"
+        actions={
+          <>
+            <Button onClick={() => setMode(null)} disabled={busy}>
+              Отмена
+            </Button>
+            <Button
+              variant="danger"
+              onClick={submitBlocking}
+              disabled={busy || blockReason.trim().length < 3}
+            >
+              {busy ? "Блокируем…" : "Заблокировать навсегда"}
+            </Button>
+          </>
+        }
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div
+            style={{
+              padding: "10px 14px",
+              background: "#fcf0f3",
+              border: `1px solid ${ADMIN.danger}`,
+              borderRadius: 6,
+              fontSize: 12,
+              color: ADMIN.danger,
+            }}
+          >
+            Юзер будет заблокирован навсегда, телефон попадёт в чёрный список на
+            10 лет (повторная регистрация с тем же номером закрыта). Применять
+            только для фейка / несовершеннолетних / catfish.
+          </div>
+          <div>
+            <div
+              style={{
+                fontSize: 11,
+                color: ADMIN.ink500,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+                marginBottom: 6,
+              }}
+            >
+              Категория
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {BLOCK_CATEGORIES.map((c) => (
+                <label
+                  key={c.value}
+                  style={{ fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}
+                >
+                  <input
+                    type="radio"
+                    name="block-category"
+                    checked={blockCategory === c.value}
+                    onChange={() => setBlockCategory(c.value)}
+                  />
+                  {c.label}
+                </label>
+              ))}
+            </div>
+          </div>
+          <textarea
+            rows={3}
+            value={blockReason}
+            onChange={(e) => setBlockReason(e.target.value)}
+            placeholder="Причина (внутренняя, для аудита) — минимум 3 символа"
+            style={{
+              padding: 10,
+              borderRadius: 4,
+              border: `1px solid ${ADMIN.border}`,
+              fontFamily: ADMIN.fontSans,
+              fontSize: 13,
+              resize: "vertical",
+            }}
+          />
         </div>
       </Dialog>
     </div>
