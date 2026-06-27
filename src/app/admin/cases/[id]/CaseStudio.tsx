@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CaseHeader } from "@/components/admin-ops/case/CaseHeader";
 import { PassportViewer } from "@/components/admin-ops/case/PassportViewer";
@@ -14,9 +14,11 @@ import type { PassportPayload } from "@/lib/admin/passport-validation";
 export function CaseStudio({
   loadedCase,
   currentAdminId,
+  reasonTemplates,
 }: {
   loadedCase: LoadedCase;
   currentAdminId: string;
+  reasonTemplates: { code: string; text: string }[];
 }) {
   const router = useRouter();
   const initialDraft = loadedCase.draft_payload as Partial<PassportPayload>;
@@ -35,9 +37,19 @@ export function CaseStudio({
   const [currentUpdatedAt, setCurrentUpdatedAt] = useState(
     loadedCase.updated_at,
   );
+  // H-3 (round 2): токен двигается ТОЛЬКО вперёд по времени. Out-of-order ответ
+  // автосейва (медленная сеть) или поздний claim-refresh не должны откатить его
+  // на более старый instant — иначе decision-RPC снова словит stale_case 409.
+  // Сравниваем по epoch: node-pg и jsonb-RPC отдают разные текстовые форматы
+  // ("…+00" vs "…T…+00:00"), лексикографическое сравнение мис-ордерит.
+  const advanceUpdatedAt = useCallback((next: string) => {
+    setCurrentUpdatedAt((prev) =>
+      new Date(next).getTime() >= new Date(prev).getTime() ? next : prev,
+    );
+  }, []);
   useEffect(() => {
-    setCurrentUpdatedAt(loadedCase.updated_at);
-  }, [loadedCase.updated_at]);
+    advanceUpdatedAt(loadedCase.updated_at);
+  }, [loadedCase.updated_at, advanceUpdatedAt]);
 
   useEffect(() => {
     if (loadedCase.assignee_id) return;
@@ -129,7 +141,7 @@ export function CaseStudio({
         <PassportDataEntryForm
           caseId={loadedCase.case_id}
           initialPayload={initialDraft}
-          onDraftSaved={setCurrentUpdatedAt}
+          onDraftSaved={advanceUpdatedAt}
           onProceed={(payload) => {
             setEnteredPayload(payload);
             setStep(3);
@@ -152,6 +164,7 @@ export function CaseStudio({
           userId={loadedCase.user.id}
           payload={enteredPayload}
           expectedUpdatedAt={currentUpdatedAt}
+          reasonTemplates={reasonTemplates}
           onBack={() => setStep(3)}
         />
       ) : null}

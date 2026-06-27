@@ -4,57 +4,33 @@ import { useRouter } from "next/navigation";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 import { Button } from "@/components/admin-ops/Button";
 import { Dialog } from "@/components/admin-ops/Dialog";
+import { ReasonPicker } from "@/components/admin-ops/ReasonPicker";
 import type { PassportPayload } from "@/lib/admin/passport-validation";
 
 type DecisionMode = null | "approve" | "needs_changes" | "reject_technical";
-
-const REASON_TEMPLATES_RU = [
-  {
-    code: "blurry_passport",
-    text: "Скан паспорта размыт — нужен чёткий снимок",
-  },
-  {
-    code: "blurry_selfie",
-    text: "Селфи размыто — переснимите при дневном свете",
-  },
-  {
-    code: "face_not_visible",
-    text: "Лицо на селфи закрыто — снимите без головного убора",
-  },
-  {
-    code: "passport_glare",
-    text: "Блики на паспорте — снимите без вспышки",
-  },
-  {
-    code: "wrong_document",
-    text: "Прислан другой документ — требуется паспорт UZ",
-  },
-  {
-    code: "data_mismatch",
-    text: "Данные на скане не читаются — переснимите",
-  },
-];
 
 export function DecisionPanel({
   caseId,
   userId,
   payload,
   expectedUpdatedAt,
+  reasonTemplates,
   onBack,
 }: {
   caseId: string;
   userId: string;
   payload: PassportPayload;
   expectedUpdatedAt: string;
+  reasonTemplates: { code: string; text: string }[];
   onBack: () => void;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<DecisionMode>(null);
   const [reasonCode, setReasonCode] = useState<string>(
-    REASON_TEMPLATES_RU[0].code,
+    reasonTemplates[0]?.code ?? "",
   );
   const [reasonText, setReasonText] = useState<string>(
-    REASON_TEMPLATES_RU[0].text,
+    reasonTemplates[0]?.text ?? "",
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -240,41 +216,12 @@ export function DecisionPanel({
         <div
           style={{ display: "flex", flexDirection: "column", gap: 10 }}
         >
-          <select
-            style={{
-              height: 32,
-              padding: "0 10px",
-              borderRadius: 4,
-              border: `1px solid ${ADMIN.border}`,
-              fontFamily: ADMIN.fontSans,
-              fontSize: 13,
-            }}
-            value={reasonCode}
-            onChange={(e) => {
-              const code = e.target.value;
-              const tpl = REASON_TEMPLATES_RU.find((t) => t.code === code);
-              setReasonCode(code);
-              if (tpl) setReasonText(tpl.text);
-            }}
-          >
-            {REASON_TEMPLATES_RU.map((t) => (
-              <option key={t.code} value={t.code}>
-                {t.text}
-              </option>
-            ))}
-          </select>
-          <textarea
-            rows={3}
-            style={{
-              padding: 10,
-              borderRadius: 4,
-              border: `1px solid ${ADMIN.border}`,
-              fontFamily: ADMIN.fontSans,
-              fontSize: 13,
-              resize: "vertical",
-            }}
-            value={reasonText}
-            onChange={(e) => setReasonText(e.target.value)}
+          <ReasonPicker
+            templates={reasonTemplates}
+            selectedCode={reasonCode}
+            customText={reasonText}
+            onSelectCode={setReasonCode}
+            onCustomTextChange={setReasonText}
           />
           <div style={{ fontSize: 12, color: ADMIN.ink500 }}>
             Этот текст увидит юзер. Минимум 3 символа.

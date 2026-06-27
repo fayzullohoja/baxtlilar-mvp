@@ -49,6 +49,9 @@ export function PassportDataEntryForm({
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // H-3: монотонный счётчик сейвов — поздний ответ устаревшего (superseded)
+  // запроса не должен поднимать updated_at в студию и перетирать свежий.
+  const saveSeq = useRef(0);
 
   const errors = useMemo(() => validatePassportPayload(p), [p]);
   const errorByField = useMemo(() => {
@@ -71,6 +74,7 @@ export function PassportDataEntryForm({
   }, [p, caseId]);
 
   async function saveDraft(): Promise<void> {
+    const seq = ++saveSeq.current;
     setSavingState("saving");
     try {
       const r = await fetch(`/api/admin/cases/${caseId}/draft`, {
@@ -79,10 +83,12 @@ export function PassportDataEntryForm({
         body: JSON.stringify({ payload: p }),
       });
       const d = await r.json();
+      // Этот сейв уже вытеснен более поздним — игнорируем его ответ целиком.
+      if (seq !== saveSeq.current) return;
       if (d.ok && d.updated_at) onDraftSaved?.(d.updated_at as string);
       setSavingState(d.ok ? "saved" : "error");
     } catch {
-      setSavingState("error");
+      if (seq === saveSeq.current) setSavingState("error");
     }
   }
 

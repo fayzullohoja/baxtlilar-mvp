@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 import { Drawer } from "@/components/admin-ops/Drawer";
 import { Button } from "@/components/admin-ops/Button";
-import { ReasonPicker } from "./ReasonPicker";
+import { ReasonPicker } from "@/components/admin-ops/ReasonPicker";
 import type { PhotoCase } from "@/lib/admin/load-photos";
 
 export function PhotoDrawer({

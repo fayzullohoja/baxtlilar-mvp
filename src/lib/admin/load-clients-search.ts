@@ -1,6 +1,8 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { BUCKET_DOCUMENTS } from "@/lib/uploads/storage";
+import { signedDocumentUrls } from "@/lib/uploads/storage";
+import { unwrapRows } from "@/lib/db/unwrap";
+import { ageFromDate } from "@/lib/profile/schemas";
 
 export type ClientRow = {
   user_id: string;
@@ -23,20 +25,6 @@ function maskPhone(p: string): string {
   return p.slice(0, 4) + " *** " + p.slice(-4);
 }
 
-function ageFromBirthDate(bd: string | null): number | null {
-  if (!bd) return null;
-  const d = new Date(bd);
-  if (Number.isNaN(d.getTime())) return null;
-  const now = new Date();
-  let age = now.getFullYear() - d.getFullYear();
-  if (
-    now.getMonth() < d.getMonth() ||
-    (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())
-  )
-    age--;
-  return age;
-}
-
 /**
  * Поиск клиентов для /admin/clients. Матчинг живёт в RPC admin_search_clients
  * (ПИНФЛ/паспорт/@username/телефон/ФИО через pg_trgm) — она возвращает
@@ -45,6 +33,9 @@ function ageFromBirthDate(bd: string | null): number | null {
  *
  * Пустой q → последние зарегистрированные (директория показывает их по
  * умолчанию). Это намеренная верхняя граница, не пагинация — см. note в UI.
+ *
+ * RPC зависит от pg_trgm extension + индексов (миграции 100500/110000); её сбой
+ * поднимается явно, а не маскируется пустой директорией.
  */
 export async function searchClients(
   q: string,
@@ -52,10 +43,13 @@ export async function searchClients(
 ): Promise<{ rows: ClientRow[] }> {
   const sb = supabaseAdmin();
 
-  const { data: rpcData } = await sb.rpc("admin_search_clients", {
+  const { data: rpcData, error: rpcErr } = await sb.rpc("admin_search_clients", {
     p_q: q ?? "",
     p_limit: limit,
   });
+  if (rpcErr) {
+    throw new Error(`admin_search_clients failed: ${rpcErr.message}`);
+  }
   const ids = Array.isArray(rpcData) ? (rpcData as string[]) : [];
   if (ids.length === 0) return { rows: [] };
 
@@ -78,32 +72,16 @@ export async function searchClients(
       .is("superseded_at", null)
       .in("user_id", ids),
   ]);
+  const users = unwrapRows(usersRes);
+  const profiles = unwrapRows(profilesRes);
+  const idents = unwrapRows(identsRes);
 
-  const userById = new Map(
-    (usersRes.data ?? []).map((u) => [u.id as string, u]),
+  const userById = new Map(users.map((u) => [u.id as string, u]));
+  const profById = new Map(profiles.map((p) => [p.user_id as string, p]));
+  const identById = new Map(idents.map((i) => [i.user_id as string, i]));
+  const avatarUrlByPath = await signedDocumentUrls(
+    users.map((u) => u.avatar_path as string | null),
   );
-  const profById = new Map(
-    (profilesRes.data ?? []).map((p) => [p.user_id as string, p]),
-  );
-  const identById = new Map(
-    (identsRes.data ?? []).map((i) => [i.user_id as string, i]),
-  );
-
-  const avatarPaths = Array.from(
-    new Set(
-      (usersRes.data ?? [])
-        .map((u) => u.avatar_path as string | null)
-        .filter((p): p is string => !!p),
-    ),
-  );
-  const avatarUrlByPath = new Map<string, string>();
-  if (avatarPaths.length) {
-    const { data: signed } = await sb.storage
-      .from(BUCKET_DOCUMENTS)
-      .createSignedUrls(avatarPaths, 300);
-    for (const it of signed ?? [])
-      if (it.path && it.signedUrl) avatarUrlByPath.set(it.path, it.signedUrl);
-  }
 
   // Порядок ids = порядок релевантности из RPC — сохраняем его.
   const rows: ClientRow[] = [];
@@ -123,7 +101,7 @@ export async function searchClients(
       full_name: i
         ? `${i.last_name} ${i.first_name}${i.middle_name ? " " + i.middle_name : ""}`
         : null,
-      age: ageFromBirthDate(bd),
+      age: bd ? ageFromDate(bd) : null,
       city: (p?.city as string | null) ?? null,
       pinfl: (i?.pinfl as string | null) ?? null,
       passport: i ? `${i.passport_series}${i.passport_number}` : null,
@@ -133,9 +111,7 @@ export async function searchClients(
         : null,
       verification_status: u.verification_status as string,
       lifecycle_state: u.lifecycle_state as string,
-      avatar_url: avatarPath
-        ? (avatarUrlByPath.get(avatarPath) ?? null)
-        : null,
+      avatar_url: avatarPath ? (avatarUrlByPath[avatarPath] ?? null) : null,
       created_at: u.created_at as string,
     });
   }

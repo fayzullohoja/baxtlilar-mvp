@@ -1,6 +1,8 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { BUCKET_DOCUMENTS, signedPhotoUrls } from "@/lib/uploads/storage";
+import { signedDocumentUrls, signedPhotoUrls } from "@/lib/uploads/storage";
+import { unwrapRows } from "@/lib/db/unwrap";
+import { ageFromDate } from "@/lib/profile/schemas";
 
 export type PhotoCase = {
   photo_id: string;
@@ -25,24 +27,11 @@ export type PhotosFilter = "new" | "overdue";
 
 const PAGE_DEFAULT = 60;
 
-function ageFromBirthDate(bd: string | null): number | null {
-  if (!bd) return null;
-  const d = new Date(bd);
-  if (Number.isNaN(d.getTime())) return null;
-  const now = new Date();
-  let age = now.getFullYear() - d.getFullYear();
-  if (
-    now.getMonth() < d.getMonth() ||
-    (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())
-  )
-    age--;
-  return age;
-}
-
 /**
  * Очередь фото на модерацию (status under_review/uploaded) + контекст клиента
  * (имя, возраст, город, аватар) одним проходом. Запросы раздельные и сшиваются
  * в JS — query-builder не умеет embed/!inner (см. baxtlilar-db-error-discipline).
+ * DB-ошибки поднимаются через unwrapRows (иначе сбой = тихо пустая очередь).
  *
  * Курсор-пагинация по created_at ASC: следующая страница — created_at > cursor.
  */
@@ -66,8 +55,7 @@ export async function loadPhotosQueue(
   if (cursor) q = q.gt("created_at", cursor);
 
   // .limit() — терминальный вызов; +1 чтобы определить next_cursor.
-  const { data: photos } = await q.limit(limit + 1);
-  const raw = (photos ?? []) as Array<{
+  const raw = unwrapRows(await q.limit(limit + 1)) as Array<{
     id: string;
     user_id: string;
     path: string;
@@ -96,31 +84,16 @@ export async function loadPhotosQueue(
       300,
     ),
   ]);
+  const profiles = unwrapRows(profilesRes);
+  const users = unwrapRows(usersRes);
 
   const profileByUser = new Map(
-    (profilesRes.data ?? []).map((p) => [p.user_id as string, p]),
+    profiles.map((p) => [p.user_id as string, p]),
   );
-  const userById = new Map(
-    (usersRes.data ?? []).map((u) => [u.id as string, u]),
+  const userById = new Map(users.map((u) => [u.id as string, u]));
+  const avatarUrlByPath = await signedDocumentUrls(
+    users.map((u) => u.avatar_path as string | null),
   );
-
-  // Аватары лежат в приватном bucket документов (avatar = одобренное селфи) —
-  // подписываем пачкой одним round-trip'ом.
-  const avatarPaths = Array.from(
-    new Set(
-      (usersRes.data ?? [])
-        .map((u) => u.avatar_path as string | null)
-        .filter((p): p is string => !!p),
-    ),
-  );
-  const avatarUrlByPath = new Map<string, string>();
-  if (avatarPaths.length) {
-    const { data } = await sb.storage
-      .from(BUCKET_DOCUMENTS)
-      .createSignedUrls(avatarPaths, 300);
-    for (const it of data ?? [])
-      if (it.path && it.signedUrl) avatarUrlByPath.set(it.path, it.signedUrl);
-  }
 
   const out: PhotoCase[] = rows.map((r) => {
     const u = userById.get(r.user_id);
@@ -138,11 +111,9 @@ export async function loadPhotosQueue(
       client: {
         display_name: (p?.display_name as string | null) ?? null,
         telegram_first_name: (u?.telegram_first_name as string | null) ?? null,
-        age: ageFromBirthDate((p?.birth_date as string | null) ?? null),
+        age: p?.birth_date ? ageFromDate(p.birth_date as string) : null,
         city: (p?.city as string | null) ?? null,
-        avatar_url: avatarPath
-          ? (avatarUrlByPath.get(avatarPath) ?? null)
-          : null,
+        avatar_url: avatarPath ? (avatarUrlByPath[avatarPath] ?? null) : null,
         verification_status: (u?.verification_status as string) ?? "unknown",
       },
     };

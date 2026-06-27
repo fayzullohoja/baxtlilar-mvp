@@ -1,5 +1,6 @@
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/guard";
+import { requireAdmin, checkInQueueOrSuperPage } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { OpsShell } from "@/components/admin-ops/OpsShell";
 import { loadClient } from "@/lib/admin/load-client";
@@ -12,6 +13,15 @@ import { ModerationTab } from "./ModerationTab";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 
 export const dynamic = "force-dynamic";
+
+function ipFromHeaders(h: Headers): string | null {
+  return (
+    h.get("x-envoy-external-address") ??
+    h.get("x-real-ip") ??
+    h.get("x-forwarded-for")?.split(",").pop()?.trim() ??
+    null
+  );
+}
 
 const VALID_TABS = new Set([
   "identity",
@@ -28,14 +38,22 @@ export default async function Page({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string }>;
 }) {
-  // NOTE (F-120): карточка доступна любому админу. Browse-anyone закрыт на
-  // уровне директории (/admin/clients = super-only) — модератор попадает сюда
-  // только из своей очереди/фото. Полноценный moderator-scope карточки ждёт
-  // редизайна модели scope под Shadow Active (где queued-юзер уже lifecycle=active).
+  // F-120: карточка раскрывает паспортную PII (ПИНФЛ/паспорт/адрес). Модератор
+  // видит её ТОЛЬКО для юзера в своей очереди верификации; super — всегда. Тот же
+  // чокпоинт, что у /admin/verifications/[id] — закрывает и PII-утечку через
+  // ссылки из фото-очереди, и UUID existence-oracle (200+PII vs 404).
   const session = await requireAdmin();
   const { id } = await params;
   const sp = await searchParams;
   const tab = VALID_TABS.has(sp.tab ?? "") ? (sp.tab as string) : "identity";
+
+  const scope = await checkInQueueOrSuperPage(
+    session,
+    id,
+    "user_view",
+    ipFromHeaders(await headers()),
+  );
+  if ("hide" in scope) notFound();
 
   const c = await loadClient(id);
   if (!c) notFound();
