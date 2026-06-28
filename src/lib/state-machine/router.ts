@@ -32,6 +32,11 @@ export const ONBOARDING_PATHS: Record<OnboardingStep, string> = {
   profile_basic: "/v2/anketa/basic",
   // V2 ext 2026-06-28: appearance (рост/вес/языки) между basic и family.
   profile_appearance: "/v2/anketa/appearance",
+  // V3 MVP 2026-06-29: место рождения, self, семейная модель, partner-extended.
+  profile_birth_place: "/v2/anketa/birth-place",
+  profile_self: "/v2/anketa/self",
+  profile_family_model: "/v2/anketa/family-model",
+  profile_partner_extended: "/v2/anketa/partner-extended",
   profile_family: "/v2/anketa/family",
   profile_values: "/v2/anketa/values",
   // V2 ext 2026-06-28: marriage (формат проживания) между values и looking-for.

@@ -29,10 +29,15 @@ export type OnboardingStep =
   | "profile_basic"
   // V2 extension (2026-06-28): демография (рост/вес/языки) после basic.
   | "profile_appearance"
+  // V3 MVP (2026-06-29) — новые шаги анкеты:
+  | "profile_birth_place" // Экран 2 — место рождения
+  | "profile_self" // Экран 3 — bio + education + activity_field (Sprint 2)
   | "profile_family"
   | "profile_values"
   // V2 extension (2026-06-28): формат проживания после брака — после ценностей.
   | "profile_marriage"
+  | "profile_family_model" // Экран 7 (Sprint 2)
+  | "profile_partner_extended" // Экран 8 расширение (Sprint 2)
   | "profile_looking_for"
   | "profile_photos"
   | "profile_preview"
@@ -95,13 +100,20 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   moderation_pending: ["needs_changes", "verification_rejected", "profile_basic"],
   needs_changes: ["doc_upload", "selfie_upload", "moderation_pending"],
   verification_rejected: ["doc_upload"],
-  // V2 ext 2026-06-28: между basic и family — profile_appearance (рост/вес/языки).
-  profile_basic: ["profile_appearance"],
-  profile_appearance: ["profile_family"],
+  // V3 MVP 2026-06-29: basic → birth_place → appearance → self → family → values
+  //   → family_model → marriage → partner_extended → looking_for → photos.
+  // В Sprint 1 реально работает basic → birth_place → self (заглушка). Остальные
+  // переходы оставлены для Sprint 2.
+  profile_basic: ["profile_birth_place", "profile_appearance"],
+  profile_birth_place: ["profile_appearance", "profile_self"],
+  profile_appearance: ["profile_self", "profile_family"],
+  profile_self: ["profile_family"],
   profile_family: ["profile_values"],
   // V2 ext 2026-06-28: между values и looking_for — profile_marriage (формат проживания).
-  profile_values: ["profile_marriage"],
-  profile_marriage: ["profile_looking_for"],
+  profile_values: ["profile_family_model", "profile_marriage"],
+  profile_family_model: ["profile_marriage"],
+  profile_marriage: ["profile_partner_extended", "profile_looking_for"],
+  profile_partner_extended: ["profile_looking_for"],
   profile_looking_for: ["profile_photos"],
   profile_photos: ["profile_preview"],
   // V2 ext: preview позволяет вернуться в любой anketa-шаг (для правок).
