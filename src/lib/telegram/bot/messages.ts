@@ -32,17 +32,25 @@ export const M = {
 
   pd_consent_ask: {
     ru:
-      "Чтобы продолжить, нужно согласие на обработку персональных данных " +
-      `(имя, телефон, анкета) и на правила сообщества.\n\n` +
-      `Условия: ${APP_URL}/ru/legal/terms\n` +
-      `Политика: ${APP_URL}/ru/legal/privacy\n` +
-      `Правила: ${APP_URL}/ru/legal/rules`,
+      "📜 Оферта Baxtlilar\n\n" +
+      "Прежде чем продолжить — согласие с условиями платформы: оферта, " +
+      "обработка персональных данных (имя, телефон, анкета), правила сообщества.\n\n" +
+      `• Договор оферты: ${APP_URL}/ru/legal/offer\n` +
+      `• Условия использования: ${APP_URL}/ru/legal/terms\n` +
+      `• Политика конфиденциальности: ${APP_URL}/ru/legal/privacy\n` +
+      `• Правила сообщества: ${APP_URL}/ru/legal/rules\n\n` +
+      "После согласия попросим номер телефона. Биометрию для верификации " +
+      "запросим отдельно — это отдельное согласие на следующем шаге.",
     uz:
-      "Davom etish uchun shaxsiy maʼlumotlarni qayta ishlashga (ism, telefon, " +
-      `anketa) va hamjamiyat qoidalariga rozilik kerak.\n\n` +
-      `Shartlar: ${APP_URL}/uz/legal/terms\n` +
-      `Maxfiylik: ${APP_URL}/uz/legal/privacy\n` +
-      `Qoidalar: ${APP_URL}/uz/legal/rules`,
+      "📜 Baxtlilar oferta\n\n" +
+      "Davom etishdan oldin platforma shartlariga rozilik: oferta, shaxsiy " +
+      "maʼlumotlarni qayta ishlash (ism, telefon, anketa), hamjamiyat qoidalari.\n\n" +
+      `• Oferta shartnomasi: ${APP_URL}/uz/legal/offer\n` +
+      `• Foydalanish shartlari: ${APP_URL}/uz/legal/terms\n` +
+      `• Maxfiylik siyosati: ${APP_URL}/uz/legal/privacy\n` +
+      `• Hamjamiyat qoidalari: ${APP_URL}/uz/legal/rules\n\n` +
+      "Rozilikdan keyin telefon raqamingizni soʻraymiz. Biometrik tasdiqlash " +
+      "alohida soʻraladi — bu keyingi qadamda alohida rozilik.",
   },
   pd_consent_yes: { ru: "✅ Согласен", uz: "✅ Roziman" },
   pd_consent_no: { ru: "❌ Отказаться", uz: "❌ Rad etish" },

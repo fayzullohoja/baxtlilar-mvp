@@ -66,10 +66,12 @@ export type QuizCompletion = "not_started" | "in_progress" | "completed";
  * Разрешённые переходы onboarding_step (MVP-порядок: телефон → паспорт → селфи → модерация).
  */
 export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
-  // Бот-регистрация (актуальный путь):
-  bot_language: ["bot_contact"],
-  bot_contact: ["bot_consent_pd"],
-  bot_consent_pd: ["bot_consent_biometric"],
+  // Бот-регистрация. V2 ext 2026-06-28 (round 2): порядок перестроен —
+  // сначала оферта/правила (до передачи телефона), потом телефон, потом
+  // отдельно биометрия. Источник: продакт-фидбэк учредителя.
+  bot_language: ["bot_consent_pd"],
+  bot_consent_pd: ["bot_contact"],
+  bot_contact: ["bot_consent_biometric"],
   // V2 ext 2026-06-28: после биометрики идёт welcome-серия (3 экрана) → verify.
   // Hard-cutover (не soft): новые юзеры обязательно проходят welcome. Существующие
   // юзеры, уже в мини-аппе на verification_intro+, не задеваются — их step не

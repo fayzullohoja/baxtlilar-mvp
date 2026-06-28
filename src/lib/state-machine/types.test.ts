@@ -36,10 +36,12 @@ describe("ALLOWED_TRANSITIONS", () => {
     }
   });
 
-  it("bot-flow (2026-06-19 + welcome ext 2026-06-28): язык → контакт → ПД → биометрия → welcome → verification_intro → doc_upload", () => {
-    expect(ALLOWED_TRANSITIONS.bot_language).toContain("bot_contact");
-    expect(ALLOWED_TRANSITIONS.bot_contact).toContain("bot_consent_pd");
-    expect(ALLOWED_TRANSITIONS.bot_consent_pd).toContain("bot_consent_biometric");
+  it("bot-flow (2026-06-28 round 2): язык → оферта → контакт → биометрия → welcome → verification_intro → doc_upload", () => {
+    // V2 ext 2026-06-28 round 2: оферта/правила ПЕРЕД телефоном (продакт-фидбэк
+    // учредителя). Раньше было язык → телефон → оферта → биометрия.
+    expect(ALLOWED_TRANSITIONS.bot_language).toEqual(["bot_consent_pd"]);
+    expect(ALLOWED_TRANSITIONS.bot_consent_pd).toEqual(["bot_contact"]);
+    expect(ALLOWED_TRANSITIONS.bot_contact).toEqual(["bot_consent_biometric"]);
     // V2 ext 2026-06-28: после биометрии идёт welcome серия (welcome_mission)
     // hard-cutover (без legacy fallback на verification_intro).
     expect(ALLOWED_TRANSITIONS.bot_consent_biometric).toEqual(["welcome_mission"]);

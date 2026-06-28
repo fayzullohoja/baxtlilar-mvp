@@ -345,9 +345,10 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
       const sb = supabaseAdmin();
       const { error } = await sb.from("users").update({ language: lang }).eq("id", user.id);
       if (error) throw new Error(error.message);
+      // V2 ext 2026-06-28 round 2: после языка → оферта (ДО передачи телефона).
       const r = await tryTransition(
         user.id,
-        { onboarding_step: "bot_contact", language: lang },
+        { onboarding_step: "bot_consent_pd", language: lang },
         "bot:language_picked",
         { kind: "user", id: user.id },
       );
@@ -356,7 +357,7 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
         return;
       }
       await answerCallbackQuery(cb.id);
-      await sendMessage(chatId, pick(M.contact_ask, lang), contactKeyboard(lang));
+      await sendMessage(chatId, pick(M.pd_consent_ask, lang), pdConsentKeyboard(lang));
       return;
     }
 
@@ -366,17 +367,18 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
         await sendMessage(chatId, pick(M.declined_pd, user.language));
         return;
       }
-      // Sprint-a: добавили consent_type 'rules' (правила сообщества) — теперь
-      // single PD-кнопка покрывает 4 документа: terms+privacy+pd+rules.
+      // V2 ext 2026-06-28 round 2: оферта объединяет 4 документа —
+      // terms+privacy+offer+rules (биометрия будет отдельным согласием на шаге 4).
       await recordConsent(
         user.id,
-        ["terms", "privacy", "pd", "rules"],
+        ["terms", "privacy", "offer", "pd", "rules"],
         pick(M.pd_consent_ask, user.language),
         user.language,
       );
+      // V2 ext 2026-06-28 round 2: после оферты → телефон (а не биометрия).
       const r = await tryTransition(
         user.id,
-        { onboarding_step: "bot_consent_biometric" },
+        { onboarding_step: "bot_contact" },
         "bot:pd_accepted",
         { kind: "user", id: user.id },
       );
@@ -387,8 +389,8 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
       await answerCallbackQuery(cb.id);
       await sendMessage(
         chatId,
-        pick(M.bio_consent_ask, user.language),
-        bioConsentKeyboard(user.language),
+        pick(M.contact_ask, user.language),
+        contactKeyboard(user.language),
       );
       return;
     }
@@ -405,14 +407,15 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
         pick(M.bio_consent_ask, user.language),
         user.language,
       );
-      // bot_consent_biometric → verification_intro (мини-аппа берёт дальше).
-      // MAJOR #1: промежуточный intro-экран перед загрузкой паспорта снижает
-      // drop-off. С verification_intro по кнопке юзер переходит на doc_upload.
+      // V2 ext 2026-06-28 hard-cutover: bot_consent_biometric → welcome_mission
+      // (3 экрана welcome перед verification_intro). Раньше шёл сразу в
+      // verification_intro — это сломалось вместе с моим hard-cutover state-machine
+      // фиксом (ALLOWED_TRANSITIONS.bot_consent_biometric теперь = ["welcome_mission"]).
       // verification_status пишем сразу: phone_verified (раз есть phone_number).
       await transition(
         user.id,
         {
-          onboarding_step: "verification_intro",
+          onboarding_step: "welcome_mission",
           verification_status: "phone_verified",
         },
         "bot:bio_accepted",
@@ -514,9 +517,11 @@ async function handleContact(msg: TgMessage): Promise<void> {
     await sendMessage(chatId, pick(M.error_generic, user.language));
     return;
   }
+  // V2 ext 2026-06-28 round 2: после телефона → биометрия (а не оферта,
+  // оферту уже приняли до телефона).
   const r = await tryTransition(
     user.id,
-    { onboarding_step: "bot_consent_pd" },
+    { onboarding_step: "bot_consent_biometric" },
     "bot:phone_set",
     { kind: "user", id: user.id },
   );
@@ -524,7 +529,11 @@ async function handleContact(msg: TgMessage): Promise<void> {
     await sendMessage(chatId, pick(M.error_generic, user.language));
     return;
   }
-  await sendMessage(chatId, pick(M.pd_consent_ask, user.language), pdConsentKeyboard(user.language));
+  await sendMessage(
+    chatId,
+    pick(M.bio_consent_ask, user.language),
+    bioConsentKeyboard(user.language),
+  );
 }
 
 // =====================================================================
