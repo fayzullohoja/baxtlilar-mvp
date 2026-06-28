@@ -26,12 +26,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .upsert({ user_id: user.id, ...parsed.data }, { onConflict: "user_id" });
   if (saveErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
+  // V2 ext 2026-06-28: после basic идёт profile_appearance (рост/вес/языки),
+  // а не сразу family. Это новый шаг — см. ALLOWED_TRANSITIONS.
   const tr = await tryTransition(
     user.id,
-    { onboarding_step: "profile_family", profile_completion: "in_progress" },
+    { onboarding_step: "profile_appearance", profile_completion: "in_progress" },
     "anketa: basic saved",
     { kind: "user", id: user.id },
   );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_family });
+  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_appearance });
 }

@@ -59,14 +59,27 @@ describe("containsContact", () => {
 });
 
 describe("basicSchema", () => {
+  // V2 ext 2026-06-28: basic теперь включает citizenship + country_of_residence + region.
+  // region обязателен только для UZ (country_of_residence='UZ' + region из UZ_REGIONS).
   const ok = {
     display_name: "Алишер",
     gender: "m",
     birth_date: "1994-05-10",
+    citizenship: "UZ",
+    country_of_residence: "UZ",
+    region: "tashkent_city",
     city: "toshkent",
     bio: "Спокойный, ценю семью и честность, люблю готовить и путешествовать",
   };
   it("валидная анкета", () => expect(basicSchema.safeParse(ok).success).toBe(true));
+  it("UZ-проживание без region → ошибка", () =>
+    expect(basicSchema.safeParse({ ...ok, region: undefined }).success).toBe(false));
+  it("UZ-проживание с region вне UZ_REGIONS → ошибка", () =>
+    expect(basicSchema.safeParse({ ...ok, region: "Москва" }).success).toBe(false));
+  it("не-UZ проживание без region → ок (опционально)", () =>
+    expect(
+      basicSchema.safeParse({ ...ok, country_of_residence: "RU", region: undefined }).success,
+    ).toBe(true));
   it("город вне справочника → ошибка", () =>
     expect(basicSchema.safeParse({ ...ok, city: "Ташкент" }).success).toBe(false));
   it("несовершеннолетний → ошибка", () =>
@@ -80,16 +93,32 @@ describe("basicSchema", () => {
 });
 
 describe("valuesSchema", () => {
-  const base = { religion: "islam", religion_importance: 5, education: "higher", values: ["family"] };
+  // V2 ext 2026-06-28: убран religion_importance 1-5, добавлен religion_practice
+  // (required) + religion_partner_match (optional).
+  const base = {
+    religion: "islam",
+    religion_practice: "striving",
+    education: "higher",
+    values: ["family"],
+  };
   it("1-3 ценности ок", () => expect(valuesSchema.safeParse(base).success).toBe(true));
+  it("с religion_partner_match ок", () =>
+    expect(
+      valuesSchema.safeParse({
+        ...base,
+        religion_partner_match: "same_religion_same_practice",
+      }).success,
+    ).toBe(true));
   it("4 ценности → ошибка", () =>
     expect(
       valuesSchema.safeParse({ ...base, values: ["family", "faith", "health", "growth"] }).success,
     ).toBe(false));
   it("0 ценностей → ошибка", () =>
     expect(valuesSchema.safeParse({ ...base, values: [] }).success).toBe(false));
-  it("importance вне 1-5 → ошибка", () =>
-    expect(valuesSchema.safeParse({ ...base, religion_importance: 7 }).success).toBe(false));
+  it("religion_practice вне enum → ошибка", () =>
+    expect(valuesSchema.safeParse({ ...base, religion_practice: "very_observant" }).success).toBe(false));
+  it("religion_practice отсутствует → ошибка", () =>
+    expect(valuesSchema.safeParse({ ...base, religion_practice: undefined }).success).toBe(false));
 });
 
 describe("lookingForSchema", () => {

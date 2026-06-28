@@ -11,6 +11,10 @@ export const CLIENT_ONBOARDING_PATHS: Record<string, string> = {
   consent: "/open-in-telegram",
   phone_input: "/open-in-telegram",
   otp_pending: "/open-in-telegram",
+  // V2 ext 2026-06-28: welcome серия (3 экрана) перед verify.
+  welcome_mission: "/v2/welcome",
+  welcome_safety: "/v2/welcome/safety",
+  welcome_rules: "/v2/welcome/rules",
   // Mini-app (V2 Sprint 8: verification переехало на /v2/verify):
   verification_intro: "/v2/verify/intro",
   doc_upload: "/v2/verify/doc",
@@ -20,8 +24,11 @@ export const CLIENT_ONBOARDING_PATHS: Record<string, string> = {
   verification_rejected: "/onboarding/rejected",
   // V2 Sprint 9/10: вся анкета переехала на /v2/anketa.
   profile_basic: "/v2/anketa/basic",
+  // V2 ext 2026-06-28: appearance + marriage между basic+family и values+looking_for.
+  profile_appearance: "/v2/anketa/appearance",
   profile_family: "/v2/anketa/family",
   profile_values: "/v2/anketa/values",
+  profile_marriage: "/v2/anketa/marriage",
   profile_looking_for: "/v2/anketa/looking-for",
   profile_photos: "/v2/anketa/photos",
   profile_preview: "/v2/anketa/preview",
