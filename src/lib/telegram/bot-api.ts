@@ -78,3 +78,26 @@ export function editMessageReplyMarkup(
   if (replyMarkup) payload.reply_markup = replyMarkup;
   return call("editMessageReplyMarkup", payload);
 }
+
+/**
+ * sendDocument — отправить файл-вложение. Используется для legal PDF
+ * (оферта, политика, правила, согласие на ПД) перед запросом согласия.
+ *
+ * `document` принимает либо публичный URL (Telegram сам скачает и закеширует
+ * по file_id со 2-го раза), либо ранее сохранённый file_id. Мы передаём URL —
+ * `${APP_URL}/legal/<slug>.pdf` (файлы в /public/legal/).
+ *
+ * Caption опционально показывается под файлом (макс 1024 симв).
+ */
+export function sendDocument(
+  chatId: number,
+  documentUrl: string,
+  caption?: string,
+): Promise<boolean> {
+  const payload: Record<string, unknown> = {
+    chat_id: chatId,
+    document: documentUrl,
+  };
+  if (caption) payload.caption = caption;
+  return call("sendDocument", payload);
+}

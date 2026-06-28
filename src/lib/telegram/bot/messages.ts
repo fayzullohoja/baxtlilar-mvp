@@ -32,26 +32,59 @@ export const M = {
 
   pd_consent_ask: {
     ru:
-      "📜 Оферта Baxtlilar\n\n" +
-      "Прежде чем продолжить — согласие с условиями платформы: оферта, " +
-      "обработка персональных данных (имя, телефон, анкета), правила сообщества.\n\n" +
-      `• Договор оферты: ${APP_URL}/ru/legal/offer\n` +
-      `• Условия использования: ${APP_URL}/ru/legal/terms\n` +
-      `• Политика конфиденциальности: ${APP_URL}/ru/legal/privacy\n` +
-      `• Правила сообщества: ${APP_URL}/ru/legal/rules\n\n` +
+      "📜 Документы Baxtlilar\n\n" +
+      "Выше — 4 PDF-файла с условиями платформы. Ознакомься и согласись:\n\n" +
+      "1. Пользовательское соглашение (оферта)\n" +
+      "2. Политика конфиденциальности\n" +
+      "3. Правила платформы\n" +
+      "4. Согласие на обработку персональных данных\n\n" +
       "После согласия попросим номер телефона. Биометрию для верификации " +
       "запросим отдельно — это отдельное согласие на следующем шаге.",
     uz:
-      "📜 Baxtlilar oferta\n\n" +
-      "Davom etishdan oldin platforma shartlariga rozilik: oferta, shaxsiy " +
-      "maʼlumotlarni qayta ishlash (ism, telefon, anketa), hamjamiyat qoidalari.\n\n" +
-      `• Oferta shartnomasi: ${APP_URL}/uz/legal/offer\n` +
-      `• Foydalanish shartlari: ${APP_URL}/uz/legal/terms\n` +
-      `• Maxfiylik siyosati: ${APP_URL}/uz/legal/privacy\n` +
-      `• Hamjamiyat qoidalari: ${APP_URL}/uz/legal/rules\n\n` +
+      "📜 Baxtlilar hujjatlari\n\n" +
+      "Yuqorida — platforma shartlari bilan 4 ta PDF-fayl. Tanishib chiqing va rozilik bering:\n\n" +
+      "1. Foydalanuvchi shartnomasi (oferta)\n" +
+      "2. Maxfiylik siyosati\n" +
+      "3. Platforma qoidalari\n" +
+      "4. Shaxsiy maʼlumotlarni qayta ishlashga rozilik\n\n" +
       "Rozilikdan keyin telefon raqamingizni soʻraymiz. Biometrik tasdiqlash " +
       "alohida soʻraladi — bu keyingi qadamda alohida rozilik.",
   },
+  /**
+   * V2 ext 2026-06-28 — 4 legal PDF, отправляются как sendDocument
+   * перед pd_consent_ask. Caption-и короткие, чтобы лента бота не была
+   * перегружена текстом.
+   */
+  legal_pdfs: [
+    {
+      slug: "user-agreement",
+      caption: {
+        ru: "1/4 · Пользовательское соглашение (оферта)",
+        uz: "1/4 · Foydalanuvchi shartnomasi (oferta)",
+      },
+    },
+    {
+      slug: "privacy",
+      caption: {
+        ru: "2/4 · Политика конфиденциальности",
+        uz: "2/4 · Maxfiylik siyosati",
+      },
+    },
+    {
+      slug: "rules",
+      caption: {
+        ru: "3/4 · Правила платформы",
+        uz: "3/4 · Platforma qoidalari",
+      },
+    },
+    {
+      slug: "pd-consent",
+      caption: {
+        ru: "4/4 · Согласие на обработку персональных данных",
+        uz: "4/4 · Shaxsiy maʼlumotlarni qayta ishlashga rozilik",
+      },
+    },
+  ],
   pd_consent_yes: { ru: "✅ Согласен", uz: "✅ Roziman" },
   pd_consent_no: { ru: "❌ Отказаться", uz: "❌ Rad etish" },
 
