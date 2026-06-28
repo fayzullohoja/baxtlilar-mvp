@@ -59,8 +59,9 @@ describe("containsContact", () => {
 });
 
 describe("basicSchema", () => {
-  // V2 ext 2026-06-28: basic теперь включает citizenship + country_of_residence + region.
-  // region обязателен только для UZ (country_of_residence='UZ' + region из UZ_REGIONS).
+  // V3 Sprint 3 round 2 (2026-06-29): убраны city + bio (city дублировал region;
+  // bio переехал на Экран 3 Self). basic = display_name + gender + birth_date +
+  // citizenship + country_of_residence + region (UZ обязательно).
   const ok = {
     display_name: "Алишер",
     gender: "m",
@@ -68,8 +69,6 @@ describe("basicSchema", () => {
     citizenship: "UZ",
     country_of_residence: "UZ",
     region: "tashkent_city",
-    city: "toshkent",
-    bio: "Спокойный, ценю семью и честность, люблю готовить и путешествовать",
   };
   it("валидная анкета", () => expect(basicSchema.safeParse(ok).success).toBe(true));
   it("UZ-проживание без region → ошибка", () =>
@@ -80,16 +79,10 @@ describe("basicSchema", () => {
     expect(
       basicSchema.safeParse({ ...ok, country_of_residence: "RU", region: undefined }).success,
     ).toBe(true));
-  it("город вне справочника → ошибка", () =>
-    expect(basicSchema.safeParse({ ...ok, city: "Ташкент" }).success).toBe(false));
   it("несовершеннолетний → ошибка", () =>
     expect(basicSchema.safeParse({ ...ok, birth_date: "2015-01-01" }).success).toBe(false));
-  it("bio с телефоном → ошибка", () =>
-    expect(basicSchema.safeParse({ ...ok, bio: "звони 998901234567 хороший человек тут" }).success).toBe(
-      false,
-    ));
-  it("короткий bio → ошибка", () =>
-    expect(basicSchema.safeParse({ ...ok, bio: "привет" }).success).toBe(false));
+  it("display_name с контактом → ошибка", () =>
+    expect(basicSchema.safeParse({ ...ok, display_name: "@ali_2024" }).success).toBe(false));
 });
 
 describe("valuesSchema", () => {
