@@ -28,17 +28,40 @@ export function InterestActions({ candidateId, candidateFirstName }: Props) {
   const router = useRouter();
   const [skipping, startSkip] = useTransition();
   const [modalOpen, setModalOpen] = useState(false);
+  const [limitHit, setLimitHit] = useState(false);
 
   function skip() {
-    if (skipping) return;
+    if (skipping || limitHit) return;
     startSkip(async () => {
       const res = await fetch("/api/feed/skip", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ target_id: candidateId }),
       });
-      if (res.ok) router.refresh();
+      if (res.ok) {
+        router.refresh();
+        return;
+      }
+      // D1: дневной лимит пропусков исчерпан — не молчим, а объясняем.
+      if (res.status === 429) setLimitHit(true);
     });
+  }
+
+  if (limitHit) {
+    return (
+      <p
+        style={{
+          fontSize: "14px",
+          lineHeight: 1.5,
+          textAlign: "center",
+          color: "var(--color-v2-ink-300)",
+          fontFamily: "var(--font-v2-body)",
+        }}
+      >
+        На сегодня достаточно. Мы не показываем кого попало — загляни завтра,
+        подберём новых.
+      </p>
+    );
   }
 
   return (
