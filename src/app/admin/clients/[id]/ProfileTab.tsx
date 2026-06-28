@@ -7,12 +7,11 @@ import {
   labelOf,
   MARITAL_STATUS,
   HAS_CHILDREN,
-  CHILDREN_PLAN,
+  FUTURE_CHILDREN_PLAN,
   RELIGION,
-  RELIGION_IMPORTANCE,
-  LIFE_VALUES,
+  RELIGION_PRACTICE,
+  LIFE_VALUES_V3,
   EDUCATION,
-  EMPLOYMENT,
   GEO_PREFERENCE,
   GENDER,
 } from "@/lib/profile/options";
@@ -24,12 +23,11 @@ type Profile = {
   bio: string | null;
   marital_status: string | null;
   has_children: string | null;
-  children_plan: string | null;
+  future_children_plan: string | null;
   religion: string | null;
-  religion_importance: string | null;
-  values: string[] | null;
+  religion_practice: string | null;
+  top_life_values: string[] | null;
   education: string | null;
-  employment: string | null;
   looking_for_gender: string | null;
   partner_age_min: number | null;
   partner_age_max: number | null;
@@ -43,7 +41,7 @@ export async function ProfileTab({ userId }: { userId: string }) {
   const { data } = await supabaseAdmin()
     .from("user_profiles")
     .select(
-      "display_name, gender, city, bio, marital_status, has_children, children_plan, religion, religion_importance, values, education, employment, looking_for_gender, partner_age_min, partner_age_max, geo_preference, languages, status, published_at",
+      "display_name, gender, city, bio, marital_status, has_children, future_children_plan, religion, religion_practice, top_life_values, education, looking_for_gender, partner_age_min, partner_age_max, geo_preference, languages, status, published_at",
     )
     .eq("user_id", userId)
     .maybeSingle();
@@ -120,14 +118,13 @@ export async function ProfileTab({ userId }: { userId: string }) {
         <Field label="Город" value={p.city ? cityLabel(p.city, "ru") : "—"} />
         <Field label="Семейный статус" value={lf(MARITAL_STATUS, p.marital_status)} />
         <Field label="Дети" value={lf(HAS_CHILDREN, p.has_children)} />
-        <Field label="Планы на детей" value={lf(CHILDREN_PLAN, p.children_plan)} />
+        <Field label="Планы на детей" value={lf(FUTURE_CHILDREN_PLAN, p.future_children_plan)} />
         <Field label="Религия" value={lf(RELIGION, p.religion)} />
         <Field
-          label="Важность религии"
-          value={lf(RELIGION_IMPORTANCE, p.religion_importance)}
+          label="Религиозная практика"
+          value={lf(RELIGION_PRACTICE, p.religion_practice)}
         />
         <Field label="Образование" value={lf(EDUCATION, p.education)} />
-        <Field label="Занятость" value={lf(EMPLOYMENT, p.employment)} />
         <Field
           label="Ищет"
           value={
@@ -160,8 +157,8 @@ export async function ProfileTab({ userId }: { userId: string }) {
           Ценности
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {p.values?.length ? (
-            p.values.map((v) => (
+          {p.top_life_values?.length ? (
+            p.top_life_values.map((v) => (
               <span
                 key={v}
                 style={{
@@ -173,7 +170,7 @@ export async function ProfileTab({ userId }: { userId: string }) {
                   color: ADMIN.ink700,
                 }}
               >
-                {labelOf(LIFE_VALUES, v, "ru")}
+                {labelOf(LIFE_VALUES_V3, v, "ru")}
               </span>
             ))
           ) : (

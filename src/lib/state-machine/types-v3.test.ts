@@ -30,10 +30,14 @@ describe("V3 anketa transitions (Sprint 1)", () => {
     expect(ALLOWED_TRANSITIONS.profile_marriage).toContain("profile_partner_extended");
   });
 
-  it("profile_partner_extended → profile_looking_for", () => {
+  it("profile_partner_extended → profile_privacy (Sprint 3)", () => {
     expect(ALLOWED_TRANSITIONS.profile_partner_extended).toContain(
-      "profile_looking_for",
+      "profile_privacy",
     );
+  });
+
+  it("profile_privacy → profile_photos", () => {
+    expect(ALLOWED_TRANSITIONS.profile_privacy).toContain("profile_photos");
   });
 
   it("forbid profile_basic → profile_self напрямую (должен пройти через birth_place)", () => {

@@ -5,15 +5,14 @@ function profile(overrides: Partial<ProfileForMatch> = {}): ProfileForMatch {
   return {
     display_name: "Тест",
     city: "tashkent",
-    values: [],
+    top_life_values: [],
     birth_date: "1995-01-01",
     marital_status: "never",
     has_children: "no",
-    children_plan: "open",
+    future_children_plan: "with_partner_decide",
     religion: "islam",
-    religion_importance: 3,
+    religion_practice: "striving",
     education: "higher",
-    employment: "full",
     bio: "тест",
     partner_age_min: 25,
     partner_age_max: 35,
@@ -24,44 +23,44 @@ function profile(overrides: Partial<ProfileForMatch> = {}): ProfileForMatch {
 }
 
 describe("generateMatchStory — reasons (positive overlap)", () => {
-  it("2+ общих values → reason про ключевые ценности", () => {
-    const v = profile({ values: ["family", "growth", "honesty"] });
-    const c = profile({ values: ["family", "growth", "freedom"] });
+  it("2+ общих top_life_values → reason про ключевые ценности", () => {
+    const v = profile({ top_life_values: ["family", "education", "honesty"] });
+    const c = profile({ top_life_values: ["family", "education", "independence"] });
     const story = generateMatchStory(v, c);
     expect(story.reasons[0]).toMatch(/совпадают ключевые ценности/i);
   });
 
   it("1 общая value → reason про одну ценность в singular tone", () => {
-    const v = profile({ values: ["family", "career"] });
-    const c = profile({ values: ["family", "freedom"] });
+    const v = profile({ top_life_values: ["family", "career"] });
+    const c = profile({ top_life_values: ["family", "independence"] });
     const story = generateMatchStory(v, c);
     expect(story.reasons[0]).toMatch(/вас обоих волнует одно/i);
   });
 
-  it("совпавшая религия + близкая важность (≤1) → reason про вероисповедание", () => {
-    const v = profile({ religion: "islam", religion_importance: 4 });
-    const c = profile({ religion: "islam", religion_importance: 5, values: [] });
+  it("совпавшая религия + близкая практика (gap ≤1) → reason про вероисповедание", () => {
+    const v = profile({ religion: "islam", religion_practice: "striving" });
+    const c = profile({ religion: "islam", religion_practice: "observant", top_life_values: [] });
     const story = generateMatchStory(v, c);
     expect(story.reasons.some((r) => r.includes("вероисповеданию"))).toBe(true);
   });
 
-  it("ИСЛАМ + 'na' importance у одной стороны → reason всё равно даётся (impGap=null)", () => {
-    const v = profile({ religion: "islam", religion_importance: null });
-    const c = profile({ religion: "islam", religion_importance: 5, values: [] });
+  it("ИСЛАМ + null practice у одной стороны → reason всё равно даётся", () => {
+    const v = profile({ religion: "islam", religion_practice: null });
+    const c = profile({ religion: "islam", religion_practice: "observant", top_life_values: [] });
     const story = generateMatchStory(v, c);
     expect(story.reasons.some((r) => r.includes("вероисповеданию"))).toBe(true);
   });
 
-  it("оба хотят детей (want/open) → reason про детей", () => {
-    const v = profile({ children_plan: "want", values: [] });
-    const c = profile({ children_plan: "open", values: [] });
+  it("оба хотят детей (yes_soon/yes_later) → reason про детей", () => {
+    const v = profile({ future_children_plan: "yes_soon", top_life_values: [] });
+    const c = profile({ future_children_plan: "yes_later", top_life_values: [] });
     const story = generateMatchStory(v, c);
     expect(story.reasons.some((r) => r.includes("видите будущее с детьми"))).toBe(true);
   });
 
-  it("оба НЕ хотят детей (have_no_more) → reason про редкое совпадение", () => {
-    const v = profile({ children_plan: "have_no_more", values: [] });
-    const c = profile({ children_plan: "have_no_more", values: [] });
+  it("оба НЕ хотят детей (no) → reason про редкое совпадение", () => {
+    const v = profile({ future_children_plan: "no", top_life_values: [] });
+    const c = profile({ future_children_plan: "no", top_life_values: [] });
     const story = generateMatchStory(v, c);
     expect(story.reasons.some((r) => r.includes("не планируете"))).toBe(true);
   });
@@ -69,15 +68,15 @@ describe("generateMatchStory — reasons (positive overlap)", () => {
   it("близкий психо-вектор (avg diff <18) → reason про личность", () => {
     const v = profile({
       vector: { O: 60, C: 50, E: 55, A: 60, ES: 50 },
-      values: [],
+      top_life_values: [],
       religion: "na",
-      children_plan: "unsure",
+      future_children_plan: "maybe",
     });
     const c = profile({
       vector: { O: 65, C: 55, E: 60, A: 65, ES: 55 },
-      values: [],
+      top_life_values: [],
       religion: "na",
-      children_plan: "unsure",
+      future_children_plan: "maybe",
     });
     const story = generateMatchStory(v, c);
     expect(story.reasons.some((r) => r.includes("личностная структура"))).toBe(true);
@@ -85,18 +84,18 @@ describe("generateMatchStory — reasons (positive overlap)", () => {
 
   it("reasons capped at 3", () => {
     const v = profile({
-      values: ["family", "growth", "honesty"],
+      top_life_values: ["family", "education", "honesty"],
       religion: "islam",
-      religion_importance: 4,
-      children_plan: "want",
+      religion_practice: "striving",
+      future_children_plan: "yes_later",
       vector: { O: 50, C: 50, E: 50, A: 50, ES: 50 },
       city: "tashkent",
     });
     const c = profile({
-      values: ["family", "growth", "honesty"],
+      top_life_values: ["family", "education", "honesty"],
       religion: "islam",
-      religion_importance: 4,
-      children_plan: "want",
+      religion_practice: "striving",
+      future_children_plan: "yes_later",
       vector: { O: 51, C: 51, E: 51, A: 51, ES: 51 },
       city: "tashkent",
     });
@@ -106,16 +105,16 @@ describe("generateMatchStory — reasons (positive overlap)", () => {
 });
 
 describe("generateMatchStory — cautions (friction)", () => {
-  it("want vs have_no_more → caution про детей", () => {
-    const v = profile({ children_plan: "want" });
-    const c = profile({ children_plan: "have_no_more" });
+  it("yes_soon vs no → caution про детей", () => {
+    const v = profile({ future_children_plan: "yes_soon" });
+    const c = profile({ future_children_plan: "no" });
     const story = generateMatchStory(v, c);
     expect(story.cautions.some((c) => c.includes("детей"))).toBe(true);
   });
 
-  it("разрыв в важности религии ≥3 → caution", () => {
-    const v = profile({ religion_importance: 1 });
-    const c = profile({ religion_importance: 5 });
+  it("разрыв в религиозной практике ≥2 уровня → caution", () => {
+    const v = profile({ religion_practice: "not_practicing" });
+    const c = profile({ religion_practice: "observant" });
     const story = generateMatchStory(v, c);
     expect(story.cautions.some((c) => c.includes("Религия"))).toBe(true);
   });
@@ -135,7 +134,6 @@ describe("generateMatchStory — cautions (friction)", () => {
   });
 
   it("кандидат вне partner_age диапазона viewer → caution про возраст", () => {
-    // viewer хочет 25-30, кандидату 35
     const v = profile({
       partner_age_min: 25,
       partner_age_max: 30,
@@ -152,8 +150,8 @@ describe("generateMatchStory — cautions (friction)", () => {
 
   it("cautions capped at 2", () => {
     const v = profile({
-      children_plan: "want",
-      religion_importance: 1,
+      future_children_plan: "yes_soon",
+      religion_practice: "not_practicing",
       city: "tashkent",
       geo_preference: "my_city",
       partner_age_min: 25,
@@ -161,8 +159,8 @@ describe("generateMatchStory — cautions (friction)", () => {
       birth_date: "1995-01-01",
     });
     const c = profile({
-      children_plan: "have_no_more",
-      religion_importance: 5,
+      future_children_plan: "no",
+      religion_practice: "observant",
       city: "samarkand",
       geo_preference: "my_city",
       partner_age_min: 25,
@@ -176,30 +174,30 @@ describe("generateMatchStory — cautions (friction)", () => {
 
 describe("generateMatchStory — advice", () => {
   it("при общей value 'family' → совет про традиции", () => {
-    const v = profile({ values: ["family"] });
-    const c = profile({ values: ["family"] });
+    const v = profile({ top_life_values: ["family"] });
+    const c = profile({ top_life_values: ["family"] });
     const story = generateMatchStory(v, c);
     expect(story.advice).toMatch(/традиции/i);
   });
 
-  it("при общей value 'growth' → совет про обучение", () => {
-    const v = profile({ values: ["growth"] });
-    const c = profile({ values: ["growth"] });
+  it("при общей value 'education' → совет про обучение", () => {
+    const v = profile({ top_life_values: ["education"] });
+    const c = profile({ top_life_values: ["education"] });
     const story = generateMatchStory(v, c);
-    expect(story.advice).toMatch(/научиться|изучает/i);
+    expect(story.advice).toMatch(/изучает|научиться/i);
   });
 
   it("нет общих values → advice null", () => {
-    const v = profile({ values: ["career"] });
-    const c = profile({ values: ["family"] });
+    const v = profile({ top_life_values: ["career"] });
+    const c = profile({ top_life_values: ["family"] });
     const story = generateMatchStory(v, c);
     expect(story.advice).toBeNull();
   });
 
   it("берётся первая общая value (приоритет порядка viewer)", () => {
-    const v = profile({ values: ["family", "honesty"] });
-    const c = profile({ values: ["honesty", "family"] });
+    const v = profile({ top_life_values: ["family", "honesty"] });
+    const c = profile({ top_life_values: ["honesty", "family"] });
     const story = generateMatchStory(v, c);
-    expect(story.advice).toMatch(/традиции/i); // family — первая у viewer
+    expect(story.advice).toMatch(/традиции/i);
   });
 });
