@@ -4,12 +4,22 @@ import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 import { Field, TextInput, TextArea, Select, CitySelect } from "./AnketaFields";
-import { GENDER } from "@/lib/profile/options";
+import {
+  GENDER,
+  CITIZENSHIP,
+  COUNTRY_OF_RESIDENCE,
+  UZ_REGIONS,
+} from "@/lib/profile/options";
 
 /**
  * V2 Anketa Basic form (Blueprint §3.3 B1).
- * Поля: имя, пол, дата рождения, город, bio.
- * API: /api/onboarding/profile/basic (без изменений).
+ * Поля: имя, пол, дата рождения, гражданство, страна проживания, регион (UZ),
+ * город, bio.
+ * API: /api/onboarding/profile/basic.
+ *
+ * V2 ext 2026-06-28: добавлены citizenship + country_of_residence + region.
+ * Гражданство и страна проживания могут не совпадать (UZ-гражданин в РФ).
+ * При approve паспорта в админке citizenship сверяется с user_identity.
  */
 
 const ERR_COPY: Record<string, string> = {
@@ -19,6 +29,7 @@ const ERR_COPY: Record<string, string> = {
   bio_too_long: "Слишком длинно — максимум 1000 символов.",
   must_be_18: "Возраст должен быть 18 лет и больше.",
   invalid_age: "Проверь дату рождения.",
+  region_required_for_uz: "Для проживания в Узбекистане выбери область или город.",
   validation: "Проверь заполненные поля.",
   failed: "Не получилось сохранить. Попробуй ещё раз.",
 };
@@ -34,10 +45,17 @@ export function V2AnketaBasicForm({
   const [name, setName] = useState(defaultName ?? "");
   const [gender, setGender] = useState("");
   const [birth, setBirth] = useState("");
+  // V2 ext 2026-06-28: гражданство + страна проживания + регион.
+  const [citizenship, setCitizenship] = useState("");
+  const [country, setCountry] = useState("");
+  const [region, setRegion] = useState("");
   const [city, setCity] = useState("");
   const [bio, setBio] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  // Region виден только если выбрано проживание в UZ.
+  const showRegion = country === "UZ";
 
   async function submit() {
     if (busy) return;
@@ -51,6 +69,9 @@ export function V2AnketaBasicForm({
           display_name: name,
           gender,
           birth_date: birth,
+          citizenship,
+          country_of_residence: country,
+          ...(showRegion ? { region } : {}),
           city,
           bio,
         }),
@@ -74,7 +95,14 @@ export function V2AnketaBasicForm({
   }
 
   const valid =
-    name.trim().length >= 2 && !!gender && !!birth && !!city && bio.trim().length >= 20;
+    name.trim().length >= 2 &&
+    !!gender &&
+    !!birth &&
+    !!citizenship &&
+    !!country &&
+    (!showRegion || !!region) &&
+    !!city &&
+    bio.trim().length >= 20;
 
   return (
     <div>
@@ -92,6 +120,41 @@ export function V2AnketaBasicForm({
       <Field label="Дата рождения">
         <TextInput type="date" value={birth} onChange={(e) => setBirth(e.target.value)} />
       </Field>
+      <Field
+        label="Гражданство"
+        hint="То, что написано в&nbsp;паспорте. Сверим при верификации."
+      >
+        <Select
+          options={CITIZENSHIP}
+          value={citizenship}
+          onChange={setCitizenship}
+          locale={locale}
+        />
+      </Field>
+      <Field
+        label="Где живёшь сейчас"
+        hint="Может отличаться от&nbsp;гражданства — например UZ-гражданин в&nbsp;Москве."
+      >
+        <Select
+          options={COUNTRY_OF_RESIDENCE}
+          value={country}
+          onChange={(v) => {
+            setCountry(v);
+            if (v !== "UZ") setRegion("");
+          }}
+          locale={locale}
+        />
+      </Field>
+      {showRegion ? (
+        <Field label="Область или регион">
+          <Select
+            options={UZ_REGIONS}
+            value={region}
+            onChange={setRegion}
+            locale={locale}
+          />
+        </Field>
+      ) : null}
       <Field label="Город">
         <CitySelect value={city} onChange={setCity} placeholder="Где живёшь" locale={locale} />
       </Field>

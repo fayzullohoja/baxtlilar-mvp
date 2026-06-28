@@ -36,12 +36,16 @@ describe("ALLOWED_TRANSITIONS", () => {
     }
   });
 
-  it("bot-flow (2026-06-19): язык → контакт → ПД → биометрия → verification_intro → doc_upload", () => {
+  it("bot-flow (2026-06-19 + welcome ext 2026-06-28): язык → контакт → ПД → биометрия → welcome → verification_intro → doc_upload", () => {
     expect(ALLOWED_TRANSITIONS.bot_language).toContain("bot_contact");
     expect(ALLOWED_TRANSITIONS.bot_contact).toContain("bot_consent_pd");
     expect(ALLOWED_TRANSITIONS.bot_consent_pd).toContain("bot_consent_biometric");
-    // MAJOR #1: между биометрией и паспортом — intro-экран в мини-аппе.
-    expect(ALLOWED_TRANSITIONS.bot_consent_biometric).toEqual(["verification_intro"]);
+    // V2 ext 2026-06-28: после биометрии идёт welcome серия (welcome_mission)
+    // hard-cutover (без legacy fallback на verification_intro).
+    expect(ALLOWED_TRANSITIONS.bot_consent_biometric).toEqual(["welcome_mission"]);
+    expect(ALLOWED_TRANSITIONS.welcome_mission).toEqual(["welcome_safety"]);
+    expect(ALLOWED_TRANSITIONS.welcome_safety).toEqual(["welcome_rules"]);
+    expect(ALLOWED_TRANSITIONS.welcome_rules).toEqual(["verification_intro"]);
     expect(ALLOWED_TRANSITIONS.verification_intro).toEqual(["doc_upload"]);
     expect(ALLOWED_TRANSITIONS.doc_upload).toContain("selfie_upload");
     expect(ALLOWED_TRANSITIONS.selfie_upload).toContain("moderation_pending");

@@ -13,6 +13,12 @@ export type OnboardingStep =
   | "consent"
   | "phone_input"
   | "otp_pending"
+  // Welcome серия (2026-06-28 продуктовая поправка) — 3 экрана перед verify:
+  // приветствие/миссия → безопасность → правила. Tutorial остаётся ПОСЛЕ
+  // анкеты как раньше (это про механику feed; welcome — про trust/missию).
+  | "welcome_mission"
+  | "welcome_safety"
+  | "welcome_rules"
   // Mini-app onboarding:
   | "verification_intro"
   | "doc_upload"
@@ -21,8 +27,12 @@ export type OnboardingStep =
   | "needs_changes"
   | "verification_rejected"
   | "profile_basic"
+  // V2 extension (2026-06-28): демография (рост/вес/языки) после basic.
+  | "profile_appearance"
   | "profile_family"
   | "profile_values"
+  // V2 extension (2026-06-28): формат проживания после брака — после ценностей.
+  | "profile_marriage"
   | "profile_looking_for"
   | "profile_photos"
   | "profile_preview"
@@ -31,7 +41,7 @@ export type OnboardingStep =
   | "attribution"
   // V2 (2026-06-25 Shadow Active redesign): tutorial tour ПОСЛЕ анкеты,
   // ПАРАЛЛЕЛЬНО с фоновой верификацией. Юзер не блокируется на moderation_pending.
-  | "tutorial_intro" // Welcome-экран + объяснение Shadow Active модели
+  | "tutorial_intro" // Объяснение Shadow Active модели
   | "tutorial_swipe" // Как работает feed / interest / like-on-specific
   | "tutorial_chat" // Как чат открывается после mutual interest
   | "tutorial_safety" // Правила безопасности + что НЕ делать
@@ -60,7 +70,14 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   bot_language: ["bot_contact"],
   bot_contact: ["bot_consent_pd"],
   bot_consent_pd: ["bot_consent_biometric"],
-  bot_consent_biometric: ["verification_intro"],
+  // V2 ext 2026-06-28: после биометрики идёт welcome-серия (3 экрана) → verify.
+  // Hard-cutover (не soft): новые юзеры обязательно проходят welcome. Существующие
+  // юзеры, уже в мини-аппе на verification_intro+, не задеваются — их step не
+  // равен bot_consent_biometric, эта transition не триггерится.
+  bot_consent_biometric: ["welcome_mission"],
+  welcome_mission: ["welcome_safety"],
+  welcome_safety: ["welcome_rules"],
+  welcome_rules: ["verification_intro"],
   // verification_intro живёт в мини-аппе (не в боте) — intro-экран перед
   // загрузкой паспорта. Retry/needs_changes минуют его (см. ниже).
   verification_intro: ["doc_upload"],
@@ -76,12 +93,17 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   moderation_pending: ["needs_changes", "verification_rejected", "profile_basic"],
   needs_changes: ["doc_upload", "selfie_upload", "moderation_pending"],
   verification_rejected: ["doc_upload"],
-  profile_basic: ["profile_family"],
+  // V2 ext 2026-06-28: между basic и family — profile_appearance (рост/вес/языки).
+  profile_basic: ["profile_appearance"],
+  profile_appearance: ["profile_family"],
   profile_family: ["profile_values"],
-  profile_values: ["profile_looking_for"],
+  // V2 ext 2026-06-28: между values и looking_for — profile_marriage (формат проживания).
+  profile_values: ["profile_marriage"],
+  profile_marriage: ["profile_looking_for"],
   profile_looking_for: ["profile_photos"],
   profile_photos: ["profile_preview"],
-  profile_preview: ["profile_basic", "quiz"],
+  // V2 ext: preview позволяет вернуться в любой anketa-шаг (для правок).
+  profile_preview: ["profile_basic", "profile_appearance", "profile_family", "profile_values", "profile_marriage", "profile_looking_for", "quiz"],
   quiz: ["attribution"],
   // V2: attribution ведёт в tutorial_intro (а не сразу в active как было в V1).
   // V1 fallback: attribution → active оставлен для legacy users.

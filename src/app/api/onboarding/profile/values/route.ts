@@ -21,12 +21,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .upsert({ user_id: user.id, ...parsed.data }, { onConflict: "user_id" });
   if (saveErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
+  // V2 ext 2026-06-28: после values идёт profile_marriage (формат проживания),
+  // а не сразу looking-for. Это новый шаг — см. ALLOWED_TRANSITIONS.
   const tr = await tryTransition(
     user.id,
-    { onboarding_step: "profile_looking_for" },
+    { onboarding_step: "profile_marriage" },
     "anketa: values",
     { kind: "user", id: user.id },
   );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_looking_for });
+  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_marriage });
 }

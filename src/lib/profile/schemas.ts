@@ -10,6 +10,14 @@ import {
   EDUCATION,
   EMPLOYMENT,
   GEO_PREFERENCE,
+  // V2 ext 2026-06-28:
+  CITIZENSHIP,
+  COUNTRY_OF_RESIDENCE,
+  UZ_REGIONS,
+  LANGUAGES_LIST,
+  RELIGION_PRACTICE,
+  RELIGION_PARTNER_MATCH,
+  POST_MARRIAGE_LIVING,
 } from "./options";
 import { ALL_CITY_VALUES } from "./cities";
 
@@ -56,28 +64,56 @@ export function containsContact(text: string): boolean {
   return PHONE_RE.test(norm) || HANDLE_RE.test(norm) || LINK_RE.test(norm) || MESSENGER_RE.test(low);
 }
 
-export const basicSchema = z.object({
-  // F-009 v2: display_name тоже фильтруется на контакты — раньше нарушители
-  // прятали "@ali_2024" или номер в имя профиля, и оно появлялось в ленте/чате
-  // в обход bio/chat-фильтра.
-  display_name: z
-    .string()
-    .trim()
-    .min(2)
-    .max(50)
-    .refine((s) => !containsContact(s), { message: "name_has_contacts" }),
-  gender: z.enum(tuple(vals(GENDER))),
-  birth_date: z
-    .string()
-    .refine((s) => ageFromDate(s) >= 18, { message: "must_be_18" })
-    .refine((s) => ageFromDate(s) <= 100, { message: "invalid_age" }),
-  city: z.enum(tuple(ALL_CITY_VALUES)),
-  bio: z
-    .string()
-    .trim()
-    .min(20, { message: "bio_too_short" })
-    .max(1000, { message: "bio_too_long" })
-    .refine((s) => !containsContact(s), { message: "bio_has_contacts" }),
+export const basicSchema = z
+  .object({
+    // F-009 v2: display_name тоже фильтруется на контакты — раньше нарушители
+    // прятали "@ali_2024" или номер в имя профиля, и оно появлялось в ленте/чате
+    // в обход bio/chat-фильтра.
+    display_name: z
+      .string()
+      .trim()
+      .min(2)
+      .max(50)
+      .refine((s) => !containsContact(s), { message: "name_has_contacts" }),
+    gender: z.enum(tuple(vals(GENDER))),
+    birth_date: z
+      .string()
+      .refine((s) => ageFromDate(s) >= 18, { message: "must_be_18" })
+      .refine((s) => ageFromDate(s) <= 100, { message: "invalid_age" }),
+    // V2 ext 2026-06-28: гражданство и страна проживания (могут не совпадать —
+    // например гражданин UZ живущий в РФ). При approve паспорта в админке
+    // citizenship сверяется с user_identity (mismatch → flag модератору).
+    citizenship: z.enum(tuple(vals(CITIZENSHIP))),
+    country_of_residence: z.enum(tuple(vals(COUNTRY_OF_RESIDENCE))),
+    // region — обязателен только для UZ (для других стран — пустая строка/опц).
+    // Refine ниже валидирует это правило.
+    region: z.string().trim().max(80).optional(),
+    city: z.enum(tuple(ALL_CITY_VALUES)),
+    bio: z
+      .string()
+      .trim()
+      .min(20, { message: "bio_too_short" })
+      .max(1000, { message: "bio_too_long" })
+      .refine((s) => !containsContact(s), { message: "bio_has_contacts" }),
+  })
+  .refine(
+    (d) => {
+      // Для UZ-проживания region обязателен и должен быть из UZ_REGIONS.
+      if (d.country_of_residence !== "UZ") return true;
+      if (!d.region) return false;
+      return vals(UZ_REGIONS).includes(d.region);
+    },
+    { message: "region_required_for_uz", path: ["region"] },
+  );
+
+/** V2 ext 2026-06-28: демография — рост/вес/языки. */
+export const appearanceSchema = z.object({
+  height_cm: z.coerce.number().int().min(140).max(220),
+  // Вес — soft optional поле (anti drop-off, особенно для женщин).
+  weight_kg: z.coerce.number().int().min(35).max(200).optional().nullable(),
+  native_language: z.enum(tuple(vals(LANGUAGES_LIST))),
+  // languages[] (что владеет) — min 1 (должен включать native обычно).
+  languages: z.array(z.enum(tuple(vals(LANGUAGES_LIST)))).min(1).max(6),
 });
 
 export const familySchema = z.object({
@@ -86,12 +122,23 @@ export const familySchema = z.object({
   children_plan: z.enum(tuple(vals(CHILDREN_PLAN))),
 });
 
+/** V2 ext 2026-06-28: убран religion_importance 1-5 (создавал ложное "вера
+ *  может быть неважна" для UZ-платформы). Заменён на religion_practice
+ *  (качественная градация образа жизни) + опциональный religion_partner_match
+ *  (требование к партнёру, не к себе). */
 export const valuesSchema = z.object({
   religion: z.enum(tuple(vals(RELIGION))),
-  religion_importance: z.coerce.number().int().min(1).max(5),
+  religion_practice: z.enum(tuple(vals(RELIGION_PRACTICE))),
+  religion_partner_match: z.enum(tuple(vals(RELIGION_PARTNER_MATCH))).optional(),
   values: z.array(z.enum(tuple(vals(LIFE_VALUES)))).min(1).max(3),
   education: z.enum(tuple(vals(EDUCATION))),
   employment: z.enum(tuple(vals(EMPLOYMENT))).optional(),
+});
+
+/** V2 ext 2026-06-28: формат проживания после брака — ключевой матчинг-сигнал
+ *  для serious-marriage платформы. Required. */
+export const marriageSchema = z.object({
+  post_marriage_living: z.enum(tuple(vals(POST_MARRIAGE_LIVING))),
 });
 
 // Пол партнёра НЕ спрашиваем — выводится автоматически как противоположный своему (см. looking-for route).

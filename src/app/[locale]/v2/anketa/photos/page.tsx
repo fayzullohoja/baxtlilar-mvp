@@ -22,7 +22,7 @@ export default async function V2AnketaPhotosPage({
   await requireUserAtStep(locale, "profile_photos");
 
   return (
-    <MiniAppShell eyebrow="Шаг 5 из 6 · Анкета" align="top">
+    <MiniAppShell eyebrow="Шаг 7 из 8 · Анкета" align="top">
       <Headline size="lg" as="h1">
         Фотографии.
       </Headline>
