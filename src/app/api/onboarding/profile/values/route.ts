@@ -17,8 +17,8 @@ export const dynamic = "force-dynamic";
  * - Шкала religion_importance НЕ возвращается (учредитель сказал оставить
  *   мою поправку — religion_practice 4 опции)
  *
- * V2-compat: дублируем top_life_values и в legacy values[] чтобы
- * match-of-the-day/preview не сломались до Phase F cleanup.
+ * Sprint 3 cleanup: убрали V2-compat dual-write — все consumers
+ * мигрированы на top_life_values.
  *
  * После values → profile_family_model (Sprint 2 экран 7).
  */
@@ -42,7 +42,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         religion_practice: parsed.data.religion_practice,
         religion_partner_match: parsed.data.religion_partner_match ?? null,
         top_life_values: parsed.data.top_life_values,
-        values: parsed.data.top_life_values, // V2-compat alias до Phase F
       },
       { onConflict: "user_id" },
     );

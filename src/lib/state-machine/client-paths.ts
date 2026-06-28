@@ -31,6 +31,7 @@ export const CLIENT_ONBOARDING_PATHS: Record<string, string> = {
   profile_self: "/v2/anketa/self",
   profile_family_model: "/v2/anketa/family-model",
   profile_partner_extended: "/v2/anketa/partner-extended",
+  profile_privacy: "/v2/anketa/privacy",
   profile_family: "/v2/anketa/family",
   profile_values: "/v2/anketa/values",
   profile_marriage: "/v2/anketa/marriage",

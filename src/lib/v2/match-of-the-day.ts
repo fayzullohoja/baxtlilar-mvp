@@ -40,8 +40,8 @@ async function loadFullProfile(userId: string): Promise<ProfileForMatch | null> 
   const { data: p, error: pe } = await sb
     .from("user_profiles")
     .select(
-      "display_name, city, values, birth_date, marital_status, has_children, " +
-        "children_plan, religion, religion_importance, education, employment, bio, " +
+      "display_name, city, top_life_values, birth_date, marital_status, has_children, " +
+        "future_children_plan, religion, religion_practice, education, bio, " +
         "partner_age_min, partner_age_max, geo_preference",
     )
     .eq("user_id", userId)
@@ -57,15 +57,14 @@ async function loadFullProfile(userId: string): Promise<ProfileForMatch | null> 
   return {
     display_name: (p.display_name as string) ?? "",
     city: (p.city as string) ?? null,
-    values: (p.values as string[]) ?? [],
+    top_life_values: (p.top_life_values as string[]) ?? [],
     birth_date: (p.birth_date as string) ?? null,
     marital_status: (p.marital_status as string) ?? null,
     has_children: (p.has_children as string) ?? null,
-    children_plan: (p.children_plan as string) ?? null,
+    future_children_plan: (p.future_children_plan as string) ?? null,
     religion: (p.religion as string) ?? null,
-    religion_importance: (p.religion_importance as number) ?? null,
+    religion_practice: (p.religion_practice as string) ?? null,
     education: (p.education as string) ?? null,
-    employment: (p.employment as string) ?? null,
     bio: (p.bio as string) ?? null,
     partner_age_min: (p.partner_age_min as number) ?? null,
     partner_age_max: (p.partner_age_max as number) ?? null,

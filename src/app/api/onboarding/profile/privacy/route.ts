@@ -2,27 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { loadUserForStep } from "@/lib/onboarding/guard-api";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { familyChildrenSchema } from "@/lib/profile/schemas";
+import { privacySchema } from "@/lib/profile/schemas";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * V3 Sprint 2 — Экран 5 «О семье и детях» (расширенный).
+ * V3 Sprint 3 — Экран 16 «Приватность» (MVP).
  *
- * Поля: marital_status, has_children, future_children_plan, children_count
- * (conditional), youngest_child_age (conditional).
+ * Только глобальный profile_visibility_mode. Per-block visibility отложен.
+ * После privacy → profile_photos (фото — следующий шаг).
  *
- * Sprint 3 cleanup: убрали V2-compat dual-write — все consumers (match-story,
- * match-of-the-day, preview, profile, admin ProfileTab, RevealedProfile)
- * мигрированы на future_children_plan.
+ * Шаг profile_privacy идёт ПОСЛЕ profile_partner_extended вместо
+ * profile_photos для новых юзеров.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const { user, res } = await loadUserForStep("profile_family");
+  const { user, res } = await loadUserForStep("profile_privacy");
   if (res) return res;
 
-  const parsed = familyChildrenSchema.safeParse(await req.json().catch(() => ({})));
+  const parsed = privacySchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success)
     return NextResponse.json(
       { ok: false, error: "validation", detail: parsed.error.issues[0]?.message },
@@ -34,11 +33,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .upsert(
       {
         user_id: user.id,
-        marital_status: parsed.data.marital_status,
-        has_children: parsed.data.has_children,
-        future_children_plan: parsed.data.future_children_plan,
-        children_count: parsed.data.children_count ?? null,
-        youngest_child_age: parsed.data.youngest_child_age ?? null,
+        profile_visibility_mode: parsed.data.profile_visibility_mode,
       },
       { onConflict: "user_id" },
     );
@@ -47,10 +42,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const tr = await tryTransition(
     user.id,
-    { onboarding_step: "profile_values" },
-    "anketa v3: family children",
+    { onboarding_step: "profile_photos" },
+    "anketa v3: privacy → photos",
     { kind: "user", id: user.id },
   );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_values });
+  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_photos });
 }

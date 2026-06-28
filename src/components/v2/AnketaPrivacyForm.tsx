@@ -1,0 +1,91 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "@/i18n/navigation";
+import { Button } from "./Button";
+import { Field, Select } from "./AnketaFields";
+import { PROFILE_VISIBILITY_MODE } from "@/lib/profile/options";
+
+/**
+ * V3 Sprint 3 — Экран 16 «Приватность» (MVP-версия).
+ *
+ * Только глобальный profile_visibility_mode (3 опции):
+ * - public — открыт всем верифицированным
+ * - verified_only — после взаимной верификации (ну, она у нас уже базой)
+ * - by_request — по личному одобрению
+ *
+ * Per-block visibility — НЕ в MVP (учредительское решение).
+ * Зарезервировано в extended.privacy.per_block для Sprint 4+.
+ *
+ * API: /api/onboarding/profile/privacy.
+ */
+export function V2AnketaPrivacyForm({ locale }: { locale: string }) {
+  const router = useRouter();
+  const [mode, setMode] = useState("public");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function submit() {
+    if (busy) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch("/api/onboarding/profile/privacy", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ profile_visibility_mode: mode }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok: boolean;
+        next?: string;
+      };
+      if (data.ok && data.next) {
+        router.replace(data.next);
+        return;
+      }
+      setErr("failed");
+    } catch {
+      setErr("failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div>
+      <Field
+        label="Режим видимости профиля"
+        required
+        hint="Можно изменить позже в настройках. Сейчас выбери стартовый режим."
+      >
+        <Select
+          options={PROFILE_VISIBILITY_MODE}
+          value={mode}
+          onChange={setMode}
+          locale={locale}
+        />
+      </Field>
+
+      {err ? (
+        <div
+          style={{
+            padding: "10px 14px",
+            background: "rgba(180, 50, 50, 0.08)",
+            border: "1px solid rgba(180, 50, 50, 0.3)",
+            borderRadius: "var(--v2-radius-md)",
+            fontSize: "13px",
+            color: "var(--color-v2-ink-200)",
+            fontFamily: "var(--font-v2-body)",
+            marginBottom: "16px",
+          }}
+        >
+          Не получилось сохранить. Попробуй ещё раз.
+        </div>
+      ) : null}
+
+      <Button onClick={submit} disabled={busy || !mode} variant="primary">
+        {busy ? "Сохраняю…" : "Дальше"}
+      </Button>
+    </div>
+  );
+}

@@ -13,13 +13,12 @@
 
 import { Headline, Lead } from "./Headline";
 import {
-  EMPLOYMENT,
   EDUCATION,
   RELIGION,
   MARITAL_STATUS,
   HAS_CHILDREN,
-  CHILDREN_PLAN,
-  LIFE_VALUES,
+  FUTURE_CHILDREN_PLAN,
+  LIFE_VALUES_V3,
   labelOf,
 } from "@/lib/profile/options";
 import { cityLabel } from "@/lib/profile/cities";
@@ -32,11 +31,10 @@ export type RevealedProfileData = {
   bio: string | null;
   marital_status: string | null;
   has_children: string | null;
-  children_plan: string | null;
+  future_children_plan: string | null;
   religion: string | null;
-  values: string[];
+  top_life_values: string[];
   education: string | null;
-  employment: string | null;
   photo_urls: string[];
 };
 
@@ -77,7 +75,7 @@ function row(label: string, value: string | null) {
 export function RevealedProfile({ profile, locale = "ru" }: Props) {
   const age = profile.birth_date ? ageFromDate(profile.birth_date) : null;
   const photos = profile.photo_urls;
-  const valueLabels = profile.values.map((v) => labelOf(LIFE_VALUES, v, locale));
+  const valueLabels = profile.top_life_values.map((v) => labelOf(LIFE_VALUES_V3, v, locale));
 
   return (
     <article>
@@ -220,10 +218,11 @@ export function RevealedProfile({ profile, locale = "ru" }: Props) {
         {row("Дети", profile.has_children ? labelOf(HAS_CHILDREN, profile.has_children, locale) : null)}
         {row(
           "Планы по детям",
-          profile.children_plan ? labelOf(CHILDREN_PLAN, profile.children_plan, locale) : null,
+          profile.future_children_plan
+            ? labelOf(FUTURE_CHILDREN_PLAN, profile.future_children_plan, locale)
+            : null,
         )}
         {row("Образование", profile.education ? labelOf(EDUCATION, profile.education, locale) : null)}
-        {row("Занятость", profile.employment ? labelOf(EMPLOYMENT, profile.employment, locale) : null)}
       </div>
 
       {/* Footnote */}

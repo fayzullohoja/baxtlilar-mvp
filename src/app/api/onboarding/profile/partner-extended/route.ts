@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
  * Пол партнёра выводится автоматически как противоположный своему
  * (как и в legacy looking_for).
  *
- * После partner_extended → profile_photos (минуем legacy profile_looking_for).
+ * V3 Sprint 3: после partner_extended → profile_privacy (Экран 16).
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const { user, res } = await loadUserForStep("profile_partner_extended");
@@ -66,10 +66,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const tr = await tryTransition(
     user.id,
-    { onboarding_step: "profile_photos" },
-    "anketa v3: partner-extended",
+    { onboarding_step: "profile_privacy" },
+    "anketa v3: partner-extended → privacy",
     { kind: "user", id: user.id },
   );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_photos });
+  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_privacy });
 }

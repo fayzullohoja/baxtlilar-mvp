@@ -24,10 +24,9 @@
 
 import { Headline, Lead } from "./Headline";
 import {
-  EMPLOYMENT,
   EDUCATION,
   RELIGION,
-  LIFE_VALUES,
+  LIFE_VALUES_V3,
   labelOf,
 } from "@/lib/profile/options";
 import type { ProfileForMatch } from "@/lib/v2/match-story";
@@ -105,7 +104,9 @@ function chip(label: string, key: string | number) {
 export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
   const name = firstWord(profile.display_name);
   const traits = personalityTraits(profile.vector);
-  const valueLabels = profile.values.map((v) => labelOf(LIFE_VALUES, v, locale));
+  const valueLabels = profile.top_life_values.map((v: string) =>
+    labelOf(LIFE_VALUES_V3, v, locale),
+  );
 
   return (
     <article style={{ padding: "8px 0" }}>
@@ -124,9 +125,6 @@ export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
         }}
       >
         {profile.city ? <span>{profile.city}</span> : null}
-        {profile.employment && profile.employment !== "na" ? (
-          <span> · {labelOf(EMPLOYMENT, profile.employment, locale)}</span>
-        ) : null}
         {profile.education && profile.education !== "na" ? (
           <span> · {labelOf(EDUCATION, profile.education, locale)}</span>
         ) : null}
@@ -175,7 +173,7 @@ export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
           >
             Что важно в жизни
           </div>
-          <div>{valueLabels.map((l, i) => chip(l, i))}</div>
+          <div>{valueLabels.map((l: string, i: number) => chip(l, i))}</div>
         </div>
       ) : null}
 

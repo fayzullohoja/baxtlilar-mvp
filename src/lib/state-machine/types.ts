@@ -38,6 +38,7 @@ export type OnboardingStep =
   | "profile_marriage"
   | "profile_family_model" // Экран 7 (Sprint 2)
   | "profile_partner_extended" // Экран 8 расширение (Sprint 2)
+  | "profile_privacy" // Экран 16 — глобальный режим видимости (Sprint 3)
   | "profile_looking_for"
   | "profile_photos"
   | "profile_preview"
@@ -113,7 +114,8 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   profile_values: ["profile_family_model", "profile_marriage"],
   profile_family_model: ["profile_marriage"],
   profile_marriage: ["profile_partner_extended", "profile_looking_for"],
-  profile_partner_extended: ["profile_looking_for"],
+  profile_partner_extended: ["profile_privacy", "profile_photos"],
+  profile_privacy: ["profile_photos"],
   profile_looking_for: ["profile_photos"],
   profile_photos: ["profile_preview"],
   // V2 ext: preview позволяет вернуться в любой anketa-шаг (для правок).
