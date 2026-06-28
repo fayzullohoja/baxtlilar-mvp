@@ -21,7 +21,7 @@ export default async function V2AnketaFamilyPage({
   await requireUserAtStep(locale, "profile_family");
 
   return (
-    <MiniAppShell eyebrow="Шаг 2 из 6 · Анкета" align="top">
+    <MiniAppShell eyebrow="Шаг 3 из 8 · Анкета" align="top">
       <Headline size="lg" as="h1">
         Где ты сейчас в&nbsp;жизни.
       </Headline>

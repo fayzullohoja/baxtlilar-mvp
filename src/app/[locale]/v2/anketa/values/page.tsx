@@ -21,7 +21,7 @@ export default async function V2AnketaValuesPage({
   await requireUserAtStep(locale, "profile_values");
 
   return (
-    <MiniAppShell eyebrow="Шаг 3 из 6 · Анкета" align="top">
+    <MiniAppShell eyebrow="Шаг 4 из 8 · Анкета" align="top">
       <Headline size="lg" as="h1">
         Ценности и&nbsp;вера.
       </Headline>

@@ -22,7 +22,7 @@ export default async function V2AnketaLookingForPage({
   await requireUserAtStep(locale, "profile_looking_for");
 
   return (
-    <MiniAppShell eyebrow="Шаг 4 из 6 · Анкета" align="top">
+    <MiniAppShell eyebrow="Шаг 6 из 8 · Анкета" align="top">
       <Headline size="lg" as="h1">
         Кого ищешь.
       </Headline>

@@ -23,7 +23,7 @@ export default async function V2AnketaBasicPage({
   const user = await requireUserAtStep(locale, "profile_basic");
 
   return (
-    <MiniAppShell eyebrow="Шаг 1 из 6 · Анкета" align="top">
+    <MiniAppShell eyebrow="Шаг 1 из 8 · Анкета" align="top">
       <Headline size="lg" as="h1">
         Начнём с&nbsp;тебя.
       </Headline>

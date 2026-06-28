@@ -70,7 +70,7 @@ export default async function V2AnketaPreviewPage({
 
   return (
     <MiniAppShell
-      eyebrow="Шаг 6 из 6 · Анкета"
+      eyebrow="Шаг 8 из 8 · Анкета"
       align="top"
       footer={<V2PublishButton />}
     >
