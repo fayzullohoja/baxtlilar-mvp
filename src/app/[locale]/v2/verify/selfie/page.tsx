@@ -1,7 +1,12 @@
 /**
- * V2 Selfie Liveness (Blueprint §3.2 A5).
+ * V3 Sprint 3 round 3 — Selfie verification (без «паспорта в кадре»).
  *
- * Селфи рядом с паспортом — модератор сверяет лицо. Camera-first front.
+ * Изменения от учредителя (2026-06-29 тест-проход):
+ * - Title: «Селфи с паспортом» → «Селфи для верификации»
+ * - Description: без инструкции держать паспорт рядом с лицом
+ *   (модератор сверяет селфи с уже загруженным фото паспорта отдельно)
+ * - Добавлен визуальный пример как должно выглядеть селфи
+ *
  * Existing API: /api/onboarding/selfie.
  */
 
@@ -25,12 +30,17 @@ export default async function V2SelfiePage({
   return (
     <MiniAppShell eyebrow="Шаг 2 · Селфи" align="top">
       <Headline size="lg" as="h1">
-        Селфи с&nbsp;паспортом.
+        Селфи для&nbsp;верификации.
       </Headline>
       <Lead>
-        Сделай селфи, держа паспорт рядом с лицом так, чтобы и твоё лицо,
-        и&nbsp;фото в паспорте были видны на одной фотографии.
+        Сделай селфи лица в&nbsp;хорошем освещении. Модератор сверит с&nbsp;фото
+        в&nbsp;паспорте, который ты&nbsp;загрузил на&nbsp;прошлом шаге.
       </Lead>
+
+      {/* Visual hint */}
+      <div style={{ marginTop: "28px" }}>
+        <SelfieVisualHint />
+      </div>
 
       <div style={{ marginTop: "28px" }}>
         <Requirements />
@@ -55,11 +65,161 @@ export default async function V2SelfiePage({
           lineHeight: "1.55",
         }}
       >
-        После загрузки заявка уходит на модерацию. Параллельно ты сможешь
-        заполнить анкету и&nbsp;пройти психо-портрет — это не блокируется
+        После загрузки заявка уходит на&nbsp;модерацию. Параллельно ты&nbsp;сможешь
+        заполнить анкету и&nbsp;пройти психо-портрет — это не&nbsp;блокируется
         ожиданием. Решение модератора придёт в&nbsp;Telegram.
       </div>
     </MiniAppShell>
+  );
+}
+
+/** Визуальная подсказка: 2 примера (хорошо vs плохо) с SVG-силуэтами лица. */
+function SelfieVisualHint() {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: "12px",
+      }}
+    >
+      <ExampleCard variant="good" label="Так — хорошо" />
+      <ExampleCard variant="bad" label="Так — не пройдёт" />
+    </div>
+  );
+}
+
+function ExampleCard({
+  variant,
+  label,
+}: {
+  variant: "good" | "bad";
+  label: string;
+}) {
+  const isGood = variant === "good";
+  const accent = isGood ? "#2a6f4a" : "#b8362a";
+  const accentBg = isGood ? "rgba(42, 111, 74, 0.06)" : "rgba(184, 54, 42, 0.06)";
+
+  return (
+    <div
+      style={{
+        background: accentBg,
+        border: `1px solid ${accent}33`,
+        borderRadius: "var(--v2-radius-md)",
+        padding: "12px 10px 10px",
+        textAlign: "center",
+      }}
+    >
+      <div
+        style={{
+          height: 84,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {isGood ? <GoodFaceSvg /> : <BadFaceSvg />}
+      </div>
+      <div
+        style={{
+          marginTop: 6,
+          fontSize: "11px",
+          fontWeight: 600,
+          color: accent,
+          letterSpacing: "0.02em",
+        }}
+      >
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function GoodFaceSvg() {
+  return (
+    <svg width="62" height="78" viewBox="0 0 62 78" fill="none">
+      {/* Head outline */}
+      <ellipse
+        cx="31"
+        cy="32"
+        rx="18"
+        ry="22"
+        stroke="#2a6f4a"
+        strokeWidth="1.6"
+        fill="white"
+      />
+      {/* Eyes */}
+      <circle cx="24" cy="30" r="1.6" fill="#2a6f4a" />
+      <circle cx="38" cy="30" r="1.6" fill="#2a6f4a" />
+      {/* Smile */}
+      <path
+        d="M24 39 Q31 44 38 39"
+        stroke="#2a6f4a"
+        strokeWidth="1.4"
+        fill="none"
+        strokeLinecap="round"
+      />
+      {/* Shoulders */}
+      <path
+        d="M12 76 Q31 58 50 76"
+        stroke="#2a6f4a"
+        strokeWidth="1.6"
+        fill="none"
+      />
+      {/* Checkmark badge */}
+      <circle cx="50" cy="22" r="8" fill="#2a6f4a" />
+      <path
+        d="M46 22 L49 25 L54 19"
+        stroke="white"
+        strokeWidth="1.8"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function BadFaceSvg() {
+  return (
+    <svg width="62" height="78" viewBox="0 0 62 78" fill="none">
+      {/* Head outline — slightly cropped */}
+      <ellipse
+        cx="31"
+        cy="32"
+        rx="18"
+        ry="22"
+        stroke="#b8362a"
+        strokeWidth="1.6"
+        fill="white"
+      />
+      {/* Mask/sunglasses bar */}
+      <rect
+        x="14"
+        y="26"
+        width="34"
+        height="8"
+        fill="#b8362a"
+        rx="2"
+      />
+      {/* Mouth covered */}
+      <rect x="20" y="38" width="22" height="6" fill="#b8362a" opacity="0.4" />
+      {/* Shoulders */}
+      <path
+        d="M12 76 Q31 58 50 76"
+        stroke="#b8362a"
+        strokeWidth="1.6"
+        fill="none"
+      />
+      {/* X badge */}
+      <circle cx="50" cy="22" r="8" fill="#b8362a" />
+      <path
+        d="M46 18 L54 26 M54 18 L46 26"
+        stroke="white"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 
@@ -67,7 +227,7 @@ function Requirements() {
   const items = [
     "Лицо без маски, очков, шляпы",
     "Естественное освещение — не лампа сверху",
-    "Паспорт развернут к&nbsp;камере, рядом с&nbsp;лицом",
+    "Смотри прямо в камеру",
     "Не пересняй чужое фото — это блокировка без апелляции",
   ];
   return (
