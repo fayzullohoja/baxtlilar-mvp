@@ -71,9 +71,10 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   bot_contact: ["bot_consent_pd"],
   bot_consent_pd: ["bot_consent_biometric"],
   // V2 ext 2026-06-28: после биометрики идёт welcome-серия (3 экрана) → verify.
-  // Legacy fallback на verification_intro оставлен — существующие юзеры в боте
-  // могут продолжить старым путём пока welcome ещё не задеплоен на проде.
-  bot_consent_biometric: ["welcome_mission", "verification_intro"],
+  // Hard-cutover (не soft): новые юзеры обязательно проходят welcome. Существующие
+  // юзеры, уже в мини-аппе на verification_intro+, не задеваются — их step не
+  // равен bot_consent_biometric, эта transition не триггерится.
+  bot_consent_biometric: ["welcome_mission"],
   welcome_mission: ["welcome_safety"],
   welcome_safety: ["welcome_rules"],
   welcome_rules: ["verification_intro"],

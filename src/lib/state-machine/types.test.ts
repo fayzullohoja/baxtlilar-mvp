@@ -40,12 +40,9 @@ describe("ALLOWED_TRANSITIONS", () => {
     expect(ALLOWED_TRANSITIONS.bot_language).toContain("bot_contact");
     expect(ALLOWED_TRANSITIONS.bot_contact).toContain("bot_consent_pd");
     expect(ALLOWED_TRANSITIONS.bot_consent_pd).toContain("bot_consent_biometric");
-    // V2 ext 2026-06-28: после биометрии идёт welcome серия (welcome_mission),
-    // verification_intro оставлен как legacy fallback для soft-rollout.
-    expect(ALLOWED_TRANSITIONS.bot_consent_biometric).toEqual([
-      "welcome_mission",
-      "verification_intro",
-    ]);
+    // V2 ext 2026-06-28: после биометрии идёт welcome серия (welcome_mission)
+    // hard-cutover (без legacy fallback на verification_intro).
+    expect(ALLOWED_TRANSITIONS.bot_consent_biometric).toEqual(["welcome_mission"]);
     expect(ALLOWED_TRANSITIONS.welcome_mission).toEqual(["welcome_safety"]);
     expect(ALLOWED_TRANSITIONS.welcome_safety).toEqual(["welcome_rules"]);
     expect(ALLOWED_TRANSITIONS.welcome_rules).toEqual(["verification_intro"]);
