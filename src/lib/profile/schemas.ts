@@ -18,6 +18,18 @@ import {
   RELIGION_PRACTICE,
   RELIGION_PARTNER_MATCH,
   POST_MARRIAGE_LIVING,
+  // V3 MVP 2026-06-29:
+  ACTIVITY_FIELDS,
+  EMPLOYMENT_FORMAT,
+  FUTURE_CHILDREN_PLAN,
+  LIFE_VALUES_V3,
+  FAMILY_ROLE_MODEL,
+  WIFE_WORK_VIEW,
+  FAMILY_DECISION_MODEL,
+  HOUSEHOLD_RESPONSIBILITY_MODEL,
+  SEPARATE_FROM_PARENTS_IMPORTANCE,
+  PARTNER_QUALITIES,
+  PROFILE_VISIBILITY_MODE,
 } from "./options";
 import { ALL_CITY_VALUES } from "./cities";
 
@@ -149,3 +161,202 @@ export const lookingForSchema = z
     geo_preference: z.enum(tuple(vals(GEO_PREFERENCE))),
   })
   .refine((d) => d.partner_age_max >= d.partner_age_min, { message: "age_range_invalid" });
+
+// ============================================================================
+// Anketa V3 MVP (2026-06-29) — Sprint 1
+// ============================================================================
+
+/** Экран 2 — Место рождения. */
+export const birthPlaceSchema = z.object({
+  birth_country: z.string().trim().min(2).max(64),
+  birth_region: z.string().trim().max(128).optional().nullable(),
+  birth_district: z.string().trim().max(128).optional().nullable(),
+  birth_city: z.string().trim().max(128).optional().nullable(),
+});
+
+/** Экран 3 — О себе + образование + деятельность + формат занятости. */
+export const selfSchema = z.object({
+  bio: z
+    .string()
+    .trim()
+    .min(20, { message: "bio_too_short" })
+    .max(1000, { message: "bio_too_long" })
+    .refine((s) => !containsContact(s), { message: "bio_has_contacts" }),
+  education: z.enum(tuple(vals(EDUCATION))),
+  activity_field: z.enum(tuple(vals(ACTIVITY_FIELDS))),
+  employment_format: z.enum(tuple(vals(EMPLOYMENT_FORMAT))),
+});
+
+/** Экран 5 — Семья и дети (расширение familySchema). */
+export const familyChildrenSchema = z.object({
+  marital_status: z.enum(tuple(vals(MARITAL_STATUS))),
+  has_children: z.enum(tuple(vals(HAS_CHILDREN))),
+  children_count: z.coerce.number().int().min(0).max(10).optional().nullable(),
+  youngest_child_age: z.coerce.number().int().min(0).max(50).optional().nullable(),
+  future_children_plan: z.enum(tuple(vals(FUTURE_CHILDREN_PLAN))),
+});
+
+/** Экран 6 — Ценности и вера (новая версия с top_life_values вместо values). */
+export const valuesV3Schema = z.object({
+  religion: z.enum(tuple(vals(RELIGION))),
+  religion_practice: z.enum(tuple(vals(RELIGION_PRACTICE))),
+  religion_partner_match: z.enum(tuple(vals(RELIGION_PARTNER_MATCH))).optional(),
+  top_life_values: z.array(z.enum(tuple(vals(LIFE_VALUES_V3)))).min(1).max(3),
+});
+
+/** Экран 7 — Семейная модель. Hot колонки (family_role_model, wife_work) +
+ *  cold детали (decision_model, household_responsibility) пойдут в extended. */
+export const familyModelSchema = z.object({
+  family_role_model: z.enum(tuple(vals(FAMILY_ROLE_MODEL))),
+  wife_work_after_marriage_view: z.enum(tuple(vals(WIFE_WORK_VIEW))),
+  family_decision_model: z.enum(tuple(vals(FAMILY_DECISION_MODEL))).optional(),
+  household_responsibility_model: z.enum(tuple(vals(HOUSEHOLD_RESPONSIBILITY_MODEL))).optional(),
+});
+
+/** Экран 8 — Ожидания от партнёра (расширение lookingForSchema). */
+export const partnerExtendedSchema = z
+  .object({
+    partner_age_min: z.coerce.number().int().min(18).max(100),
+    partner_age_max: z.coerce.number().int().min(18).max(100),
+    partner_height_min: z.coerce.number().int().min(120).max(230).optional().nullable(),
+    partner_height_max: z.coerce.number().int().min(120).max(230).optional().nullable(),
+    partner_top_qualities: z.array(z.enum(tuple(vals(PARTNER_QUALITIES)))).min(1).max(5),
+  })
+  .refine((d) => d.partner_age_max >= d.partner_age_min, { message: "age_range_invalid" })
+  .refine(
+    (d) =>
+      d.partner_height_min == null ||
+      d.partner_height_max == null ||
+      d.partner_height_max >= d.partner_height_min,
+    { message: "height_range_invalid" },
+  );
+
+/** Экран 12 — Будущая семья и формат проживания (расширение marriageSchema). */
+export const futureFamilySchema = z.object({
+  post_marriage_living: z.enum(tuple(vals(POST_MARRIAGE_LIVING))),
+  separate_from_parents_importance: z
+    .enum(tuple(vals(SEPARATE_FROM_PARENTS_IMPORTANCE)))
+    .optional(),
+});
+
+/** Экран 16 — Глобальная видимость профиля. Per-block visibility — НЕ в MVP. */
+export const privacySchema = z.object({
+  profile_visibility_mode: z.enum(tuple(vals(PROFILE_VISIBILITY_MODE))),
+});
+
+// ============================================================================
+// extended jsonb — sparse-bucket для cold-полей V3
+// ============================================================================
+
+export const EXTENDED_SCHEMA_VERSION = 1;
+
+/** Структура extended jsonb. Cold/sparse поля живут здесь. */
+export const extendedSchema = z
+  .object({
+    _meta: z
+      .object({
+        schema_version: z.number().int().positive(),
+        completed_at: z.string().datetime().optional(),
+      })
+      .optional(),
+    children: z
+      .object({
+        age_ranges: z.array(z.number().int().min(0).max(50)).optional(),
+        future_plan_details: z
+          .object({
+            timing: z.string().max(50).optional(),
+            count_preference: z.number().int().min(0).max(10).optional(),
+            conditions: z.string().max(500).optional(),
+          })
+          .optional(),
+      })
+      .optional(),
+    family: z
+      .object({
+        views: z.array(z.string().max(50)).max(5).optional(),
+        decision_model: z.enum(tuple(vals(FAMILY_DECISION_MODEL))).optional(),
+        household_responsibility_model: z
+          .enum(tuple(vals(HOUSEHOLD_RESPONSIBILITY_MODEL)))
+          .optional(),
+      })
+      .optional(),
+    living: z
+      .object({
+        future_format: z.string().max(50).optional(),
+        separate_from_parents_importance: z
+          .enum(tuple(vals(SEPARATE_FROM_PARENTS_IMPORTANCE)))
+          .optional(),
+      })
+      .optional(),
+    partner: z
+      .object({
+        location_preference: z
+          .object({
+            scope: z.enum(["same_city", "same_region", "same_country", "any"]),
+            cities: z.array(z.string().max(80)).max(10).optional(),
+          })
+          .optional(),
+      })
+      .optional(),
+    bio: z
+      .object({
+        hobbies: z.string().max(500).optional(),
+        about_family: z.string().max(500).optional(),
+      })
+      .optional(),
+    privacy: z
+      .object({
+        // Зарезервировано для Sprint 2-3 (per-block visibility) — в Sprint 1 не пишется.
+        per_block: z
+          .record(z.string(), z.enum(["public", "match_only", "hidden"]))
+          .optional(),
+      })
+      .optional(),
+  })
+  .strict();
+
+export type ExtendedProfile = z.infer<typeof extendedSchema>;
+
+/** Validate extended jsonb payload. Throws if invalid. */
+export function validateExtended(input: unknown): ExtendedProfile {
+  return extendedSchema.parse(input);
+}
+
+// ============================================================================
+// Hot/cold split helper
+// ============================================================================
+
+/** Список hot-колонок которые пишутся напрямую в user_profiles. Всё остальное
+ *  идёт в extended jsonb. Держать в синхроне с миграцией 20260629000000. */
+export const HOT_COLUMNS = new Set([
+  "birth_country",
+  "birth_region",
+  "birth_district",
+  "birth_city",
+  "activity_field",
+  "employment_format",
+  "children_count",
+  "youngest_child_age",
+  "future_children_plan",
+  "top_life_values",
+  "family_role_model",
+  "wife_work_after_marriage_view",
+  "partner_height_min",
+  "partner_height_max",
+  "partner_top_qualities",
+  "profile_visibility_mode",
+]);
+
+/** Разделяет payload на hot (колонки user_profiles) и cold (extended jsonb). */
+export function splitHotCold(payload: Record<string, unknown>): {
+  hot: Record<string, unknown>;
+  cold: Record<string, unknown>;
+} {
+  const hot: Record<string, unknown> = {};
+  const cold: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(payload)) {
+    if (HOT_COLUMNS.has(k)) hot[k] = v;
+    else cold[k] = v;
+  }
+  return { hot, cold };
+}

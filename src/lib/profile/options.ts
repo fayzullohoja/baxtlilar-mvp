@@ -211,6 +211,133 @@ export const POST_MARRIAGE_LIVING: Opt[] = [
   },
 ];
 
+// ============================================================================
+// Anketa V3 MVP (2026-06-29) — Sprint 1 enum-наборы для новых экранов
+// ============================================================================
+
+/** Экран 3 — Деятельность. 17 опций. */
+export const ACTIVITY_FIELDS: Opt[] = [
+  { value: "it_software", ru: "IT / Разработка", uz: "IT / Dasturlash" },
+  { value: "finance_banking", ru: "Финансы / Банки", uz: "Moliya / Banklar" },
+  { value: "education_science", ru: "Образование / Наука", uz: "Taʼlim / Fan" },
+  { value: "medicine_health", ru: "Медицина / Здоровье", uz: "Tibbiyot / Sogʻliq" },
+  { value: "state_service", ru: "Госслужба", uz: "Davlat xizmati" },
+  { value: "law_legal", ru: "Юриспруденция", uz: "Yuristlik" },
+  { value: "business_entrepreneurship", ru: "Бизнес / Предпринимательство", uz: "Biznes / Tadbirkorlik" },
+  { value: "agriculture", ru: "Сельское хозяйство", uz: "Qishloq xoʻjaligi" },
+  { value: "construction_realestate", ru: "Строительство / Недвижимость", uz: "Qurilish / Koʻchmas mulk" },
+  { value: "manufacturing_industry", ru: "Производство / Промышленность", uz: "Ishlab chiqarish" },
+  { value: "trade_retail", ru: "Торговля / Розница", uz: "Savdo / Chakana" },
+  { value: "transport_logistics", ru: "Транспорт / Логистика", uz: "Transport / Logistika" },
+  { value: "media_creative", ru: "Медиа / Творчество", uz: "Media / Ijod" },
+  { value: "services", ru: "Услуги / Сервис", uz: "Xizmatlar" },
+  { value: "religion_spiritual", ru: "Религия / Духовная сфера", uz: "Din / Maʼnaviyat" },
+  { value: "household_homemaker", ru: "Дом и семья", uz: "Uy va oila" },
+  { value: "other", ru: "Другое", uz: "Boshqa" },
+];
+
+/** Экран 3 — Формат занятости. */
+export const EMPLOYMENT_FORMAT: Opt[] = [
+  { value: "office", ru: "Офис", uz: "Ofis" },
+  { value: "remote", ru: "Удалённо", uz: "Masofadan" },
+  { value: "hybrid", ru: "Гибрид", uz: "Gibrid" },
+  { value: "own_business", ru: "Свой бизнес", uz: "Oʻz biznesi" },
+  { value: "not_working", ru: "Не работаю сейчас", uz: "Hozir ishlamayman" },
+];
+
+/** Экран 5 — План по детям в будущем. Заменяет deprecated CHILDREN_PLAN. */
+export const FUTURE_CHILDREN_PLAN: Opt[] = [
+  { value: "yes_soon", ru: "Да, в ближайшее время", uz: "Ha, yaqin orada" },
+  { value: "yes_later", ru: "Да, в будущем", uz: "Ha, kelajakda" },
+  { value: "maybe", ru: "Возможно", uz: "Balki" },
+  { value: "no", ru: "Нет", uz: "Yoʻq" },
+  { value: "with_partner_decide", ru: "Решим вместе с партнёром", uz: "Hamroh bilan birga qaror qilamiz" },
+];
+
+/** Экран 6 — Топ-ценности (1-3 выбора из 14). */
+export const LIFE_VALUES_V3: Opt[] = [
+  { value: "family", ru: "Семья", uz: "Oila" },
+  { value: "faith", ru: "Вера", uz: "Eʼtiqod" },
+  { value: "honesty", ru: "Честность", uz: "Halollik" },
+  { value: "respect", ru: "Уважение", uz: "Hurmat" },
+  { value: "kindness", ru: "Доброта", uz: "Mehribonlik" },
+  { value: "responsibility", ru: "Ответственность", uz: "Masʼuliyat" },
+  { value: "tradition", ru: "Традиции", uz: "Anʼanalar" },
+  { value: "education", ru: "Образование", uz: "Taʼlim" },
+  { value: "health", ru: "Здоровье", uz: "Sogʻliq" },
+  { value: "career", ru: "Карьера", uz: "Karyera" },
+  { value: "financial_stability", ru: "Финансовая стабильность", uz: "Moliyaviy barqarorlik" },
+  { value: "community", ru: "Община / Махалла", uz: "Hamjamiyat / Mahalla" },
+  { value: "self_development", ru: "Саморазвитие", uz: "Oʻzini rivojlantirish" },
+  { value: "independence", ru: "Самостоятельность", uz: "Mustaqillik" },
+];
+
+/** Экран 7 — Модель распределения ролей в семье. Ключевой для matching. */
+export const FAMILY_ROLE_MODEL: Opt[] = [
+  { value: "traditional", ru: "Традиционная (мужчина — глава семьи)", uz: "Anʼanaviy (erkak — oila boshligʻi)" },
+  { value: "equal_partnership", ru: "Равное партнёрство", uz: "Teng hamkorlik" },
+  { value: "woman_leads", ru: "Женщина-лидер", uz: "Ayol yetakchi" },
+  { value: "situational", ru: "Зависит от ситуации", uz: "Vaziyatga qarab" },
+];
+
+/** Экран 7 — Взгляд на работу жены после брака. */
+export const WIFE_WORK_VIEW: Opt[] = [
+  { value: "welcome", ru: "Приветствую — пусть работает", uz: "Mamnuniyat bilan — ishlasin" },
+  { value: "ok_if_needed", ru: "Допустимо, если нужно", uz: "Kerak boʻlsa, mumkin" },
+  { value: "prefer_not", ru: "Предпочитаю, чтобы не работала", uz: "Ishlamasligini afzal koʻraman" },
+  { value: "against", ru: "Категорически против", uz: "Qatʼiy qarshi" },
+  { value: "discuss", ru: "Готов(а) обсуждать", uz: "Muhokama qilishga tayyorman" },
+];
+
+/** Экран 7 — Принятие решений (в extended.family.decision_model). */
+export const FAMILY_DECISION_MODEL: Opt[] = [
+  { value: "husband_main", ru: "Основное за мужем", uz: "Asosiy qaror erda" },
+  { value: "wife_main", ru: "Основное за женой", uz: "Asosiy qaror xotinda" },
+  { value: "joint", ru: "Совместно", uz: "Birgalikda" },
+  { value: "by_domain", ru: "По сферам", uz: "Sohalar boʻyicha" },
+];
+
+/** Экран 7 — Бытовые обязанности (в extended.family.household_responsibility_model). */
+export const HOUSEHOLD_RESPONSIBILITY_MODEL: Opt[] = [
+  { value: "traditional", ru: "Традиционно (жена — дом, муж — обеспечение)", uz: "Anʼanaviy (xotin uy ishlari, er taʼminlash)" },
+  { value: "shared_50_50", ru: "Поровну 50/50", uz: "Tengma-teng 50/50" },
+  { value: "by_skill", ru: "По навыкам", uz: "Koʻnikma boʻyicha" },
+  { value: "flexible", ru: "Гибко по ситуации", uz: "Vaziyatga qarab" },
+];
+
+/** Экран 12 — Важность жить отдельно от родителей (в extended.living). */
+export const SEPARATE_FROM_PARENTS_IMPORTANCE: Opt[] = [
+  { value: "must", ru: "Обязательно отдельно", uz: "Albatta alohida" },
+  { value: "preferred", ru: "Желательно отдельно", uz: "Alohida boʻlgani yaxshi" },
+  { value: "neutral", ru: "Нейтрально", uz: "Farqi yoʻq" },
+  { value: "not_important", ru: "Не принципиально", uz: "Muhim emas" },
+];
+
+/** Экран 8 — Топ-качества партнёра (1-5 выбора из 14). */
+export const PARTNER_QUALITIES: Opt[] = [
+  { value: "kindness", ru: "Доброта", uz: "Mehribonlik" },
+  { value: "honesty", ru: "Честность", uz: "Halollik" },
+  { value: "responsibility", ru: "Ответственность", uz: "Masʼuliyat" },
+  { value: "intelligence", ru: "Интеллект", uz: "Aql-zakovat" },
+  { value: "sense_of_humor", ru: "Чувство юмора", uz: "Hazil tuygʻusi" },
+  { value: "religiosity", ru: "Религиозность", uz: "Diniylik" },
+  { value: "ambition", ru: "Амбициозность", uz: "Maqsadli" },
+  { value: "calmness", ru: "Спокойствие", uz: "Bosiqlik" },
+  { value: "loyalty", ru: "Верность", uz: "Sadoqat" },
+  { value: "family_oriented", ru: "Семейные ценности", uz: "Oilaga sadoqat" },
+  { value: "caring", ru: "Заботливость", uz: "Gʻamxoʻrlik" },
+  { value: "independence", ru: "Самостоятельность", uz: "Mustaqillik" },
+  { value: "generosity", ru: "Щедрость", uz: "Saxiylik" },
+  { value: "patience", ru: "Терпение", uz: "Sabr" },
+];
+
+/** Экран 16 — Глобальный режим видимости профиля. Per-block visibility — НЕ в MVP. */
+export const PROFILE_VISIBILITY_MODE: Opt[] = [
+  { value: "public", ru: "Открытый профиль", uz: "Ochiq profil" },
+  { value: "verified_only", ru: "Только для верифицированных", uz: "Faqat tasdiqlanganlarga" },
+  { value: "by_request", ru: "По запросу", uz: "Soʻrov boʻyicha" },
+];
+
 export const vals = (o: Opt[]): string[] => o.map((x) => x.value);
 export const labelOf = (o: Opt[], value: string, locale: string): string =>
   o.find((x) => x.value === value)?.[locale === "uz" ? "uz" : "ru"] ?? value;
