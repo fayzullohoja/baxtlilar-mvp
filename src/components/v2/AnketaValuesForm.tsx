@@ -8,9 +8,7 @@ import {
   RELIGION,
   RELIGION_PRACTICE,
   RELIGION_PARTNER_MATCH,
-  LIFE_VALUES,
-  EDUCATION,
-  EMPLOYMENT,
+  LIFE_VALUES_V3,
 } from "@/lib/profile/options";
 
 /**
@@ -30,8 +28,6 @@ export function V2AnketaValuesForm({ locale }: { locale: string }) {
   const [practice, setPractice] = useState("");
   const [partnerMatch, setPartnerMatch] = useState("");
   const [values, setValues] = useState<string[]>([]);
-  const [education, setEducation] = useState("");
-  const [employment, setEmployment] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -51,9 +47,7 @@ export function V2AnketaValuesForm({ locale }: { locale: string }) {
           religion,
           religion_practice: practice,
           ...(partnerMatch ? { religion_partner_match: partnerMatch } : {}),
-          values,
-          education,
-          employment: employment || undefined,
+          top_life_values: values,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as { ok: boolean; next?: string };
@@ -70,7 +64,7 @@ export function V2AnketaValuesForm({ locale }: { locale: string }) {
   }
 
   const valid =
-    !!religion && !!practice && values.length >= 1 && values.length <= 3 && !!education;
+    !!religion && !!practice && values.length >= 1 && values.length <= 3;
 
   return (
     <div>
@@ -108,15 +102,7 @@ export function V2AnketaValuesForm({ locale }: { locale: string }) {
         required
         hint={`Выбери от 1 до 3 — что отражает тебя. Выбрано: ${values.length}/3`}
       >
-        <Chips options={LIFE_VALUES} selected={values} onToggle={toggle} max={3} locale={locale} />
-      </Field>
-
-      <Field label="Образование" required>
-        <Select options={EDUCATION} value={education} onChange={setEducation} locale={locale} />
-      </Field>
-
-      <Field label="Занятость">
-        <Select options={EMPLOYMENT} value={employment} onChange={setEmployment} locale={locale} />
+        <Chips options={LIFE_VALUES_V3} selected={values} onToggle={toggle} max={3} locale={locale} />
       </Field>
 
       {err ? (

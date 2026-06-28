@@ -1,23 +1,18 @@
 /**
- * V3 Sprint 1 ЗАГЛУШКА — Экран 3 «О себе» (bio + education + activity + employment).
- *
- * Sprint 1 деплоит её пустой чтобы flow basic → birth_place → self работал
- * без 404. Sprint 2 заменит реальной формой.
- *
- * Когда юзер сюда попал — он завершил birth-place. У нас пока нет реального
- * экрана, но transition уже произошёл. Кнопка ниже двигает в legacy
- * appearance (старый Sprint V2 ext поток), чтобы юзер не застрял.
+ * V3 Sprint 2 — Экран 3 «О себе».
+ * bio + education + activity_field + employment_format.
+ * API: /api/onboarding/profile/self.
  */
 
 import { setRequestLocale } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
-import { ContinueToAppearanceButton } from "@/components/v2/ContinueToAppearanceButton";
+import { V2AnketaSelfForm } from "@/components/v2/AnketaSelfForm";
 
 export const dynamic = "force-dynamic";
 
-export default async function V2AnketaSelfStubPage({
+export default async function V2AnketaSelfPage({
   params,
 }: {
   params: Promise<{ locale: string }>;
@@ -27,18 +22,17 @@ export default async function V2AnketaSelfStubPage({
   await requireUserAtStep(locale, "profile_self");
 
   return (
-    <MiniAppShell eyebrow="Шаг 3 · Скоро" align="top">
+    <MiniAppShell eyebrow="Шаг 3 из 8 · Анкета" align="top">
       <Headline size="lg" as="h1">
-        Этот экран скоро будет доступен.
+        О тебе вживую.
       </Headline>
       <Lead>
-        Мы&nbsp;готовим раздел «О&nbsp;себе»: образование, сфера деятельности
-        и&nbsp;немного про&nbsp;характер. Пока продолжай с&nbsp;текущей анкетой —
-        вернёмся к&nbsp;этому шагу позже.
+        Расскажи о себе, укажи образование и сферу деятельности. Это поможет
+        другим понять характер и серьёзность намерений.
       </Lead>
 
       <div style={{ marginTop: "32px" }}>
-        <ContinueToAppearanceButton />
+        <V2AnketaSelfForm locale={locale} />
       </div>
     </MiniAppShell>
   );
