@@ -18,6 +18,10 @@ describe("V3 anketa transitions (Sprint 1)", () => {
     expect(ALLOWED_TRANSITIONS.profile_self).toContain("profile_family");
   });
 
+  it("profile_self → profile_appearance (V3 — после self идёт appearance)", () => {
+    expect(ALLOWED_TRANSITIONS.profile_self).toContain("profile_appearance");
+  });
+
   it("profile_values → profile_family_model (Sprint 2)", () => {
     expect(ALLOWED_TRANSITIONS.profile_values).toContain("profile_family_model");
   });

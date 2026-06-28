@@ -31,7 +31,6 @@ import {
   PARTNER_QUALITIES,
   PROFILE_VISIBILITY_MODE,
 } from "./options";
-import { ALL_CITY_VALUES } from "./cities";
 
 const tuple = (a: string[]) => a as [string, ...string[]];
 
@@ -76,6 +75,10 @@ export function containsContact(text: string): boolean {
   return PHONE_RE.test(norm) || HANDLE_RE.test(norm) || LINK_RE.test(norm) || MESSENGER_RE.test(low);
 }
 
+/** V3 Sprint 3 round 2: упрощённый basic.
+ *  Убраны city (отдельный город дублировал region) и bio (теперь только на
+ *  Экране 3 Self). Учредительская поправка после тест-прохода 2026-06-29.
+ */
 export const basicSchema = z
   .object({
     // F-009 v2: display_name тоже фильтруется на контакты — раньше нарушители
@@ -98,15 +101,7 @@ export const basicSchema = z
     citizenship: z.enum(tuple(vals(CITIZENSHIP))),
     country_of_residence: z.enum(tuple(vals(COUNTRY_OF_RESIDENCE))),
     // region — обязателен только для UZ (для других стран — пустая строка/опц).
-    // Refine ниже валидирует это правило.
     region: z.string().trim().max(80).optional(),
-    city: z.enum(tuple(ALL_CITY_VALUES)),
-    bio: z
-      .string()
-      .trim()
-      .min(20, { message: "bio_too_short" })
-      .max(1000, { message: "bio_too_long" })
-      .refine((s) => !containsContact(s), { message: "bio_has_contacts" }),
   })
   .refine(
     (d) => {

@@ -108,7 +108,8 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   profile_basic: ["profile_birth_place", "profile_appearance"],
   profile_birth_place: ["profile_appearance", "profile_self"],
   profile_appearance: ["profile_self", "profile_family"],
-  profile_self: ["profile_family"],
+  // V3 Sprint 2: self → appearance (рост/вес/языки идут ПОСЛЕ self для V3 flow).
+  profile_self: ["profile_appearance", "profile_family"],
   profile_family: ["profile_values"],
   // V2 ext 2026-06-28: между values и looking_for — profile_marriage (формат проживания).
   profile_values: ["profile_family_model", "profile_marriage"],

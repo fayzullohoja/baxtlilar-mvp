@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
-import { Field, TextInput, TextArea, Select, CitySelect } from "./AnketaFields";
+import { Field, TextInput, Select } from "./AnketaFields";
 import {
   GENDER,
   CITIZENSHIP,
@@ -49,8 +49,6 @@ export function V2AnketaBasicForm({
   const [citizenship, setCitizenship] = useState("");
   const [country, setCountry] = useState("");
   const [region, setRegion] = useState("");
-  const [city, setCity] = useState("");
-  const [bio, setBio] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -72,8 +70,6 @@ export function V2AnketaBasicForm({
           citizenship,
           country_of_residence: country,
           ...(showRegion ? { region } : {}),
-          city,
-          bio,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {
@@ -100,9 +96,7 @@ export function V2AnketaBasicForm({
     !!birth &&
     !!citizenship &&
     !!country &&
-    (!showRegion || !!region) &&
-    !!city &&
-    bio.trim().length >= 20;
+    (!showRegion || !!region);
 
   return (
     <div>
@@ -146,7 +140,10 @@ export function V2AnketaBasicForm({
         />
       </Field>
       {showRegion ? (
-        <Field label="Область или регион">
+        <Field
+          label="Область или регион"
+          hint="Где живёшь сейчас — этого достаточно для подбора."
+        >
           <Select
             options={UZ_REGIONS}
             value={region}
@@ -155,21 +152,6 @@ export function V2AnketaBasicForm({
           />
         </Field>
       ) : null}
-      <Field label="Город">
-        <CitySelect value={city} onChange={setCity} placeholder="Где живёшь" locale={locale} />
-      </Field>
-      <Field
-        label="О себе"
-        hint="Что важно знать про тебя. Не реквизиты — характер, привычки, чем живёшь."
-      >
-        <TextArea
-          value={bio}
-          onChange={(e) => setBio(e.target.value)}
-          rows={5}
-          maxLength={1000}
-          placeholder="Например: люблю длинные прогулки, читаю историческую нонфикшн, ценю прямоту"
-        />
-      </Field>
 
       {err ? (
         <div
