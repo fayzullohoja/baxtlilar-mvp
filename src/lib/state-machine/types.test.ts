@@ -45,8 +45,10 @@ describe("ALLOWED_TRANSITIONS", () => {
     // V2 ext 2026-06-28: после биометрии идёт welcome серия (welcome_mission)
     // hard-cutover (без legacy fallback на verification_intro).
     expect(ALLOWED_TRANSITIONS.bot_consent_biometric).toEqual(["welcome_mission"]);
-    expect(ALLOWED_TRANSITIONS.welcome_mission).toEqual(["welcome_safety"]);
-    expect(ALLOWED_TRANSITIONS.welcome_safety).toEqual(["welcome_rules"]);
+    // V3 Sprint 3 round 3: одностраничный welcome — все welcome_* шаги ведут
+    // прямо в verification_intro.
+    expect(ALLOWED_TRANSITIONS.welcome_mission).toEqual(["verification_intro"]);
+    expect(ALLOWED_TRANSITIONS.welcome_safety).toEqual(["verification_intro"]);
     expect(ALLOWED_TRANSITIONS.welcome_rules).toEqual(["verification_intro"]);
     expect(ALLOWED_TRANSITIONS.verification_intro).toEqual(["doc_upload"]);
     expect(ALLOWED_TRANSITIONS.doc_upload).toContain("selfie_upload");
@@ -105,7 +107,18 @@ describe("ALLOWED_TRANSITIONS", () => {
 describe("ALLOWED_TRANSITIONS connectivity (анти-застревание)", () => {
   // Legacy-шаги намеренно terminal — это и есть способ "ничего не делать с
   // унаследованными строками". Они исключены из проверки тупиков.
-  const LEGACY: ReadonlySet<string> = new Set(["language", "consent", "phone_input", "otp_pending"]);
+  // V3 Sprint 3 round 3: welcome_safety и welcome_rules стали legacy
+  // (одностраничный welcome теперь идёт mission → verification_intro).
+  // Сами шаги ведут в verification_intro как fallback для застрявших юзеров,
+  // но из bot_language не достижимы — только welcome_mission используется.
+  const LEGACY: ReadonlySet<string> = new Set([
+    "language",
+    "consent",
+    "phone_input",
+    "otp_pending",
+    "welcome_safety",
+    "welcome_rules",
+  ]);
   const LIVE = ALL_STEPS.filter((s) => !LEGACY.has(s));
 
   it("из live-шагов тупиков нет (терминален только active)", () => {
