@@ -469,7 +469,10 @@
     "req_1": "Yuz niqob, koʻzoynak, shapkasiz",
     "req_2": "Tabiiy yorugʻlik — tepadan lampa emas",
     "req_3": "Kameraga toʻgʻridan-toʻgʻri qarang",
-    "req_4": "Begona fotoni foydalanmang — bu shikoyatsiz bloklanish"
+    "req_4": "Begona fotoni foydalanmang — bu shikoyatsiz bloklanish",
+    "cta": "Boshlash",
+    "ctaPending": "Kuting…",
+    "ctaError": "Nimadir notoʻgʻri ketdi. Qaytadan urinib koʻring."
   },
   "Bot": {
     "blocked_by_moderator": "Moderator tomonidan bloklangan.",
@@ -715,6 +718,9 @@
       "title": "Shaxs tasdiqlandi.",
       "body": "Baxtlilar ga toʻliq kirish ochildi."
     },
-    "justNow": "hozirgina"
+    "justNow": "hozirgina",
+    "minutesAgo": "{n} daqiqa oldin",
+    "hoursAgo": "{n} soat oldin",
+    "daysAgo": "{n} kun oldin"
   }
 }

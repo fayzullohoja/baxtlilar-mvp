@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "./Button";
 
 /**
@@ -14,6 +15,7 @@ import { Button } from "./Button";
 
 export function VerificationIntroCta() {
   const router = useRouter();
+  const t = useTranslations("Verify");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +31,7 @@ export function VerificationIntroCta() {
         router.replace("/v2/verify/doc");
         return;
       }
-      setError("Что-то пошло не так. Попробуй ещё раз.");
+      setError(t("ctaError"));
     });
   }
 
@@ -52,7 +54,7 @@ export function VerificationIntroCta() {
         </div>
       ) : null}
       <Button onClick={onClick} disabled={pending} variant="primary">
-        {pending ? "Подождите…" : "Поехали"}
+        {pending ? t("ctaPending") : t("cta")}
       </Button>
     </div>
   );

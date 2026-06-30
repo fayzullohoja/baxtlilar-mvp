@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import type { ReactNode, ChangeEventHandler } from "react";
 import { CITY_GROUPS } from "@/lib/profile/cities";
 import type { Opt } from "@/lib/profile/options";

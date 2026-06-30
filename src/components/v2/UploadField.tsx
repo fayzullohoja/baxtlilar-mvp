@@ -35,8 +35,6 @@ function getErrorCopy(t: ReturnType<typeof useTranslations>) {
   };
 }
 
-const ERROR_COPY: Record<string, string> = {}; // Will be populated in component
-
 export function UploadField({
   endpoint,
   uploadLabel,
@@ -140,7 +138,7 @@ export function UploadField({
             lineHeight: "1.5",
           }}
         >
-          {ERROR_COPY[errorCode] ?? ERROR_COPY.failed}
+          {(errorCopy as Record<string, string>)[errorCode] ?? errorCopy.failed}
         </div>
       ) : null}
 

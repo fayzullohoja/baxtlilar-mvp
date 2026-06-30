@@ -75,11 +75,11 @@ function timeAgo(iso: string | null, tTime: ReturnType<typeof useTranslations>):
   const ms = Date.now() - new Date(iso).getTime();
   const min = Math.floor(ms / 60_000);
   if (min < 1) return tTime("justNow");
-  if (min < 60) return `${min} мин назад`;
+  if (min < 60) return tTime("minutesAgo", { n: min });
   const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr} ч назад`;
+  if (hr < 24) return tTime("hoursAgo", { n: hr });
   const day = Math.floor(hr / 24);
-  return `${day} д назад`;
+  return tTime("daysAgo", { n: day });
 }
 
 export function VerificationPlashka({ status, submittedAt }: Props) {
