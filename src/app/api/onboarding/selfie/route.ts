@@ -54,5 +54,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     { kind: "user", id: user.id },
   );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
+
+  // E2E bug 2026-06-30: миграция 20260627100100 бэкфилит cases только для
+  // pre-existing pending_review юзеров. Новые регистрации после миграции в
+  // админ-очередь не попадали — модератор их не видел. Создаём case ровно
+  // здесь, после успешной транзиции в pending_review. Idempotent через
+  // WHERE NOT EXISTS на ненулевой (не closed) кейс пользователя: повторная
+  // подача после needs_changes не плодит дубликаты.
+  const sb = supabaseAdmin();
+  const { data: openCase } = await sb
+    .from("verification_cases")
+    .select("id")
+    .eq("user_id", user.id)
+    .neq("state", "closed")
+    .maybeSingle();
+  if (!openCase) {
+    const { error: caseErr } = await sb
+      .from("verification_cases")
+      .insert({ user_id: user.id, state: "new" });
+    if (caseErr) console.error("[selfie] verification_case insert failed:", caseErr.message);
+  }
+
   return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.moderation_pending });
 }
