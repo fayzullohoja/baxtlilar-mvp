@@ -106,7 +106,7 @@ export function MatchStoryCard({ story, candidateName }: Props) {
         Почему мы предлагаем {candidateName}.
       </Headline>
 
-      <Section title="Что у вас общего" items={story.reasons} />
+      <Section title="Что у Вас общего" items={story.reasons} />
       <Section title="На что обратить внимание" items={story.cautions} />
 
       {story.advice ? (

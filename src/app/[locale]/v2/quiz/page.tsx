@@ -24,7 +24,7 @@ export default async function V2QuizPage({
   return (
     <MiniAppShell eyebrow="Психо-портрет" align="top">
       <Headline size="lg" as="h1">
-        Десять вопросов про&nbsp;тебя.
+        Десять вопросов про&nbsp;Вас.
       </Headline>
       <Lead>
         Big Five — простая модель личности. Не диагноз, не приговор. Просто
@@ -32,7 +32,7 @@ export default async function V2QuizPage({
         в анкете.
       </Lead>
       <Lead style={{ marginTop: "16px", fontSize: "14px" }}>
-        Шкала 1–5: насколько утверждение про тебя. Без правильных ответов.
+        Шкала 1–5: насколько утверждение про Вас. Без правильных ответов.
       </Lead>
 
       <div
