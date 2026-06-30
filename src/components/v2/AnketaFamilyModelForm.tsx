@@ -129,7 +129,7 @@ export function V2AnketaFamilyModelForm({ locale }: { locale: string }) {
             marginBottom: "16px",
           }}
         >
-          {t('Anketa.err_failed')}
+          {t('err_failed')}
         </div>
       ) : null}
 

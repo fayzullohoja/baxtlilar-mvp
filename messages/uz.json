@@ -312,7 +312,8 @@
     "ageRangeHint": "Yillarda, 0-50.",
     "futureChildrenPlansLabel": "Kelajakda bolalar bo'yicha rejalar",
     "futureChildrenPlansHint": "Bu muhim mos kelish signali — algoritm rejalarning moslikini hisobga oladi.",
-    "geographyLabel": "Geografiya"
+    "geographyLabel": "Geografiya",
+    "lifeValuesHint": "3 tagacha tanlang — bu algoritmga sizga nima muhimligini koʻrsatadi."
   },
   "Quiz": {
     "intro_title": "Moslik soʻrovi",
@@ -397,7 +398,8 @@
     "input_placeholder": "Biron narsa yozing",
     "openProfile": "Profilni ochish",
     "ghostChatHeading": "Suhbat ishi Baxtlilarda yo'q.",
-    "ghostChatDescription": "Xabarlarni o'qish mumkin emas."
+    "ghostChatDescription": "Xabarlarni o'qish mumkin emas.",
+    "menu": "Menyu"
   },
   "Settings": {
     "title": "Profil",
@@ -490,7 +492,14 @@
     "maritalStatusLabel": "Oilaviy holati",
     "childrenLabel": "Bolalar",
     "childrenPlansLabel": "Bolalar bo'yicha rejalar",
-    "educationLabel": "Ta'lim"
+    "educationLabel": "Ta'lim",
+    "personalityLabel": "Xarakter",
+    "valuesLabel": "Qadriyatlar",
+    "bioLabel": "Oʻzi haqida",
+    "privacyFooter": "Oʻzaro qiziqishdan keyin koʻproq maʼlumot ochiladi",
+    "lifeValuesLabel": "Hayot qadriyatlari",
+    "detailsLabel": "Batafsil",
+    "profileFootnote": "Profil anketa kabi yangilanadi"
   },
   "Tutorial": {
     "intro.title": "Tanishish · 1 dan 4",
@@ -513,11 +522,49 @@
     "swipe.heading": "Suvayp emas. Manfaatlar.",
     "swipe.body1": "«Siz meni manfaatlantiradi» demoqchi bo'lsangiz, anketa butunini ochishingiz kerak — fotolar, matn, qiymatlar — va Manfaat jo'natish tugmasini bosing.",
     "swipe.body2": "Manfaatga qisqa xabar qo'shishingiz mumkin (va kerak) — nima tarzida oldi. \"Salom\" emas, \"qandaysiz\" emas.",
-    "swipe.body3": "Shuning uchun hech kim hech koga spam jo'natmaydi. Va shuning uchun javob allaqachon natijador."
+    "swipe.body3": "Shuning uchun hech kim hech koga spam jo'natmaydi. Va shuning uchun javob allaqachon natijador.",
+    "intro": {
+      "title": "1-tanishuv · 4 dan 1",
+      "heading": "Baxtlilar qanday ishlaydi.",
+      "body1": "Bu Tinder emas. Bu yerda kamroq odam va har biriga koʻproq eʼtibor.",
+      "body2": "Biz kuniga 1 anketa koʻrsatamiz — algoritm sizning qadriyatlaringiz boʻyicha tanlaydi."
+    },
+    "swipe": {
+      "title": "2-qiziqish · 4 dan 2",
+      "heading": "Svaypsiz.",
+      "body1": "Svayp — bu lotereya. Bizda ongli qiziqish: oʻqib koʻrgandan keyin siz qaror qilasiz.",
+      "body2": "Qiziqishga shaxsiy xabar qoʻshish mumkin — suhbatdosh uni darhol koʻradi.",
+      "body3": "Qiziqish oʻzaro boʻlsa — chat ochiladi."
+    },
+    "chat": {
+      "title": "3-chatlar · 4 dan 3",
+      "heading": "Faqat oʻzaro qiziqishdan keyin.",
+      "body1": "Chat faqat ikkala tomon qiziqish yuborganda ochiladi.",
+      "body2": "Massa-jonatishlarsiz va spamsiz. Faqat jonli muloqot.",
+      "body3": "Aloqani istalgan vaqtda toʻxtatish mumkin — tushuntirishsiz."
+    },
+    "safety": {
+      "title": "4-xavfsizlik · 4 dan 4",
+      "heading": "Bir nechta qoidalar.",
+      "body1": "Uchrashishdan oldin raqam va havola berma. Algoritm bunday xabarlarni filtrlaydi.",
+      "body2": "Kimdir yomon harakat qilsa — \"Shikoyat\" tugmasi. Moderator koʻradi.",
+      "body3": "Hisobni sozlamalardan oʻchirish mumkin — anketa va barcha fotolar qaytarib boʻlmaydi."
+    }
   },
   "AnketaPrivacy": {
     "visibilityModeLabel": "Profil ko'rinishi rejimi",
-    "visibilityModeHint": "Keyinchalik sozlamalardan o'zgartirishingiz mumkin. Hozir boshlang'ich rejimni tanlang."
+    "visibilityModeHint": "Keyinchalik sozlamalardan o'zgartirishingiz mumkin. Hozir boshlang'ich rejimni tanlang.",
+    "Errors": {
+      "saveFailed": "Saqlab boʻlmadi."
+    },
+    "Buttons": {
+      "saving": {
+        "next": "Saqlanyapti…"
+      }
+    },
+    "Anketa": {
+      "btn_next": "Davom etish"
+    }
   },
   "Errors": {
     "saveFailed": "Saqlay olmadim. Yana urinib ko'ring.",
@@ -534,7 +581,10 @@
     "publishing.publish": "Nishryotilmoqda…",
     "startVerification": "Boshlaylik",
     "waiting": "Kutib turing…",
-    "skipTour": "Tuarni otsib yuborish"
+    "skipTour": "Tuarni otsib yuborish",
+    "saving": {
+      "next": "Saqlanyapti…"
+    }
   },
   "Verification": {
     "queued.label": "Navbatda",
@@ -572,11 +622,21 @@
     "errors.duplicateIdentity": "Bu hujjat boshqa anketa uchun ro'yxatga olingan.",
     "errors.duplicatePassport": "Bu pasport allaqachon ro'yxatga olingan.",
     "errors.duplicateSelfie": "Bu selfi allaqachon uchratilgan.",
-    "errors.failed": "Yuklaya olmadi. Ulanishni tekshiring va yana urinib ko'ring."
+    "errors.failed": "Yuklaya olmadi. Ulanishni tekshiring va yana urinib ko'ring.",
+    "errors": {
+      "badType": "Qoʻllab-quvvatlanmaydigan fayl turi",
+      "tooLarge": "Fayl juda katta",
+      "duplicateIdentity": "Bu shaxs allaqachon roʻyxatdan oʻtgan",
+      "duplicatePassport": "Bu pasport allaqachon ishlatilgan",
+      "duplicateSelfie": "Bu selfi allaqachon ishlatilgan",
+      "failed": "Yuklab boʻlmadi"
+    }
   },
   "ProfileSafety": {
     "reportButton": "Shikoyat qilish",
-    "blockButton": "Bloklash"
+    "blockButton": "Bloklash",
+    "reportSentLabel": "Shikoyat yuborildi",
+    "blockedLabel": "Bloklangan"
   },
   "Report": {
     "reasons.fake": "Shubhali / real emas deb o'ylayman",
@@ -628,5 +688,33 @@
   },
   "AnketaLooking": {
     "errors.ageRangeInvalid": "Maksimum minimalga teng yoki katta bo'lishi kerak."
+  },
+  "VerificationPlashka": {
+    "queued": {
+      "label": "Soʻrov yuborildi",
+      "title": "Moderator koʻrib chiqyapti.",
+      "body": "Odatda 2-4 soat. Hozircha — ilovadan foydalanishni davom ettiring."
+    },
+    "needsChanges": {
+      "label": "Oʻzgartirish kerak",
+      "title": "Tuzatish kerak.",
+      "body": "Moderator hujjatlarni tuzatishni soʻradi. Yangi fotolarni yuklang — va qayta tekshiruvga."
+    },
+    "rejected": {
+      "label": "Rad etildi",
+      "title": "Tekshiruvdan oʻtmadi.",
+      "body": "Hujjatlar qabul qilinmadi. Buni xato deb hisoblasangiz — qoʻllab-quvvatlash xizmatiga murojaat qiling."
+    },
+    "notStarted": {
+      "label": "Boshlanmagan",
+      "title": "Shaxsingizni tasdiqlang.",
+      "body": "Pasport va selfi yuklang — biz tezda tekshiramiz."
+    },
+    "approved": {
+      "label": "Tasdiqlangan",
+      "title": "Shaxs tasdiqlandi.",
+      "body": "Baxtlilar ga toʻliq kirish ochildi."
+    },
+    "justNow": "hozirgina"
   }
 }
