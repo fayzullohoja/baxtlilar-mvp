@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { verifyPassword } from "@/lib/admin/password";
 import { setAdminSession, type AdminRole } from "@/lib/admin/session";
 import { isLoginThrottled, recordLoginAttempt } from "@/lib/admin/throttle";
+import { adminAudit } from "@/lib/admin/guard";
 import { trustedIp } from "@/lib/http/ip";
 
 export const runtime = "nodejs";
@@ -39,6 +40,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
   await recordLoginAttempt(ip, true);
 
-  await setAdminSession({ adminId: admin!.id as string, role: admin!.role as AdminRole });
+  // Bug #10 (2026-06-30, loop pass 2): recordLoginAttempt пишет в rate-limit
+  // таблицу, но не в admin_audit_log. Compliance/forensics требует mirror в
+  // audit. Не блокируем login на сбое аудита (rare, не критично).
+  const adminId = admin!.id as string;
+  const adminRole = admin!.role as AdminRole;
+  try {
+    await adminAudit({
+      adminId,
+      action: "login",
+      entity: "admin",
+      entityId: adminId,
+      newValue: { role: adminRole },
+      ip,
+    });
+  } catch (err) {
+    console.error("[admin/login] adminAudit failed:", err);
+  }
+
+  await setAdminSession({ adminId, role: adminRole });
   return NextResponse.json({ ok: true });
 }
