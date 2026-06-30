@@ -183,13 +183,27 @@ export const selfSchema = z.object({
 });
 
 /** Экран 5 — Семья и дети (расширение familySchema). */
-export const familyChildrenSchema = z.object({
-  marital_status: z.enum(tuple(vals(MARITAL_STATUS))),
-  has_children: z.enum(tuple(vals(HAS_CHILDREN))),
-  children_count: z.coerce.number().int().min(0).max(10).optional().nullable(),
-  youngest_child_age: z.coerce.number().int().min(0).max(50).optional().nullable(),
-  future_children_plan: z.enum(tuple(vals(FUTURE_CHILDREN_PLAN))),
-});
+export const familyChildrenSchema = z
+  .object({
+    marital_status: z.enum(tuple(vals(MARITAL_STATUS))),
+    has_children: z.enum(tuple(vals(HAS_CHILDREN))),
+    children_count: z.coerce.number().int().min(0).max(10).optional().nullable(),
+    youngest_child_age: z.coerce.number().int().min(0).max(50).optional().nullable(),
+    future_children_plan: z.enum(tuple(vals(FUTURE_CHILDREN_PLAN))),
+  })
+  // Bug #6 (2026-06-30): без refine API принимал {has_children:'yes'} без
+  // children_count/age — данные оказывались логически неконсистентны. Клиент
+  // прячет поля при has_children='no', сервер обязан проверить то же самое.
+  .refine(
+    (d) =>
+      d.has_children === "no" ||
+      d.has_children === "na" ||
+      (d.children_count != null && d.youngest_child_age != null),
+    {
+      message: "children_count_and_age_required_if_has_children",
+      path: ["children_count"],
+    },
+  );
 
 /** Экран 6 — Ценности и вера (новая версия с top_life_values вместо values). */
 export const valuesV3Schema = z.object({

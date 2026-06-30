@@ -15,15 +15,20 @@ export async function POST(): Promise<NextResponse> {
 
   const { data: p } = await sb
     .from("user_profiles")
-    .select("display_name, gender, birth_date, region, bio, religion, top_life_values, partner_age_min, partner_age_max")
+    .select("display_name, gender, birth_date, country_of_residence, region, bio, religion, top_life_values, partner_age_min, partner_age_max")
     .eq("user_id", user.id)
     .maybeSingle();
+  // V3 (2026-06-30, Bug #5): region обязателен только для UZ-резидентов
+  // (basicSchema.ts:104-114 ставит требование conditionally). Для non-UZ
+  // юзеров region валидно null, и проверять его truthy здесь — это permanent
+  // блок публикации.
+  const regionOk = p && (p.country_of_residence !== "UZ" || !!p.region);
   const complete =
     p &&
     p.display_name &&
     p.gender &&
     p.birth_date &&
-    p.region &&
+    regionOk &&
     p.bio &&
     p.religion &&
     Array.isArray(p.top_life_values) &&

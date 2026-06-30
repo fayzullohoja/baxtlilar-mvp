@@ -17,9 +17,12 @@ export type Candidate = {
 export async function getRecommendations(viewerId: string, limit = 20): Promise<Candidate[]> {
   const sb = supabaseAdmin();
 
+  // V3 (2026-06-30, Bug #3): `values` column was dropped in Sprint 3 cleanup —
+  // selecting it returns null silently and recommendations break for ALL users.
+  // Use `top_life_values` (the V3 replacement). RPC migration applied separately.
   const { data: vp } = await sb
     .from("user_profiles")
-    .select("city, values, birth_date")
+    .select("city, top_life_values, birth_date")
     .eq("user_id", viewerId)
     .maybeSingle();
   const { data: vq } = await sb.from("quiz_results").select("vector").eq("user_id", viewerId).maybeSingle();
@@ -27,7 +30,7 @@ export async function getRecommendations(viewerId: string, limit = 20): Promise<
   const viewer: ScoreInput = {
     age: vp.birth_date ? ageFromDate(vp.birth_date as string) : 30,
     city: (vp.city as string) ?? "",
-    values: (vp.values as string[]) ?? [],
+    values: (vp.top_life_values as string[]) ?? [],
     vector: (vq?.vector as Record<string, number>) ?? {},
   };
 

@@ -27,6 +27,23 @@ export async function POST(_req: NextRequest): Promise<NextResponse> {
   const { user, res } = await loadUserForStep();
   if (res) return res;
 
+  // Bug #4 (2026-06-30): tutorial делает ready→active двумя транзакциями. Если
+  // вторая упала, юзер залипает на step=ready с lifecycle=onboarding. Router
+  // отправит его на /v2/welcome, CTA должна провести финальный переход.
+  // ALLOWED_TRANSITIONS.ready = ["active"], так что транзишн валиден.
+  if (user.lifecycle_state === "onboarding" && user.onboarding_step === "ready") {
+    const tr = await tryTransition(
+      user.id,
+      { onboarding_step: "active", lifecycle_state: "active" },
+      "welcome: ready → active (recovery from interrupted tutorial)",
+      { kind: "user", id: user.id },
+    );
+    if (!tr.ok) {
+      return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
+    }
+    return NextResponse.json({ ok: true, next: "/main" });
+  }
+
   if (
     user.lifecycle_state !== "onboarding" ||
     !user.onboarding_step.startsWith("welcome_")
