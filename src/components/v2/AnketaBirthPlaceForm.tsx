@@ -5,6 +5,7 @@ import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 import { Field, Select, TextInput } from "./AnketaFields";
 import { COUNTRY_OF_RESIDENCE, UZ_REGIONS } from "@/lib/profile/options";
+import { useTranslations } from 'next-intl';
 
 /**
  * V3 Sprint 1 — Экран 2 «Место рождения / родной регион».
@@ -13,6 +14,7 @@ import { COUNTRY_OF_RESIDENCE, UZ_REGIONS } from "@/lib/profile/options";
  * API: /api/onboarding/profile/birth-place.
  */
 export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
+  const t = useTranslations('Anketa');
   const router = useRouter();
   const [country, setCountry] = useState("UZ");
   const [region, setRegion] = useState("");
@@ -57,9 +59,9 @@ export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
   return (
     <div>
       <Field
-        label="Страна рождения"
+        label={t('birth_place_country_label')}
         required
-        hint="Где ты родился(ась). Может отличаться от текущего места проживания."
+        hint={t('birth_place_country_hint')}
       >
         <Select
           options={COUNTRY_OF_RESIDENCE}
@@ -73,7 +75,7 @@ export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
       </Field>
 
       {showUzRegions ? (
-        <Field label="Область / регион">
+        <Field label={t('birth_place_region_label')}>
           <Select
             options={UZ_REGIONS}
             value={region}
@@ -83,8 +85,8 @@ export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
         </Field>
       ) : (
         <Field
-          label="Область / регион"
-          hint="Опционально — можно пропустить."
+          label={t('birth_place_region_label')}
+          hint={t('birth_place_region_hint_optional')}
         >
           <TextInput
             value={region}
@@ -96,8 +98,8 @@ export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
       )}
 
       <Field
-        label="Район"
-        hint="Если знаешь — это помогает культурной совместимости. Можно пропустить."
+        label={t('birth_place_district_label')}
+        hint={t('birth_place_district_hint')}
       >
         <TextInput
           value={district}
@@ -108,8 +110,8 @@ export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
       </Field>
 
       <Field
-        label="Город или населённый пункт"
-        hint="Город рождения. Можно пропустить."
+        label={t('birth_place_city_label')}
+        hint={t('birth_place_city_hint')}
       >
         <TextInput
           value={city}
@@ -132,7 +134,7 @@ export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
             marginBottom: "24px",
           }}
         >
-          Не получилось сохранить. Попробуй ещё раз.
+          {t('birth_place_save_error')}
         </div>
       ) : null}
 
@@ -142,7 +144,7 @@ export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
         disabled={!country || busy}
         style={{ width: "100%" }}
       >
-        {busy ? "Сохраняем…" : "Дальше"}
+        {busy ? t('birth_place_saving') : t('birth_place_next')}
       </Button>
     </div>
   );

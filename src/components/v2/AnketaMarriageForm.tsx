@@ -5,6 +5,7 @@ import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 import { Field, Select } from "./AnketaFields";
 import { POST_MARRIAGE_LIVING } from "@/lib/profile/options";
+import { useTranslations } from 'next-intl';
 
 /**
  * V2 ext 2026-06-28: новый шаг анкеты — формат проживания после брака.
@@ -13,6 +14,7 @@ import { POST_MARRIAGE_LIVING } from "@/lib/profile/options";
  */
 export function V2AnketaMarriageForm({ locale }: { locale: string }) {
   const router = useRouter();
+  const t = useTranslations('Anketa');
   const [living, setLiving] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -46,9 +48,9 @@ export function V2AnketaMarriageForm({ locale }: { locale: string }) {
   return (
     <div>
       <Field
-        label="Формат жизни после брака"
+        label={t('marriage_format_label')}
         required
-        hint="Это про образ жизни, который ты видишь в будущей семье. Можно изменить позже в настройках."
+        hint={t('marriage_format_hint')}
       >
         <Select
           options={POST_MARRIAGE_LIVING}
@@ -71,7 +73,7 @@ export function V2AnketaMarriageForm({ locale }: { locale: string }) {
             marginBottom: "24px",
           }}
         >
-          Не удалось сохранить. Попробуй снова.
+          {t('marriage_format_save_err')}
         </div>
       ) : null}
 
@@ -81,7 +83,7 @@ export function V2AnketaMarriageForm({ locale }: { locale: string }) {
         disabled={!living || busy}
         style={{ width: "100%" }}
       >
-        {busy ? "Сохраняем…" : "Дальше"}
+        {busy ? t('marriage_format_saving') : t('marriage_format_next')}
       </Button>
     </div>
   );

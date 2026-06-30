@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from 'next-intl';
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 import { QUESTIONS } from "@/lib/quiz/questions";
@@ -17,9 +18,10 @@ import { QUESTIONS } from "@/lib/quiz/questions";
  * API: POST /api/onboarding/quiz/complete с answers[].
  */
 
-const SCALE_LABELS = { min: "Совсем нет", max: "Полностью" };
+const SCALE_LABELS = { min: "scale_min", max: "scale_max" };
 
 export function V2QuizForm({ locale }: { locale: string }) {
+  const t = useTranslations('Quiz');
   const router = useRouter();
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
@@ -48,9 +50,9 @@ export function V2QuizForm({ locale }: { locale: string }) {
         router.replace(data.next);
         return;
       }
-      setErr("Не получилось сохранить. Попробуй ещё раз.");
+      setErr(t('err_save_failed'));
     } catch {
-      setErr("Что-то пошло не так. Попробуй ещё раз.");
+      setErr(t('err_something_wrong'));
     } finally {
       setBusy(false);
     }
@@ -66,7 +68,7 @@ export function V2QuizForm({ locale }: { locale: string }) {
           marginBottom: "32px",
         }}
       >
-        Отвечено: {progress} из {QUESTIONS.length}
+        {t('progress', { progress, total: QUESTIONS.length })}
       </div>
 
       {QUESTIONS.map((q, i) => (
@@ -127,8 +129,8 @@ export function V2QuizForm({ locale }: { locale: string }) {
               marginTop: "6px",
             }}
           >
-            <span>{SCALE_LABELS.min}</span>
-            <span>{SCALE_LABELS.max}</span>
+            <span>{t(SCALE_LABELS.min)}</span>
+            <span>{t(SCALE_LABELS.max)}</span>
           </div>
         </div>
       ))}
@@ -151,7 +153,7 @@ export function V2QuizForm({ locale }: { locale: string }) {
       ) : null}
 
       <Button onClick={submit} disabled={busy || !allAnswered} variant="primary">
-        {busy ? "Сохраняю…" : allAnswered ? "Готово" : `Осталось: ${QUESTIONS.length - progress}`}
+        {busy ? t('saving') : allAnswered ? t('done') : t('remaining', { count: QUESTIONS.length - progress })}
       </Button>
     </div>
   );

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 import { Field, TextInput, Select } from "./AnketaFields";
+import { useTranslations } from "next-intl";
 import {
   GENDER,
   CITIZENSHIP,
@@ -22,17 +23,7 @@ import {
  * При approve паспорта в админке citizenship сверяется с user_identity.
  */
 
-const ERR_COPY: Record<string, string> = {
-  bio_has_contacts: "В тексте нашёлся контакт (телефон, ник, ссылка). Удали — здесь это не работает.",
-  name_has_contacts: "В имени нашёлся контакт. Только имя без ссылок.",
-  bio_too_short: "Расскажи побольше — минимум 20 символов.",
-  bio_too_long: "Слишком длинно — максимум 1000 символов.",
-  must_be_18: "Возраст должен быть 18 лет и больше.",
-  invalid_age: "Проверь дату рождения.",
-  region_required_for_uz: "Для проживания в Узбекистане выбери область или город.",
-  validation: "Проверь заполненные поля.",
-  failed: "Не получилось сохранить. Попробуй ещё раз.",
-};
+
 
 export function V2AnketaBasicForm({
   defaultName,
@@ -42,6 +33,18 @@ export function V2AnketaBasicForm({
   locale: string;
 }) {
   const router = useRouter();
+  const t = useTranslations("Anketa");
+  const errCopy: Record<string, string> = {
+    bio_has_contacts: t("err_bio_has_contacts"),
+    name_has_contacts: t("err_name_has_contacts"),
+    bio_too_short: t("err_bio_too_short"),
+    bio_too_long: t("err_bio_too_long"),
+    must_be_18: t("err_must_be_18"),
+    invalid_age: t("err_invalid_age"),
+    region_required_for_uz: t("err_region_required_for_uz"),
+    validation: t("err_validation"),
+    failed: t("err_failed"),
+  };
   const [name, setName] = useState(defaultName ?? "");
   const [gender, setGender] = useState("");
   const [birth, setBirth] = useState("");
@@ -100,23 +103,23 @@ export function V2AnketaBasicForm({
 
   return (
     <div>
-      <Field label="Имя">
+      <Field label={t("name_label")}>
         <TextInput
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={50}
-          placeholder="Так тебя увидят другие"
+          placeholder={t("name_placeholder")}
         />
       </Field>
-      <Field label="Пол">
+      <Field label={t("gender_label")}>
         <Select options={GENDER} value={gender} onChange={setGender} locale={locale} />
       </Field>
-      <Field label="Дата рождения">
+      <Field label={t("birth_label")}>
         <TextInput type="date" value={birth} onChange={(e) => setBirth(e.target.value)} />
       </Field>
       <Field
-        label="Гражданство"
-        hint="То, что написано в&nbsp;паспорте. Сверим при верификации."
+        label={t("citizenship_label")}
+        hint={t("citizenship_hint")}
       >
         <Select
           options={CITIZENSHIP}
@@ -126,8 +129,8 @@ export function V2AnketaBasicForm({
         />
       </Field>
       <Field
-        label="Где живёшь сейчас"
-        hint="Может отличаться от&nbsp;гражданства — например UZ-гражданин в&nbsp;Москве."
+        label={t("residence_label")}
+        hint={t("residence_hint")}
       >
         <Select
           options={COUNTRY_OF_RESIDENCE}
@@ -141,8 +144,8 @@ export function V2AnketaBasicForm({
       </Field>
       {showRegion ? (
         <Field
-          label="Область или регион"
-          hint="Где живёшь сейчас — этого достаточно для подбора."
+          label={t("region_label")}
+          hint={t("region_hint")}
         >
           <Select
             options={UZ_REGIONS}
@@ -167,12 +170,12 @@ export function V2AnketaBasicForm({
             lineHeight: "1.5",
           }}
         >
-          {ERR_COPY[err] ?? ERR_COPY.failed}
+          {errCopy[err] ?? errCopy.failed}
         </div>
       ) : null}
 
       <Button onClick={submit} disabled={busy || !valid} variant="primary">
-        {busy ? "Сохраняю…" : "Дальше"}
+        {busy ? t("btn_saving") : t("btn_next")}
       </Button>
     </div>
   );

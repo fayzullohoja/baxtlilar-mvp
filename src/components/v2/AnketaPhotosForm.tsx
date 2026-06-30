@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "./Button";
 
 /**
@@ -16,20 +17,23 @@ import { Button } from "./Button";
 
 type Photo = { id: string; url: string; is_main: boolean };
 
-const ERR_COPY: Record<string, string> = {
-  max_photos: "Можно не больше 3 фотографий.",
-  bad_type: "JPG, PNG, WebP или HEIC.",
-  too_large: "Файл слишком большой.",
-  photos_need_one: "Нужно хотя бы одно фото чтобы продолжить.",
-  failed: "Не получилось загрузить. Попробуй ещё раз.",
-};
-
 export function V2AnketaPhotosForm() {
+  const t = useTranslations('Anketa');
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  const ERR_COPY: Record<string, string> = {
+    max_photos: t('photos_err_max'),
+    bad_type: t('photos_err_bad_type'),
+    too_large: t('photos_err_too_large'),
+    photos_need_one: t('photos_err_need_one'),
+    failed: t('photos_err_failed'),
+  };
+
+
 
   async function add(file: File) {
     setBusy(true);
@@ -138,7 +142,7 @@ export function V2AnketaPhotosForm() {
                   borderRadius: "999px",
                 }}
               >
-                Основная
+                {t('photos_main_badge')}
               </div>
             ) : null}
             <button
@@ -158,7 +162,7 @@ export function V2AnketaPhotosForm() {
                 border: "none",
                 cursor: "pointer",
               }}
-              aria-label="Удалить"
+              aria-label={t('photos_delete_button')}
             >
               ×
             </button>
@@ -180,7 +184,7 @@ export function V2AnketaPhotosForm() {
               cursor: "pointer",
             }}
           >
-            + добавить
+            + {t('photos_add_button')}
           </button>
         ) : null}
       </div>
@@ -206,8 +210,7 @@ export function V2AnketaPhotosForm() {
           marginBottom: "20px",
         }}
       >
-        Первое — основная, его увидят на превью. Остальные раскроются после
-        взаимного интереса. Минимум одно, максимум три.
+        {t('photos_instructions')}
       </div>
 
       {err ? (
@@ -228,7 +231,7 @@ export function V2AnketaPhotosForm() {
       ) : null}
 
       <Button onClick={done} disabled={busy || photos.length === 0} variant="primary">
-        {busy ? "..." : "Дальше"}
+        {busy ? t('photos_loading') : t('photos_continue')}
       </Button>
     </div>
   );

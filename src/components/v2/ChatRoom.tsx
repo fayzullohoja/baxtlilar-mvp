@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from 'next-intl';
 
 /**
  * V2 ChatRoom — editorial-restyled chat (Blueprint §3.4 C6).
@@ -40,15 +41,15 @@ function hhmm(iso: string): string {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-const ERR_COPY: Record<string, string> = {
-  contact_blocked: "Контакты, ссылки и ники мессенджеров — здесь не работают. Удали и попробуй снова.",
-  too_fast: "Чуть медленнее — пишешь слишком быстро.",
-  too_long: "Сообщение слишком длинное (макс 2000 символов).",
-  blocked: "Чат недоступен.",
-  send_err: "Не удалось отправить. Проверь связь.",
+const ERR_COPY_KEYS = {
+  contact_blocked: "err_contact_blocked",
+  too_fast: "err_too_fast",
+  too_long: "err_too_long",
+  blocked: "err_blocked",
+  send_err: "err_send",
 };
 
-const SAFETY_TIP = "Не делитесь номерами и ссылками в чате — это правило сохраняется до встречи. И, если что-то пошло не так — кнопка «пожаловаться» сверху.";
+// SAFETY_TIP will be fetched via t('safety_tip_extended')
 
 export function V2ChatRoom({
   chatId,
@@ -59,6 +60,7 @@ export function V2ChatRoom({
   myId: string;
   initial: Msg[];
 }) {
+  const t = useTranslations('Chat');
   const [messages, setMessages] = useState<Msg[]>(initial);
   const [temps, setTemps] = useState<Temp[]>([]);
   const [readThrough, setReadThrough] = useState<string | null>(null);
@@ -307,7 +309,7 @@ export function V2ChatRoom({
               textAlign: "center",
             }}
           >
-            {SAFETY_TIP}
+            {t('safety_tip_extended')}
           </div>
         ) : null}
 
@@ -345,7 +347,7 @@ export function V2ChatRoom({
                 fontStyle: "italic",
               }}
             >
-              печатает…
+              {t('typing')}
             </div>
           </div>
         ) : null}
@@ -373,7 +375,7 @@ export function V2ChatRoom({
               lineHeight: "1.5",
             }}
           >
-            {ERR_COPY[err] ?? ERR_COPY.send_err}
+            {t(ERR_COPY_KEYS[err as keyof typeof ERR_COPY_KEYS] ?? 'err_send')}
           </div>
         ) : null}
         <div style={{ display: "flex", alignItems: "flex-end", gap: "10px" }}>
@@ -381,7 +383,7 @@ export function V2ChatRoom({
             value={text}
             onChange={(e) => onChangeText(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Напиши что-то"
+            placeholder={t('input_placeholder')}
             rows={1}
             maxLength={2000}
             style={{
@@ -417,7 +419,7 @@ export function V2ChatRoom({
               flexShrink: 0,
             }}
           >
-            Отправить
+            {t('send')}
           </button>
         </div>
       </div>

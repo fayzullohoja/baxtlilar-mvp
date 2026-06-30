@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import {
   IconShieldCheck,
   IconLock,
@@ -23,6 +24,7 @@ import {
  */
 export function WelcomeBranded({ locale }: { locale: string }) {
   const router = useRouter();
+  const t = useTranslations('Welcome');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -106,9 +108,7 @@ export function WelcomeBranded({ locale }: { locale: string }) {
           zIndex: 1,
         }}
       >
-        Платформа для серьёзных знакомств
-        <br />
-        с&nbsp;целью создания семьи
+        {t('subtitle')}
       </p>
 
       <p
@@ -123,9 +123,7 @@ export function WelcomeBranded({ locale }: { locale: string }) {
           zIndex: 1,
         }}
       >
-        Здесь важны доверие, безопасность
-        <br />
-        и&nbsp;осознанный выбор
+        {t('tagline')}
       </p>
 
       {/* Features list */}
@@ -142,20 +140,20 @@ export function WelcomeBranded({ locale }: { locale: string }) {
       >
         <FeatureRow
           icon={<IconShieldCheck size={22} stroke={2} />}
-          title="Профили проходят проверку"
-          subtitle="Мы заботимся о достоверности анкет и фото"
+          title={t('feature_verified_title')}
+          subtitle={t('feature_verified_subtitle')}
         />
         <Divider />
         <FeatureRow
           icon={<IconLock size={22} stroke={2} />}
-          title="Контакты не раскрываются без согласия"
-          subtitle="Ваши данные остаются приватными"
+          title={t('feature_privacy_title')}
+          subtitle={t('feature_privacy_subtitle')}
         />
         <Divider />
         <FeatureRow
           icon={<IconUsers size={22} stroke={2} />}
-          title="Общение только по правилам уважения"
-          subtitle="Мы ценим культуру общения и личные границы"
+          title={t('feature_respect_title')}
+          subtitle={t('feature_respect_subtitle')}
         />
       </div>
 
@@ -184,7 +182,7 @@ export function WelcomeBranded({ locale }: { locale: string }) {
           opacity: busy ? 0.7 : 1,
         }}
       >
-        {busy ? "…" : "Начать регистрацию"}
+        {busy ? "…" : t('start_registration')}
         {!busy ? <IconChevronRight size={20} stroke={2.5} /> : null}
       </button>
 
@@ -216,7 +214,7 @@ export function WelcomeBranded({ locale }: { locale: string }) {
               marginBottom: "3px",
             }}
           >
-            Ваша безопасность — наш приоритет
+            {t('safety_title')}
           </div>
           <div
             style={{
@@ -225,7 +223,7 @@ export function WelcomeBranded({ locale }: { locale: string }) {
               lineHeight: 1.45,
             }}
           >
-            Мы используем современные технологии защиты
+            {t('safety_subtitle')}
           </div>
         </div>
       </div>
@@ -246,7 +244,7 @@ export function WelcomeBranded({ locale }: { locale: string }) {
         }}
       >
         <IconHeartHandshake size={14} stroke={2} />
-        Далее вы познакомитесь с правилами платформы
+        {t('rules_footer')}
       </div>
 
       {err ? (
@@ -264,7 +262,7 @@ export function WelcomeBranded({ locale }: { locale: string }) {
             zIndex: 1,
           }}
         >
-          Не получилось перейти. Попробуй ещё раз.
+          {t('error_transition')}
         </div>
       ) : null}
     </div>

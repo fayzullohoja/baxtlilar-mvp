@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
+import { useTranslations } from 'next-intl'
 
 /**
  * V2 Settings Actions — pause/resume + delete account.
@@ -16,6 +17,7 @@ import { Button } from "./Button";
 
 export function V2SettingsActions({ paused }: { paused: boolean }) {
   const router = useRouter();
+  const t = useTranslations('Settings');
   const [busy, setBusy] = useState(false);
   const [delConfirmOpen, setDelConfirmOpen] = useState(false);
 
@@ -57,7 +59,7 @@ export function V2SettingsActions({ paused }: { paused: boolean }) {
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         <div>
           <Button onClick={pauseToggle} variant="secondary" disabled={busy}>
-            {paused ? "Возобновить" : "Поставить на паузу"}
+            {paused ? t('actions_resume') : t('actions_pause')}
           </Button>
           <p
             style={{
@@ -69,8 +71,8 @@ export function V2SettingsActions({ paused }: { paused: boolean }) {
             }}
           >
             {paused
-              ? "На паузе: ты невидим(а) в подборе, не получаешь интересы. Существующие чаты остаются — можно отвечать."
-              : "На паузе тебя не показывают в подборе. Существующие чаты остаются. Сними паузу в любой момент."}
+              ? t('actions_paused_desc')
+              : t('actions_pause_desc')}
           </p>
         </div>
 
@@ -82,7 +84,7 @@ export function V2SettingsActions({ paused }: { paused: boolean }) {
           }}
         >
           <Button onClick={() => setDelConfirmOpen(true)} variant="ghost" disabled={busy}>
-            Удалить аккаунт
+            {t('actions_delete')}
           </Button>
           <p
             style={{
@@ -93,8 +95,7 @@ export function V2SettingsActions({ paused }: { paused: boolean }) {
               lineHeight: "1.5",
             }}
           >
-            Анкета, фото и история удаляются необратимо. Номер блокируется
-            от&nbsp;повторной регистрации на&nbsp;90&nbsp;дней.
+            {t('actions_delete_desc')}
           </p>
         </div>
       </div>
@@ -119,6 +120,7 @@ function DeleteConfirm({
   onConfirm: () => void;
   busy: boolean;
 }) {
+  const t = useTranslations("Settings");
   const [acked, setAcked] = useState(false);
 
   return (
@@ -157,7 +159,7 @@ function DeleteConfirm({
             marginBottom: "16px",
           }}
         >
-          Удалить аккаунт?
+          {t('actions_delete_confirm_title')}
         </div>
         <p
           style={{
@@ -167,8 +169,7 @@ function DeleteConfirm({
             marginBottom: "20px",
           }}
         >
-          Анкета и&nbsp;все фото удаляются. История сообщений обезличивается.
-          Номер блокируется на&nbsp;90&nbsp;дней — это анти-abuse правило.
+          {t('actions_delete_confirm_desc')}
         </p>
 
         <label
@@ -198,16 +199,16 @@ function DeleteConfirm({
               lineHeight: "1.5",
             }}
           >
-            Понимаю что это нельзя отменить.
+            {t('actions_delete_ack')}
           </span>
         </label>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <Button onClick={onConfirm} disabled={!acked || busy} variant="primary">
-            {busy ? "Удаляю…" : "Удалить навсегда"}
+            {busy ? t('actions_delete_busy') : t('actions_delete_final')}
           </Button>
           <Button onClick={onClose} disabled={busy} variant="ghost">
-            Отмена
+            {t('actions_cancel')}
           </Button>
         </div>
       </div>
