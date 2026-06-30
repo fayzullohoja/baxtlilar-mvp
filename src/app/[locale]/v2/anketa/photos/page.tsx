@@ -4,7 +4,7 @@
  * API: /api/onboarding/profile/photo + photos-done.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
@@ -20,16 +20,12 @@ export default async function V2AnketaPhotosPage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireUserAtStep(locale, "profile_photos");
+  const t = await getTranslations("Anketa");
 
   return (
-    <MiniAppShell eyebrow="Шаг 7 из 8 · Анкета" align="top">
-      <Headline size="lg" as="h1">
-        Фотографии.
-      </Headline>
-      <Lead>
-        Не&nbsp;парадный снимок и не Tinder-постановка. Реальное лицо
-        в&nbsp;нормальном свете. Без масок, очков и&nbsp;фильтров.
-      </Lead>
+    <MiniAppShell eyebrow={t("photos_eyebrow")} align="top">
+      <Headline size="lg" as="h1">{t("photos_headline")}</Headline>
+      <Lead>{t("photos_lead")}</Lead>
 
       <div style={{ marginTop: "32px" }}>
         <V2AnketaPhotosForm />

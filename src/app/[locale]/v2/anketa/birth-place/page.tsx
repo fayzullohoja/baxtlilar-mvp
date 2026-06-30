@@ -7,7 +7,7 @@
  * без точного адреса.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
@@ -23,16 +23,12 @@ export default async function V2AnketaBirthPlacePage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireUserAtStep(locale, "profile_birth_place");
+  const t = await getTranslations("Anketa");
 
   return (
-    <MiniAppShell eyebrow="Шаг 2 из 8 · Анкета" align="top">
-      <Headline size="lg" as="h1">
-        Откуда ты родом.
-      </Headline>
-      <Lead>
-        Родной регион — про культурный и семейный контекст. Точный адрес
-        не&nbsp;нужен.
-      </Lead>
+    <MiniAppShell eyebrow={t("birthplace_eyebrow")} align="top">
+      <Headline size="lg" as="h1">{t("birthplace_headline")}</Headline>
+      <Lead>{t("birthplace_lead")}</Lead>
 
       <div style={{ marginTop: "32px" }}>
         <V2AnketaBirthPlaceForm locale={locale} />

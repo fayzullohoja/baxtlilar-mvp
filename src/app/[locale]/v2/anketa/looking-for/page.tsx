@@ -4,7 +4,7 @@
  * API: /api/onboarding/profile/looking-for.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
@@ -20,17 +20,12 @@ export default async function V2AnketaLookingForPage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireUserAtStep(locale, "profile_looking_for");
+  const t = await getTranslations("Anketa");
 
   return (
-    <MiniAppShell eyebrow="Шаг 6 из 8 · Анкета" align="top">
-      <Headline size="lg" as="h1">
-        Кого ищешь.
-      </Headline>
-      <Lead>
-        Возраст и&nbsp;география. Алгоритм использует их как фильтр, не как
-        приговор — иногда «слегка вне» бывает интересным мэтчем, и&nbsp;он
-        вас покажет с пометкой.
-      </Lead>
+    <MiniAppShell eyebrow={t("looking_for_eyebrow")} align="top">
+      <Headline size="lg" as="h1">{t("looking_for_headline")}</Headline>
+      <Lead>{t("looking_for_lead")}</Lead>
 
       <div style={{ marginTop: "32px" }}>
         <V2AnketaLookingForm locale={locale} />

@@ -4,7 +4,7 @@
  * API: /api/onboarding/profile/marriage.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
@@ -20,16 +20,12 @@ export default async function V2AnketaMarriagePage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireUserAtStep(locale, "profile_marriage");
+  const t = await getTranslations("Anketa");
 
   return (
-    <MiniAppShell eyebrow="Шаг 5 из 8 · Анкета" align="top">
-      <Headline size="lg" as="h1">
-        Как видишь&nbsp;будущую жизнь.
-      </Headline>
-      <Lead>
-        Один из&nbsp;важнейших вопросов для семьи. Можно изменить позже —
-        но&nbsp;сейчас выбери то, что чувствуешь как своё.
-      </Lead>
+    <MiniAppShell eyebrow={t("marriage_eyebrow")} align="top">
+      <Headline size="lg" as="h1">{t("marriage_headline")}</Headline>
+      <Lead>{t("marriage_lead")}</Lead>
 
       <div style={{ marginTop: "32px" }}>
         <V2AnketaMarriageForm locale={locale} />

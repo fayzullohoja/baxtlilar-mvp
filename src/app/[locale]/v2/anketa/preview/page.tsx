@@ -8,7 +8,7 @@
  * API: /api/onboarding/profile/publish — финальный transition в quiz.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
@@ -65,22 +65,17 @@ export default async function V2AnketaPreviewPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const user = await requireUserAtStep(locale, "profile_preview");
+  const t = await getTranslations("Anketa");
   const profile = await loadOwnProfile(user.id);
 
   return (
     <MiniAppShell
-      eyebrow="Шаг 8 из 8 · Анкета"
+      eyebrow={t("preview_eyebrow")}
       align="top"
       footer={<V2PublishButton />}
     >
-      <Headline size="lg" as="h1">
-        Так тебя увидят другие.
-      </Headline>
-      <Lead>
-        До&nbsp;взаимного интереса не показываются фото, фамилия, возраст,
-        работодатель. Только это — твой голос. Если выглядит правильно —
-        публикуем.
-      </Lead>
+      <Headline size="lg" as="h1">{t("preview_headline")}</Headline>
+      <Lead>{t("preview_lead")}</Lead>
 
       <div
         style={{

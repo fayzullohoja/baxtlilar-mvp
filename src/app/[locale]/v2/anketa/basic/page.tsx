@@ -5,7 +5,7 @@
  * /api/onboarding/profile/basic принимает те же поля.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
@@ -21,16 +21,14 @@ export default async function V2AnketaBasicPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const user = await requireUserAtStep(locale, "profile_basic");
+  const t = await getTranslations("Anketa");
 
   return (
-    <MiniAppShell eyebrow="Шаг 1 из 8 · Анкета" align="top">
+    <MiniAppShell eyebrow={t("basic_eyebrow")} align="top">
       <Headline size="lg" as="h1">
-        Начнём с&nbsp;тебя.
+        {t("basic_headline")}
       </Headline>
-      <Lead>
-        Базовое: как тебя зовут, сколько лет, где живёшь. Имя — то, как тебя
-        увидят другие, потом не&nbsp;поменяется.
-      </Lead>
+      <Lead>{t("basic_lead")}</Lead>
 
       <div style={{ marginTop: "32px" }}>
         <V2AnketaBasicForm

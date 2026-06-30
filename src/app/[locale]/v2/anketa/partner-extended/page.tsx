@@ -6,7 +6,7 @@
  * как fallback для users которые случайно попали в profile_looking_for.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
@@ -22,17 +22,12 @@ export default async function V2AnketaPartnerExtendedPage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireUserAtStep(locale, "profile_partner_extended");
+  const t = await getTranslations("Anketa");
 
   return (
-    <MiniAppShell eyebrow="Шаг 7 · Анкета" align="top">
-      <Headline size="lg" as="h1">
-        Кого ищу.
-      </Headline>
-      <Lead>
-        Опиши важные критерии партнёра. Алгоритм учитывает совместимость
-        ценностей сильнее, чем формальные параметры — но возраст и качества
-        нужны для отсева.
-      </Lead>
+    <MiniAppShell eyebrow={t("partner_extended_eyebrow")} align="top">
+      <Headline size="lg" as="h1">{t("partner_extended_headline")}</Headline>
+      <Lead>{t("partner_extended_lead")}</Lead>
 
       <div style={{ marginTop: "32px" }}>
         <V2AnketaPartnerExtendedForm locale={locale} />

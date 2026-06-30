@@ -6,7 +6,7 @@
  * API: /api/onboarding/profile/privacy.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
@@ -22,17 +22,12 @@ export default async function V2AnketaPrivacyPage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireUserAtStep(locale, "profile_privacy");
+  const t = await getTranslations("Anketa");
 
   return (
-    <MiniAppShell eyebrow="Шаг 8 · Анкета" align="top">
-      <Headline size="lg" as="h1">
-        Кто увидит мою анкету.
-      </Headline>
-      <Lead>
-        Все профили проходят верификацию паспортом, так что случайных людей
-        в&nbsp;ленте не&nbsp;будет. Здесь — как анкета будет вести себя
-        в&nbsp;поиске.
-      </Lead>
+    <MiniAppShell eyebrow={t("privacy_eyebrow")} align="top">
+      <Headline size="lg" as="h1">{t("privacy_headline")}</Headline>
+      <Lead>{t("privacy_lead")}</Lead>
 
       <div style={{ marginTop: "32px" }}>
         <V2AnketaPrivacyForm locale={locale} />

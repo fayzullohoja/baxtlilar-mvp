@@ -3,7 +3,7 @@
  * API: /api/onboarding/profile/values.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
@@ -19,16 +19,12 @@ export default async function V2AnketaValuesPage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireUserAtStep(locale, "profile_values");
+  const t = await getTranslations("Anketa");
 
   return (
-    <MiniAppShell eyebrow="Шаг 4 из 8 · Анкета" align="top">
-      <Headline size="lg" as="h1">
-        Ценности и&nbsp;вера.
-      </Headline>
-      <Lead>
-        Один из&nbsp;главных матчинг-сигналов. Не&nbsp;«какие правильные» —
-        что для тебя сейчас важно, и насколько.
-      </Lead>
+    <MiniAppShell eyebrow={t("values_eyebrow")} align="top">
+      <Headline size="lg" as="h1">{t("values_headline")}</Headline>
+      <Lead>{t("values_lead")}</Lead>
 
       <div style={{ marginTop: "32px" }}>
         <V2AnketaValuesForm locale={locale} />

@@ -4,7 +4,7 @@
  * API: /api/onboarding/profile/appearance.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
@@ -20,16 +20,12 @@ export default async function V2AnketaAppearancePage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireUserAtStep(locale, "profile_appearance");
+  const t = await getTranslations("Anketa");
 
   return (
-    <MiniAppShell eyebrow="Шаг 2 из 8 · Анкета" align="top">
-      <Headline size="lg" as="h1">
-        О&nbsp;тебе вживую.
-      </Headline>
-      <Lead>
-        Эти поля помогают подобрать тех, кто понимает&nbsp;тебя без перевода
-        и&nbsp;живёт в&nbsp;похожем темпе.
-      </Lead>
+    <MiniAppShell eyebrow={t("appearance_eyebrow")} align="top">
+      <Headline size="lg" as="h1">{t("appearance_headline")}</Headline>
+      <Lead>{t("appearance_lead")}</Lead>
 
       <div style={{ marginTop: "32px" }}>
         <V2AnketaAppearanceForm locale={locale} />

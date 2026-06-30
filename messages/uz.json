@@ -31,7 +31,8 @@
     "continue": "Davom etish",
     "back": "Orqaga",
     "loading": "Kuting…",
-    "error_generic": "Xatolik yuz berdi. Qayta urinib koʻring."
+    "error_generic": "Xatolik yuz berdi. Qayta urinib koʻring.",
+    "menu": "Menyu"
   },
   "Onboarding": {
     "consent_title": "Bu jiddiy platforma",
@@ -230,7 +231,88 @@
     "photos_loading": "…",
     "photos_continue": "Keyingi",
     "select_placeholder": "Tanlang…",
-    "city_placeholder_default": "Shahar"
+    "city_placeholder_default": "Shahar",
+    "basic_eyebrow": "1-qadam 8 tadan · Anketa",
+    "basic_headline": "Seningdan boshlaymiz.",
+    "basic_lead": "Asosiy: sening ismingiz, yoshingiz, qayerda yasashingiz. Ism — bu sizning boshqalar tomonidan qanday ko'rinadigan bo'lingiz, keyinchalik o'zgarmaydi.",
+    "birthplace_eyebrow": "2-qadam 8 tadan · Anketa",
+    "birthplace_headline": "Qayerdan bor'saningiz?",
+    "birthplace_lead": "Qo'pol mintaqa — madaniy va oilaviy kontekst haqida. Aniq manzil kerak emas.",
+    "self_eyebrow": "3-qadam 8 tadan · Anketa",
+    "self_headline": "Sening haqiqiy yuzingiz.",
+    "self_lead": "Qo'zqaloq o'zingiz haqida, ta'lim va ish sohasini ko'rsating. Bu boshqalarga sizning xarakterini va niyatingizni tushunishga yordam beradi.",
+    "appearance_eyebrow": "2-qadam 8 tadan · Anketa",
+    "appearance_headline": "Sening haqiqiy yuzingiz.",
+    "appearance_lead": "Bu maydonlar sizi tarjima qilmasdan tushunadi va shunga o'xshash tezlikda yashaydiganlarni topishga yordam beradi.",
+    "family_eyebrow": "3-qadam 8 tadan · Anketa",
+    "family_headline": "Siz hayotda qayerddasiz.",
+    "family_lead": "Bu tanlanganlarning ta'siri ko'paytiradi. Agar bolalar haqidagi rejalar mos kelmasa, algoritm darhol aytib beradi — dastlabki anketadan bilib qolish yaxshi, keyinchalik emas.",
+    "values_eyebrow": "4-qadam 8 tadan · Anketa",
+    "values_headline": "Qadriyatlar va ishlonch.",
+    "values_lead": "Asosiy moslik signallaridan biri. 'Qanday to'g'ri' emas — sizga hozir nima muhim va qanchalik muhim.",
+    "family_model_eyebrow": "5-qadam · Anketa",
+    "family_model_headline": "Bizning oilani qanday ko'raman.",
+    "family_model_lead": "Bu savollar oilaga shunga o'xshash qaragan hamjamiyatni topishga yordam beradi. Bu yerda to'g'ri javoblar yo'q — faqat sizning tanlovingiz bor.",
+    "marriage_eyebrow": "5-qadam 8 tadan · Anketa",
+    "marriage_headline": "Keling kelasi hayotni qanday ko'rasiz.",
+    "marriage_lead": "Oila uchun eng muhim savollardan biri. Keyinchalik o'zgartirilishi mumkin — lekin hozir o'zingizning hissiyotini tanlang.",
+    "partner_extended_eyebrow": "7-qadam · Anketa",
+    "partner_extended_headline": "Kimni qidiryapman.",
+    "partner_extended_lead": "Hamjamiyatning muhim mezonlarini o'rnating. Algoritm qadriyatlari mosligini rasmiy parametrlardan ko'proq hisobga oladi — lekin yosh va xususiyatlar filtrlash uchun kerak.",
+    "privacy_eyebrow": "8-qadam · Anketa",
+    "privacy_headline": "Mening anketamni kim ko'radi?",
+    "privacy_lead": "Barcha profillar pasport tekshiruvi orqali o'tadi, shuning uchun tasodifiy odamlar oqimda bo'lmaydi. Bu yerda anketa qidiruv paytida qanday ishlashini ko'rasiz.",
+    "looking_for_eyebrow": "6-qadam 8 tadan · Anketa",
+    "looking_for_headline": "Kimni qidiryapsiz.",
+    "looking_for_lead": "Yosh va geografiya. Algoritm ularni filtr sifatida ishlatadi, hukm emas — ba'zan 'biroz tashqarida' bo'lishi qiziq moslik bo'ladi va u sizi belgi bilan ko'rsatadi.",
+    "photos_eyebrow": "7-qadam 8 tadan · Anketa",
+    "photos_headline": "Fotolar.",
+    "photos_lead": "Rasmiy emas va Tinder qo'yilmasi emas. Haqiqiy yuz normal yoruglikda. Maskasiz, ko'zoynagsiz va filtrsiz.",
+    "preview_eyebrow": "8-qadam 8 tadan · Anketa",
+    "preview_headline": "Boshqalar seni shunday ko'radilar.",
+    "preview_lead": "O'zaro qiziqishdan oldin fotolar, familiya, yosh, ishbilarmon ko'rsatilmaydi. Faqat bu — sizning ovozingiz. Agar to'g'ri ko'rinsalar, nashr qilamiz.",
+    "preview_empty_state": "Anketa bo'sh. Qaytip qadamlarni to'ldiring.",
+    "publishFailed": "Nishri bola olmadi. Anketa-ni tekshiring va yana urinib ko'ring.",
+    "religionLabel": "Din",
+    "religiousPracticeLabel": "Buni qanday yashaydingiz",
+    "religiousPracticeHint": "Bu hayot tarziga doir — to'g'rilik yoki bilim miqdoriga emas.",
+    "partnerDesireLabel": "Sherikasi uchun istaklari",
+    "partnerDesireHint": "Otsib yuborishingiz mumkin — agar bu sizga odam o'zini o'zi nazarda tutgandan ko'ra kamroq muhim bo'lsa.",
+    "lifeValuesLabel": "Hayotda nima muhim",
+    "familyRoleModelLabel": "Oilada rollar modeli",
+    "familyRoleModelHint": "Bu to'g'ri/noto'g'riga emas — oilani qanday ko'rayotganingizga doir.",
+    "wifeWorkLabel": "Nikohdan so'ng xotinning ishlashi",
+    "familyDecisionLabel": "Oilada qarorlar qanday qabul qilinadi",
+    "optionalHint": "Otsib yuborishingiz mumkin — buni keyinchalik muhokama qilish mumkin.",
+    "householdResponsibilityLabel": "Uy-tuproq majburiyatlari",
+    "canSkipHint": "Otsib yuborishingiz mumkin.",
+    "partnerAgeLabel": "Sherikaning yoshi",
+    "partnerHeightLabel": "Sherikaning bo'yi, sm",
+    "partnerHeightHint": "Otsib yuborishingiz mumkin. 120-230 sm.",
+    "partnerQualitiesLabel": "Sherikaning muhim sifatlari",
+    "heightLabel": "Bo'yi, sm",
+    "heightHint": "140dan 220gacha.",
+    "weightLabel": "Og'irligi, kg",
+    "optionalFieldHint": "Otsib yuborishingiz mumkin — bu maydon ixtiyoriy.",
+    "nativeLanguageLabel": "Ana tili",
+    "nativeLanguageHint": "Bir - sizning oilangizning asosiy tili.",
+    "spokenLanguagesLabel": "Qanday tillarni suhbat qilasiz",
+    "bioLabel": "O'zimiz haqida",
+    "bioHint": "Sizning haqingizda nima muhim. Rekvizit emas — tabiat, odatlar, qanday yashaysiz. Minimal 30 ta belgi.",
+    "bioPlaceholder": "Misol: shoq, oilani va halollikni qiymatlang, pishirishni va sayohatni yoqtiraman. Oila tutatishga jiddiy yondashuvchi odamning bilan tanishmoqchiman.",
+    "educationLabel": "Ta'lim",
+    "activityFieldLabel": "Faoliyat sohasi",
+    "activityFieldHint": "Aniq ish joyi emas — shunchaki umumiy yo'nalish.",
+    "employmentFormatLabel": "Ishlash shakli",
+    "maritalStatusLabel": "Oilaviy holati",
+    "hasChildrenLabel": "Bolalari bormi",
+    "childrenCountLabel": "Nechi bolasi",
+    "childrenCountHint": "1dan 10gacha.",
+    "youngestChildAgeLabel": "Eng kichik bolaning yoshi",
+    "ageRangeHint": "Yillarda, 0-50.",
+    "futureChildrenPlansLabel": "Kelajakda bolalar bo'yicha rejalar",
+    "futureChildrenPlansHint": "Bu muhim mos kelish signali — algoritm rejalarning moslikini hisobga oladi.",
+    "geographyLabel": "Geografiya"
   },
   "Quiz": {
     "intro_title": "Moslik soʻrovi",
@@ -312,7 +394,10 @@
     "err_contact_blocked": "Kontaktlar, havolalar va messenjer niklari — bu yerda ishlamaydi. Olib tashlab, yana urinib koʻring.",
     "err_send": "Yuborib boʻlmadi. Aloqangizni tekshiring.",
     "safety_tip_extended": "Suhbatda raqamlar va havolalarni bermang — bu qoida uchrashuvgacha saqlanadi. Va agar nimadir notoʻgʻri boʻlsa — tepada «shikoyat» tugmasi bor.",
-    "input_placeholder": "Biron narsa yozing"
+    "input_placeholder": "Biron narsa yozing",
+    "openProfile": "Profilni ochish",
+    "ghostChatHeading": "Suhbat ishi Baxtlilarda yo'q.",
+    "ghostChatDescription": "Xabarlarni o'qish mumkin emas."
   },
   "Settings": {
     "title": "Profil",
@@ -334,7 +419,10 @@
     "actions_delete_ack": "Bundan qayta boʻloʻ yoʻqligini tushunaman.",
     "actions_delete_busy": "Oʻchirilmoqda…",
     "actions_delete_final": "Abadiy oʻchirish",
-    "actions_cancel": "Bekor qilish"
+    "actions_cancel": "Bekor qilish",
+    "profileFallback": "Profil",
+    "statusLabel": "Holat",
+    "versionInfo": "Versiya V2 · Baxtlilar"
   },
   "Blocked": {
     "title": "Kirish cheklangan",
@@ -385,5 +473,160 @@
     "blocked_by_moderator": "Moderator tomonidan bloklangan.",
     "phone_recognize_failed": "Raqam tushunilmadi. Qaytadan urinib koʻring.",
     "phone_duplicate": "Bu raqam boshqa hisobga bogʻlangan."
+  },
+  "Chats": {
+    "title": "Chatlar",
+    "emptyHeading": "Hali hech kim o'zaro javob bermadi.",
+    "emptyDescription": "Chatlar o'zaro manfaat ko'rsatilgandan keyin ochiladi. O'tishi tabiiy, chunki ilk boshida ular nol — biz millon uchun o'xshashlik uchun emasmiz.",
+    "activeHeading": "Ochiq chatlar.",
+    "activeDescription": "Har bir qator o'zaro manfaatdir. Oching va suhbatni davom ettiring.",
+    "youPrefix": "Siz: ",
+    "noMessages": "Xabarlar yo'q"
+  },
+  "Profile": {
+    "title": "Profil",
+    "titlePreMutual": "Profil · ochilishdan oldin",
+    "religionLabel": "Din",
+    "maritalStatusLabel": "Oilaviy holati",
+    "childrenLabel": "Bolalar",
+    "childrenPlansLabel": "Bolalar bo'yicha rejalar",
+    "educationLabel": "Ta'lim"
+  },
+  "Tutorial": {
+    "intro.title": "Tanishish · 1 dan 4",
+    "next": "Keyingi",
+    "intro.heading": "Bu yerda hamma narsa odatdagiga o'xshamaydi.",
+    "intro.body1": "Siz kechqurun yuzlab anketa ko'rmaydi. Lenta kichik, ehtiyotkorlik bilan tanlangan, cheksiz aylanmasiz.",
+    "intro.body2": "Biz sizni odamlarga ko'rsatmaymiz, moderator sizning shaxsiyatni tasdiqlagungacha. Shu bilan birga, siz qisqa turni o'tasiz — har bir ekran nima ekanligini va nima e'tibor berish kerakligini.",
+    "chat.title": "Tanishish · 3 dan 4",
+    "chat.heading": "Chat o'zaro ochiladi.",
+    "chat.body1": "Siz manfaat jo'natdingiz. Ikkinchi kishi sizning profilingizni ochdi va o'z navbatida manfaat bilan javob berdi. Faqat shundan keyin chat paydo bo'ladi.",
+    "chat.body2": "Shu vaqtgacha bir-biringizga yoza olmaysiz. Na siz unga, na u sizga. Bu xato emas — bu mahsulatdir.",
+    "chat.body3": "Chat ochilganda — tekst, ovozli va fotolashlar bilan oddiy muloqot. Taymerlarsiz va \"birinchi kim\" o'yinlarsiz.",
+    "safety.title": "Tanishish · 4 dan 4",
+    "complete": "Tayyor",
+    "safety.heading": "Agar biror narsa to'g'ri bo'lmasa — ayting.",
+    "safety.body1": "Har qaysi profil va har qaysi chatda Shikoyat qilish tugmasi mavjud. Moderator har bir shikoyatni ko'rib chiqadi. Qaror 24 soat ichida keladi.",
+    "safety.body2": "Agar shaxs yoqimsiz bo'lsa — uni blokka oling. U sizni lentada ko'rmaydi, yoza olmaydi, uni bloklashganingizni bilmaydi.",
+    "safety.body3": "Anketa o'zaro manfaatgacha maxfiy qoladi. Fotolarni \"yuklash\" tugmasi orqali saqlab bo'lmaydi.",
+    "swipe.title": "Tanishish · 2 dan 4",
+    "swipe.heading": "Suvayp emas. Manfaatlar.",
+    "swipe.body1": "«Siz meni manfaatlantiradi» demoqchi bo'lsangiz, anketa butunini ochishingiz kerak — fotolar, matn, qiymatlar — va Manfaat jo'natish tugmasini bosing.",
+    "swipe.body2": "Manfaatga qisqa xabar qo'shishingiz mumkin (va kerak) — nima tarzida oldi. \"Salom\" emas, \"qandaysiz\" emas.",
+    "swipe.body3": "Shuning uchun hech kim hech koga spam jo'natmaydi. Va shuning uchun javob allaqachon natijador."
+  },
+  "AnketaPrivacy": {
+    "visibilityModeLabel": "Profil ko'rinishi rejimi",
+    "visibilityModeHint": "Keyinchalik sozlamalardan o'zgartirishingiz mumkin. Hozir boshlang'ich rejimni tanlang."
+  },
+  "Errors": {
+    "saveFailed": "Saqlay olmadim. Yana urinib ko'ring.",
+    "general": "Biror narsa noto'g'ri ketdi. Yana urinib ko'ring.",
+    "sendFailed": "Yubolya olmadi. Yana urinib ko'ring.",
+    "saveAndVerifyFailed": "Saqlay olmadi. Maydonlarni tekshiring va yana urinib ko'ring.",
+    "validation": "To'ldirilgan maydonlarni tekshiring."
+  },
+  "Buttons": {
+    "saving.next": "Saqlanmoqda…",
+    "resuming.resume": "Pauza olib tashlanmoqda…",
+    "sending.send": "Yuborilmoqda…",
+    "send": "Yuborish",
+    "publishing.publish": "Nishryotilmoqda…",
+    "startVerification": "Boshlaylik",
+    "waiting": "Kutib turing…",
+    "skipTour": "Tuarni otsib yuborish"
+  },
+  "Verification": {
+    "queued.label": "Navbatda",
+    "queued.title": "Moderator hozir sizning arizangizni ko'rayapti.",
+    "queued.body": "Odatda 2–4 soat vaqt oladi. Qaror qabul qilinganda Telegram'da xabar keladi. Shu paytda siz lentada ko'rinmaysiz va boshqalarning ankesini ko'rmaysiz.",
+    "needsChanges.label": "Tuzatish kerak",
+    "needsChanges.title": "Moderator bir necha narsani aniqlashni so'ramoqda.",
+    "needsChanges.body": "Odatda bu yomon selfi yoki pasport fotosuratining noto'g'ri olingan ko'rinishi. Tekshirish bo'limini oching va qayta tayyorlab qo'ying — bir necha daqiqani oladi.",
+    "rejected.label": "Rad etildi",
+    "rejected.title": "Afsuski, biz sizning profilingizni tasdiqlaya olmaymiz.",
+    "rejected.body": "Agar bu xato deb o'ylasangiz, bizga @baxtlilar_support'ga yozing. Moderatorning qaroriga berilgan so'z oxirgi.",
+    "notStarted.label": "Qadam o'tilmadi",
+    "notStarted.title": "Avval tekshirish.",
+    "notStarted.body": "Sizni boshqalarga ko'rsatish uchun shaxsiyatni tasdiqlash kerak — pasport va selfi. Botni oching va qadamlarni bajaring.",
+    "approved.label": "Tayyor",
+    "approved.title": "Profil tasdiqlandi.",
+    "approved.body": "Sahifani qayta yuklang — tasmasi paydo bo'lishi kerak."
+  },
+  "Time": {
+    "justNow": "endigina"
+  },
+  "InterestModal": {
+    "errors.contactBlocked": "Xabarda kontakt topildi (telefon, nikname, havola). Bu yerda ishlami — o'chirib tashlang va yana urinib ko'ring.",
+    "errors.alreadySent": "Siz allaqachon bu odamga qiziqishingizni yubordingiz.",
+    "errors.dailyLimit": "Bugun qiziqish chegarasi tugab qoldi. Ertaga qaytib keling.",
+    "errors.declined": "Bu odam mavjud emas.",
+    "errors.blocked": "Bu odam mavjud emas.",
+    "errors.unavailable": "Anketa endi mavjud emas.",
+    "errors.noPermission": "Qiziqishni yuborish uchun tekshirish kerak.",
+    "messagePlaceholder": "Anketa-da nimasi sizga yoqdi?"
+  },
+  "Upload": {
+    "errors.badType": "JPG, PNG, WebP, HEIC qo'llab-quvvatlanadi. Yana urinib ko'ring.",
+    "errors.tooLarge": "Fayl juda katta. Hajmini kichraytiring yoki boshqacha oling.",
+    "errors.duplicateIdentity": "Bu hujjat boshqa anketa uchun ro'yxatga olingan.",
+    "errors.duplicatePassport": "Bu pasport allaqachon ro'yxatga olingan.",
+    "errors.duplicateSelfie": "Bu selfi allaqachon uchratilgan.",
+    "errors.failed": "Yuklaya olmadi. Ulanishni tekshiring va yana urinib ko'ring."
+  },
+  "ProfileSafety": {
+    "reportButton": "Shikoyat qilish",
+    "blockButton": "Bloklash"
+  },
+  "Report": {
+    "reasons.fake": "Shubhali / real emas deb o'ylayman",
+    "reasons.offensive": "Ko'pirtko'likklar, xamsalik",
+    "reasons.contacts": "Ilovadan tashqari kontakt so'ramoqda",
+    "reasons.spam": "Reklama, spam",
+    "reasons.inappropriate": "Tanishish uchun mos emas",
+    "reasons.other": "Boshqa",
+    "detailsPlaceholder": "Batafsil (ixtiyoriy)"
+  },
+  "InterestActions": {
+    "skipButton": "Hozir mos emas"
+  },
+  "Fields": {
+    "selectPlaceholder": "Tanlang…",
+    "cityPlaceholder": "Shahar tanlang…",
+    "from": "dan",
+    "to": "gacha"
+  },
+  "Attribution": {
+    "sources.telegram": "Telegram-kanal",
+    "sources.friends": "Do'stlar / tanishlar",
+    "sources.ads": "Reklama",
+    "sources.search": "Google / Yandex qidiruvi",
+    "sources.media": "Ommaviy axborot / maqola",
+    "sources.event": "Tadbir",
+    "sources.other": "Boshqa"
+  },
+  "MatchStory": {
+    "commonSection": "Sizda nima o'rtaq",
+    "cautionsSection": "Nimaga e'tibor berish kerak"
+  },
+  "AnketaSelf": {
+    "errors.bioHasContacts": "Matnda kontakt topildi (telefon, nikname, havola). O'chirib tashlang — bu yerda ishlami.",
+    "errors.bioTooShort": "Ko'proq aytib bering — minimal 30 ta belgi.",
+    "errors.bioTooLong": "Juda uzun — maksimal 1000 ta belgi."
+  },
+  "Personality": {
+    "openness.high": "yangi tajribaga ochiq",
+    "openness.low": "barqarorlik va tanishni qiymatlang",
+    "conscientiousness.high": "tashkiliy va yig'ma",
+    "conscientiousness.low": "moslashuvchan, qat'iy chegaralarsiz",
+    "extraversion.high": "odamlarda va suhbatda energiya oladi",
+    "extraversion.low": "sokin, intim ommaviy tashabbuhi afzal ko'radi",
+    "agreeableness.high": "iliq va o'zimiz uchun",
+    "agreeableness.low": "to'g'ri, hojjat-ho'jjatsiz",
+    "emotionalStability.high": "emosional turg'un",
+    "emotionalStability.low": "sezgir, chuqur his qiladi"
+  },
+  "AnketaLooking": {
+    "errors.ageRangeInvalid": "Maksimum minimalga teng yoki katta bo'lishi kerak."
   }
 }

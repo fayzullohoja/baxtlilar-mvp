@@ -3,7 +3,7 @@
  * API: /api/onboarding/profile/family.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
@@ -19,17 +19,12 @@ export default async function V2AnketaFamilyPage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireUserAtStep(locale, "profile_family");
+  const t = await getTranslations("Anketa");
 
   return (
-    <MiniAppShell eyebrow="Шаг 3 из 8 · Анкета" align="top">
-      <Headline size="lg" as="h1">
-        Где ты сейчас в&nbsp;жизни.
-      </Headline>
-      <Lead>
-        Это влияет на&nbsp;подбор. Если планы по&nbsp;детям не совпадают,
-        алгоритм сразу скажет об&nbsp;этом — лучше узнать с&nbsp;первой
-        анкеты, чем потом.
-      </Lead>
+    <MiniAppShell eyebrow={t("family_eyebrow")} align="top">
+      <Headline size="lg" as="h1">{t("family_headline")}</Headline>
+      <Lead>{t("family_lead")}</Lead>
 
       <div style={{ marginTop: "32px" }}>
         <V2AnketaFamilyForm locale={locale} />

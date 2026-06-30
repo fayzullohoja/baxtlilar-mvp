@@ -3,7 +3,7 @@
  * Между values и marriage. API: /api/onboarding/profile/family-model.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
@@ -19,16 +19,12 @@ export default async function V2AnketaFamilyModelPage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireUserAtStep(locale, "profile_family_model");
+  const t = await getTranslations("Anketa");
 
   return (
-    <MiniAppShell eyebrow="Шаг 5 · Анкета" align="top">
-      <Headline size="lg" as="h1">
-        Как вижу нашу&nbsp;семью.
-      </Headline>
-      <Lead>
-        Эти вопросы помогают подобрать партнёра, который смотрит на&nbsp;семью
-        похоже. Здесь нет правильных ответов — есть только твой выбор.
-      </Lead>
+    <MiniAppShell eyebrow={t("family_model_eyebrow")} align="top">
+      <Headline size="lg" as="h1">{t("family_model_headline")}</Headline>
+      <Lead>{t("family_model_lead")}</Lead>
 
       <div style={{ marginTop: "32px" }}>
         <V2AnketaFamilyModelForm locale={locale} />
