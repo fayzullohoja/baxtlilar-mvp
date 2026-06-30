@@ -81,7 +81,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const { data: row, error: selErr } = await sb
     .from("users")
-    .select("id, onboarding_step, lifecycle_state")
+    .select("id, onboarding_step, lifecycle_state, language")
     .eq("telegram_id", tgId)
     .maybeSingle();
   if (selErr) {
@@ -140,10 +140,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .eq("id", row.id);
 
   await setSession(row.id as string);
-  return NextResponse.json({
+
+  // Bug #19 (loop pass 4): прокидываем язык юзера в NEXT_LOCALE cookie, чтобы
+  // next-intl middleware показал mini-app на правильной локали с первого экрана.
+  // Раньше UZ-юзер на bot'е попадал на /ru/v2/welcome (default locale) и
+  // должен был ВРУЧНУЮ переключать через RU/UZ свитчер.
+  const lang = (row.language === "uz" || row.language === "ru") ? row.language : "ru";
+  const res = NextResponse.json({
     ok: true,
     userId: row.id,
     onboarding_step: row.onboarding_step,
     lifecycle_state: row.lifecycle_state,
   });
+  res.cookies.set("NEXT_LOCALE", lang, {
+    httpOnly: false,
+    sameSite: "none",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365,
+  });
+  return res;
 }

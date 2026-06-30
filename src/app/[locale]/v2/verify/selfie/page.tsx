@@ -15,6 +15,7 @@ import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { UploadField } from "@/components/v2/UploadField";
+import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
@@ -26,30 +27,33 @@ export default async function V2SelfiePage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireUserAtStep(locale, "selfie_upload");
+  const t = await getTranslations('Verify');
 
   return (
-    <MiniAppShell eyebrow="Шаг 2 · Селфи" align="top">
+    <MiniAppShell eyebrow={t('eyebrow')} align="top">
       <Headline size="lg" as="h1">
-        Селфи для&nbsp;верификации.
+        {t('title')}
       </Headline>
       <Lead>
-        Сделай селфи лица в&nbsp;хорошем освещении. Модератор сверит с&nbsp;фото
-        в&nbsp;паспорте, который ты&nbsp;загрузил на&nbsp;прошлом шаге.
+        {t('description')}
       </Lead>
 
       {/* Visual hint */}
       <div style={{ marginTop: "28px" }}>
-        <SelfieVisualHint />
+        <SelfieVisualHint goodLabel={t('example_good')} badLabel={t('example_bad')} />
       </div>
 
       <div style={{ marginTop: "28px" }}>
-        <Requirements />
+        <Requirements
+          title={t('requirements_title')}
+          items={[t('req_1'), t('req_2'), t('req_3'), t('req_4')]}
+        />
       </div>
 
       <div style={{ marginTop: "32px" }}>
         <UploadField
           endpoint="/api/onboarding/selfie"
-          uploadLabel="Сделать селфи"
+          uploadLabel={t('upload_label')}
           capture="user"
         />
       </div>
@@ -65,16 +69,14 @@ export default async function V2SelfiePage({
           lineHeight: "1.55",
         }}
       >
-        После загрузки заявка уходит на&nbsp;модерацию. Параллельно ты&nbsp;сможешь
-        заполнить анкету и&nbsp;пройти психо-портрет — это не&nbsp;блокируется
-        ожиданием. Решение модератора придёт в&nbsp;Telegram.
+        {t('footer_note')}
       </div>
     </MiniAppShell>
   );
 }
 
 /** Визуальная подсказка: 2 примера (хорошо vs плохо) с SVG-силуэтами лица. */
-function SelfieVisualHint() {
+function SelfieVisualHint({ goodLabel, badLabel }: { goodLabel: string; badLabel: string }) {
   return (
     <div
       style={{
@@ -83,8 +85,8 @@ function SelfieVisualHint() {
         gap: "12px",
       }}
     >
-      <ExampleCard variant="good" label="Так — хорошо" />
-      <ExampleCard variant="bad" label="Так — не пройдёт" />
+      <ExampleCard variant="good" label={goodLabel} />
+      <ExampleCard variant="bad" label={badLabel} />
     </div>
   );
 }
@@ -223,13 +225,7 @@ function BadFaceSvg() {
   );
 }
 
-function Requirements() {
-  const items = [
-    "Лицо без маски, очков, шляпы",
-    "Естественное освещение — не лампа сверху",
-    "Смотри прямо в камеру",
-    "Не пересняй чужое фото — это блокировка без апелляции",
-  ];
+function Requirements({ title, items }: { title: string; items: string[] }) {
   return (
     <div>
       <div
@@ -242,7 +238,7 @@ function Requirements() {
           fontFamily: "var(--font-v2-body)",
         }}
       >
-        Требования
+        {title}
       </div>
       <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
         {items.map((item, i) => (

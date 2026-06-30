@@ -179,19 +179,24 @@ async function createInitial(tg: TgUser): Promise<DbUser | null> {
   return data as DbUser;
 }
 
-function buildAppWebUrl(uid: string, telegramId: number): string {
+function buildAppWebUrl(uid: string, telegramId: number, lang: Lang): string {
   const appUrl = env().APP_URL ?? "https://baxtlilar-mvp-production.up.railway.app";
   // H3 verdict-fix: токен биндится к telegram_id юзера. /api/auth/bootstrap
   // проверяет parsed.user.id === verifiedToken.tg — украденный токен в чужой
   // initData больше не пройдёт.
   const token = signStartToken(uid, telegramId);
-  return `${appUrl.replace(/\/$/, "")}/open-in-telegram?token=${encodeURIComponent(token)}`;
+  // Bug #19 (loop pass 4): передаём язык query-параметром. /api/auth/bootstrap
+  // прочитает его и поставит cookie NEXT_LOCALE — middleware next-intl
+  // перенаправит на правильную локаль после window.location.replace("/").
+  // Path-prefix /${lang}/open-in-telegram не работает — этой страницы нет
+  // под [locale]/.
+  return `${appUrl.replace(/\/$/, "")}/open-in-telegram?token=${encodeURIComponent(token)}&lang=${encodeURIComponent(lang)}`;
 }
 
 function openAppButton(uid: string, telegramId: number, lang: Lang): InlineKeyboardMarkup {
   return {
     inline_keyboard: [
-      [{ text: pick(M.open_app, lang), web_app: { url: buildAppWebUrl(uid, telegramId) } }],
+      [{ text: pick(M.open_app, lang), web_app: { url: buildAppWebUrl(uid, telegramId, lang) } }],
     ],
   };
 }
@@ -280,7 +285,7 @@ async function recordConsent(
 async function promptStep(chatId: number, user: DbUser): Promise<void> {
   // lifecycle переопределяет шаг
   if (user.lifecycle_state === "blocked") {
-    await sendMessage(chatId, "Заблокирован модератором.\nModerator tomonidan bloklangan.");
+    await sendMessage(chatId, pick(M.blocked_by_moderator, user.language));
     return;
   }
   if (user.lifecycle_state === "active" || user.lifecycle_state === "paused") {
@@ -495,7 +500,7 @@ async function handleContact(msg: TgMessage): Promise<void> {
     if (e instanceof PhoneError) {
       await sendMessage(
         chatId,
-        "Не удалось распознать номер. Попробуйте ещё раз.\nRaqam tushunilmadi. Qaytadan urinib koʻring.",
+        pick(M.phone_recognize_failed, user.language),
       );
       return;
     }
@@ -529,7 +534,7 @@ async function handleContact(msg: TgMessage): Promise<void> {
     if (upd.error.code === "23505" || /duplicate|unique/i.test(upd.error.message)) {
       await sendMessage(
         chatId,
-        "Этот номер уже привязан к другому аккаунту.\nBu raqam boshqa hisobga bog'langan.",
+        pick(M.phone_duplicate, user.language),
       );
       return;
     }

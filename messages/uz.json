@@ -228,7 +228,9 @@
     "photos_err_need_one": "Davom etish uchun kamida bitta foto kerak.",
     "photos_err_failed": "Yuklab boʻlmadi. Yana urinib koʻring.",
     "photos_loading": "…",
-    "photos_continue": "Keyingi"
+    "photos_continue": "Keyingi",
+    "select_placeholder": "Tanlang…",
+    "city_placeholder_default": "Shahar"
   },
   "Quiz": {
     "intro_title": "Moslik soʻrovi",
@@ -345,5 +347,43 @@
     "title": "Xatolik yuz berdi",
     "subtitle": "Kutilmagan xatolik yuz berdi. Qayta urinib koʻring.",
     "retry": "Qayta urinish"
+  },
+  "Verify": {
+    "step1_label": "1-qadam · Tasdiqlash",
+    "headline": "Siz ekaniligingizni tasdiqlaylik.",
+    "intro_description": "Baxtlilar da barcha profillar tasdiqlangan pasport bilan. Bu byurokratiya uchun emas — bu sizning anketangiz yonida botlar va suratli insonlarning paydo bo'lmasligi uchun.",
+    "step_1_title": "Pasport fotosi",
+    "step_1_body": "Foto va imzo bilan sahifa. Faqat bu sahifa — boshqa hech narsaga ehtiyoj yo'q.",
+    "step_2_title": "Selfi",
+    "step_2_body": "Pasportdagi yuz uni taqdim etayotgan kishi bilan mos keladigan ekanini tekshirish uchun.",
+    "step_3_title": "Kutish",
+    "step_3_body": "Moderator 2-4 soat tekshiradi. U ko'rayotganda — siz vaqt yo'q qilmaysiz, anketa to'ldiryapsiz.",
+    "privacy_footer": "Hujjatlarni faqat moderator ko'radi. Ularga kirish cheklangan va qayd etiladi. Telegram-akkauntni biz faqat siz ilovada bo'lganda ko'ramiz.",
+    "step_eyebrow": "1-qadam · Pasport",
+    "page_title": "Fotosurali sahifa.",
+    "page_description": "Pasportning fotosuratli sahifani suratga oling — unda siz va imzongiz koʻrinsin. Faqat ularini — manzil yoki boshqa sahifalarni koʻrsatmang.",
+    "upload_label": "Suratga olish yoki fayl tanlash",
+    "good_example": "Shunday — yaxshi",
+    "bad_example": "Shunday — raddigan",
+    "requirements_title": "Talablar",
+    "req_face": "Yuz aniq koʻrinsin",
+    "req_focus": "Keskin fokus — harflar oʻqilsin",
+    "req_glare": "Yaltijon va soyasiz",
+    "req_no_editing": "Tahrirlanmagansiz — filtrsiz, ramkasiz va muqovasiz",
+    "eyebrow": "2-qadam · Selfi",
+    "title": "Tekshiruv uchun selfi.",
+    "description": "Yaxshi yorugʻlikda yuzning selfisini oling. Moderator selfini yuborilgan pasport fotosi bilan solishtiradi.",
+    "footer_note": "Yuklangandan so'ng anketa tekshiruvga yuboriladi. Shu vaqtda siz anketani toʻldirishingiz va psixo-portret yaratishingiz mumkin — ular kutishni bloklamaydi. Moderator qarorini Telegram orqali yuboramiz.",
+    "example_good": "Shunday — yaxshi",
+    "example_bad": "Shunday — oʻtmaydi",
+    "req_1": "Yuz niqob, koʻzoynak, shapkasiz",
+    "req_2": "Tabiiy yorugʻlik — tepadan lampa emas",
+    "req_3": "Kameraga toʻgʻridan-toʻgʻri qarang",
+    "req_4": "Begona fotoni foydalanmang — bu shikoyatsiz bloklanish"
+  },
+  "Bot": {
+    "blocked_by_moderator": "Moderator tomonidan bloklangan.",
+    "phone_recognize_failed": "Raqam tushunilmadi. Qaytadan urinib koʻring.",
+    "phone_duplicate": "Bu raqam boshqa hisobga bogʻlangan."
   }
 }

@@ -148,6 +148,18 @@ export const M = {
     ru: "Не удалось проверить номер. Попробуйте чуть позже.",
     uz: "Raqamni tekshirib boʻlmadi. Bir oz keyinroq urinib koʻring.",
   },
+  blocked_by_moderator: {
+    ru: "Заблокирован модератором.",
+    uz: "Moderator tomonidan bloklangan.",
+  },
+  phone_recognize_failed: {
+    ru: "Не удалось распознать номер. Попробуйте ещё раз.",
+    uz: "Raqam tushunilmadi. Qaytadan urinib koʻring.",
+  },
+  phone_duplicate: {
+    ru: "Этот номер уже зарегистрирован в Baxtlilar.",
+    uz: "Bu raqam Baxtlilar da allaqachon roʻyxatdan oʻtgan.",
+  },
 } as const;
 
 export type Lang = "ru" | "uz";

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { ReactNode, ChangeEventHandler } from "react";
 import { CITY_GROUPS } from "@/lib/profile/cities";
 import type { Opt } from "@/lib/profile/options";
@@ -202,7 +203,7 @@ export function Select({
       }}
     >
       <option value="" disabled>
-        {placeholder ?? "Выбери…"}
+        {placeholder ?? (locale === "uz" ? "Tanlang…" : "Выбери…")}
       </option>
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>
@@ -300,7 +301,7 @@ export function CitySelect({
       }}
     >
       <option value="" disabled>
-        {placeholder ?? "Город"}
+        {placeholder ?? (locale === "uz" ? "Shahar tanlang…" : "Выбери город…")}
       </option>
       {CITY_GROUPS.map((group) => (
         <optgroup

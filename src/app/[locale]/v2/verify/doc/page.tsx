@@ -10,6 +10,7 @@ import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { UploadField } from "@/components/v2/UploadField";
+import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
@@ -21,30 +22,31 @@ export default async function V2DocPage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireUserAtStep(locale, "doc_upload");
+  const t = await getTranslations("Verify");
 
   return (
-    <MiniAppShell eyebrow="Шаг 1 · Паспорт" align="top">
+    <MiniAppShell eyebrow={t('step_eyebrow')} align="top">
       <Headline size="lg" as="h1">
-        Страница с&nbsp;фотографией.
+        {t('page_title')}
       </Headline>
-      <Lead>
-        Сними страницу паспорта с твоим фото и&nbsp;подписью. Только её —
-        не нужно показывать прописку или другие развороты.
-      </Lead>
+      <Lead>{t('page_description')}</Lead>
 
       {/* Visual hint */}
       <div style={{ marginTop: "28px" }}>
-        <PassportVisualHint />
+        <PassportVisualHint goodLabel={t('good_example')} badLabel={t('bad_example')} />
       </div>
 
       <div style={{ marginTop: "28px" }}>
-        <Requirements />
+        <Requirements
+          title={t('requirements_title')}
+          items={[t('req_face'), t('req_focus'), t('req_glare'), t('req_no_editing')]}
+        />
       </div>
 
       <div style={{ marginTop: "32px" }}>
         <UploadField
           endpoint="/api/onboarding/document"
-          uploadLabel="Сфотографировать или выбрать файл"
+          uploadLabel={t('upload_label')}
           capture="environment"
         />
       </div>
@@ -60,15 +62,14 @@ export default async function V2DocPage({
           lineHeight: "1.55",
         }}
       >
-        Фото доступно только модератору и&nbsp;хранится в шифрованном
-        хранилище. После одобрения профиля файл удаляется через 30 дней.
+        {t('privacy_footer')}
       </div>
     </MiniAppShell>
   );
 }
 
 /** Визуальная подсказка как должен выглядеть скан паспорта. */
-function PassportVisualHint() {
+function PassportVisualHint({ goodLabel, badLabel }: { goodLabel: string; badLabel: string }) {
   return (
     <div
       style={{
@@ -77,8 +78,8 @@ function PassportVisualHint() {
         gap: "12px",
       }}
     >
-      <PassportExampleCard variant="good" label="Так — хорошо" />
-      <PassportExampleCard variant="bad" label="Так — не пройдёт" />
+      <PassportExampleCard variant="good" label={goodLabel} />
+      <PassportExampleCard variant="bad" label={badLabel} />
     </div>
   );
 }
@@ -200,13 +201,7 @@ function BadPassportSvg() {
   );
 }
 
-function Requirements() {
-  const items = [
-    "Лицо хорошо видно",
-    "Резкий фокус — буквы читаются",
-    "Без бликов и&nbsp;тени поперёк",
-    "Без редактирования — без фильтров, рамок и&nbsp;обложек",
-  ];
+function Requirements({ title, items }: { title: string; items: string[] }) {
   return (
     <div>
       <div
@@ -219,7 +214,7 @@ function Requirements() {
           fontFamily: "var(--font-v2-body)",
         }}
       >
-        Требования
+        {title}
       </div>
       <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
         {items.map((item, i) => (

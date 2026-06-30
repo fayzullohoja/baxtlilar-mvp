@@ -6,7 +6,7 @@
  * параллельно с анкетой (Shadow Active модель).
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
@@ -21,21 +21,20 @@ export default async function V2VerificationIntroPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('Verify');
   await requireUserAtStep(locale, "verification_intro");
 
   return (
     <MiniAppShell
-      eyebrow="Шаг 1 · Подтверждение"
+      eyebrow={t('step1_label')}
       align="top"
       footer={<VerificationIntroCta />}
     >
       <Headline size="lg" as="h1">
-        Подтвердим, что это&nbsp;ты.
+        {t('headline')}
       </Headline>
       <Lead>
-        В Baxtlilar все профили с подтверждённым паспортом. Это не&nbsp;для
-        бюрократии — это чтобы рядом с твоей анкетой не оказалось ботов и&nbsp;
-        фейков.
+        {t('intro_description')}
       </Lead>
 
       <div
@@ -45,9 +44,9 @@ export default async function V2VerificationIntroPage({
           borderTop: "1px solid var(--color-v2-ink-500)",
         }}
       >
-        <Step n={1} title="Фото паспорта" body="Страница с фото и подписью. Только эту страницу — больше ничего не&nbsp;нужно." />
-        <Step n={2} title="Селфи" body="Чтобы лицо на паспорте совпало с тем кто его подаёт." />
-        <Step n={3} title="Ожидание" body="Модератор проверяет 2–4 часа. Пока он смотрит — ты не теряешь время, а проходишь анкету." />
+        <Step n={1} title={t('step_1_title')} body={t('step_1_body')} />
+        <Step n={2} title={t('step_2_title')} body={t('step_2_body')} />
+        <Step n={3} title={t('step_3_title')} body={t('step_3_body')} />
       </div>
 
       <div
@@ -61,8 +60,7 @@ export default async function V2VerificationIntroPage({
           lineHeight: "1.55",
         }}
       >
-        Документы видит только модератор. Доступ к&nbsp;ним ограничен и&nbsp;
-        логируется. Telegram-аккаунт мы видим только когда ты в&nbsp;приложении.
+        {t('privacy_footer')}
       </div>
     </MiniAppShell>
   );
