@@ -1,13 +1,14 @@
 "use client";
 
 import { useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/v2/Button";
 
 type Props = {
   cta: string;
   ctaPending?: string;
-  /** Если задан — рядом с primary показывается ghost "Пропустить тур" → ready. */
+  /** Если задан — рядом с primary показывается ghost skip-кнопка → ready. */
   showSkip?: boolean;
 };
 
@@ -20,9 +21,10 @@ type Props = {
  */
 export function TutorialStep({
   cta,
-  ctaPending = "Подождите…",
+  ctaPending,
   showSkip = true,
 }: Props) {
+  const t = useTranslations("Tutorial");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -43,11 +45,11 @@ export function TutorialStep({
   return (
     <div className="flex flex-col gap-2">
       <Button onClick={() => advance(false)} disabled={pending} variant="primary">
-        {pending ? ctaPending : cta}
+        {pending ? (ctaPending ?? t("pending")) : cta}
       </Button>
       {showSkip ? (
         <Button onClick={() => advance(true)} disabled={pending} variant="ghost">
-          Пропустить тур
+          {t("skipTour")}
         </Button>
       ) : null}
     </div>

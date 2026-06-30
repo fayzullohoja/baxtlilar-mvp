@@ -36,7 +36,7 @@ export default async function LocaleLayout({
       <head>
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="afterInteractive" />
       </head>
-      <body className="min-h-full bg-baxt-pink-bg text-baxt-navy">
+      <body data-v2="true" className="min-h-full bg-v2-paper text-v2-ink-100">
         <NextIntlClientProvider>
           <TelegramInit />
           {children}

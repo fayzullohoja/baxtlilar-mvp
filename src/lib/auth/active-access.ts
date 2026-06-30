@@ -13,6 +13,11 @@ export function isActiveAccessAllowed(
   opts?: { allowPaused?: boolean },
 ): boolean {
   if (lifecycle === "active") return true;
+  // pending_ban (Option A политика): внутреннее предложение бана с 24h auto-cancel,
+  // user'у не должно быть заметно. Treat идентично active — иначе nextScreenFor
+  // (отправляющий pending_ban на /main) + этот гард (отвергающий pending_ban)
+  // образуют тот же C1 redirect-loop, что был у paused до allowPaused.
+  if (lifecycle === "pending_ban") return true;
   if (opts?.allowPaused && lifecycle === "paused") return true;
   return false;
 }

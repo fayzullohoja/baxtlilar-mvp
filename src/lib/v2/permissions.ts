@@ -76,7 +76,12 @@ export function deriveRole(
       return "blocked";
     case "paused":
       return "paused";
+    case "pending_ban":
     case "active":
+      // pending_ban (Option A политика): внутреннее предложение бана, не видимое
+      // user'у до admin_ban_confirm. Treat как active — role/permissions/screens
+      // идентичны прежнему состоянию. Видимый блок происходит только при confirm
+      // (lifecycle→blocked → этот switch выпадает в case "blocked").
       if (verificationStatus === "approved") return "verified";
       if (verificationStatus === "rejected") return "rejected";
       // submitted / pending_review / needs_changes / not_started / phone_verified
