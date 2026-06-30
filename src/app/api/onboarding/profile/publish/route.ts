@@ -15,7 +15,7 @@ export async function POST(): Promise<NextResponse> {
 
   const { data: p } = await sb
     .from("user_profiles")
-    .select("display_name, gender, birth_date, city, bio, religion, values, looking_for_gender, partner_age_min, partner_age_max")
+    .select("display_name, gender, birth_date, region, bio, religion, top_life_values, partner_age_min, partner_age_max")
     .eq("user_id", user.id)
     .maybeSingle();
   const complete =
@@ -23,12 +23,11 @@ export async function POST(): Promise<NextResponse> {
     p.display_name &&
     p.gender &&
     p.birth_date &&
-    p.city &&
+    p.region &&
     p.bio &&
     p.religion &&
-    Array.isArray(p.values) &&
-    p.values.length >= 1 &&
-    p.looking_for_gender &&
+    Array.isArray(p.top_life_values) &&
+    p.top_life_values.length >= 1 &&
     p.partner_age_min &&
     p.partner_age_max;
   if (!complete)
