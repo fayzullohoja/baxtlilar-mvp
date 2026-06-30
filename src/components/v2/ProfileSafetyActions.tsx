@@ -172,7 +172,7 @@ function ReportModal({
             marginBottom: "12px",
           }}
         >
-          {`Пожаловаться на ${targetFirstName}`}
+          {tReport("titleWithName", { name: targetFirstName })}
         </div>
         <div
           style={{
@@ -256,7 +256,7 @@ function ReportModal({
             {pending ? tButtons("sending.send") : tButtons("send")}
           </Button>
           <Button onClick={onClose} disabled={pending} variant="ghost">
-            Отмена
+            {tButtons("cancel")}
           </Button>
         </div>
       </div>
@@ -279,6 +279,7 @@ function BlockConfirm({
   onConfirm: () => void;
   pending: boolean;
 }) {
+  const tButtons = useTranslations("Buttons");
   return (
     <div
       role="dialog"
@@ -332,7 +333,7 @@ function BlockConfirm({
             {pending ? "…" : "Заблокировать"}
           </Button>
           <Button onClick={onClose} disabled={pending} variant="ghost">
-            Отмена
+            {tButtons("cancel")}
           </Button>
         </div>
       </div>

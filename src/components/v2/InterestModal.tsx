@@ -34,20 +34,19 @@ type SubmitState =
   | { kind: "sent" }
   | { kind: "error"; code: string };
 
-const ERROR_COPY: Record<string, string> = {
-  contact_blocked: "В сообщении нашёлся контакт (телефон, ник, ссылка). Это здесь не работает — удали и попробуй снова.",
-  already_sent: "Ты уже отправлял интерес этому человеку.",
-  daily_limit: "На сегодня лимит интересов исчерпан. Возвращайся завтра.",
-  declined: "Этот человек недоступен.",
-  blocked: "Этот человек недоступен.",
-  unavailable: "Анкета больше не доступна.",
-  no_interest_permission: "Чтобы отправить интерес, нужна верификация.",
-  failed: "Что-то пошло не так. Попробуй ещё раз.",
-};
-
 export function InterestModal({ candidateId, candidateFirstName, onClose }: Props) {
   const t = useTranslations("InterestModal");
   const router = useRouter();
+  const errorCopy: Record<string, string> = {
+    contact_blocked: t("err_contact_blocked"),
+    already_sent: t("err_already_sent"),
+    daily_limit: t("err_daily_limit"),
+    declined: t("err_declined"),
+    blocked: t("err_blocked"),
+    unavailable: t("err_unavailable"),
+    no_interest_permission: t("err_no_interest_permission"),
+    failed: t("err_failed"),
+  };
   const [message, setMessage] = useState("");
   const [state, setState] = useState<SubmitState>({ kind: "idle" });
   const [pending, startTransition] = useTransition();
@@ -112,17 +111,12 @@ export function InterestModal({ candidateId, candidateFirstName, onClose }: Prop
         {state.kind === "sent" ? (
           <>
             <Headline size="md" as="h2">
-              Интерес отправлен.
+              {t("sentTitle")}
             </Headline>
-            <Lead>
-              Если {candidateFirstName} ответит интересом — придёт уведомление
-              в&nbsp;Telegram и&nbsp;откроется чат. Если нет — через&nbsp;72&nbsp;часа
-              заявка автоматически закроется, и&nbsp;человек не&nbsp;увидит её&nbsp;в&nbsp;своих
-              запросах.
-            </Lead>
+            <Lead>{t("sentDescription", { name: candidateFirstName })}</Lead>
             <div style={{ marginTop: "24px" }}>
               <Button variant="primary" onClick={onClose}>
-                Понятно
+                {t("confirm")}
               </Button>
             </div>
           </>
@@ -137,16 +131,12 @@ export function InterestModal({ candidateId, candidateFirstName, onClose }: Prop
                 marginBottom: "12px",
               }}
             >
-              Отправить интерес
+              {t("eyebrow")}
             </div>
             <Headline size="md" as="h2">
-              Это не&nbsp;лайк. Это просьба познакомиться.
+              {t("title")}
             </Headline>
-            <Lead>
-              {candidateFirstName} увидит твой интерес в&nbsp;разделе «Запросы».
-              Добавь короткое сообщение — что зацепило, на&nbsp;что хочется
-              отозваться. Можно без сообщения, но шансов на ответ меньше.
-            </Lead>
+            <Lead>{t("description", { name: candidateFirstName })}</Lead>
 
             <div style={{ marginTop: "24px" }}>
               <label
@@ -158,7 +148,7 @@ export function InterestModal({ candidateId, candidateFirstName, onClose }: Prop
                   marginBottom: "8px",
                 }}
               >
-                Сообщение (по желанию, до 300 символов)
+                {t("messageLabel")}
               </label>
               <textarea
                 id="interest-msg"
@@ -205,7 +195,7 @@ export function InterestModal({ candidateId, candidateFirstName, onClose }: Prop
                   lineHeight: "1.5",
                 }}
               >
-                {ERROR_COPY[state.code] ?? ERROR_COPY.failed}
+                {errorCopy[state.code] ?? errorCopy.failed}
               </div>
             ) : null}
 
@@ -215,10 +205,10 @@ export function InterestModal({ candidateId, candidateFirstName, onClose }: Prop
                 onClick={submit}
                 disabled={pending}
               >
-                {pending ? "Отправляю…" : "Отправить"}
+                {pending ? t("sending") : t("send")}
               </Button>
               <Button variant="ghost" onClick={onClose} disabled={pending}>
-                Отмена
+                {t("cancel")}
               </Button>
             </div>
           </>
