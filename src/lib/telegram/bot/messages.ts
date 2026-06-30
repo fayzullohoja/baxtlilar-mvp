@@ -16,8 +16,8 @@ export const M = {
 
   contact_ask: {
     ru:
-      "Чтобы зарегистрироваться, поделись номером телефона.\n" +
-      "Нажми кнопку ниже — Telegram отправит номер автоматически.\n\n" +
+      "Чтобы зарегистрироваться, поделитесь номером телефона.\n" +
+      "Нажмите кнопку ниже — Telegram отправит номер автоматически.\n\n" +
       "SMS мы НЕ шлём: номер уже подтверждён Telegram'ом.",
     uz:
       "Roʻyxatdan oʻtish uchun telefon raqamingni ulash.\n" +
@@ -26,65 +26,30 @@ export const M = {
   },
   contact_button: { ru: "📱 Поделиться номером", uz: "📱 Raqamni ulashish" },
   contact_not_yours: {
-    ru: "Это чужой номер. Поделись СВОИМ через кнопку.",
+    ru: "Это чужой номер. Поделитесь СВОИМ через кнопку.",
     uz: "Bu boshqa odamning raqami. Tugma orqali OʻZ raqamingni ulash.",
   },
 
   pd_consent_ask: {
     ru:
-      "📜 Документы Baxtlilar\n\n" +
-      "Выше — 4 PDF-файла с условиями платформы. Ознакомься и согласись:\n\n" +
-      "1. Пользовательское соглашение (оферта)\n" +
-      "2. Политика конфиденциальности\n" +
-      "3. Правила платформы\n" +
-      "4. Согласие на обработку персональных данных\n\n" +
-      "После согласия попросим номер телефона. Биометрию для верификации " +
+      "📜 <b>Документы Baxtlilar</b>\n\n" +
+      "Перед согласием ознакомьтесь с условиями платформы:\n\n" +
+      `1. <a href="${APP_URL}/legal/user-agreement.pdf">Пользовательское соглашение (оферта)</a>\n` +
+      `2. <a href="${APP_URL}/legal/privacy.pdf">Политика конфиденциальности</a>\n` +
+      `3. <a href="${APP_URL}/legal/rules.pdf">Правила платформы</a>\n` +
+      `4. <a href="${APP_URL}/legal/pd-consent.pdf">Согласие на обработку персональных данных</a>\n\n` +
+      "После согласия попросим Ваш номер телефона. Биометрию для верификации " +
       "запросим отдельно — это отдельное согласие на следующем шаге.",
     uz:
-      "📜 Baxtlilar hujjatlari\n\n" +
-      "Yuqorida — platforma shartlari bilan 4 ta PDF-fayl. Tanishib chiqing va rozilik bering:\n\n" +
-      "1. Foydalanuvchi shartnomasi (oferta)\n" +
-      "2. Maxfiylik siyosati\n" +
-      "3. Platforma qoidalari\n" +
-      "4. Shaxsiy maʼlumotlarni qayta ishlashga rozilik\n\n" +
+      "📜 <b>Baxtlilar hujjatlari</b>\n\n" +
+      "Rozilik berishdan oldin platforma shartlari bilan tanishib chiqing:\n\n" +
+      `1. <a href="${APP_URL}/legal/user-agreement.pdf">Foydalanuvchi shartnomasi (oferta)</a>\n` +
+      `2. <a href="${APP_URL}/legal/privacy.pdf">Maxfiylik siyosati</a>\n` +
+      `3. <a href="${APP_URL}/legal/rules.pdf">Platforma qoidalari</a>\n` +
+      `4. <a href="${APP_URL}/legal/pd-consent.pdf">Shaxsiy maʼlumotlarni qayta ishlashga rozilik</a>\n\n` +
       "Rozilikdan keyin telefon raqamingizni soʻraymiz. Biometrik tasdiqlash " +
       "alohida soʻraladi — bu keyingi qadamda alohida rozilik.",
   },
-  /**
-   * V2 ext 2026-06-28 — 4 legal PDF, отправляются как sendDocument
-   * перед pd_consent_ask. Caption-и короткие, чтобы лента бота не была
-   * перегружена текстом.
-   */
-  legal_pdfs: [
-    {
-      slug: "user-agreement",
-      caption: {
-        ru: "1/4 · Пользовательское соглашение (оферта)",
-        uz: "1/4 · Foydalanuvchi shartnomasi (oferta)",
-      },
-    },
-    {
-      slug: "privacy",
-      caption: {
-        ru: "2/4 · Политика конфиденциальности",
-        uz: "2/4 · Maxfiylik siyosati",
-      },
-    },
-    {
-      slug: "rules",
-      caption: {
-        ru: "3/4 · Правила платформы",
-        uz: "3/4 · Platforma qoidalari",
-      },
-    },
-    {
-      slug: "pd-consent",
-      caption: {
-        ru: "4/4 · Согласие на обработку персональных данных",
-        uz: "4/4 · Shaxsiy maʼlumotlarni qayta ishlashga rozilik",
-      },
-    },
-  ],
   pd_consent_yes: { ru: "✅ Согласен", uz: "✅ Roziman" },
   pd_consent_no: { ru: "❌ Отказаться", uz: "❌ Rad etish" },
 
@@ -102,22 +67,22 @@ export const M = {
   bio_consent_no: { ru: "❌ Отказаться", uz: "❌ Rad etish" },
 
   ready: {
-    ru: "Готово! Открой приложение и загрузи паспорт + селфи для верификации.",
+    ru: "Готово! Откройте приложение и загрузите паспорт + селфи для верификации.",
     uz: "Tayyor! Ilovani och va pasport + selfi yuklab tasdiqlanishdan oʻt.",
   },
   open_app: { ru: "🚀 Открыть Baxtlilar", uz: "🚀 Baxtlilar'ni ochish" },
 
   already_active: {
-    ru: "Ты уже в Baxtlilar. Открой приложение:",
+    ru: "Вы уже в Baxtlilar. Откройте приложение:",
     uz: "Sen allaqachon Baxtlilar'dasan. Ilovani och:",
   },
 
   declined_pd: {
-    ru: "Без согласия не можем зарегистрировать. Если передумаешь — /start.",
+    ru: "Без согласия не можем зарегистрировать. Если передумаете — /start.",
     uz: "Rozilik boʻlmasa, roʻyxatdan oʻtkaza olmaymiz. Fikring oʻzgarsa — /start.",
   },
   declined_bio: {
-    ru: "Без согласия на биометрию верификация невозможна. Если передумаешь — /start.",
+    ru: "Без согласия на биометрию верификация невозможна. Если передумаете — /start.",
     uz: "Biometriya roziligi boʻlmasa, tasdiqlash mumkin emas. Fikring oʻzgarsa — /start.",
   },
 
@@ -127,7 +92,7 @@ export const M = {
   },
 
   error_generic: {
-    ru: "Что-то пошло не так. Попробуй /start ещё раз.",
+    ru: "Что-то пошло не так. Попробуйте /start ещё раз.",
     uz: "Nimadir notoʻgʻri ketdi. /start ni qaytadan urinib koʻr.",
   },
 
@@ -141,7 +106,7 @@ export const M = {
   // R2/C8/C11: blocking-tombstone от модератора. Не показываем until-дату
   // (10 лет), чтобы не выглядело как «подождать год». Прямо — в поддержку.
   phone_blocking: {
-    ru: "Регистрация с этим номером недоступна. Если вы считаете это ошибкой — напишите в поддержку.",
+    ru: "Регистрация с этим номером недоступна. Если Вы считаете это ошибкой — напишите в поддержку.",
     uz: "Bu raqam bilan roʻyxatdan oʻtish mumkin emas. Agar bu xato deb hisoblasangiz — qoʻllab-quvvatlash xizmatiga yozing.",
   },
   phone_check_failed: {
