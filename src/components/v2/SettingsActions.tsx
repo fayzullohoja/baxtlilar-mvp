@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 import { useTranslations } from 'next-intl'
@@ -123,9 +123,22 @@ function DeleteConfirm({
   const t = useTranslations("Settings");
   const [acked, setAcked] = useState(false);
 
+  // Bug #35 (loop pass 10): a11y — добавлен aria-modal, Escape-key handler.
+  // Полноценный focus trap здесь не реализуем (требует focus-trap-react),
+  // но keyboard-Escape для закрытия — минимум для пользователя клавиатуры.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !busy) onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [busy, onClose]);
+
   return (
     <div
       role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-confirm-title"
       style={{
         position: "fixed",
         inset: 0,
@@ -151,6 +164,7 @@ function DeleteConfirm({
         }}
       >
         <div
+          id="delete-confirm-title"
           style={{
             fontFamily: "var(--font-v2-display)",
             fontSize: "22px",

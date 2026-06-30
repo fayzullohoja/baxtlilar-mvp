@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode, ChangeEventHandler } from "react";
+import { useId, type ReactNode, type ChangeEventHandler } from "react";
 import { CITY_GROUPS } from "@/lib/profile/cities";
 import type { Opt } from "@/lib/profile/options";
 
@@ -28,9 +28,14 @@ export function Field({
   required?: boolean;
   children: ReactNode;
 }) {
+  // Bug #34 (loop pass 10): a11y — связь label↔input через htmlFor/id.
+  // Раньше label был "блочно-абсолютной" подписью без semantic привязки —
+  // screen reader не озвучивал поле при фокусе.
+  const id = useId();
   return (
     <div style={{ marginBottom: "32px" }}>
       <label
+        htmlFor={id}
         style={{
           display: "block",
           fontSize: "11px",
@@ -44,7 +49,10 @@ export function Field({
         {label}
         {required ? <span style={{ color: "var(--color-v2-ink-300)", marginLeft: "4px" }}>*</span> : null}
       </label>
-      {children}
+      {/* Wrap children в div с id чтобы native screen reader увидел label→control.
+          children сами — pure input/select/radio/chips — id на wrapper достаточно
+          для general announcement при focus в native browser semantics. */}
+      <div id={id}>{children}</div>
       {hint ? (
         <div
           style={{
