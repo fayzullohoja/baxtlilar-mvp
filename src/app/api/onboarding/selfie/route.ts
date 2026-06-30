@@ -3,6 +3,7 @@ import { loadUserForStep } from "@/lib/onboarding/guard-api";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { uploadDocumentImage } from "@/lib/uploads/storage";
+import { isDocumentBlacklisted } from "@/lib/uploads/blacklist";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
 
 export const runtime = "nodejs";
@@ -23,6 +24,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const up = await uploadDocumentImage(user.id, "selfie", await file.arrayBuffer());
   if (!up.ok) return NextResponse.json({ ok: false, error: up.error }, { status: 400 });
+
+  // Bug #16 (loop pass 3): SHA tombstone enforce.
+  if (await isDocumentBlacklisted(up.sha256, "selfie")) {
+    return NextResponse.json(
+      { ok: false, error: "document_blacklisted" },
+      { status: 400 },
+    );
+  }
 
   // Путь к селфи должен лечь в БД ДО ухода в модерацию: иначе модератору нечего
   // смотреть, а заявка уже в очереди (ложная заявка без артефакта). selfie_sha256 — F-007.

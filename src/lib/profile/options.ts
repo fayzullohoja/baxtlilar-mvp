@@ -76,17 +76,6 @@ export const GEO_PREFERENCE: Opt[] = [
   { value: "country", ru: "По всей стране", uz: "Butun mamlakat boʻylab" },
 ];
 
-/** @deprecated 2026-06-28 — заменено на RELIGION_PRACTICE + RELIGION_PARTNER_MATCH.
- *  Шкала 1-5 создавала ложное «вера может быть неважна» для UZ-платформы серьёзных
- *  знакомств. Оставлено как источник для legacy данных. */
-export const RELIGION_IMPORTANCE: Opt[] = [
-  { value: "1", ru: "Не важна", uz: "Muhim emas" },
-  { value: "2", ru: "Скорее не важна", uz: "Koʻproq muhim emas" },
-  { value: "3", ru: "Умеренно важна", uz: "Oʻrtacha muhim" },
-  { value: "4", ru: "Важна", uz: "Muhim" },
-  { value: "5", ru: "Очень важна", uz: "Juda muhim" },
-];
-
 // ============================================================================
 // Onboarding V2 Extension (2026-06-28) — продуктовые поправки
 // ============================================================================

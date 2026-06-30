@@ -3,6 +3,7 @@ import { loadUserForStep } from "@/lib/onboarding/guard-api";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { uploadDocumentImage } from "@/lib/uploads/storage";
+import { isDocumentBlacklisted } from "@/lib/uploads/blacklist";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
 
 export const runtime = "nodejs";
@@ -20,6 +21,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const up = await uploadDocumentImage(user.id, "passport", await file.arrayBuffer());
   if (!up.ok) return NextResponse.json({ ok: false, error: up.error }, { status: 400 });
+
+  // Bug #16 (loop pass 3): SHA-tombstone от blocking-reject/erase_user раньше
+  // не enforce'илась. Banned юзер мог re-uploadить тот же паспорт. Теперь —
+  // 400 document_blacklisted ДО записи в DB.
+  if (await isDocumentBlacklisted(up.sha256, "passport")) {
+    return NextResponse.json(
+      { ok: false, error: "document_blacklisted" },
+      { status: 400 },
+    );
+  }
 
   // Путь к паспорту должен лечь в БД ДО продвижения шага (иначе селфи-шаг и
   // модерация без записанного документа). passport_sha256 — F-007 (дедуп

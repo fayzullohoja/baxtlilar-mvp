@@ -3,6 +3,7 @@ import { loadUserForStep } from "@/lib/onboarding/guard-api";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { uploadDocumentImage } from "@/lib/uploads/storage";
+import { isDocumentBlacklisted } from "@/lib/uploads/blacklist";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
 
 export const runtime = "nodejs";
@@ -25,15 +26,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     selfie_sha256?: string;
   } = {};
 
+  // Bug #16 (loop pass 3): SHA tombstone enforce on retry-after-needs_changes path.
   if (passport instanceof File) {
     const up = await uploadDocumentImage(user.id, "passport", await passport.arrayBuffer());
     if (!up.ok) return NextResponse.json({ ok: false, error: up.error }, { status: 400 });
+    if (await isDocumentBlacklisted(up.sha256, "passport")) {
+      return NextResponse.json({ ok: false, error: "document_blacklisted" }, { status: 400 });
+    }
     patch.passport_path = up.path;
     patch.passport_sha256 = up.sha256;
   }
   if (selfie instanceof File) {
     const up = await uploadDocumentImage(user.id, "selfie", await selfie.arrayBuffer());
     if (!up.ok) return NextResponse.json({ ok: false, error: up.error }, { status: 400 });
+    if (await isDocumentBlacklisted(up.sha256, "selfie")) {
+      return NextResponse.json({ ok: false, error: "document_blacklisted" }, { status: 400 });
+    }
     patch.selfie_path = up.path;
     patch.selfie_sha256 = up.sha256;
   }
