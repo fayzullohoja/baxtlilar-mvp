@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "./Button";
 import { Field, TextInput, Select } from "./AnketaFields";
 import { GEO_PREFERENCE } from "@/lib/profile/options";
@@ -24,6 +25,7 @@ const ERR_COPY: Record<string, string> = {
 
 export function V2AnketaLookingForm({ locale }: { locale: string }) {
   const router = useRouter();
+  const t = useTranslations("Anketa");
   const [min, setMin] = useState("");
   const [max, setMax] = useState("");
   const [geo, setGeo] = useState("");
@@ -75,7 +77,7 @@ export function V2AnketaLookingForm({ locale }: { locale: string }) {
   return (
     <div>
       <Field
-        label="Возраст партнёра"
+        label={t("partnerAgeLabel")}
         hint="От и до — фильтр алгоритма. Не строгая граница, просто чтобы не показывать совсем мимо."
       >
         <div style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}>
@@ -128,7 +130,7 @@ export function V2AnketaLookingForm({ locale }: { locale: string }) {
         </div>
       </Field>
 
-      <Field label="География">
+      <Field label={t("geographyLabel")}>
         <Select options={GEO_PREFERENCE} value={geo} onChange={setGeo} locale={locale} />
       </Field>
 
@@ -150,7 +152,7 @@ export function V2AnketaLookingForm({ locale }: { locale: string }) {
       ) : null}
 
       <Button onClick={submit} disabled={busy || !valid} variant="primary">
-        {busy ? "Сохраняю…" : "Дальше"}
+        {busy ? t("btn_saving") : t("btn_next")}
       </Button>
     </div>
   );

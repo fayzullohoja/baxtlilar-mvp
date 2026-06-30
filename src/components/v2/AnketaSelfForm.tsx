@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 import { Field, Select, TextArea } from "./AnketaFields";
@@ -25,6 +26,7 @@ const ERR_COPY: Record<string, string> = {
 };
 
 export function V2AnketaSelfForm({ locale }: { locale: string }) {
+  const t = useTranslations('Anketa');
   const router = useRouter();
   const [bio, setBio] = useState("");
   const [education, setEducation] = useState("");
@@ -76,20 +78,20 @@ export function V2AnketaSelfForm({ locale }: { locale: string }) {
   return (
     <div>
       <Field
-        label="О себе"
+        label={t('bioLabel')}
         required
-        hint="Что важно знать про тебя. Не реквизиты — характер, привычки, чем живёшь. Минимум 30 символов."
+        hint={t('bioHint')}
       >
         <TextArea
           value={bio}
           onChange={(e) => setBio(e.target.value)}
           rows={5}
           maxLength={1000}
-          placeholder="Например: спокойный, ценю семью и честность, люблю готовить и путешествовать. Хочу познакомиться с человеком, который серьёзно относится к созданию семьи."
+          placeholder={t('bioPlaceholder')}
         />
       </Field>
 
-      <Field label="Образование" required>
+      <Field label={t('educationLabel')} required>
         <Select
           options={EDUCATION}
           value={education}
@@ -99,9 +101,9 @@ export function V2AnketaSelfForm({ locale }: { locale: string }) {
       </Field>
 
       <Field
-        label="Сфера деятельности"
+        label={t('activityFieldLabel')}
         required
-        hint="Не точное место работы — просто общее направление."
+        hint={t('activityFieldHint')}
       >
         <Select
           options={ACTIVITY_FIELDS}
@@ -111,7 +113,7 @@ export function V2AnketaSelfForm({ locale }: { locale: string }) {
         />
       </Field>
 
-      <Field label="Формат занятости" required>
+      <Field label={t('employmentFormatLabel')} required>
         <Select
           options={EMPLOYMENT_FORMAT}
           value={employmentFormat}
@@ -144,7 +146,7 @@ export function V2AnketaSelfForm({ locale }: { locale: string }) {
         disabled={!valid || busy}
         style={{ width: "100%" }}
       >
-        {busy ? "Сохраняем…" : "Дальше"}
+        {busy ? t('btn_saving') : t('btn_next')}
       </Button>
     </div>
   );

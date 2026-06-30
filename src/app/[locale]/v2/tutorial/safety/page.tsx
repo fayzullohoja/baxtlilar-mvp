@@ -8,7 +8,7 @@
  * (router определит по lifecycle/verification_status).
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
@@ -24,30 +24,27 @@ export default async function TutorialSafetyPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('Tutorial');
   await requireUserAtStep(locale, "tutorial_safety");
 
   return (
     <MiniAppShell
-      eyebrow="Знакомство · 4 из 4"
+      eyebrow={t('safety.title')}
       align="top"
-      footer={<TutorialStep cta="Готово" showSkip={false} />}
+      footer={<TutorialStep cta={t('complete')} showSkip={false} />}
     >
       <StepDots total={4} current={4} />
       <Headline size="lg" as="h1">
-        Если что-то не&nbsp;так — скажи.
+        {t('safety.heading')}
       </Headline>
       <Lead>
-        В&nbsp;любом профиле и&nbsp;в&nbsp;любом чате есть&nbsp;
-        <em>Пожаловаться</em>. Модератор смотрит каждую жалобу. Решение приходит
-        в&nbsp;течение 24&nbsp;часов.
+        {t('safety.body1')}
       </Lead>
       <Lead style={{ marginTop: "20px" }}>
-        Если человек неприятен — заблокируй. Он не&nbsp;увидит тебя в&nbsp;ленте,
-        не&nbsp;сможет писать, не&nbsp;узнает что ты его заблокировал.
+        {t('safety.body2')}
       </Lead>
       <Lead style={{ marginTop: "20px" }}>
-        Анкета остаётся приватной до взаимного интереса. Фото нельзя сохранить
-        кнопкой &laquo;скачать&raquo;.
+        {t('safety.body3')}
       </Lead>
     </MiniAppShell>
   );

@@ -13,8 +13,10 @@
  * ("отправлено 1 час назад").
  */
 
+"use client";
 import type { VerificationStatus } from "@/lib/state-machine/types";
 import { Headline } from "./Headline";
+import { useTranslations } from "next-intl";
 
 type Props = {
   status: VerificationStatus;
@@ -27,52 +29,52 @@ type Content = {
   body: string;
 };
 
-function contentFor(status: VerificationStatus): Content {
+function contentFor(status: VerificationStatus, t: ReturnType<typeof useTranslations>): Content {
   switch (status) {
     case "documents_uploaded":
     case "liveness_uploaded":
     case "pending_review":
       return {
-        eyebrow: "В очереди",
-        title: "Модератор сейчас смотрит твою заявку.",
-        body: "Обычно это занимает 2–4 часа. Когда решение будет — придёт уведомление в Telegram. Пока ты не показываешься в ленте и не видишь чужих анкет.",
+        eyebrow: t("queued.label"),
+        title: t("queued.title"),
+        body: t("queued.body"),
       };
     case "needs_changes":
       return {
-        eyebrow: "Нужно поправить",
-        title: "Модератор просит уточнить пару моментов.",
-        body: "Обычно это плохое селфи или нечитаемая фотография паспорта. Открой раздел верификации и переделай — займёт пару минут.",
+        eyebrow: t("needsChanges.label"),
+        title: t("needsChanges.title"),
+        body: t("needsChanges.body"),
       };
     case "rejected":
       return {
-        eyebrow: "Не прошёл",
-        title: "К сожалению, мы не можем подтвердить твой профиль.",
-        body: "Если думаешь, что это ошибка — напиши нам в @baxtlilar_support. Решение модератора окончательное.",
+        eyebrow: t("rejected.label"),
+        title: t("rejected.title"),
+        body: t("rejected.body"),
       };
     case "not_started":
     case "phone_verified":
       return {
-        eyebrow: "Шаг не пройден",
-        title: "Сначала верификация.",
-        body: "Чтобы тебя показали другим, нужно подтвердить личность — паспорт и селфи. Открой бот и пройди шаги.",
+        eyebrow: t("notStarted.label"),
+        title: t("notStarted.title"),
+        body: t("notStarted.body"),
       };
     case "approved":
     case "revoked":
       // Сюда мы не должны попадать (approved → не shadow), но возвращаем
       // что-то на случай race.
       return {
-        eyebrow: "Готово",
-        title: "Профиль подтверждён.",
-        body: "Перезагрузи страницу — должна появиться лента.",
+        eyebrow: t("approved.label"),
+        title: t("approved.title"),
+        body: t("approved.body"),
       };
   }
 }
 
-function timeAgo(iso: string | null): string | null {
+function timeAgo(iso: string | null, tTime: ReturnType<typeof useTranslations>): string | null {
   if (!iso) return null;
   const ms = Date.now() - new Date(iso).getTime();
   const min = Math.floor(ms / 60_000);
-  if (min < 1) return "только что";
+  if (min < 1) return tTime("justNow");
   if (min < 60) return `${min} мин назад`;
   const hr = Math.floor(min / 60);
   if (hr < 24) return `${hr} ч назад`;
@@ -81,8 +83,9 @@ function timeAgo(iso: string | null): string | null {
 }
 
 export function VerificationPlashka({ status, submittedAt }: Props) {
-  const c = contentFor(status);
-  const ago = timeAgo(submittedAt);
+  const t = useTranslations("VerificationPlashka");
+  const c = contentFor(status, t);
+  const ago = timeAgo(submittedAt, t);
 
   return (
     <div

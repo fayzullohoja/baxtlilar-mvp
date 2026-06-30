@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 import { Headline, Lead } from "./Headline";
@@ -45,6 +46,7 @@ const ERROR_COPY: Record<string, string> = {
 };
 
 export function InterestModal({ candidateId, candidateFirstName, onClose }: Props) {
+  const t = useTranslations("InterestModal");
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [state, setState] = useState<SubmitState>({ kind: "idle" });
@@ -162,7 +164,7 @@ export function InterestModal({ candidateId, candidateFirstName, onClose }: Prop
                 id="interest-msg"
                 value={message}
                 onChange={(e) => setMessage(e.target.value.slice(0, 300))}
-                placeholder="Что в анкете отозвалось?"
+                placeholder={t("messagePlaceholder")}
                 rows={4}
                 style={{
                   width: "100%",

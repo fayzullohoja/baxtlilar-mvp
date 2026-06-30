@@ -6,7 +6,7 @@
  * пока редиректит в re-flow онбординга (TODO Sprint 16).
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireActiveUser } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ageFromDate } from "@/lib/profile/schemas";
@@ -31,6 +31,7 @@ export default async function V2SettingsPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('Settings');
   const user = await requireActiveUser(locale, { allowPaused: true });
   const sb = supabaseAdmin();
 
@@ -48,10 +49,10 @@ export default async function V2SettingsPage({
 
   return (
     <>
-      <MiniAppShell eyebrow="Настройки" align="top" footer={null}>
+      <MiniAppShell eyebrow={t('title')} align="top" footer={null}>
         <div style={{ marginBottom: "32px" }}>
           <Headline size="lg" as="h1">
-            {name || "Профиль"}
+            {name || t('profileFallback')}
             {age ? `, ${age}` : ""}
           </Headline>
           <div
@@ -74,7 +75,7 @@ export default async function V2SettingsPage({
               fontFamily: "var(--font-v2-body)",
             }}
           >
-            Статус · {roleLabel}
+            {t('statusLabel')} · {roleLabel}
           </div>
         </div>
 
@@ -91,7 +92,7 @@ export default async function V2SettingsPage({
             lineHeight: "1.55",
           }}
         >
-          Версия V2 · Baxtlilar
+          {t('versionInfo')}
         </div>
         <div style={{ height: "80px" }} />
       </MiniAppShell>

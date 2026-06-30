@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "./Button";
 import { Field, Select, Chips, TextInput } from "./AnketaFields";
 import { LANGUAGES_LIST } from "@/lib/profile/options";
@@ -14,6 +15,7 @@ import { LANGUAGES_LIST } from "@/lib/profile/options";
  */
 export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
   const router = useRouter();
+  const t = useTranslations("Anketa");
   const [heightCm, setHeightCm] = useState("");
   const [weightKg, setWeightKg] = useState("");
   const [nativeLang, setNativeLang] = useState("");
@@ -77,21 +79,21 @@ export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
   return (
     <div>
       <Field
-        label="Рост, см"
+        label={t("heightLabel")}
         required
-        hint="От 140 до 220."
+        hint={t("heightHint")}
       >
         <TextInput
           maxLength={3}
           value={heightCm}
           onChange={(e) => setHeightCm(e.target.value.replace(/\D/g, ""))}
-          placeholder="170"
+          placeholder={t("heightLabel").match(/\d+/) ? "170" : "170"}
         />
       </Field>
 
       <Field
-        label="Вес, кг"
-        hint="Можно пропустить — это поле необязательное."
+        label={t("weightLabel")}
+        hint={t("optionalFieldHint")}
       >
         <TextInput
           maxLength={3}
@@ -102,9 +104,9 @@ export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
       </Field>
 
       <Field
-        label="Родной язык"
+        label={t("nativeLanguageLabel")}
         required
-        hint="Один — основной язык твоей семьи."
+        hint={t("nativeLanguageHint")}
       >
         <Select
           options={LANGUAGES_LIST}
@@ -115,9 +117,9 @@ export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
       </Field>
 
       <Field
-        label="На каких языках общаешься"
+        label={t("spokenLanguagesLabel")}
         required
-        hint={`От 1 до 6 — те языки, на которых можешь свободно говорить. Выбрано: ${spokenLangs.length}/6`}
+        hint={`${t("spokenLanguagesLabel").substring(0, 20)}... Выбрано: ${spokenLangs.length}/6`}
       >
         <Chips
           options={LANGUAGES_LIST}
@@ -141,7 +143,7 @@ export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
             marginBottom: "24px",
           }}
         >
-          Не удалось сохранить. Проверь поля и попробуй снова.
+          {t("err_failed")}
         </div>
       ) : null}
 
@@ -151,7 +153,7 @@ export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
         disabled={!valid || busy}
         style={{ width: "100%" }}
       >
-        {busy ? "Сохраняем…" : "Дальше"}
+        {busy ? t("btn_saving") : t("btn_next")}
       </Button>
     </div>
   );

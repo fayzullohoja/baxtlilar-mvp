@@ -11,7 +11,7 @@
  *     paused собеседник — ОК, он может отвечать в существующих чатах.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Link, redirect } from "@/i18n/navigation";
 import { requireActiveUser } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -33,6 +33,7 @@ export default async function V2ChatThreadPage({
 }) {
   const { locale, id } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('Chat');
   const user = await requireActiveUser(locale, { allowPaused: true });
   const sb = supabaseAdmin();
 
@@ -111,7 +112,7 @@ export default async function V2ChatThreadPage({
             textDecoration: "none",
             flexShrink: 0,
           }}
-          aria-label="Назад"
+          aria-label={t('placeholder')}
         >
           ←
         </Link>
@@ -157,7 +158,7 @@ export default async function V2ChatThreadPage({
               {otherName}
             </div>
             <div style={{ fontSize: "11px", color: "var(--color-v2-ink-400)" }}>
-              Открыть профиль
+              {t('openProfile')}
             </div>
           </div>
         </Link>
@@ -176,7 +177,8 @@ export default async function V2ChatThreadPage({
  * (deleted/blocked). Без композера — писать некому. История не показывается,
  * но и не теряется (остаётся в БД).
  */
-function GhostChat() {
+async function GhostChat() {
+  const t = await getTranslations('Chat');
   return (
     <main
       style={{
@@ -201,7 +203,7 @@ function GhostChat() {
       >
         <Link
           href="/v2/chats"
-          aria-label="Назад"
+          aria-label={t('placeholder')}
           style={{
             display: "grid",
             placeItems: "center",
@@ -218,10 +220,10 @@ function GhostChat() {
       <div style={{ flex: 1, display: "grid", placeItems: "center", padding: "0 32px", textAlign: "center" }}>
         <div>
           <p style={{ fontSize: "16px", color: "var(--color-v2-ink-200)" }}>
-            Собеседник больше не на Baxtlilar.
+            {t('ghostChatHeading')}
           </p>
           <p style={{ marginTop: "8px", fontSize: "14px", color: "var(--color-v2-ink-400)" }}>
-            Переписка недоступна.
+            {t('ghostChatDescription')}
           </p>
         </div>
       </div>
@@ -237,13 +239,14 @@ function GhostChat() {
  * Делаем минимальный inline вариант: показываем ProfileSafetyActions целиком
  * как small floating panel при tap.
  */
-function ChatHeaderMenu({
+async function ChatHeaderMenu({
   targetId,
   targetFirstName,
 }: {
   targetId: string;
   targetFirstName: string;
 }) {
+  const t = await getTranslations('Chat');
   return (
     <details style={{ position: "relative" }}>
       <summary
@@ -259,7 +262,7 @@ function ChatHeaderMenu({
           background: "transparent",
           border: "none",
         }}
-        aria-label="Меню"
+        aria-label={t('menu')}
       >
         ⋮
       </summary>

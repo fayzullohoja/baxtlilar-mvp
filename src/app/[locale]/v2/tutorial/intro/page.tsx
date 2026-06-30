@@ -7,7 +7,7 @@
  * первая сессия будет с ожиданием, которое мы не подтверждаем.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
@@ -24,25 +24,23 @@ export default async function TutorialIntroPage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireUserAtStep(locale, "tutorial_intro");
+  const t = await getTranslations('Tutorial');
 
   return (
     <MiniAppShell
-      eyebrow="Знакомство · 1 из 4"
+      eyebrow={t('intro.title')}
       align="top"
-      footer={<TutorialStep cta="Дальше" />}
+      footer={<TutorialStep cta={t('next')} />}
     >
       <StepDots total={4} current={1} />
       <Headline size="lg" as="h1">
-        Здесь всё работает не&nbsp;как обычно.
+        {t('intro.heading')}
       </Headline>
       <Lead>
-        Ты не увидишь сотни анкет за&nbsp;вечер. Лента маленькая, тщательно
-        отобранная, без бесконечной прокрутки.
+        {t('intro.body1')}
       </Lead>
       <Lead style={{ marginTop: "20px" }}>
-        Мы не показываем тебя людям, пока модератор не&nbsp;подтвердит твою
-        личность. Параллельно ты пройдёшь короткий тур — что значит каждый
-        экран, и&nbsp;на&nbsp;что обращать внимание.
+        {t('intro.body2')}
       </Lead>
     </MiniAppShell>
   );

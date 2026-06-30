@@ -7,6 +7,7 @@
  * фото/голосом, но безопасно.
  */
 
+import { getTranslations } from "next-intl/server";
 import { setRequestLocale } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
@@ -24,28 +25,26 @@ export default async function TutorialChatPage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireUserAtStep(locale, "tutorial_chat");
+  const t = await getTranslations("Tutorial");
 
   return (
     <MiniAppShell
-      eyebrow="Знакомство · 3 из 4"
+      eyebrow={t("chat.title")}
       align="top"
-      footer={<TutorialStep cta="Дальше" />}
+      footer={<TutorialStep cta={t("next")} />}
     >
       <StepDots total={4} current={3} />
       <Headline size="lg" as="h1">
-        Чат открывается обоюдно.
+        {t("chat.heading")}
       </Headline>
       <Lead>
-        Ты отправил интерес. Второй человек открыл твой профиль и&nbsp;ответил
-        интересом в&nbsp;ответ. Только тогда появляется чат.
+        {t("chat.body1")}
       </Lead>
       <Lead style={{ marginTop: "20px" }}>
-        До этого момента вы друг другу пишите не&nbsp;можете. Ни&nbsp;ты ему,
-        ни&nbsp;он тебе. Это не&nbsp;баг — это и&nbsp;есть продукт.
+        {t("chat.body2")}
       </Lead>
       <Lead style={{ marginTop: "20px" }}>
-        Когда чат открыт — обычная переписка с&nbsp;текстом, голосовыми
-        и&nbsp;фото. Без таймеров и&nbsp;игр в&nbsp;&laquo;кто первый&raquo;.
+        {t("chat.body3")}
       </Lead>
     </MiniAppShell>
   );

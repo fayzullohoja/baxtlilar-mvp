@@ -6,7 +6,7 @@
  * каждой строке — только тонкий dot если unread.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { requireActiveUser } from "@/lib/auth/active-guard";
 import { getChatList } from "@/lib/chat/list";
@@ -44,30 +44,30 @@ export default async function V2ChatsPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const user = await requireActiveUser(locale, { allowPaused: true });
+  const t = await getTranslations("Chats");
   const rows = await getChatList(user.id);
   const totalUnread = rows.reduce((s, r) => s + r.unread, 0);
 
   return (
     <>
       <AutoRefresh />
-      <MiniAppShell eyebrow="Чаты" align="top" footer={null}>
+      <MiniAppShell eyebrow={t("title")} align="top" footer={null}>
         {rows.length === 0 ? (
           <div style={{ marginTop: "60px" }}>
             <Headline size="md" as="h1">
-              Пока никто не&nbsp;ответил взаимностью.
+              {t("emptyHeading")}
             </Headline>
             <Lead>
-              Чаты открываются только после взаимного интереса. Это нормально, что
-              их сначала ноль — мы здесь не для миллиона совпадений.
+              {t("emptyDescription")}
             </Lead>
           </div>
         ) : (
           <>
             <Headline size="lg" as="h1">
-              Открытые чаты.
+              {t("activeHeading")}
             </Headline>
             <Lead>
-              Каждая строка — взаимный интерес. Открой и&nbsp;продолжи разговор.
+              {t("activeDescription")}
             </Lead>
 
             <ul style={{ listStyle: "none", padding: 0, marginTop: "32px" }}>
@@ -172,8 +172,8 @@ export default async function V2ChatsPage({
                             }}
                           >
                             {r.lastBody
-                              ? (r.mine ? "Вы: " : "") + r.lastBody
-                              : "Нет сообщений"}
+                              ? (r.mine ? t("youPrefix") : "") + r.lastBody
+                              : t("noMessages")}
                           </span>
                         </div>
                       </div>

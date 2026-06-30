@@ -11,6 +11,9 @@
  * Источник: Blueprint §3.4 C3.
  */
 
+"use client";
+
+import { useTranslations } from "next-intl";
 import { Headline, Lead } from "./Headline";
 import {
   EDUCATION,
@@ -73,6 +76,7 @@ function row(label: string, value: string | null) {
 }
 
 export function RevealedProfile({ profile, locale = "ru" }: Props) {
+  const t = useTranslations("Profile");
   const age = profile.birth_date ? ageFromDate(profile.birth_date) : null;
   const photos = profile.photo_urls;
   const valueLabels = profile.top_life_values.map((v) => labelOf(LIFE_VALUES_V3, v, locale));
@@ -142,7 +146,7 @@ export function RevealedProfile({ profile, locale = "ru" }: Props) {
               fontFamily: "var(--font-v2-body)",
             }}
           >
-            О себе
+            {t("bioLabel")}
           </div>
           <p
             style={{
@@ -172,7 +176,7 @@ export function RevealedProfile({ profile, locale = "ru" }: Props) {
               fontFamily: "var(--font-v2-body)",
             }}
           >
-            Что важно
+            {t("lifeValuesLabel")}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
             {valueLabels.map((l, i) => (
@@ -208,27 +212,26 @@ export function RevealedProfile({ profile, locale = "ru" }: Props) {
             fontFamily: "var(--font-v2-body)",
           }}
         >
-          Детали
+          {t("detailsLabel")}
         </div>
-        {row("Религия", profile.religion ? labelOf(RELIGION, profile.religion, locale) : null)}
+        {row(t("religionLabel"), profile.religion ? labelOf(RELIGION, profile.religion, locale) : null)}
         {row(
-          "Семейный статус",
+          t("maritalStatusLabel"),
           profile.marital_status ? labelOf(MARITAL_STATUS, profile.marital_status, locale) : null,
         )}
-        {row("Дети", profile.has_children ? labelOf(HAS_CHILDREN, profile.has_children, locale) : null)}
+        {row(t("childrenLabel"), profile.has_children ? labelOf(HAS_CHILDREN, profile.has_children, locale) : null)}
         {row(
-          "Планы по детям",
+          t("childrenPlansLabel"),
           profile.future_children_plan
             ? labelOf(FUTURE_CHILDREN_PLAN, profile.future_children_plan, locale)
             : null,
         )}
-        {row("Образование", profile.education ? labelOf(EDUCATION, profile.education, locale) : null)}
+        {row(t("educationLabel"), profile.education ? labelOf(EDUCATION, profile.education, locale) : null)}
       </div>
 
       {/* Footnote */}
       <Lead style={{ marginTop: "32px", fontSize: "12px", color: "var(--color-v2-ink-400)" }}>
-        Профиль доступен после взаимного интереса. Фото нельзя сохранять
-        длинным нажатием.
+        {t("profileFootnote")}
       </Lead>
     </article>
   );

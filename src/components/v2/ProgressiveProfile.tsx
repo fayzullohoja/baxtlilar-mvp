@@ -22,6 +22,8 @@
  *   ✗ Семейное положение / наличие детей (раскроется post-mutual)
  */
 
+"use client";
+import { useTranslations } from "next-intl";
 import { Headline, Lead } from "./Headline";
 import {
   EDUCATION,
@@ -102,6 +104,7 @@ function chip(label: string, key: string | number) {
 }
 
 export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
+  const t = useTranslations("Profile");
   const name = firstWord(profile.display_name);
   const traits = personalityTraits(profile.vector);
   const valueLabels = profile.top_life_values.map((v: string) =>
@@ -145,7 +148,7 @@ export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
               marginBottom: "10px",
             }}
           >
-            Личность
+            {t('personalityLabel')}
           </div>
           <Lead style={{ marginTop: 0 }}>
             {name} —{" "}
@@ -171,7 +174,7 @@ export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
               marginBottom: "10px",
             }}
           >
-            Что важно в жизни
+            {t('valuesLabel')}
           </div>
           <div>{valueLabels.map((l: string, i: number) => chip(l, i))}</div>
         </div>
@@ -189,7 +192,7 @@ export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
               marginBottom: "10px",
             }}
           >
-            О себе
+            {t('bioLabel')}
           </div>
           <p
             style={{
@@ -217,8 +220,7 @@ export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
           lineHeight: "1.55",
         }}
       >
-        Фотография, возраст и&nbsp;остальные детали откроются только если оба
-        отправите интерес. Так на первом круге решает не лицо, а близость.
+        {t('privacyFooter')}
       </div>
     </article>
   );

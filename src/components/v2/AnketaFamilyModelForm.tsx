@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "./Button";
 import { Field, Select } from "./AnketaFields";
 import {
@@ -24,6 +25,7 @@ import {
  */
 export function V2AnketaFamilyModelForm({ locale }: { locale: string }) {
   const router = useRouter();
+  const t = useTranslations("Anketa");
   const [roleModel, setRoleModel] = useState("");
   const [wifeWork, setWifeWork] = useState("");
   const [decisionModel, setDecisionModel] = useState("");
@@ -69,9 +71,9 @@ export function V2AnketaFamilyModelForm({ locale }: { locale: string }) {
   return (
     <div>
       <Field
-        label="Модель ролей в семье"
+        label={t('familyRoleModelLabel')}
         required
-        hint="Это не про правильно/неправильно — а про то, как видишь семью."
+        hint={t('familyRoleModelHint')}
       >
         <Select
           options={FAMILY_ROLE_MODEL}
@@ -81,7 +83,7 @@ export function V2AnketaFamilyModelForm({ locale }: { locale: string }) {
         />
       </Field>
 
-      <Field label="Работа жены после брака" required>
+      <Field label={t('wifeWorkLabel')} required>
         <Select
           options={WIFE_WORK_VIEW}
           value={wifeWork}
@@ -91,8 +93,8 @@ export function V2AnketaFamilyModelForm({ locale }: { locale: string }) {
       </Field>
 
       <Field
-        label="Как принимаются решения в семье"
-        hint="Можно пропустить — это можно обсудить позже."
+        label={t('familyDecisionLabel')}
+        hint={t('optionalHint')}
       >
         <Select
           options={FAMILY_DECISION_MODEL}
@@ -103,8 +105,8 @@ export function V2AnketaFamilyModelForm({ locale }: { locale: string }) {
       </Field>
 
       <Field
-        label="Бытовые обязанности"
-        hint="Можно пропустить."
+        label={t('householdResponsibilityLabel')}
+        hint={t('canSkipHint')}
       >
         <Select
           options={HOUSEHOLD_RESPONSIBILITY_MODEL}
@@ -127,12 +129,12 @@ export function V2AnketaFamilyModelForm({ locale }: { locale: string }) {
             marginBottom: "16px",
           }}
         >
-          Не получилось сохранить. Попробуй ещё раз.
+          {t('Anketa.err_failed')}
         </div>
       ) : null}
 
       <Button onClick={submit} disabled={busy || !valid} variant="primary">
-        {busy ? "Сохраняю…" : "Дальше"}
+        {busy ? t('btn_saving') : t('btn_next')}
       </Button>
     </div>
   );

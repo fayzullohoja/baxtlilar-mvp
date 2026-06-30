@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 import { Field, Select } from "./AnketaFields";
@@ -20,6 +21,7 @@ import { PROFILE_VISIBILITY_MODE } from "@/lib/profile/options";
  * API: /api/onboarding/profile/privacy.
  */
 export function V2AnketaPrivacyForm({ locale }: { locale: string }) {
+  const t = useTranslations('AnketaPrivacy');
   const router = useRouter();
   const [mode, setMode] = useState("public");
   const [busy, setBusy] = useState(false);
@@ -54,9 +56,9 @@ export function V2AnketaPrivacyForm({ locale }: { locale: string }) {
   return (
     <div>
       <Field
-        label="Режим видимости профиля"
+        label={t('visibilityModeLabel')}
         required
-        hint="Можно изменить позже в настройках. Сейчас выбери стартовый режим."
+        hint={t('visibilityModeHint')}
       >
         <Select
           options={PROFILE_VISIBILITY_MODE}
@@ -79,12 +81,12 @@ export function V2AnketaPrivacyForm({ locale }: { locale: string }) {
             marginBottom: "16px",
           }}
         >
-          Не получилось сохранить. Попробуй ещё раз.
+          {t('Errors.saveFailed')}
         </div>
       ) : null}
 
       <Button onClick={submit} disabled={busy || !mode} variant="primary">
-        {busy ? "Сохраняю…" : "Дальше"}
+        {busy ? t('Buttons.saving.next') : t('Anketa.btn_next')}
       </Button>
     </div>
   );

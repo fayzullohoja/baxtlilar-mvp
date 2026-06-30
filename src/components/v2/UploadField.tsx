@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 
@@ -22,27 +23,35 @@ type Props = {
   capture: "user" | "environment";
 };
 
-const ERROR_COPY: Record<string, string> = {
-  bad_type: "Поддерживаются JPG, PNG, WebP, HEIC. Попробуй ещё раз.",
-  too_large: "Файл слишком большой. Уменьши размер или сними иначе.",
-  duplicate_identity: "Этот документ уже зарегистрирован на другую анкету.",
-  duplicate_passport: "Этот паспорт уже зарегистрирован.",
-  duplicate_selfie: "Это селфи уже встречалось.",
-  failed: "Не получилось загрузить. Проверь связь и попробуй снова.",
-  save_failed: "Не получилось сохранить. Попробуй ещё раз.",
-};
+function getErrorCopy(t: ReturnType<typeof useTranslations>) {
+  return {
+    bad_type: t('errors.badType'),
+    too_large: t('errors.tooLarge'),
+    duplicate_identity: t('errors.duplicateIdentity'),
+    duplicate_passport: t('errors.duplicatePassport'),
+    duplicate_selfie: t('errors.duplicateSelfie'),
+    failed: t('errors.failed'),
+    save_failed: t('errors.failed'),
+  };
+}
+
+const ERROR_COPY: Record<string, string> = {}; // Will be populated in component
 
 export function UploadField({
   endpoint,
   uploadLabel,
-  submitLabel = "Отправить",
+  submitLabel,
   capture,
 }: Props) {
+  const t = useTranslations('Upload');
+  const tButtons = useTranslations('Buttons');
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [pending, setPending] = useState(false);
   const [errorCode, setErrorCode] = useState<string | null>(null);
+
+  const errorCopy = getErrorCopy(t);
 
   async function submit() {
     if (!file || pending) return;
@@ -137,7 +146,7 @@ export function UploadField({
 
       <div style={{ marginTop: "20px" }}>
         <Button onClick={submit} disabled={!file || pending} variant="primary">
-          {pending ? "Отправляю…" : submitLabel}
+          {pending ? tButtons('sending.send') : (submitLabel || tButtons('send'))}
         </Button>
       </div>
     </div>

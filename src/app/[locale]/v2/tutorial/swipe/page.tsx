@@ -8,7 +8,7 @@
  * почему это сделано иначе.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
@@ -25,30 +25,26 @@ export default async function TutorialSwipePage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireUserAtStep(locale, "tutorial_swipe");
+  const t = await getTranslations("Tutorial");
 
   return (
     <MiniAppShell
-      eyebrow="Знакомство · 2 из 4"
+      eyebrow={t("swipe.title")}
       align="top"
-      footer={<TutorialStep cta="Дальше" />}
+      footer={<TutorialStep cta={t("next")} />}
     >
       <StepDots total={4} current={2} />
       <Headline size="lg" as="h1">
-        Не&nbsp;свайпы. Интересы.
+        {t("swipe.heading")}
       </Headline>
       <Lead>
-        Чтобы сказать &laquo;ты мне интересен/интересна&raquo;, нужно открыть
-        анкету целиком — фото, текст, ценности — и&nbsp;нажать&nbsp;
-        <em>Отправить интерес</em>.
+        {t("swipe.body1")}
       </Lead>
       <Lead style={{ marginTop: "20px" }}>
-        К интересу можно (и&nbsp;стоит) добавить короткое сообщение про то,
-        что зацепило. Не&nbsp;&laquo;привет&raquo;, не&nbsp;&laquo;как
-        дела&raquo;.
+        {t("swipe.body2")}
       </Lead>
       <Lead style={{ marginTop: "20px" }}>
-        Поэтому никто никого не&nbsp;спамит. И&nbsp;поэтому ответ — это уже
-        результат.
+        {t("swipe.body3")}
       </Lead>
     </MiniAppShell>
   );

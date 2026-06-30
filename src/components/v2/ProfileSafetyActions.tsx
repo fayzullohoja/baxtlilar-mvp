@@ -1,6 +1,9 @@
 "use client";
 
+"use client";
+
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 
@@ -17,6 +20,7 @@ type Props = {
 };
 
 export function ProfileSafetyActions({ targetId, targetFirstName }: Props) {
+  const t = useTranslations("ProfileSafety");
   const router = useRouter();
   const [reportOpen, setReportOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
@@ -44,10 +48,10 @@ export function ProfileSafetyActions({ targetId, targetFirstName }: Props) {
     <>
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "32px" }}>
         <Button onClick={() => setReportOpen(true)} variant="ghost" disabled={pending || done !== null}>
-          {done === "reported" ? "Жалоба отправлена" : "Пожаловаться"}
+          {done === "reported" ? t("reportSentLabel") : t("reportButton")}
         </Button>
         <Button onClick={() => setBlockOpen(true)} variant="ghost" disabled={pending || done !== null}>
-          {done === "blocked" ? "Заблокирован" : "Заблокировать"}
+          {done === "blocked" ? t("blockedLabel") : t("blockButton")}
         </Button>
       </div>
 
@@ -79,13 +83,14 @@ export function ProfileSafetyActions({ targetId, targetFirstName }: Props) {
 // Report modal
 // =============================================================================
 
+// Note: Labels are loaded dynamically via i18n in ReportModal
 const REASONS = [
-  { code: "fake", label: "Подозреваю фейк / не настоящий" },
-  { code: "offensive", label: "Оскорбления, грубость" },
-  { code: "contacts", label: "Просит контакты вне приложения" },
-  { code: "spam", label: "Реклама, спам" },
-  { code: "inappropriate", label: "Контент не для знакомств" },
-  { code: "other", label: "Другое" },
+  { code: "fake" },
+  { code: "offensive" },
+  { code: "contacts" },
+  { code: "spam" },
+  { code: "inappropriate" },
+  { code: "other" },
 ];
 
 function ReportModal({
@@ -99,6 +104,9 @@ function ReportModal({
   onClose: () => void;
   onSent: () => void;
 }) {
+  const tReport = useTranslations("Report");
+  const tErrors = useTranslations("Errors");
+  const tButtons = useTranslations("Buttons");
   const [reason, setReason] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [pending, startTransition] = useTransition();
@@ -120,7 +128,9 @@ function ReportModal({
         onSent();
         return;
       }
-      setErr("Не получилось отправить. Попробуй ещё раз.");
+      // Translator: Use Errors.sendFailed from translations
+      const tErrors = useTranslations("Errors");
+      setErr(tErrors("sendFailed"));
     });
   }
 
@@ -162,7 +172,7 @@ function ReportModal({
             marginBottom: "12px",
           }}
         >
-          Пожаловаться на {targetFirstName}
+          {`Пожаловаться на ${targetFirstName}`}
         </div>
         <div
           style={{
@@ -173,12 +183,13 @@ function ReportModal({
             marginBottom: "20px",
           }}
         >
-          Что произошло?
+          {tReport("reasonsTitle") || "Что произошло?"}
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "20px" }}>
           {REASONS.map((r) => {
             const selected = reason === r.code;
+            const label = tReport(`reasons.${r.code}`);
             return (
               <button
                 key={r.code}
@@ -198,7 +209,7 @@ function ReportModal({
                   transition: "all 0.12s ease",
                 }}
               >
-                {r.label}
+                {label}
               </button>
             );
           })}
@@ -207,7 +218,7 @@ function ReportModal({
         <textarea
           value={comment}
           onChange={(e) => setComment(e.target.value.slice(0, 1000))}
-          placeholder="Подробности (по желанию)"
+          placeholder={tReport("detailsPlaceholder")}
           rows={3}
           style={{
             width: "100%",
@@ -242,7 +253,7 @@ function ReportModal({
 
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <Button onClick={send} disabled={!reason || pending} variant="primary">
-            {pending ? "Отправляю…" : "Отправить"}
+            {pending ? tButtons("sending.send") : tButtons("send")}
           </Button>
           <Button onClick={onClose} disabled={pending} variant="ghost">
             Отмена
@@ -304,7 +315,7 @@ function BlockConfirm({
             marginBottom: "16px",
           }}
         >
-          Заблокировать {firstName}?
+          {`Заблокировать ${firstName}?`}
         </div>
         <p
           style={{
@@ -314,12 +325,11 @@ function BlockConfirm({
             marginBottom: "24px",
           }}
         >
-          Ты не будешь видеть {firstName} в ленте. Чат закроется. Интересы
-          между вами отзовутся. {firstName} не узнает об этом.
+          {`Ты не будешь видеть ${firstName} в ленте. Чат закроется. Интересы между вами отзовутся. ${firstName} не узнает об этом.`}
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <Button onClick={onConfirm} disabled={pending} variant="primary">
-            {pending ? "..." : "Заблокировать"}
+            {pending ? "…" : "Заблокировать"}
           </Button>
           <Button onClick={onClose} disabled={pending} variant="ghost">
             Отмена

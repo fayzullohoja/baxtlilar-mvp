@@ -11,7 +11,7 @@
  *   - смотришь сам себя → /main
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { requireActiveUser } from "@/lib/auth/active-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -46,6 +46,7 @@ export default async function V2ProfileDetailPage({
 }) {
   const { locale, id } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations('Profile');
   const viewer = await requireActiveUser(locale);
   if (id === viewer.id) redirect({ href: "/main", locale });
 
@@ -104,7 +105,7 @@ export default async function V2ProfileDetailPage({
 
     return (
       <>
-        <MiniAppShell eyebrow="Профиль" align="top" footer={null}>
+        <MiniAppShell eyebrow={t('title')} align="top" footer={null}>
           <RevealedProfile profile={data} locale={locale} />
           <ProfileSafetyActions targetId={id} targetFirstName={firstName} />
           <div style={{ height: "80px" }} />
@@ -141,7 +142,7 @@ export default async function V2ProfileDetailPage({
 
   return (
     <>
-      <MiniAppShell eyebrow="Профиль · до раскрытия" align="top" footer={null}>
+      <MiniAppShell eyebrow={t('titlePreMutual')} align="top" footer={null}>
         <ProgressiveProfile profile={progressiveData} locale={locale} />
         <ProfileSafetyActions targetId={id} targetFirstName={firstName} />
         <div style={{ height: "80px" }} />

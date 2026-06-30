@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 
@@ -30,6 +31,7 @@ const SOURCES = [
 type Source = (typeof SOURCES)[number]["value"];
 
 export function V2AttributionForm() {
+  const t = useTranslations("Onboarding");
   const router = useRouter();
   const [selected, setSelected] = useState<Source | null>(null);
   const [busy, setBusy] = useState(false);
@@ -50,9 +52,9 @@ export function V2AttributionForm() {
         router.replace(data.next);
         return;
       }
-      setErr("Не получилось сохранить. Попробуй ещё раз.");
+      setErr(t("attr_error"));
     } catch {
-      setErr("Что-то пошло не так.");
+      setErr(t("attr_error"));
     } finally {
       setBusy(false);
     }
@@ -82,7 +84,7 @@ export function V2AttributionForm() {
                 transition: "all 0.12s ease",
               }}
             >
-              {src.label}
+              {t(src.label as any)}
             </button>
           );
         })}
@@ -111,14 +113,14 @@ export function V2AttributionForm() {
           disabled={!selected || busy}
           variant="primary"
         >
-          {busy ? "Сохраняю…" : "Дальше"}
+          {busy ? t("attr_cta_pending") : t("attr_cta")}
         </Button>
         <Button
           onClick={() => submit({ skip: true })}
           disabled={busy}
           variant="ghost"
         >
-          Пропустить
+          {t("attr_skip")}
         </Button>
       </div>
     </div>

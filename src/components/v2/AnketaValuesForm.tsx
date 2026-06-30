@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 import { Field, Select, Chips } from "./AnketaFields";
@@ -23,6 +24,7 @@ import {
  */
 
 export function V2AnketaValuesForm({ locale }: { locale: string }) {
+  const t = useTranslations('Anketa');
   const router = useRouter();
   const [religion, setReligion] = useState("");
   const [practice, setPractice] = useState("");
@@ -68,14 +70,14 @@ export function V2AnketaValuesForm({ locale }: { locale: string }) {
 
   return (
     <div>
-      <Field label="Вероисповедание" required>
+      <Field label={t('religionLabel')} required>
         <Select options={RELIGION} value={religion} onChange={setReligion} locale={locale} />
       </Field>
 
       <Field
-        label="Как ты живёшь с этим"
+        label={t('religiousPracticeLabel')}
         required
-        hint="Это про образ жизни — не про правильность или количество знаний."
+        hint={t('religiousPracticeHint')}
       >
         <Select
           options={RELIGION_PRACTICE}
@@ -86,8 +88,8 @@ export function V2AnketaValuesForm({ locale }: { locale: string }) {
       </Field>
 
       <Field
-        label="Желание для партнёра"
-        hint="Можно пропустить — если для тебя это менее принципиально, чем сам человек."
+        label={t('partnerDesireLabel')}
+        hint={t('partnerDesireHint')}
       >
         <Select
           options={RELIGION_PARTNER_MATCH}
@@ -98,9 +100,9 @@ export function V2AnketaValuesForm({ locale }: { locale: string }) {
       </Field>
 
       <Field
-        label="Что важно в жизни"
+        label={t('lifeValuesLabel')}
         required
-        hint={`Выбери от 1 до 3 — что отражает тебя. Выбрано: ${values.length}/3`}
+        hint={t('lifeValuesHint')! + ` ${values.length}/3`}
       >
         <Chips options={LIFE_VALUES_V3} selected={values} onToggle={toggle} max={3} locale={locale} />
       </Field>
@@ -118,12 +120,12 @@ export function V2AnketaValuesForm({ locale }: { locale: string }) {
             marginBottom: "16px",
           }}
         >
-          Не получилось сохранить. Попробуй ещё раз.
+          {t('err_failed')}
         </div>
       ) : null}
 
       <Button onClick={submit} disabled={busy || !valid} variant="primary">
-        {busy ? "Сохраняю…" : "Дальше"}
+        {busy ? t('btn_saving') : t('btn_next')}
       </Button>
     </div>
   );

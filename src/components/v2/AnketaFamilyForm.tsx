@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "./Button";
 import { Field, Select, TextInput } from "./AnketaFields";
 import {
@@ -23,6 +24,7 @@ import {
 
 export function V2AnketaFamilyForm({ locale }: { locale: string }) {
   const router = useRouter();
+  const t = useTranslations("Anketa");
   const [marital, setMarital] = useState("");
   const [hasChildren, setHasChildren] = useState("");
   const [childrenCount, setChildrenCount] = useState("");
@@ -84,7 +86,7 @@ export function V2AnketaFamilyForm({ locale }: { locale: string }) {
 
   return (
     <div>
-      <Field label="Семейный статус" required>
+      <Field label={t("marital_label")} required>
         <Select
           options={MARITAL_STATUS}
           value={marital}
@@ -93,7 +95,7 @@ export function V2AnketaFamilyForm({ locale }: { locale: string }) {
         />
       </Field>
 
-      <Field label="Есть ли дети" required>
+      <Field label={t("children_label")} required>
         <Select
           options={HAS_CHILDREN}
           value={hasChildren}
@@ -111,9 +113,9 @@ export function V2AnketaFamilyForm({ locale }: { locale: string }) {
       {showChildrenDetails ? (
         <>
           <Field
-            label="Сколько детей"
+            label={t("childrenCountLabel")}
             required
-            hint="От 1 до 10."
+            hint={t("childrenCountHint")}
           >
             <TextInput
               maxLength={2}
@@ -126,9 +128,9 @@ export function V2AnketaFamilyForm({ locale }: { locale: string }) {
           </Field>
 
           <Field
-            label="Возраст младшего ребёнка"
+            label={t("youngestChildAgeLabel")}
             required
-            hint="В годах, 0-50."
+            hint={t("ageRangeHint")}
           >
             <TextInput
               maxLength={2}
@@ -143,9 +145,9 @@ export function V2AnketaFamilyForm({ locale }: { locale: string }) {
       ) : null}
 
       <Field
-        label="Планы на детей в будущем"
+        label={t("futureChildrenPlansLabel")}
         required
-        hint="Это важный матчинг-сигнал — алгоритм учитывает совместимость планов."
+        hint={t("futureChildrenPlansHint")}
       >
         <Select
           options={FUTURE_CHILDREN_PLAN}
@@ -168,12 +170,12 @@ export function V2AnketaFamilyForm({ locale }: { locale: string }) {
             marginBottom: "16px",
           }}
         >
-          Не получилось сохранить. Попробуй ещё раз.
+          {t("err_failed")}
         </div>
       ) : null}
 
       <Button onClick={submit} disabled={busy || !valid} variant="primary">
-        {busy ? "Сохраняю…" : "Дальше"}
+        {busy ? t("btn_saving") : t("btn_next")}
       </Button>
     </div>
   );
