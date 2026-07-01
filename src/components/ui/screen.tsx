@@ -17,7 +17,7 @@ export function Screen({
   totalSteps?: number;
 }) {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-5 py-8">
+    <main className="min-h-screen flex flex-col items-center justify-center px-5 py-8 bg-baxt-pink-bg text-baxt-navy">
       <div className="w-full max-w-sm bg-baxt-card border border-baxt-border rounded-3xl shadow-sm p-7">
         {step && totalSteps ? (
           <div className="flex gap-1.5 mb-5" aria-label={`Шаг ${step} из ${totalSteps}`}>

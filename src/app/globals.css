@@ -72,13 +72,16 @@
 }
 
 /* ============================================================================
- * V1 body — старый розовый фон. V2 экраны переопределяют через MiniAppShell.
+ * Body default — V2 paper. V1-страницы (/blocked, /onboarding/{rejected,
+ * needs-changes}) self-skin через Screen компонент, который красит свой <main>
+ * в bg-baxt-pink-bg. Это сделано чтобы V2 (большинство страниц) не платило за
+ * V1-flash на cold paint. [data-v2="true"] правило ниже добавляет typography.
  * ============================================================================ */
 body {
-  font-family: var(--font-sans), system-ui, -apple-system, "Helvetica Neue",
+  font-family: var(--font-v2-body), system-ui, -apple-system, "Helvetica Neue",
     Arial, sans-serif;
-  background: var(--color-baxt-pink-bg);
-  color: var(--color-baxt-navy);
+  background: var(--color-v2-paper);
+  color: var(--color-v2-ink-100);
 }
 
 /* ============================================================================

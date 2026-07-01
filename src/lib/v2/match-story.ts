@@ -96,7 +96,7 @@ function reasonsFor(viewer: ProfileForMatch, cand: ProfileForMatch): string[] {
   const shared = sharedValues(viewer, cand);
   if (shared.length >= 2) {
     const labels = shared.slice(0, 3).map((v) => labelOf(LIFE_VALUES_V3, v, "ru"));
-    out.push(`У вас совпадают ключевые ценности — ${labels.join(", ").toLowerCase()}.`);
+    out.push(`У Вас совпадают ключевые ценности — ${labels.join(", ").toLowerCase()}.`);
   } else if (shared.length === 1) {
     const lab = labelOf(LIFE_VALUES_V3, shared[0], "ru");
     out.push(`Вас обоих волнует одно — ${lab.toLowerCase()}.`);
@@ -133,7 +133,7 @@ function reasonsFor(viewer: ProfileForMatch, cand: ProfileForMatch): string[] {
   // Близость психо-вектора (если есть quiz_results у обоих)
   const diff = vectorAvgDiff(viewer.vector, cand.vector);
   if (diff !== null && diff < 18) {
-    out.push("Похожая личностная структура — вам будет легко друг друга понимать.");
+    out.push("Похожая личностная структура — Вам будет легко друг друга понимать.");
   }
 
   // Совпадение города (если оба указали)
@@ -169,7 +169,7 @@ function cautionsFor(viewer: ProfileForMatch, cand: ProfileForMatch): string[] {
   const vLvl = practiceLevel(viewer.religion_practice);
   const cLvl = practiceLevel(cand.religion_practice);
   if (vLvl !== null && cLvl !== null && Math.abs(vLvl - cLvl) >= 2) {
-    out.push("Религия живёт в ваших жизнях по-разному.");
+    out.push("Религия живёт в Ваших жизнях по-разному.");
   }
 
   // Гео несовпадение + оба хотят свой город
@@ -190,7 +190,7 @@ function cautionsFor(viewer: ProfileForMatch, cand: ProfileForMatch): string[] {
     const viewerInCandRange = ageInRange(viewerAge, cand.partner_age_min, cand.partner_age_max);
     const candInViewerRange = ageInRange(candAge, viewer.partner_age_min, viewer.partner_age_max);
     if (!viewerInCandRange || !candInViewerRange) {
-      out.push("Возраст слегка вне диапазона который вы оба указывали как желаемый.");
+      out.push("Возраст слегка вне диапазона который Вы оба указывали как желаемый.");
     }
   }
 

@@ -56,9 +56,13 @@ export function sendMessage(
   chatId: number,
   text: string,
   replyMarkup?: ReplyMarkup,
+  parseMode?: "HTML" | "MarkdownV2",
 ): Promise<boolean> {
   const payload: Record<string, unknown> = { chat_id: chatId, text };
-  // Без parse_mode: текст идёт plain — никакой HTML/MD-инъекции.
+  // По дефолту без parse_mode: plain текст, никакой HTML/MD-инъекции.
+  // parseMode = "HTML" — только для подписанных нами сообщений (legal links).
+  // Контент-источник: bot/messages.ts константы, не user input.
+  if (parseMode) payload.parse_mode = parseMode;
   if (replyMarkup) payload.reply_markup = replyMarkup;
   return call("sendMessage", payload);
 }

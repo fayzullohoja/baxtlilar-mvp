@@ -28,9 +28,9 @@ export function V2PublishButton() {
         router.replace(data.next);
         return;
       }
-      setErr("Не получилось опубликовать. Проверь анкету и попробуй ещё раз.");
+      setErr("Не получилось опубликовать. Проверьте анкету и попробуйте ещё раз.");
     } catch {
-      setErr("Что-то пошло не так. Попробуй ещё раз.");
+      setErr("Что-то пошло не так. Попробуйте ещё раз.");
     } finally {
       setBusy(false);
     }

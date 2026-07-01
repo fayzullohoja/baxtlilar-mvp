@@ -34,7 +34,7 @@ describe("generateMatchStory — reasons (positive overlap)", () => {
     const v = profile({ top_life_values: ["family", "career"] });
     const c = profile({ top_life_values: ["family", "independence"] });
     const story = generateMatchStory(v, c);
-    expect(story.reasons[0]).toMatch(/вас обоих волнует одно/i);
+    expect(story.reasons[0]).toMatch(/Вас обоих волнует одно/i);
   });
 
   it("совпавшая религия + близкая практика (gap ≤1) → reason про вероисповедание", () => {

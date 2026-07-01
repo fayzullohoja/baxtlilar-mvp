@@ -53,15 +53,15 @@ type OutboxRow = {
 const TEMPLATES: Record<OutboxEventType, { ru: (p: OutboxPayload) => string; uz: (p: OutboxPayload) => string }> = {
   verification_approved: {
     ru: () =>
-      "✅ Профиль одобрен.\nТеперь Baxtlilar покажет тебе подбор и&nbsp;ты сможешь отправлять интересы. Открой приложение.",
+      "✅ Профиль одобрен.\nТеперь Baxtlilar покажет Вам подбор и&nbsp;Вы сможете отправлять интересы. Откройте приложение.",
     uz: () =>
       "✅ Profilingiz tasdiqlandi.\nEndi Baxtlilar sizga moslamani ko‘rsatadi va qiziqish yuborishingiz mumkin. Ilovani oching.",
   },
   verification_needs_changes: {
     ru: (p) =>
       p.reason
-        ? `Модератор просит уточнить пару моментов.\n\nПричина: ${p.reason}\n\nОткрой Baxtlilar и&nbsp;переделай — займёт пару минут.`
-        : "Модератор просит уточнить пару моментов.\nОткрой Baxtlilar и переделай — займёт пару минут.",
+        ? `Модератор просит уточнить пару моментов.\n\nПричина: ${p.reason}\n\nОткройте Baxtlilar и&nbsp;переделайте — займёт пару минут.`
+        : "Модератор просит уточнить пару моментов.\nОткройте Baxtlilar и переделайте — займёт пару минут.",
     uz: (p) =>
       p.reason
         ? `Moderator bir nechta narsani aniqlashtirishni so‘ramoqda.\n\nSabab: ${p.reason}\n\nBaxtlilar’ni oching va qaytadan yuboring.`
@@ -70,8 +70,8 @@ const TEMPLATES: Record<OutboxEventType, { ru: (p: OutboxPayload) => string; uz:
   verification_rejected: {
     ru: (p) =>
       p.reject_category === "blocking"
-        ? "К сожалению, мы не смогли подтвердить твою личность.\nЕсли считаешь это ошибкой — напиши в @baxtlilar_support."
-        : "Нужно переснять документы — модератор не смог проверить твои фото.\nОткрой Baxtlilar и попробуй ещё раз.",
+        ? "К сожалению, мы не смогли подтвердить Вашу личность.\nЕсли считаете это ошибкой — напишите в @baxtlilar_support."
+        : "Нужно переснять документы — модератор не смог проверить Ваши фото.\nОткройте Baxtlilar и попробуйте ещё раз.",
     uz: (p) =>
       p.reject_category === "blocking"
         ? "Afsuski, shaxsingizni tasdiqlay olmadik.\nXatolik deb hisoblasangiz — @baxtlilar_support’ga yozing."
@@ -79,7 +79,7 @@ const TEMPLATES: Record<OutboxEventType, { ru: (p: OutboxPayload) => string; uz:
   },
   tutorial_reminder: {
     ru: () =>
-      "Ты ещё не закончил знакомство с приложением.\nЭто займёт пару минут — и можно начинать.",
+      "Вы ещё не закончили знакомство с приложением.\nЭто займёт пару минут — и можно начинать.",
     uz: () =>
       "Ilova bilan tanishishni hali tugatmadingiz.\nBu bir necha daqiqa vaqt oladi.",
   },
@@ -88,7 +88,7 @@ const TEMPLATES: Record<OutboxEventType, { ru: (p: OutboxPayload) => string; uz:
     uz: () => "Qiziqishingiz o‘zaro bo‘ldi — Baxtlilar’da chat ochildi.",
   },
   new_interest: {
-    ru: () => "У вас новый интерес в Baxtlilar. Откройте «Запросы».",
+    ru: () => "У Вас новый интерес в Baxtlilar. Откройте «Запросы».",
     uz: () => "Baxtlilar’da sizga yangi qiziqish bor. «So‘rovlar»ni oching.",
   },
   interest_accepted: {

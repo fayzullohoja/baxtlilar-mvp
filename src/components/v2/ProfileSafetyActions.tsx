@@ -326,7 +326,7 @@ function BlockConfirm({
             marginBottom: "24px",
           }}
         >
-          {`Ты не будешь видеть ${firstName} в ленте. Чат закроется. Интересы между вами отзовутся. ${firstName} не узнает об этом.`}
+          {`Ты не будешь видеть ${firstName} в ленте. Чат закроется. Интересы между Вами отзовутся. ${firstName} не узнает об этом.`}
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <Button onClick={onConfirm} disabled={pending} variant="primary">

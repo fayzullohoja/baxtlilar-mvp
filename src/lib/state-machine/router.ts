@@ -64,6 +64,11 @@ export function nextScreenFor(user: DbUser): string {
       return "/blocked";
     case "active":
     case "paused":
+    case "pending_ban":
+      // pending_ban (Option A): treat как active — невидимый proposal.
+      // Без этого case nextScreenFor падает в default → ONBOARDING_PATHS[step],
+      // у banned-target step='active' → '/main', а isActiveAccessAllowed
+      // отвергает pending_ban → бесконечный redirect loop (C1 class).
       return "/main";
     case "deleted":
       // Терминальный экран (C4). Раньше "/" → LocaleIndexPage снова считал

@@ -1,6 +1,10 @@
 // Источник истины: Чат 12 §6, Чат 13 §1.2-1.5
 
-export type LifecycleState = "onboarding" | "active" | "paused" | "blocked" | "deleted";
+// pending_ban — внутреннее предложение блокировки (two-admin rule, 24h auto-cancel).
+// Option A политика: user видит и пользуется аппом как до propose; видимый блок только
+// при admin_ban_confirm → lifecycle='blocked'. См. deriveRole / isActiveAccessAllowed /
+// nextScreenFor — все три обрабатывают pending_ban как active.
+export type LifecycleState = "onboarding" | "active" | "paused" | "pending_ban" | "blocked" | "deleted";
 
 export type OnboardingStep =
   // Бот-регистрация (2026-06-19 security pivot, заменяет SMS-OTP):

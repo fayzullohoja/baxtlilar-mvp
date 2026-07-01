@@ -58,7 +58,7 @@ export function InterestActions({ candidateId, candidateFirstName }: Props) {
           fontFamily: "var(--font-v2-body)",
         }}
       >
-        На сегодня достаточно. Мы не показываем кого попало — загляни завтра,
+        На сегодня достаточно. Мы не показываем кого попало — загляните завтра,
         подберём новых.
       </p>
     );

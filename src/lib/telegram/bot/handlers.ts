@@ -6,31 +6,21 @@ import { normalizeInternationalPhone, PhoneError } from "@/lib/phone";
 import { transition, tryTransition } from "@/lib/state-machine/transitions";
 import { hashPhone } from "@/lib/identity/hashing";
 import { signStartToken } from "../start-token";
-import { sendMessage, sendDocument, answerCallbackQuery } from "../bot-api";
+import { sendMessage, answerCallbackQuery } from "../bot-api";
 import type { InlineKeyboardMarkup, ReplyKeyboardMarkup } from "../bot-api";
 import { M, pick, type Lang } from "./messages";
 import { LEGAL_VERSION } from "@/content/legal";
 
-/** APP_URL для абсолютных ссылок до PDF в /public/legal/. */
-const APP_URL = process.env.APP_URL ?? "https://baxtlilar-mvp-production.up.railway.app";
-
 /**
- * V2 ext 2026-06-28: показать оферту — сначала 4 PDF через sendDocument,
- * потом сообщение с клавиатурой согласия. Telegram кеширует файлы по
- * первому URL, со 2-го раза переиспользует file_id (быстро + дёшево).
+ * V3 (2026-06-30, product feedback): legal-документы шлём как HTML
+ * hyperlinks в самом тексте согласия, а не как 4 отдельных PDF-attachment.
+ * Чище лента бота + клик переходит сразу к нужному документу.
  *
- * Используется в 2 местах: lang-callback (после выбора языка) и promptStep
- * (когда юзер ре-открыл бот находясь на bot_consent_pd).
+ * Контент pd_consent_ask формируется как HTML с <a href="${APP_URL}/legal/*.pdf">.
+ * parse_mode="HTML" безопасен т.к. контент — статическая константа в M, не user input.
  */
 async function sendLegalDocsAndConsentPrompt(chatId: number, lang: Lang): Promise<void> {
-  for (const doc of M.legal_pdfs) {
-    await sendDocument(
-      chatId,
-      `${APP_URL}/legal/${doc.slug}.pdf`,
-      pick(doc.caption, lang),
-    );
-  }
-  await sendMessage(chatId, pick(M.pd_consent_ask, lang), pdConsentKeyboard(lang));
+  await sendMessage(chatId, pick(M.pd_consent_ask, lang), pdConsentKeyboard(lang), "HTML");
 }
 
 // =====================================================================

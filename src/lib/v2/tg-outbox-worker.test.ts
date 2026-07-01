@@ -47,7 +47,7 @@ describe("renderTemplate — verification_rejected", () => {
     );
     expect(t).toMatch(/не смогли подтвердить/);
     expect(t).toMatch(/baxtlilar_support/);
-    expect(t).not.toMatch(/попробуй/i);
+    expect(t).not.toMatch(/попробуйте/i);
   });
 
   it("RU technical — есть призыв переснять", () => {
@@ -57,7 +57,7 @@ describe("renderTemplate — verification_rejected", () => {
       "ru",
     );
     expect(t).toMatch(/переснять/);
-    expect(t).toMatch(/попробуй ещё раз/i);
+    expect(t).toMatch(/попробуйте ещё раз/i);
   });
 
   it("UZ blocking — soft", () => {
