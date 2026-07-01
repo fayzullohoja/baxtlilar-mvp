@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { loadUserForStep } from "@/lib/onboarding/guard-api";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { familyModelSchema, splitHotCold } from "@/lib/profile/schemas";
+import { familyModelSchema } from "@/lib/profile/schemas";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
 
 export const runtime = "nodejs";
@@ -15,7 +15,10 @@ export const dynamic = "force-dynamic";
  * Cold (→ extended.family.{decision_model,household_responsibility_model}):
  *   family_decision_model, household_responsibility_model (optional).
  *
- * После family_model → profile_marriage.
+ * V4 (2026-07-01): после family_model переход теперь идёт в profile_finance
+ * (Чат-2 Экран 9), затем profile_lifestyle (Экран 10), только потом в
+ * profile_marriage. До V4 переход шёл сразу в marriage — финансы и образ жизни
+ * были недостижимы.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const { user, res } = await loadUserForStep("profile_family_model");
@@ -65,10 +68,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const tr = await tryTransition(
     user.id,
-    { onboarding_step: "profile_marriage" },
-    "anketa v3: family-model",
+    { onboarding_step: "profile_finance" },
+    "anketa v4: family-model → finance",
     { kind: "user", id: user.id },
   );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_marriage });
+  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_finance });
 }
