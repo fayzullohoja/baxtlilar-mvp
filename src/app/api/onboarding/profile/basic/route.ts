@@ -44,15 +44,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .upsert(hotUpdate, { onConflict: "user_id" });
   if (saveErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
-  // V3 MVP 2026-06-29: после basic идёт profile_birth_place (место рождения).
-  // Дальше: birth_place → appearance → ... (Sprint 1 закрыл только birth_place;
-  // self/family_model/partner_extended появятся в Sprint 2).
+  // V4 2026-07-01: swap appearance ↔ birth-place. Новый порядок:
+  // basic → appearance → birth_place → self → family → …
+  // До V4 route уводил в birth_place, что нарушало учредительскую поправку №4.
   const tr = await tryTransition(
     user.id,
-    { onboarding_step: "profile_birth_place", profile_completion: "in_progress" },
-    "anketa v3: basic saved",
+    { onboarding_step: "profile_appearance", profile_completion: "in_progress" },
+    "anketa v4: basic → appearance",
     { kind: "user", id: user.id },
   );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_birth_place });
+  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_appearance });
 }
