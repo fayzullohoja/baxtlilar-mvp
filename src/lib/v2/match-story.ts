@@ -12,10 +12,13 @@
  *
  * V3 Sprint 3 cleanup (2026-06-29):
  * - `religion_importance` (1-5 шкала) → `religion_practice` (4 enum опции).
- *   Шкала убрана из анкеты как создающая ложное "вера может быть неважна".
- *   Логика "близость по практике" работает на качественной градации.
  * - `children_plan` → `future_children_plan` (5 новых опций).
  * - `values` → `top_life_values` (14 опций V3 вместо 9 V2).
+ *
+ * V4 (2026-06-30): learning_practice убран из анкеты по учредительской
+ * поправке №5 («как Вы с этим живёте» — лишний follow-up). Matching теперь
+ * работает только на religion type equality (одна ли конфессия), без учёта
+ * уровня практики — сигнал стал грубее, но семантически чище.
  *
  * Принцип: рекомендация, не навязывание. Тон вежливо-уверенный, никаких
  * "идеальное совпадение!" или процентов.
@@ -33,7 +36,6 @@ export type ProfileForMatch = {
   has_children: string | null;
   future_children_plan: string | null;
   religion: string | null;
-  religion_practice: string | null;
   education: string | null;
   bio: string | null;
   partner_age_min: number | null;
@@ -72,24 +74,6 @@ function ageInRange(age: number, min: number | null, max: number | null): boolea
   return age >= min && age <= max;
 }
 
-/** Качественная градация religion_practice — преобразуем в порядковое число
- *  для сравнения близости. Чем выше число, тем сильнее практика. */
-function practiceLevel(p: string | null): number | null {
-  if (!p) return null;
-  switch (p) {
-    case "observant":
-      return 4;
-    case "striving":
-      return 3;
-    case "cultural":
-      return 2;
-    case "not_practicing":
-      return 1;
-    default:
-      return null;
-  }
-}
-
 function reasonsFor(viewer: ProfileForMatch, cand: ProfileForMatch): string[] {
   const out: string[] = [];
 
@@ -102,7 +86,8 @@ function reasonsFor(viewer: ProfileForMatch, cand: ProfileForMatch): string[] {
     out.push(`Вас обоих волнует одно — ${lab.toLowerCase()}.`);
   }
 
-  // Религия + близость практики
+  // V4: religion type equality — practice-signal убран из анкеты. Проверяем
+  // только конфессию (islam == islam и т.д.), без градации уровня практики.
   if (
     viewer.religion &&
     cand.religion &&
@@ -110,12 +95,7 @@ function reasonsFor(viewer: ProfileForMatch, cand: ProfileForMatch): string[] {
     viewer.religion !== "na" &&
     viewer.religion !== "none"
   ) {
-    const vLvl = practiceLevel(viewer.religion_practice);
-    const cLvl = practiceLevel(cand.religion_practice);
-    const gap = vLvl !== null && cLvl !== null ? Math.abs(vLvl - cLvl) : null;
-    if (gap === null || gap <= 1) {
-      out.push("Совпали по вероисповеданию и тому, насколько оно живёт в повседневности.");
-    }
+    out.push("Совпали по вероисповеданию.");
   }
 
   // Семейные планы совместимы
@@ -165,12 +145,9 @@ function cautionsFor(viewer: ProfileForMatch, cand: ProfileForMatch): string[] {
     }
   }
 
-  // Большой разрыв в религиозной практике (≥2 уровня)
-  const vLvl = practiceLevel(viewer.religion_practice);
-  const cLvl = practiceLevel(cand.religion_practice);
-  if (vLvl !== null && cLvl !== null && Math.abs(vLvl - cLvl) >= 2) {
-    out.push("Религия живёт в Ваших жизнях по-разному.");
-  }
+  // V4: religion practice cautions больше нет — practice-signal убран.
+  // Разница по конфессии сама по себе не caution — платформа поддерживает
+  // межконфессиональные браки в рамках «взаимоуважение» (RELIGION_PARTNER_MATCH).
 
   // Гео несовпадение + оба хотят свой город
   if (

@@ -15,6 +15,8 @@ export const dynamic = "force-dynamic";
  * - partner_age_min/max (required)
  * - partner_height_min/max (optional)
  * - partner_top_qualities[] (required, 1-5)
+ * - partner_religion_match (optional) — миграция per founder #10 (section purity).
+ * - partner_preferred_countries[] (optional, soft filter, max 3) — founder #13.
  *
  * Пол партнёра выводится автоматически как противоположный своему
  * (как и в legacy looking_for).
@@ -55,6 +57,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         partner_height_min: parsed.data.partner_height_min ?? null,
         partner_height_max: parsed.data.partner_height_max ?? null,
         partner_top_qualities: parsed.data.partner_top_qualities,
+        partner_religion_match: parsed.data.partner_religion_match ?? null,
+        partner_preferred_countries: parsed.data.partner_preferred_countries ?? null,
         looking_for_gender,
         // V2-compat: legacy geo_preference дефолт
         geo_preference: "my_city",

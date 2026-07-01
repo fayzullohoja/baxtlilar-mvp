@@ -1,54 +1,56 @@
 import { describe, it, expect } from "vitest";
 import { ALLOWED_TRANSITIONS } from "./types";
 
-describe("V3 anketa transitions (Sprint 1)", () => {
-  it("profile_basic ведёт в profile_birth_place (новый Sprint 1 переход)", () => {
-    expect(ALLOWED_TRANSITIONS.profile_basic).toContain("profile_birth_place");
+// V4 (2026-06-30, Чат 2 — Анкета.md) — учредительские поправки:
+//   • swap appearance <-> birth_place (№4)
+//   • новые шаги finance (Экран 9) и lifestyle (Экран 10) между family_model
+//     и marriage.
+describe("V4 anketa transitions", () => {
+  it("profile_basic → profile_appearance (V4: appearance первый после basic)", () => {
+    expect(ALLOWED_TRANSITIONS.profile_basic).toContain("profile_appearance");
   });
 
-  it("profile_birth_place → profile_self (заглушка Sprint 2)", () => {
+  it("profile_appearance → profile_birth_place (swap)", () => {
+    expect(ALLOWED_TRANSITIONS.profile_appearance).toContain("profile_birth_place");
+  });
+
+  it("profile_birth_place → profile_self", () => {
     expect(ALLOWED_TRANSITIONS.profile_birth_place).toContain("profile_self");
   });
 
-  it("profile_birth_place → profile_appearance (legacy fallback)", () => {
-    expect(ALLOWED_TRANSITIONS.profile_birth_place).toContain("profile_appearance");
-  });
-
-  it("profile_self → profile_family (Sprint 2 переход)", () => {
+  it("profile_self → profile_family", () => {
     expect(ALLOWED_TRANSITIONS.profile_self).toContain("profile_family");
   });
 
-  it("profile_self → profile_appearance (V3 — после self идёт appearance)", () => {
-    expect(ALLOWED_TRANSITIONS.profile_self).toContain("profile_appearance");
-  });
-
-  it("profile_values → profile_family_model (Sprint 2)", () => {
+  it("profile_values → profile_family_model", () => {
     expect(ALLOWED_TRANSITIONS.profile_values).toContain("profile_family_model");
   });
 
-  it("profile_family_model → profile_marriage", () => {
-    expect(ALLOWED_TRANSITIONS.profile_family_model).toContain("profile_marriage");
+  it("profile_family_model → profile_finance (NEW V4)", () => {
+    expect(ALLOWED_TRANSITIONS.profile_family_model).toContain("profile_finance");
+  });
+
+  it("profile_finance → profile_lifestyle (NEW V4)", () => {
+    expect(ALLOWED_TRANSITIONS.profile_finance).toContain("profile_lifestyle");
+  });
+
+  it("profile_lifestyle → profile_marriage (NEW V4)", () => {
+    expect(ALLOWED_TRANSITIONS.profile_lifestyle).toContain("profile_marriage");
   });
 
   it("profile_marriage → profile_partner_extended", () => {
     expect(ALLOWED_TRANSITIONS.profile_marriage).toContain("profile_partner_extended");
   });
 
-  it("profile_partner_extended → profile_privacy (Sprint 3)", () => {
-    expect(ALLOWED_TRANSITIONS.profile_partner_extended).toContain(
-      "profile_privacy",
-    );
+  it("profile_partner_extended → profile_privacy", () => {
+    expect(ALLOWED_TRANSITIONS.profile_partner_extended).toContain("profile_privacy");
   });
 
   it("profile_privacy → profile_photos", () => {
     expect(ALLOWED_TRANSITIONS.profile_privacy).toContain("profile_photos");
   });
 
-  it("forbid profile_basic → profile_self напрямую (должен пройти через birth_place)", () => {
+  it("forbid profile_basic → profile_self напрямую", () => {
     expect(ALLOWED_TRANSITIONS.profile_basic).not.toContain("profile_self");
-  });
-
-  it("forbid profile_birth_place → profile_family напрямую", () => {
-    expect(ALLOWED_TRANSITIONS.profile_birth_place).not.toContain("profile_family");
   });
 });

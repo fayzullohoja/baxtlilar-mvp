@@ -110,9 +110,11 @@ describe("V3 validateExtended", () => {
   });
 
   it("round-trip JSON → validate → equal", () => {
+    // V4 (2026-06-30): `by_domain` удалён из FAMILY_DECISION_MODEL (учредитель).
+    // Используем `joint` — валидное значение оставшегося enum.
     const sample = {
       _meta: { schema_version: 1 },
-      family: { decision_model: "by_domain" as const, views: ["v1", "v2"] },
+      family: { decision_model: "joint" as const, views: ["v1", "v2"] },
       living: { future_format: "with_husband_family" },
       partner: {
         location_preference: { scope: "any" as const },

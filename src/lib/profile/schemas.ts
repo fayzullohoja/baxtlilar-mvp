@@ -30,6 +30,20 @@ import {
   SEPARATE_FROM_PARENTS_IMPORTANCE,
   PARTNER_QUALITIES,
   PROFILE_VISIBILITY_MODE,
+  // V4 2026-06-30 — Чат 2 — Анкета:
+  INCOME_SOURCE_STABILITY,
+  FAMILY_FINANCE_MANAGEMENT,
+  FINANCIAL_PRIORITIES,
+  MONTHLY_INCOME_RANGE,
+  FINANCIAL_OBLIGATIONS,
+  LIFESTYLE_PACE,
+  FREE_TIME_ACTIVITIES,
+  DAILY_ROUTINE,
+  BAD_HABITS_LEVEL,
+  NUTRITION_STYLE,
+  ALCOHOL_LEVEL,
+  DRUGS_USE,
+  PARTNER_PREFERRED_COUNTRIES,
 } from "./options";
 
 const tuple = (a: string[]) => a as [string, ...string[]];
@@ -102,6 +116,14 @@ export const basicSchema = z
     country_of_residence: z.enum(tuple(vals(COUNTRY_OF_RESIDENCE))),
     // region — обязателен только для UZ (для других стран — пустая строка/опц).
     region: z.string().trim().max(80).optional(),
+    // V4 2026-06-30 (Чат 2 — Анкета, Экран 2): район проживания. Для UZ —
+    // выбирается из UZ_DISTRICTS_BY_REGION (cascading select по выбранному
+    // региону), для не-UZ — оставлен опциональным (часть страны не покрыта).
+    district: z.string().trim().max(128).optional().nullable(),
+    // V4: чекбокс «показывать ли район в анкете публично». По умолчанию false —
+    // район виден после взаимного интереса (приватность учредителя:
+    // «минимум инфо до match»). Используется в ProgressiveProfile.
+    district_visible_public: z.boolean().optional(),
   })
   .refine(
     (d) => {
@@ -132,10 +154,14 @@ export const familySchema = z.object({
 /** V2 ext 2026-06-28: убран religion_importance 1-5 (создавал ложное "вера
  *  может быть неважна" для UZ-платформы). Заменён на religion_practice
  *  (качественная градация образа жизни) + опциональный religion_partner_match
- *  (требование к партнёру, не к себе). */
+ *  (требование к партнёру, не к себе).
+ *  V4 2026-06-30: religion_practice стал .optional() — учредитель счёл
+ *  follow-up «как Вы с этим живёте» лишним. UI form-поле удалено; столбец
+ *  оставлен в БД до миграции legacy данных. religion_partner_match переезжает
+ *  в partner-extended (раздел «Кого ищу»). */
 export const valuesSchema = z.object({
   religion: z.enum(tuple(vals(RELIGION))),
-  religion_practice: z.enum(tuple(vals(RELIGION_PRACTICE))),
+  religion_practice: z.enum(tuple(vals(RELIGION_PRACTICE))).optional(),
   religion_partner_match: z.enum(tuple(vals(RELIGION_PARTNER_MATCH))).optional(),
   values: z.array(z.enum(tuple(vals(LIFE_VALUES)))).min(1).max(3),
   education: z.enum(tuple(vals(EDUCATION))),
@@ -205,10 +231,12 @@ export const familyChildrenSchema = z
     },
   );
 
-/** Экран 6 — Ценности и вера (новая версия с top_life_values вместо values). */
+/** Экран 6 — Ценности и вера (новая версия с top_life_values вместо values).
+ *  V4 2026-06-30 (Чат-2): religion_practice стал optional и удалён из формы;
+ *  religion_partner_match переезжает в partner-extended (раздел «Кого ищу»). */
 export const valuesV3Schema = z.object({
   religion: z.enum(tuple(vals(RELIGION))),
-  religion_practice: z.enum(tuple(vals(RELIGION_PRACTICE))),
+  religion_practice: z.enum(tuple(vals(RELIGION_PRACTICE))).optional(),
   religion_partner_match: z.enum(tuple(vals(RELIGION_PARTNER_MATCH))).optional(),
   top_life_values: z.array(z.enum(tuple(vals(LIFE_VALUES_V3)))).min(1).max(3),
 });
@@ -222,7 +250,9 @@ export const familyModelSchema = z.object({
   household_responsibility_model: z.enum(tuple(vals(HOUSEHOLD_RESPONSIBILITY_MODEL))).optional(),
 });
 
-/** Экран 8 — Ожидания от партнёра (расширение lookingForSchema). */
+/** Экран 8 — Ожидания от партнёра (расширение lookingForSchema).
+ *  V4 2026-06-30: добавлены partner_religion_match (переехал из values),
+ *  partner_preferred_countries (max 3, soft filter — НЕ excluder). */
 export const partnerExtendedSchema = z
   .object({
     partner_age_min: z.coerce.number().int().min(18).max(100),
@@ -230,6 +260,16 @@ export const partnerExtendedSchema = z
     partner_height_min: z.coerce.number().int().min(120).max(230).optional().nullable(),
     partner_height_max: z.coerce.number().int().min(120).max(230).optional().nullable(),
     partner_top_qualities: z.array(z.enum(tuple(vals(PARTNER_QUALITIES)))).min(1).max(5),
+    // V4 — религия партнёра. Это требование к партнёру, не к себе. Корректно
+    // живёт в «Кого ищу», а не в «О себе».
+    partner_religion_match: z.enum(tuple(vals(RELIGION_PARTNER_MATCH))).optional(),
+    // V4 — список приоритетных стран партнёра. Soft filter (matching weight),
+    // НЕ жёсткий отсев — учредитель явно сказал «не делать жёстким фильтром».
+    // Источник опций — существующий CITIZENSHIP (8 значений). Max 3.
+    partner_preferred_countries: z
+      .array(z.enum(tuple(vals(PARTNER_PREFERRED_COUNTRIES))))
+      .max(3)
+      .optional(),
   })
   .refine((d) => d.partner_age_max >= d.partner_age_min, { message: "age_range_invalid" })
   .refine(
@@ -239,6 +279,38 @@ export const partnerExtendedSchema = z
       d.partner_height_max >= d.partner_height_min,
     { message: "height_range_invalid" },
   );
+
+// ============================================================================
+// V4 NEW STEPS (2026-06-30) — Чат 2 — Анкета.md Экраны 9, 10
+// ============================================================================
+
+/** V4 Экран 9 — Финансы и материальная стабильность. Hidden public.
+ *  6 блоков по спеке: income source, importance (1-5), management,
+ *  priorities (≤3), income range (UZS), obligations.
+ *  По умолчанию весь экран приватен; видимость регулируется per-block flags
+ *  в extended.privacy либо глобально profile_visibility_mode. */
+export const financeSchema = z.object({
+  income_source_stability: z.enum(tuple(vals(INCOME_SOURCE_STABILITY))),
+  financial_stability_importance: z.coerce.number().int().min(1).max(5),
+  family_finance_management: z.enum(tuple(vals(FAMILY_FINANCE_MANAGEMENT))),
+  financial_priorities: z.array(z.enum(tuple(vals(FINANCIAL_PRIORITIES)))).min(1).max(3),
+  monthly_income_range: z.enum(tuple(vals(MONTHLY_INCOME_RANGE))).optional(),
+  financial_obligations: z.enum(tuple(vals(FINANCIAL_OBLIGATIONS))).optional(),
+});
+
+/** V4 Экран 10 — Образ жизни и привычки. Hidden public.
+ *  7 блоков по спеке: pace, free-time (≤3), routine, bad habits, nutrition,
+ *  alcohol, drugs. Привычки/алкоголь/наркотики — sensitive, скрываются до
+ *  взаимного интереса даже после публикации профиля. */
+export const lifestyleSchema = z.object({
+  lifestyle_pace: z.enum(tuple(vals(LIFESTYLE_PACE))),
+  free_time_activities: z.array(z.enum(tuple(vals(FREE_TIME_ACTIVITIES)))).min(1).max(3),
+  daily_routine: z.enum(tuple(vals(DAILY_ROUTINE))),
+  bad_habits_level: z.enum(tuple(vals(BAD_HABITS_LEVEL))).optional(),
+  nutrition_style: z.enum(tuple(vals(NUTRITION_STYLE))).optional(),
+  alcohol_level: z.enum(tuple(vals(ALCOHOL_LEVEL))).optional(),
+  drugs_use: z.enum(tuple(vals(DRUGS_USE))).optional(),
+});
 
 /** Экран 12 — Будущая семья и формат проживания (расширение marriageSchema). */
 export const futureFamilySchema = z.object({
@@ -321,6 +393,32 @@ export const extendedSchema = z
           .optional(),
       })
       .optional(),
+    // V4 2026-06-30 — Финансы и материальная стабильность (Чат-2 Экран 9).
+    // Cold секция: финансы не показываются публично — только после взаимного
+    // интереса. Все поля optional; форма требует свои внутри своей валидации.
+    finance: z
+      .object({
+        income_source_stability: z.string().max(40).optional(),
+        financial_stability_importance: z.number().int().min(1).max(5).optional(),
+        family_finance_management: z.string().max(40).optional(),
+        financial_priorities: z.array(z.string().max(40)).max(3).optional(),
+        monthly_income_range: z.string().max(40).optional(),
+        financial_obligations: z.string().max(40).optional(),
+      })
+      .optional(),
+    // V4 2026-06-30 — Образ жизни и привычки (Чат-2 Экран 10). Cold секция.
+    // Sensitive поля (bad_habits/alcohol/drugs) скрываются до mutual_interest.
+    lifestyle: z
+      .object({
+        lifestyle_pace: z.string().max(40).optional(),
+        free_time_activities: z.array(z.string().max(40)).max(3).optional(),
+        daily_routine: z.string().max(40).optional(),
+        bad_habits_level: z.string().max(40).optional(),
+        nutrition_style: z.string().max(40).optional(),
+        alcohol_level: z.string().max(40).optional(),
+        drugs_use: z.string().max(40).optional(),
+      })
+      .optional(),
   })
   .strict();
 
@@ -354,6 +452,13 @@ export const HOT_COLUMNS = new Set([
   "partner_height_max",
   "partner_top_qualities",
   "profile_visibility_mode",
+  // V4 2026-06-30 — Чат 2 — Анкета.md:
+  // district хранится hot (часто читается ProgressiveProfile и matching по гео).
+  "district",
+  "district_visible_public",
+  // partner_extended — hot для matching:
+  "partner_religion_match",
+  "partner_preferred_countries",
 ]);
 
 /** Разделяет payload на hot (колонки user_profiles) и cold (extended jsonb). */

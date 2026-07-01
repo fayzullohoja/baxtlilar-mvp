@@ -60,7 +60,7 @@ export default async function V2ProfileDetailPage({
     .from("user_profiles")
     .select(
       "display_name, birth_date, city, bio, marital_status, has_children, " +
-        "future_children_plan, religion, religion_practice, top_life_values, education, " +
+        "future_children_plan, religion, top_life_values, education, " +
         "partner_age_min, partner_age_max, geo_preference, status",
     )
     .eq("user_id", id)
@@ -131,7 +131,6 @@ export default async function V2ProfileDetailPage({
     has_children: (p!.has_children as string) ?? null,
     future_children_plan: (p!.future_children_plan as string) ?? null,
     religion: (p!.religion as string) ?? null,
-    religion_practice: (p!.religion_practice as string) ?? null,
     education: (p!.education as string) ?? null,
     bio: (p!.bio as string) ?? null,
     partner_age_min: (p!.partner_age_min as number) ?? null,

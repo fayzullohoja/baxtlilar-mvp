@@ -9,7 +9,6 @@ import {
   HAS_CHILDREN,
   FUTURE_CHILDREN_PLAN,
   RELIGION,
-  RELIGION_PRACTICE,
   LIFE_VALUES_V3,
   EDUCATION,
   GEO_PREFERENCE,
@@ -25,7 +24,6 @@ type Profile = {
   has_children: string | null;
   future_children_plan: string | null;
   religion: string | null;
-  religion_practice: string | null;
   top_life_values: string[] | null;
   education: string | null;
   looking_for_gender: string | null;
@@ -41,7 +39,7 @@ export async function ProfileTab({ userId }: { userId: string }) {
   const { data } = await supabaseAdmin()
     .from("user_profiles")
     .select(
-      "display_name, gender, city, bio, marital_status, has_children, future_children_plan, religion, religion_practice, top_life_values, education, looking_for_gender, partner_age_min, partner_age_max, geo_preference, languages, status, published_at",
+      "display_name, gender, city, bio, marital_status, has_children, future_children_plan, religion, top_life_values, education, looking_for_gender, partner_age_min, partner_age_max, geo_preference, languages, status, published_at",
     )
     .eq("user_id", userId)
     .maybeSingle();
@@ -120,10 +118,6 @@ export async function ProfileTab({ userId }: { userId: string }) {
         <Field label="Дети" value={lf(HAS_CHILDREN, p.has_children)} />
         <Field label="Планы на детей" value={lf(FUTURE_CHILDREN_PLAN, p.future_children_plan)} />
         <Field label="Религия" value={lf(RELIGION, p.religion)} />
-        <Field
-          label="Религиозная практика"
-          value={lf(RELIGION_PRACTICE, p.religion_practice)}
-        />
         <Field label="Образование" value={lf(EDUCATION, p.education)} />
         <Field
           label="Ищет"

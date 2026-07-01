@@ -11,15 +11,13 @@ function profile(overrides: Partial<ProfileForMatch> = {}): ProfileForMatch {
     has_children: "no",
     future_children_plan: "with_partner_decide",
     religion: "islam",
-    religion_practice: "striving",
     education: "higher",
     bio: "тест",
     partner_age_min: 25,
     partner_age_max: 35,
     geo_preference: "country",
     vector: { O: 50, C: 50, E: 50, A: 50, ES: 50 },
-    ...overrides,
-  };
+    ...overrides };
 }
 
 describe("generateMatchStory — reasons (positive overlap)", () => {
@@ -38,15 +36,15 @@ describe("generateMatchStory — reasons (positive overlap)", () => {
   });
 
   it("совпавшая религия + близкая практика (gap ≤1) → reason про вероисповедание", () => {
-    const v = profile({ religion: "islam", religion_practice: "striving" });
-    const c = profile({ religion: "islam", religion_practice: "observant", top_life_values: [] });
+    const v = profile({ religion: "islam"});
+    const c = profile({ religion: "islam", top_life_values: [] });
     const story = generateMatchStory(v, c);
     expect(story.reasons.some((r) => r.includes("вероисповеданию"))).toBe(true);
   });
 
   it("ИСЛАМ + null practice у одной стороны → reason всё равно даётся", () => {
-    const v = profile({ religion: "islam", religion_practice: null });
-    const c = profile({ religion: "islam", religion_practice: "observant", top_life_values: [] });
+    const v = profile({ religion: "islam"});
+    const c = profile({ religion: "islam", top_life_values: [] });
     const story = generateMatchStory(v, c);
     expect(story.reasons.some((r) => r.includes("вероисповеданию"))).toBe(true);
   });
@@ -70,14 +68,12 @@ describe("generateMatchStory — reasons (positive overlap)", () => {
       vector: { O: 60, C: 50, E: 55, A: 60, ES: 50 },
       top_life_values: [],
       religion: "na",
-      future_children_plan: "maybe",
-    });
+      future_children_plan: "maybe" });
     const c = profile({
       vector: { O: 65, C: 55, E: 60, A: 65, ES: 55 },
       top_life_values: [],
       religion: "na",
-      future_children_plan: "maybe",
-    });
+      future_children_plan: "maybe" });
     const story = generateMatchStory(v, c);
     expect(story.reasons.some((r) => r.includes("личностная структура"))).toBe(true);
   });
@@ -86,19 +82,15 @@ describe("generateMatchStory — reasons (positive overlap)", () => {
     const v = profile({
       top_life_values: ["family", "education", "honesty"],
       religion: "islam",
-      religion_practice: "striving",
       future_children_plan: "yes_later",
       vector: { O: 50, C: 50, E: 50, A: 50, ES: 50 },
-      city: "tashkent",
-    });
+      city: "tashkent" });
     const c = profile({
       top_life_values: ["family", "education", "honesty"],
       religion: "islam",
-      religion_practice: "striving",
       future_children_plan: "yes_later",
       vector: { O: 51, C: 51, E: 51, A: 51, ES: 51 },
-      city: "tashkent",
-    });
+      city: "tashkent" });
     const story = generateMatchStory(v, c);
     expect(story.reasons.length).toBeLessThanOrEqual(3);
   });
@@ -112,12 +104,9 @@ describe("generateMatchStory — cautions (friction)", () => {
     expect(story.cautions.some((c) => c.includes("детей"))).toBe(true);
   });
 
-  it("разрыв в религиозной практике ≥2 уровня → caution", () => {
-    const v = profile({ religion_practice: "not_practicing" });
-    const c = profile({ religion_practice: "observant" });
-    const story = generateMatchStory(v, c);
-    expect(story.cautions.some((c) => c.includes("Религия"))).toBe(true);
-  });
+  // V4 (2026-06-30): religious-practice caution убран — учредительская
+  // поправка №5 исключила religion_practice из анкеты. Разница по практике
+  // больше не сигнал для matching cautions.
 
   it("разные города + оба my_city → caution про разные города", () => {
     const v = profile({ city: "tashkent", geo_preference: "my_city" });
@@ -137,13 +126,11 @@ describe("generateMatchStory — cautions (friction)", () => {
     const v = profile({
       partner_age_min: 25,
       partner_age_max: 30,
-      birth_date: "1995-01-01",
-    });
+      birth_date: "1995-01-01" });
     const c = profile({
       partner_age_min: 25,
       partner_age_max: 40,
-      birth_date: "1990-01-01",
-    });
+      birth_date: "1990-01-01" });
     const story = generateMatchStory(v, c);
     expect(story.cautions.some((c) => c.includes("Возраст"))).toBe(true);
   });
@@ -151,22 +138,18 @@ describe("generateMatchStory — cautions (friction)", () => {
   it("cautions capped at 2", () => {
     const v = profile({
       future_children_plan: "yes_soon",
-      religion_practice: "not_practicing",
       city: "tashkent",
       geo_preference: "my_city",
       partner_age_min: 25,
       partner_age_max: 30,
-      birth_date: "1995-01-01",
-    });
+      birth_date: "1995-01-01" });
     const c = profile({
       future_children_plan: "no",
-      religion_practice: "observant",
       city: "samarkand",
       geo_preference: "my_city",
       partner_age_min: 25,
       partner_age_max: 40,
-      birth_date: "1990-01-01",
-    });
+      birth_date: "1990-01-01" });
     const story = generateMatchStory(v, c);
     expect(story.cautions.length).toBeLessThanOrEqual(2);
   });
