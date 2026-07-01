@@ -41,7 +41,7 @@ async function loadFullProfile(userId: string): Promise<ProfileForMatch | null> 
     .from("user_profiles")
     .select(
       "display_name, city, top_life_values, birth_date, marital_status, has_children, " +
-        "future_children_plan, religion, religion_practice, education, bio, " +
+        "future_children_plan, religion, education, bio, " +
         "partner_age_min, partner_age_max, geo_preference",
     )
     .eq("user_id", userId)
@@ -63,7 +63,6 @@ async function loadFullProfile(userId: string): Promise<ProfileForMatch | null> 
     has_children: (p.has_children as string) ?? null,
     future_children_plan: (p.future_children_plan as string) ?? null,
     religion: (p.religion as string) ?? null,
-    religion_practice: (p.religion_practice as string) ?? null,
     education: (p.education as string) ?? null,
     bio: (p.bio as string) ?? null,
     partner_age_min: (p.partner_age_min as number) ?? null,

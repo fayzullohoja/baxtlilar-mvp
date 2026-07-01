@@ -4,8 +4,12 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
-import { Field, TextInput, Chips } from "./AnketaFields";
-import { PARTNER_QUALITIES } from "@/lib/profile/options";
+import { Field, TextInput, Chips, Select } from "./AnketaFields";
+import {
+  PARTNER_QUALITIES,
+  RELIGION_PARTNER_MATCH,
+  PARTNER_PREFERRED_COUNTRIES,
+} from "@/lib/profile/options";
 
 /**
  * V3 Sprint 2 — Экран 8 «Ожидания от партнёра» (расширенный).
@@ -14,8 +18,10 @@ import { PARTNER_QUALITIES } from "@/lib/profile/options";
  * - partner_age_min/max (hot, required)
  * - partner_height_min/max (hot, optional)
  * - partner_top_qualities[] (hot, required, 1-5 из 14)
+ * - partner_religion_match (hot, optional) — миграция per founder #10 (section purity),
+ *   ранее спрашивалось в AnketaValuesForm.
+ * - partner_preferred_countries[] (hot, optional, soft filter, max 3) — founder #13.
  *
- * partner_religion_preference уже спросили на Экране 6 (religion_partner_match).
  * partner_location_preference (cold) — TBD Sprint 3.
  *
  * API: /api/onboarding/profile/partner-extended.
@@ -28,11 +34,19 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
   const [heightMin, setHeightMin] = useState("");
   const [heightMax, setHeightMax] = useState("");
   const [qualities, setQualities] = useState<string[]>([]);
+  const [religionMatch, setReligionMatch] = useState("");
+  const [countries, setCountries] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   function toggleQ(v: string) {
     setQualities((cur) =>
+      cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v],
+    );
+  }
+
+  function toggleCountry(v: string) {
+    setCountries((cur) =>
       cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v],
     );
   }
@@ -49,6 +63,8 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
       };
       if (heightMin.trim() !== "") body.partner_height_min = Number(heightMin);
       if (heightMax.trim() !== "") body.partner_height_max = Number(heightMax);
+      if (religionMatch !== "") body.partner_religion_match = religionMatch;
+      if (countries.length > 0) body.partner_preferred_countries = countries;
 
       const res = await fetch("/api/onboarding/profile/partner-extended", {
         method: "POST",
@@ -85,7 +101,8 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
       Number(heightMax) <= 230 &&
       Number(heightMax) >= Number(heightMin));
   const qOk = qualities.length >= 1 && qualities.length <= 5;
-  const valid = ageOk && heightOk && qOk;
+  const countriesOk = countries.length <= 3;
+  const valid = ageOk && heightOk && qOk && countriesOk;
 
   return (
     <div>
@@ -136,6 +153,32 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
           selected={qualities}
           onToggle={toggleQ}
           max={5}
+          locale={locale}
+        />
+      </Field>
+
+      <Field
+        label={t("religion_partner_match_question")}
+        hint={t("religion_partner_match_hint")}
+      >
+        <Select
+          options={RELIGION_PARTNER_MATCH}
+          value={religionMatch}
+          onChange={setReligionMatch}
+          locale={locale}
+          placeholder="—"
+        />
+      </Field>
+
+      <Field
+        label={t("partner_preferred_countries_question")}
+        hint={t("partner_preferred_countries_hint")}
+      >
+        <Chips
+          options={PARTNER_PREFERRED_COUNTRIES}
+          selected={countries}
+          onToggle={toggleCountry}
+          max={3}
           locale={locale}
         />
       </Field>

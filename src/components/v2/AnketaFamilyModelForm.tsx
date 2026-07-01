@@ -11,6 +11,10 @@ import {
   FAMILY_DECISION_MODEL,
   HOUSEHOLD_RESPONSIBILITY_MODEL,
 } from "@/lib/profile/options";
+import {
+  getGenderedOptionLabel,
+  type Gender,
+} from "@/lib/profile/gender-wording";
 
 /**
  * V3 Sprint 2 — Экран 7 «Семейная модель» (NEW).
@@ -21,9 +25,18 @@ import {
  * - family_decision_model (cold → extended, optional)
  * - household_responsibility_model (cold → extended, optional)
  *
+ * gender (2026-06-30): используется для gender-wording — М-юзер видит
+ * «В основном жена», Ж-юзер — «В основном муж» (см. gender-wording.ts).
+ *
  * API: /api/onboarding/profile/family-model.
  */
-export function V2AnketaFamilyModelForm({ locale }: { locale: string }) {
+export function V2AnketaFamilyModelForm({
+  locale,
+  gender,
+}: {
+  locale: string;
+  gender: Gender | null;
+}) {
   const router = useRouter();
   const t = useTranslations("Anketa");
   const [roleModel, setRoleModel] = useState("");
@@ -109,7 +122,21 @@ export function V2AnketaFamilyModelForm({ locale }: { locale: string }) {
         hint={t('canSkipHint')}
       >
         <Select
-          options={HOUSEHOLD_RESPONSIBILITY_MODEL}
+          options={HOUSEHOLD_RESPONSIBILITY_MODEL.map((opt) => ({
+            value: opt.value,
+            ru: getGenderedOptionLabel(
+              "HOUSEHOLD_RESPONSIBILITY_MODEL",
+              opt.value,
+              gender,
+              "ru",
+            ),
+            uz: getGenderedOptionLabel(
+              "HOUSEHOLD_RESPONSIBILITY_MODEL",
+              opt.value,
+              gender,
+              "uz",
+            ),
+          }))}
           value={householdModel}
           onChange={setHouseholdModel}
           locale={locale}

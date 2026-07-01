@@ -7,28 +7,23 @@ import { Button } from "./Button";
 import { Field, Select, Chips } from "./AnketaFields";
 import {
   RELIGION,
-  RELIGION_PRACTICE,
-  RELIGION_PARTNER_MATCH,
   LIFE_VALUES_V3,
 } from "@/lib/profile/options";
 
 /**
  * V2 Anketa Values form (Blueprint §3.3 B3).
- * Поля: религия, как практикую (4 опции вместо 1-5 шкалы),
- * желание совпадения у партнёра (опц), ценности (1-3), образование, занятость.
- * API: /api/onboarding/profile/values.
+ * Поля: религия, ценности (1-3).
  *
- * V2 ext 2026-06-28: убран NumberScale "Насколько важна" (создавал ложное
- * "вера может быть неважна" для UZ-платформы). Заменено на качественный
- * Select про образ жизни + опциональное требование к партнёру.
+ * V4 (2026-06-30): убран follow-up religion_practice («как Вы с этим живёте») —
+ * учредительская поправка №5. Также убран religion_partner_match — переехал в
+ * partner-extended (учредительская поправка №10: раздел «Кого ищу»).
+ * API: /api/onboarding/profile/values.
  */
 
 export function V2AnketaValuesForm({ locale }: { locale: string }) {
   const t = useTranslations('Anketa');
   const router = useRouter();
   const [religion, setReligion] = useState("");
-  const [practice, setPractice] = useState("");
-  const [partnerMatch, setPartnerMatch] = useState("");
   const [values, setValues] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -47,8 +42,6 @@ export function V2AnketaValuesForm({ locale }: { locale: string }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           religion,
-          religion_practice: practice,
-          ...(partnerMatch ? { religion_partner_match: partnerMatch } : {}),
           top_life_values: values,
         }),
       });
@@ -65,38 +58,12 @@ export function V2AnketaValuesForm({ locale }: { locale: string }) {
     }
   }
 
-  const valid =
-    !!religion && !!practice && values.length >= 1 && values.length <= 3;
+  const valid = !!religion && values.length >= 1 && values.length <= 3;
 
   return (
     <div>
       <Field label={t('religionLabel')} required>
         <Select options={RELIGION} value={religion} onChange={setReligion} locale={locale} />
-      </Field>
-
-      <Field
-        label={t('religiousPracticeLabel')}
-        required
-        hint={t('religiousPracticeHint')}
-      >
-        <Select
-          options={RELIGION_PRACTICE}
-          value={practice}
-          onChange={setPractice}
-          locale={locale}
-        />
-      </Field>
-
-      <Field
-        label={t('partnerDesireLabel')}
-        hint={t('partnerDesireHint')}
-      >
-        <Select
-          options={RELIGION_PARTNER_MATCH}
-          value={partnerMatch}
-          onChange={setPartnerMatch}
-          locale={locale}
-        />
       </Field>
 
       <Field

@@ -33,14 +33,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { status: 400 },
     );
 
+  // V4 (2026-06-30): religion_practice и religion_partner_match убраны из
+  // values-формы. religion_practice — учредительская поправка №5 (лишний
+  // follow-up). religion_partner_match — переехал в partner-extended (№10).
+  // Столбцы в БД оставлены для совместимости с legacy данными; здесь просто
+  // не пишем в них новые значения.
   const { error: saveErr } = await supabaseAdmin()
     .from("user_profiles")
     .upsert(
       {
         user_id: user.id,
         religion: parsed.data.religion,
-        religion_practice: parsed.data.religion_practice,
-        religion_partner_match: parsed.data.religion_partner_match ?? null,
         top_life_values: parsed.data.top_life_values,
       },
       { onConflict: "user_id" },

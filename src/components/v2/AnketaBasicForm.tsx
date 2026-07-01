@@ -10,6 +10,8 @@ import {
   CITIZENSHIP,
   COUNTRY_OF_RESIDENCE,
   UZ_REGIONS,
+  UZ_DISTRICTS_BY_REGION,
+  hasDistrictList,
 } from "@/lib/profile/options";
 
 /**
@@ -52,11 +54,20 @@ export function V2AnketaBasicForm({
   const [citizenship, setCitizenship] = useState("");
   const [country, setCountry] = useState("");
   const [region, setRegion] = useState("");
+  // V4 2026-06-30 (Чат 2 — Анкета, Экран 2): район проживания + флаг публичной
+  // видимости. Показывается каскадом после выбора региона; если для региона
+  // есть курируемый список (UZ_DISTRICTS_BY_REGION) — Select, иначе freeform.
+  // По умолчанию район скрыт (учредительская приватность «минимум инфо до match»).
+  const [district, setDistrict] = useState("");
+  const [districtVisiblePublic, setDistrictVisiblePublic] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   // Region виден только если выбрано проживание в UZ.
   const showRegion = country === "UZ";
+  // District виден только когда есть выбранный регион (UZ + region).
+  const showDistrict = showRegion && !!region;
+  const districtFromDict = showDistrict && hasDistrictList(region);
 
   async function submit() {
     if (busy) return;
@@ -73,6 +84,10 @@ export function V2AnketaBasicForm({
           citizenship,
           country_of_residence: country,
           ...(showRegion ? { region } : {}),
+          // district — nullable, отправляем только если реально введено.
+          // Флаг видимости шлём всегда чтобы дефолт false явно писался в БД.
+          ...(showDistrict && district.trim() ? { district: district.trim() } : {}),
+          district_visible_public: districtVisiblePublic,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {
@@ -150,10 +165,89 @@ export function V2AnketaBasicForm({
           <Select
             options={UZ_REGIONS}
             value={region}
-            onChange={setRegion}
+            onChange={(v) => {
+              setRegion(v);
+              // При смене региона сбрасываем район — старое значение из другого
+              // списка не должно висеть.
+              setDistrict("");
+            }}
             locale={locale}
           />
         </Field>
+      ) : null}
+
+      {showDistrict ? (
+        <Field
+          label={t("basic_district_label")}
+          hint={t("basic_district_hint")}
+        >
+          {districtFromDict ? (
+            <Select
+              options={UZ_DISTRICTS_BY_REGION[region]}
+              value={district}
+              onChange={setDistrict}
+              locale={locale}
+            />
+          ) : (
+            <TextInput
+              value={district}
+              onChange={(e) => setDistrict(e.target.value)}
+              maxLength={128}
+              placeholder=""
+            />
+          )}
+        </Field>
+      ) : null}
+
+      {showDistrict ? (
+        <label
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: "10px",
+            marginBottom: "32px",
+            cursor: "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={districtVisiblePublic}
+            onChange={(e) => setDistrictVisiblePublic(e.target.checked)}
+            style={{
+              marginTop: "4px",
+              width: "16px",
+              height: "16px",
+              accentColor: "var(--color-v2-ink-100)",
+            }}
+          />
+          <span
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+              fontFamily: "var(--font-v2-body)",
+            }}
+          >
+            <span
+              style={{
+                fontSize: "13px",
+                color: "var(--color-v2-ink-200)",
+                lineHeight: "1.5",
+              }}
+            >
+              {t("basic_district_visible_label")}
+            </span>
+            <span
+              style={{
+                fontSize: "12px",
+                color: "var(--color-v2-ink-400)",
+                lineHeight: "1.45",
+              }}
+            >
+              {t("basic_district_visible_hint")}
+            </span>
+          </span>
+        </label>
       ) : null}
 
       {err ? (
