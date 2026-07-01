@@ -210,7 +210,7 @@ export function Select({
       }}
     >
       <option value="" disabled>
-        {placeholder ?? (locale === "uz" ? "Tanlang…" : "Выбери…")}
+        {placeholder ?? (locale === "uz" ? "Tanlang…" : "Выберите…")}
       </option>
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>
@@ -308,7 +308,7 @@ export function CitySelect({
       }}
     >
       <option value="" disabled>
-        {placeholder ?? (locale === "uz" ? "Shahar tanlang…" : "Выбери город…")}
+        {placeholder ?? (locale === "uz" ? "Shahar tanlang…" : "Выберите город…")}
       </option>
       {CITY_GROUPS.map((group) => (
         <optgroup

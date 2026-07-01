@@ -230,7 +230,7 @@
     "photos_err_failed": "Не получилось загрузить. Попробуй ещё раз.",
     "photos_loading": "…",
     "photos_continue": "Дальше",
-    "select_placeholder": "Выбери…",
+    "select_placeholder": "Выберите…",
     "city_placeholder_default": "Город",
     "basic_eyebrow": "Шаг 1 · Анкета",
     "basic_headline": "Начнём с Вас.",
@@ -783,7 +783,7 @@
     "skipButton": "Сейчас не подходит"
   },
   "Fields": {
-    "selectPlaceholder": "Выбери…",
+    "selectPlaceholder": "Выберите…",
     "cityPlaceholder": "Выбери город…",
     "from": "от",
     "to": "до"
