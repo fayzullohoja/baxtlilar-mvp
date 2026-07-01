@@ -110,8 +110,10 @@ describe("valuesSchema", () => {
     expect(valuesSchema.safeParse({ ...base, values: [] }).success).toBe(false));
   it("religion_practice вне enum → ошибка", () =>
     expect(valuesSchema.safeParse({ ...base, religion_practice: "very_observant" }).success).toBe(false));
-  it("religion_practice отсутствует → ошибка", () =>
-    expect(valuesSchema.safeParse({ ...base, religion_practice: undefined }).success).toBe(false));
+  // V4 (2026-06-30): religion_practice стал .optional() — учредитель убрал
+  // follow-up «как Вы с этим живёте» из формы. Отсутствие поля теперь ОК.
+  it("religion_practice отсутствует → OK (V4: optional)", () =>
+    expect(valuesSchema.safeParse({ ...base, religion_practice: undefined }).success).toBe(true));
 });
 
 describe("lookingForSchema", () => {

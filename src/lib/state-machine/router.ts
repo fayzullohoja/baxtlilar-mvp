@@ -36,6 +36,9 @@ export const ONBOARDING_PATHS: Record<OnboardingStep, string> = {
   profile_birth_place: "/v2/anketa/birth-place",
   profile_self: "/v2/anketa/self",
   profile_family_model: "/v2/anketa/family-model",
+  // V4 (2026-06-30) — Чат 2 — Анкета.md: Экраны 9 и 10.
+  profile_finance: "/v2/anketa/finance",
+  profile_lifestyle: "/v2/anketa/lifestyle",
   profile_partner_extended: "/v2/anketa/partner-extended",
   profile_privacy: "/v2/anketa/privacy",
   profile_family: "/v2/anketa/family",

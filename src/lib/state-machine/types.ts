@@ -41,6 +41,9 @@ export type OnboardingStep =
   // V2 extension (2026-06-28): формат проживания после брака — после ценностей.
   | "profile_marriage"
   | "profile_family_model" // Экран 7 (Sprint 2)
+  // V4 (2026-06-30) — новые экраны из Чат 2 — Анкета.md:
+  | "profile_finance" // Экран 9 — Финансы и материальная стабильность
+  | "profile_lifestyle" // Экран 10 — Образ жизни и привычки
   | "profile_partner_extended" // Экран 8 расширение (Sprint 2)
   | "profile_privacy" // Экран 16 — глобальный режим видимости (Sprint 3)
   | "profile_looking_for"
@@ -104,26 +107,48 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   moderation_pending: ["needs_changes", "verification_rejected", "profile_basic"],
   needs_changes: ["doc_upload", "selfie_upload", "moderation_pending"],
   verification_rejected: ["doc_upload"],
-  // V3 MVP 2026-06-29: basic → birth_place → appearance → self → family → values
-  //   → family_model → marriage → partner_extended → looking_for → photos.
-  // В Sprint 1 реально работает basic → birth_place → self (заглушка). Остальные
-  // переходы оставлены для Sprint 2.
-  profile_basic: ["profile_birth_place", "profile_appearance"],
-  profile_birth_place: ["profile_appearance", "profile_self"],
-  profile_appearance: ["profile_self", "profile_family"],
-  // V3 Sprint 2: self → appearance (рост/вес/языки идут ПОСЛЕ self для V3 flow).
-  profile_self: ["profile_appearance", "profile_family"],
+  // V4 2026-06-30 (Чат 2 — Анкета.md) — новый порядок:
+  //   basic → appearance → birth_place → self → family → values → family_model
+  //     → finance → lifestyle → marriage → partner_extended → privacy → photos → preview.
+  //
+  //   Изменения относительно V3:
+  //   • Swap: appearance <-> birth_place (учредитель: №4).
+  //   • Новые шаги: finance (Чат-2 Экран 9), lifestyle (Экран 10) — между
+  //     family_model и marriage.
+  //   • looking_for больше не в основном потоке (partner_extended делает всё).
+  //     Оставляем back-edge из preview для legacy юзеров.
+  //   • В profile_basic оставлены обе back-edges на случай in-flight юзеров,
+  //     чтоб миграция не заперла их в пустоту.
+  profile_basic: ["profile_appearance", "profile_birth_place"],
+  profile_appearance: ["profile_birth_place", "profile_self"],
+  profile_birth_place: ["profile_self", "profile_family"],
+  profile_self: ["profile_family"],
   profile_family: ["profile_values"],
-  // V2 ext 2026-06-28: между values и looking_for — profile_marriage (формат проживания).
-  profile_values: ["profile_family_model", "profile_marriage"],
-  profile_family_model: ["profile_marriage"],
-  profile_marriage: ["profile_partner_extended", "profile_looking_for"],
+  profile_values: ["profile_family_model"],
+  profile_family_model: ["profile_finance", "profile_marriage"],
+  profile_finance: ["profile_lifestyle"],
+  profile_lifestyle: ["profile_marriage"],
+  profile_marriage: ["profile_partner_extended"],
   profile_partner_extended: ["profile_privacy", "profile_photos"],
   profile_privacy: ["profile_photos"],
-  profile_looking_for: ["profile_photos"],
+  profile_looking_for: ["profile_photos"], // legacy back-compat only
   profile_photos: ["profile_preview"],
-  // V2 ext: preview позволяет вернуться в любой anketa-шаг (для правок).
-  profile_preview: ["profile_basic", "profile_appearance", "profile_family", "profile_values", "profile_marriage", "profile_looking_for", "quiz"],
+  // V4: preview позволяет вернуться в любой anketa-шаг (для правок).
+  profile_preview: [
+    "profile_basic",
+    "profile_appearance",
+    "profile_birth_place",
+    "profile_self",
+    "profile_family",
+    "profile_values",
+    "profile_family_model",
+    "profile_finance",
+    "profile_lifestyle",
+    "profile_marriage",
+    "profile_partner_extended",
+    "profile_privacy",
+    "quiz",
+  ],
   quiz: ["attribution"],
   // V2: attribution ведёт в tutorial_intro (а не сразу в active как было в V1).
   // V1 fallback: attribution → active оставлен для legacy users.

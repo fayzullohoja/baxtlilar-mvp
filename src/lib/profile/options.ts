@@ -171,7 +171,8 @@ export const RELIGION_PARTNER_MATCH: Opt[] = [
   },
 ];
 
-/** Формат проживания после брака. Required для serious-marriage платформы. */
+/** Формат проживания после брака. Required для serious-marriage платформы.
+ * V4: `separate_near` удалён — учредитель счёл вариант неуместным. */
 export const POST_MARRIAGE_LIVING: Opt[] = [
   {
     value: "with_husband_family",
@@ -187,11 +188,6 @@ export const POST_MARRIAGE_LIVING: Opt[] = [
     value: "separate",
     ru: "Отдельно от родителей",
     uz: "Ota-onadan alohida",
-  },
-  {
-    value: "separate_near",
-    ru: "Отдельно, но рядом с родителями",
-    uz: "Alohida, lekin ota-onaga yaqin",
   },
   {
     value: "open_to_discuss",
@@ -278,20 +274,25 @@ export const WIFE_WORK_VIEW: Opt[] = [
   { value: "discuss", ru: "Готов(а) обсуждать", uz: "Muhokama qilishga tayyorman" },
 ];
 
-/** Экран 7 — Принятие решений (в extended.family.decision_model). */
+/** Экран 7 — Принятие решений (в extended.family.decision_model).
+ * V4: `by_domain` удалён (учредитель счёл лишним 4-й вариант). */
 export const FAMILY_DECISION_MODEL: Opt[] = [
   { value: "husband_main", ru: "Основное за мужем", uz: "Asosiy qaror erda" },
   { value: "wife_main", ru: "Основное за женой", uz: "Asosiy qaror xotinda" },
   { value: "joint", ru: "Совместно", uz: "Birgalikda" },
-  { value: "by_domain", ru: "По сферам", uz: "Sohalar boʻyicha" },
 ];
 
-/** Экран 7 — Бытовые обязанности (в extended.family.household_responsibility_model). */
+/** Экран 7 — Бытовые обязанности (в extended.family.household_responsibility_model).
+ * V4: `flexible` («Гибко по ситуации») заменён на `mostly_partner` — лейбл
+ * подставляется в зависимости от пола пользователя через gender-wording helper:
+ *   М-юзер видит «В основном жена», Ж-юзер видит «В основном муж».
+ * Базовый ru/uz здесь нейтральный (для админки/preview); в формах используется
+ * `getGenderedOptionLabel(HOUSEHOLD_RESPONSIBILITY_MODEL, value, userGender)`. */
 export const HOUSEHOLD_RESPONSIBILITY_MODEL: Opt[] = [
   { value: "traditional", ru: "Традиционно (жена — дом, муж — обеспечение)", uz: "Anʼanaviy (xotin uy ishlari, er taʼminlash)" },
   { value: "shared_50_50", ru: "Поровну 50/50", uz: "Tengma-teng 50/50" },
   { value: "by_skill", ru: "По навыкам", uz: "Koʻnikma boʻyicha" },
-  { value: "flexible", ru: "Гибко по ситуации", uz: "Vaziyatga qarab" },
+  { value: "mostly_partner", ru: "В основном партнёр", uz: "Asosan hamroh" },
 ];
 
 /** Экран 12 — Важность жить отдельно от родителей (в extended.living). */
@@ -326,6 +327,135 @@ export const PROFILE_VISIBILITY_MODE: Opt[] = [
   { value: "verified_only", ru: "Только для верифицированных", uz: "Faqat tasdiqlanganlarga" },
   { value: "by_request", ru: "По запросу", uz: "Soʻrov boʻyicha" },
 ];
+
+// ============================================================================
+// Anketa V4 (2026-06-30) — спека «Чат 2 — Анкета.md»
+// ============================================================================
+
+/** V4 шаг basic — статус-чекбокс «показывать ли район проживания в анкете». */
+export const DISTRICT_VISIBLE_DEFAULT = false;
+
+// ---------- Финансы (Чат-2 Экран 9) ----------
+
+/** Стабильность источника дохода. */
+export const INCOME_SOURCE_STABILITY: Opt[] = [
+  { value: "stable", ru: "Стабильный доход", uz: "Barqaror daromad" },
+  { value: "unstable", ru: "Доход непостоянный", uz: "Daromad beqaror" },
+  { value: "none", ru: "Пока нет дохода", uz: "Hozircha daromad yoʻq" },
+];
+
+/** Управление финансами в семье (Чат-2 Экран 9 блок 3). */
+export const FAMILY_FINANCE_MANAGEMENT: Opt[] = [
+  { value: "joint", ru: "Совместное планирование", uz: "Birgalikda rejalashtirish" },
+  { value: "mostly_man", ru: "В основном мужчина", uz: "Asosan erkak" },
+  { value: "mostly_woman", ru: "В основном женщина", uz: "Asosan ayol" },
+  { value: "situational", ru: "Зависит от ситуации", uz: "Vaziyatga qarab" },
+];
+
+/** Финансовые приоритеты (multi-select до 3). */
+export const FINANCIAL_PRIORITIES: Opt[] = [
+  { value: "no_debt", ru: "Отсутствие долгов и кредитов", uz: "Qarz va kreditlarsiz hayot" },
+  { value: "savings", ru: "Накопления и финансовая подушка", uz: "Jamgʻarma va moliyaviy yostiq" },
+  { value: "investments", ru: "Инвестиции и рост капитала", uz: "Investitsiyalar va kapital oʻsishi" },
+  { value: "budget_planning", ru: "Планирование бюджета", uz: "Byudjetni rejalashtirish" },
+  { value: "literacy", ru: "Финансовая грамотность", uz: "Moliyaviy savodxonlik" },
+  { value: "generosity", ru: "Щедрость и благотворительность", uz: "Saxiylik va xayriya" },
+  { value: "housing", ru: "Покупка жилья", uz: "Uy-joy sotib olish" },
+  { value: "travel", ru: "Путешествия и впечатления", uz: "Sayohatlar va taassurotlar" },
+  { value: "independence", ru: "Финансовая независимость", uz: "Moliyaviy mustaqillik" },
+];
+
+/** Примерный ежемесячный доход (UZS) — Optional. Hidden public. */
+export const MONTHLY_INCOME_RANGE: Opt[] = [
+  { value: "na", ru: "Не хочу указывать", uz: "Koʻrsatmayman" },
+  { value: "below_5m", ru: "До 5 млн сум", uz: "5 mln soʻmgacha" },
+  { value: "5_10m", ru: "5–10 млн сум", uz: "5–10 mln soʻm" },
+  { value: "10_20m", ru: "10–20 млн сум", uz: "10–20 mln soʻm" },
+  { value: "20_40m", ru: "20–40 млн сум", uz: "20–40 mln soʻm" },
+  { value: "40m_plus", ru: "40 млн+ сум", uz: "40 mln+ soʻm" },
+];
+
+/** Финансовые обязательства. Hidden public. */
+export const FINANCIAL_OBLIGATIONS: Opt[] = [
+  { value: "none", ru: "Нет обязательств", uz: "Majburiyatlar yoʻq" },
+  { value: "has", ru: "Есть обязательства", uz: "Majburiyatlar bor" },
+  { value: "na", ru: "Предпочту не говорить", uz: "Aytmaslikni afzal koʻraman" },
+];
+
+// ---------- Образ жизни и привычки (Чат-2 Экран 10) ----------
+
+/** Ритм / образ жизни. */
+export const LIFESTYLE_PACE: Opt[] = [
+  { value: "active", ru: "Активный", uz: "Faol" },
+  { value: "calm", ru: "Спокойный", uz: "Tinch" },
+  { value: "balanced", ru: "Сбалансированный", uz: "Muvozanatli" },
+  { value: "na", ru: "Затрудняюсь ответить", uz: "Javob berishga qiynalaman" },
+];
+
+/** Свободное время (multi-select до 3). */
+export const FREE_TIME_ACTIVITIES: Opt[] = [
+  { value: "sports", ru: "Спорт и тренировки", uz: "Sport va mashqlar" },
+  { value: "reading", ru: "Чтение книг", uz: "Kitob oʻqish" },
+  { value: "travel", ru: "Путешествия", uz: "Sayohatlar" },
+  { value: "family_time", ru: "Время с семьёй", uz: "Oila bilan vaqt" },
+  { value: "music", ru: "Музыка", uz: "Musiqa" },
+  { value: "art", ru: "Творчество", uz: "Ijod" },
+  { value: "volunteering", ru: "Волонтёрство и помощь людям", uz: "Koʻngillilik va yordam" },
+  { value: "games", ru: "Игры и развлечения", uz: "Oʻyinlar va dam olish" },
+  { value: "nature", ru: "Природа и прогулки", uz: "Tabiat va sayrlar" },
+  { value: "learning", ru: "Обучение и развитие", uz: "Oʻrganish va rivojlanish" },
+  { value: "spiritual", ru: "Духовные практики", uz: "Maʼnaviy amaliyot" },
+  { value: "other", ru: "Другое", uz: "Boshqa" },
+];
+
+/** Режим дня. */
+export const DAILY_ROUTINE: Opt[] = [
+  { value: "early", ru: "Ранний подъём (до 22:30)", uz: "Erta turish (22:30 gacha)" },
+  { value: "middle", ru: "Средний режим (22:30–00:00)", uz: "Oʻrtacha (22:30–00:00)" },
+  { value: "late", ru: "Поздний (после 00:00)", uz: "Kech (00:00 dan keyin)" },
+  { value: "unstable", ru: "Нестабильный режим", uz: "Beqaror" },
+];
+
+/** Вредные привычки. Hidden public. */
+export const BAD_HABITS_LEVEL: Opt[] = [
+  { value: "no", ru: "Нет", uz: "Yoʻq" },
+  { value: "sometimes", ru: "Иногда", uz: "Baʼzan" },
+  { value: "quit", ru: "Бывало, но отказался(ась)", uz: "Boʻlgan, lekin tashladim" },
+  { value: "yes", ru: "Есть", uz: "Bor" },
+];
+
+/** Питание. */
+export const NUTRITION_STYLE: Opt[] = [
+  { value: "balanced", ru: "Сбалансированно", uz: "Muvozanatli" },
+  { value: "regular", ru: "Обычное питание", uz: "Oddiy ovqatlanish" },
+  { value: "national", ru: "Предпочитаю национальную кухню", uz: "Milliy taomlarni yoqtiraman" },
+  { value: "restricted", ru: "Есть ограничения", uz: "Cheklovlar bor" },
+];
+
+/** Отношение к алкоголю. Hidden public. */
+export const ALCOHOL_LEVEL: Opt[] = [
+  { value: "no", ru: "Не употребляю", uz: "Iste'mol qilmayman" },
+  { value: "rare", ru: "Редко, по особым случаям", uz: "Kamdan-kam, alohida holatlarda" },
+  { value: "sometimes", ru: "Иногда", uz: "Baʼzan" },
+  { value: "regular", ru: "Регулярно", uz: "Muntazam" },
+];
+
+/** Наркотические вещества. Hidden public. Чувствительно. */
+export const DRUGS_USE: Opt[] = [
+  { value: "no", ru: "Нет", uz: "Yoʻq" },
+  { value: "past", ru: "Было в прошлом, сейчас нет", uz: "Oʻtmishda boʻlgan, hozir yoʻq" },
+  { value: "na", ru: "Предпочитаю не отвечать", uz: "Javob bermaslikni afzal koʻraman" },
+];
+
+// ---------- Кого ищу: страны партнёра (Чат-2: «не делать жёстким фильтром») ----------
+
+/** Multi-select из существующих CITIZENSHIP. Soft filter, max 3. */
+export const PARTNER_PREFERRED_COUNTRIES: Opt[] = CITIZENSHIP;
+
+// ---------- Районы УЗ (cascading per region) ----------
+// Реэкспорт из src/lib/profile/uz-districts.ts, где живут ~98 записей
+// по 6 крупнейшим регионам (Phase 1). Остальные регионы — freeform fallback.
+export { UZ_DISTRICTS_BY_REGION, hasDistrictList } from "./uz-districts";
 
 export const vals = (o: Opt[]): string[] => o.map((x) => x.value);
 export const labelOf = (o: Opt[], value: string, locale: string): string =>

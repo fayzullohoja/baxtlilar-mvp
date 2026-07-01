@@ -118,6 +118,10 @@ describe("ALLOWED_TRANSITIONS connectivity (анти-застревание)", (
     "otp_pending",
     "welcome_safety",
     "welcome_rules",
+    // V4 (2026-06-30): profile_looking_for стал legacy — вся его роль перешла
+    // в profile_partner_extended (учредительская поправка №10). Оставлен как
+    // терминальный для in-flight пользователей, у которых сохранён такой шаг.
+    "profile_looking_for",
   ]);
   const LIVE = ALL_STEPS.filter((s) => !LEGACY.has(s));
 
