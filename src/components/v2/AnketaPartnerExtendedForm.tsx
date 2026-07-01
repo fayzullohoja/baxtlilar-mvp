@@ -106,19 +106,19 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
 
   return (
     <div>
-      <Field label={t("partnerAgeLabel")} required hint="Диапазон, от 18 лет.">
+      <Field label={t("partnerAgeLabel")} required hint={t("partnerAgeHint")}>
         <div style={{ display: "flex", gap: 12 }}>
           <TextInput
             maxLength={3}
             value={ageMin}
             onChange={(e) => setAgeMin(e.target.value.replace(/\D/g, ""))}
-            placeholder="от"
+            placeholder={t("partnerAgeFrom")}
           />
           <TextInput
             maxLength={3}
             value={ageMax}
             onChange={(e) => setAgeMax(e.target.value.replace(/\D/g, ""))}
-            placeholder="до"
+            placeholder={t("partnerAgeTo")}
           />
         </div>
       </Field>
@@ -132,13 +132,13 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
             maxLength={3}
             value={heightMin}
             onChange={(e) => setHeightMin(e.target.value.replace(/\D/g, ""))}
-            placeholder="от"
+            placeholder={t("partnerAgeFrom")}
           />
           <TextInput
             maxLength={3}
             value={heightMax}
             onChange={(e) => setHeightMax(e.target.value.replace(/\D/g, ""))}
-            placeholder="до"
+            placeholder={t("partnerAgeTo")}
           />
         </div>
       </Field>
@@ -146,7 +146,7 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
       <Field
         label={t("partnerQualitiesLabel")}
         required
-        hint={`Выбери от 1 до 5 — это ключ к подбору. Выбрано: ${qualities.length}/5`}
+        hint={t("partner_qualities_hint", { count: qualities.length })}
       >
         <Chips
           options={PARTNER_QUALITIES}

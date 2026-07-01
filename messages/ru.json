@@ -202,7 +202,7 @@
     "err_invalid_age": "Проверь дату рождения.",
     "err_region_required_for_uz": "Для проживания в Узбекистане выберите область или город.",
     "err_validation": "Проверь заполненные поля.",
-    "err_failed": "Не получилось сохранить. Попробуй ещё раз.",
+    "err_failed": "Не получилось сохранить. Попробуйте ещё раз.",
     "birth_place_country_label": "Страна рождения",
     "birth_place_country_hint": "Где Вы родились. Может отличаться от текущего места проживания.",
     "birth_place_region_label": "Область / регион",
@@ -227,7 +227,7 @@
     "photos_err_bad_type": "JPG, PNG, WebP или HEIC.",
     "photos_err_too_large": "Файл слишком большой.",
     "photos_err_need_one": "Нужно хотя бы одно фото чтобы продолжить.",
-    "photos_err_failed": "Не получилось загрузить. Попробуй ещё раз.",
+    "photos_err_failed": "Не получилось загрузить. Попробуйте ещё раз.",
     "photos_loading": "…",
     "photos_continue": "Дальше",
     "select_placeholder": "Выберите…",
@@ -417,7 +417,12 @@
       "hidden": "Скрыто"
     },
     "religion_partner_match_question": "Насколько для Вас важно совпадение веры с партнёром?",
-    "religion_partner_match_hint": "Необязательное поле. Можно пропустить, если это не принципиально."
+    "religion_partner_match_hint": "Необязательное поле. Можно пропустить, если это не принципиально.",
+    "partner_qualities_hint": "Выберите от 1 до 5 — это ключ к подбору. Выбрано: {count}/5",
+    "partnerAgeHint": "Диапазон, от 18 лет.",
+    "partnerAgeFrom": "от",
+    "partnerAgeTo": "до",
+    "basic_district_freeform_placeholder": "Название района"
   },
   "Quiz": {
     "intro_title": "Опрос на совместимость",
@@ -676,7 +681,7 @@
     }
   },
   "Errors": {
-    "saveFailed": "Не получилось сохранить. Попробуй ещё раз.",
+    "saveFailed": "Не получилось сохранить. Попробуйте ещё раз.",
     "general": "Что-то пошло не так. Попробуй ещё раз.",
     "sendFailed": "Не получилось отправить. Попробуй ещё раз.",
     "saveAndVerifyFailed": "Не удалось сохранить. Проверьте поля и попробуйте снова.",

@@ -85,9 +85,11 @@ export function V2AnketaBasicForm({
           country_of_residence: country,
           ...(showRegion ? { region } : {}),
           // district — nullable, отправляем только если реально введено.
-          // Флаг видимости шлём всегда чтобы дефолт false явно писался в БД.
+          // Флаг видимости шлём только когда district block фактически показан,
+          // иначе оставшийся в стейте true с прошлого UZ-выбора протек бы в БД
+          // при смене country_of_residence на не-UZ (baxt fix P5).
           ...(showDistrict && district.trim() ? { district: district.trim() } : {}),
-          district_visible_public: districtVisiblePublic,
+          ...(showDistrict ? { district_visible_public: districtVisiblePublic } : {}),
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {
@@ -152,7 +154,11 @@ export function V2AnketaBasicForm({
           value={country}
           onChange={(v) => {
             setCountry(v);
-            if (v !== "UZ") setRegion("");
+            if (v !== "UZ") {
+              setRegion("");
+              setDistrict("");
+              setDistrictVisiblePublic(false);
+            }
           }}
           locale={locale}
         />
@@ -193,7 +199,7 @@ export function V2AnketaBasicForm({
               value={district}
               onChange={(e) => setDistrict(e.target.value)}
               maxLength={128}
-              placeholder=""
+              placeholder={t("basic_district_freeform_placeholder")}
             />
           )}
         </Field>
