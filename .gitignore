@@ -46,3 +46,10 @@ next-env.d.ts
 # supabase CLI cache
 /supabase/.temp/
 !.env.local.example
+
+# Maestro screenshots — dumped by 'takeScreenshot: <name>' when working dir is repo root
+q_*.png
+z_*.png
+w_*.png
+v_*.png
+
