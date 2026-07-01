@@ -119,7 +119,7 @@ export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
       <Field
         label={t("spokenLanguagesLabel")}
         required
-        hint={`${t("spokenLanguagesLabel").substring(0, 20)}... Выбрано: ${spokenLangs.length}/6`}
+        hint={t("spokenLanguagesHint", { count: spokenLangs.length })}
       >
         <Chips
           options={LANGUAGES_LIST}
