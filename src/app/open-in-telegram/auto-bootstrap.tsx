@@ -16,7 +16,7 @@ type Diag =
   | { kind: "fetch_error"; msg: string }
   | { kind: "bootstrap_error"; status: number; error: string }
   | { kind: "register_required" }
-  | { kind: "ok" };
+  | { kind: "ok"; cookieLen: number; hasBxSession: boolean };
 
 export function AutoBootstrap() {
   const [diag, setDiag] = useState<Diag>({ kind: "mounting" });
@@ -57,8 +57,16 @@ export function AutoBootstrap() {
         })
           .then(async (res) => {
             if (res.ok) {
-              setDiag({ kind: "ok" });
-              window.location.replace("/");
+              // Debug 2026-07-01: cookie propagation через TG Android WebView.
+              // Bootstrap возвращает Set-Cookie, но / всё равно редиректит
+              // обратно на /open-in-telegram → второй POST → token_replay 401.
+              // Логируем document.cookie до redirect, чтобы понять — cookie
+              // прилетел на клиент вообще?
+              const cookieStr = typeof document !== "undefined" ? document.cookie : "";
+              const hasBxSession = cookieStr.split(";").some((c) => c.trim().startsWith("bx_session="));
+              setDiag({ kind: "ok", cookieLen: cookieStr.length, hasBxSession });
+              // Дать пару секунд чтобы diag banner сфотографировался.
+              setTimeout(() => window.location.replace("/"), 3000);
               return;
             }
             const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -197,6 +205,6 @@ function formatDiag(d: Diag): string {
     case "register_required":
       return "register_required (user not in DB or on bot_* step)";
     case "ok":
-      return "ok (redirecting)";
+      return `ok cookieLen=${d.cookieLen} hasBxSession=${d.hasBxSession} → redirect in 3s`;
   }
 }
