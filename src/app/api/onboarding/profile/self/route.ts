@@ -13,7 +13,12 @@ export const dynamic = "force-dynamic";
  * Hot-колонки: bio (existing), education (existing), activity_field (new),
  * employment_format (new).
  *
- * После self → profile_appearance (рост/вес/языки legacy V2 flow).
+ * V4 2026-07-01: после self → profile_family (V4 order:
+ * basic → appearance → birth_place → self → family → …). До V4 route
+ * ошибочно передавал в profile_appearance (legacy V2/V3), из-за чего юзеры на
+ * self-шаге получали 409 tryTransition failed при сабмите: rows upsertились,
+ * но переход не происходил, и клиент показывал generic «Не получилось
+ * сохранить». Обнаружено live-тестом.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const { user, res } = await loadUserForStep("profile_self");
@@ -47,10 +52,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const tr = await tryTransition(
     user.id,
-    { onboarding_step: "profile_appearance" },
-    "anketa v3: self saved",
+    { onboarding_step: "profile_family" },
+    "anketa v4: self → family",
     { kind: "user", id: user.id },
   );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_appearance });
+  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_family });
 }
