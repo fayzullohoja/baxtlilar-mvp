@@ -108,13 +108,19 @@ export function AutoBootstrap() {
       <div className="absolute inset-x-0 top-0 z-50 px-5 pt-6 text-center">
         <p className="text-sm text-baxt-navy">Сначала пройдите регистрацию в боте.</p>
         <p className="text-sm text-baxt-muted">Avval botda roʻyxatdan oʻting.</p>
+        <DiagBanner diag={diag} />
       </div>
     );
   }
 
   // initData так и не появился (обычный браузер) или ошибка bootstrap — рендерим
-  // null, показывается серверный фолбэк-лендинг с кнопкой на бота.
-  if (!working) return null;
+  // diag banner поверх серверного фолбэка, чтобы прод-диагностика на Android
+  // WebView (release build, remote debug выключен) не требовала повторного
+  // деплоя. Убрать после того как root cause 2026-07-01 initData-missing
+  // задокументирован и починен.
+  if (!working) {
+    return <DiagBanner diag={diag} />;
+  }
 
   return (
     <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-baxt-bg">
@@ -122,6 +128,37 @@ export function AutoBootstrap() {
         B
       </div>
       <p className="text-sm text-baxt-muted">Загрузка · Yuklanmoqda</p>
+      <DiagBanner diag={diag} />
     </div>
   );
+}
+
+function DiagBanner({ diag }: { diag: Diag }) {
+  const line = formatDiag(diag);
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-[100] bg-baxt-navy/90 px-3 py-2 text-[11px] font-mono text-white break-all">
+      diag: {line}
+    </div>
+  );
+}
+
+function formatDiag(d: Diag): string {
+  switch (d.kind) {
+    case "mounting":
+      return "mounting";
+    case "polling":
+      return `polling tries=${d.tries} tg=${d.tgAvailable} initDataLen=${d.initDataLen}`;
+    case "fetching":
+      return `fetching initDataLen=${d.initDataLen} startParamLen=${d.startParamLen}`;
+    case "no_initdata_timeout":
+      return "no_initdata_timeout (15 polls, initData never arrived)";
+    case "fetch_error":
+      return `fetch_error msg=${d.msg}`;
+    case "bootstrap_error":
+      return `bootstrap_error status=${d.status} error=${d.error}`;
+    case "register_required":
+      return "register_required (user not in DB or on bot_* step)";
+    case "ok":
+      return "ok (redirecting)";
+  }
 }
