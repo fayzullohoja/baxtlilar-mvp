@@ -138,7 +138,6 @@ export function V2AnketaFamilyForm({ locale }: { locale: string }) {
               onChange={(e) =>
                 setYoungestAge(e.target.value.replace(/\D/g, ""))
               }
-              placeholder=""
             />
           </Field>
         </>
