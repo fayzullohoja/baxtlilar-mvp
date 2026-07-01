@@ -96,7 +96,10 @@ export function V2AnketaFamilyModelForm({
         />
       </Field>
 
-      <Field label={t('wifeWorkLabel')} required>
+      <Field
+        label={t(gender === 'f' ? 'husbandWorkLabel' : 'wifeWorkLabel')}
+        required
+      >
         <Select
           options={WIFE_WORK_VIEW}
           value={wifeWork}
