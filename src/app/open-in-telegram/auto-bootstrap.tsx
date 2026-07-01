@@ -113,11 +113,49 @@ export function AutoBootstrap() {
     );
   }
 
-  // initData так и не появился (обычный браузер) или ошибка bootstrap — рендерим
-  // diag banner поверх серверного фолбэка, чтобы прод-диагностика на Android
-  // WebView (release build, remote debug выключен) не требовала повторного
-  // деплоя. Убрать после того как root cause 2026-07-01 initData-missing
-  // задокументирован и починен.
+  // 2026-07-01 (Bug #A1): bootstrap_error чаще всего = bad_start_param
+  // (token single-use уже claimed OR TTL 10 мин истёк). Юзер видел статичный
+  // фолбэк «Откройте приложение через Telegram» без объяснения — думал что
+  // сайт сломан. Теперь показываем понятную инструкцию поверх фолбэка:
+  // вернись в бот и отправь /start заново. DiagBanner остаётся для дев-диагностики.
+  if (diag.kind === "bootstrap_error") {
+    const expiredToken =
+      diag.error === "bad_start_param" || diag.error === "missing_start_param";
+    return (
+      <>
+        <div className="absolute inset-x-0 top-0 z-50 px-5 pt-6 text-center">
+          <p className="text-sm font-medium text-baxt-navy">
+            {expiredToken
+              ? "Ссылка устарела. Вернитесь в бот и отправьте /start заново."
+              : "Не удалось войти. Вернитесь в бот и попробуйте снова."}
+          </p>
+          <p className="mt-1 text-sm text-baxt-muted">
+            {expiredToken
+              ? "Havola muddati oʻtdi. Botga qaytib /start yuboring."
+              : "Kirish amalga oshmadi. Botga qaytib qayta urinib koʻring."}
+          </p>
+        </div>
+        <DiagBanner diag={diag} />
+      </>
+    );
+  }
+
+  // fetch_error (сеть отвалилась) — короткое сообщение поверх фолбэка.
+  if (diag.kind === "fetch_error") {
+    return (
+      <>
+        <div className="absolute inset-x-0 top-0 z-50 px-5 pt-6 text-center">
+          <p className="text-sm font-medium text-baxt-navy">Нет связи. Проверьте интернет.</p>
+          <p className="mt-1 text-sm text-baxt-muted">Aloqa yoʻq. Internetni tekshiring.</p>
+        </div>
+        <DiagBanner diag={diag} />
+      </>
+    );
+  }
+
+  // initData так и не появился (обычный браузер) — серверный фолбэк-лендинг
+  // остаётся визуально; DiagBanner помогает диагностике на Android WebView
+  // (release build, remote debug выключен) без повторного деплоя.
   if (!working) {
     return <DiagBanner diag={diag} />;
   }
