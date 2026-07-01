@@ -414,7 +414,9 @@
       "after_mutual": "Oʻzaro qiziqishdan keyin",
       "by_consent_only": "Faqat mening roziligim bilan",
       "hidden": "Yashirilgan"
-    }
+    },
+    "religion_partner_match_question": "Sherik bilan dinning mos kelishi Siz uchun qanchalik muhim?",
+    "religion_partner_match_hint": "Majburiy emas. Agar bu Siz uchun asosiy emas boʻlsa, oʻtkazib yuborishingiz mumkin."
   },
   "Quiz": {
     "intro_title": "Moslik soʻrovi",

@@ -128,8 +128,9 @@ function ReportModal({
         onSent();
         return;
       }
-      // Translator: Use Errors.sendFailed from translations
-      const tErrors = useTranslations("Errors");
+      // tErrors is captured from the outer scope (already declared at the top
+      // of the component); calling useTranslations() inside a callback
+      // violates React's rules-of-hooks.
       setErr(tErrors("sendFailed"));
     });
   }
