@@ -92,7 +92,6 @@ export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
             value={region}
             onChange={(e) => setRegion(e.target.value)}
             maxLength={128}
-            placeholder=""
           />
         </Field>
       )}
@@ -105,7 +104,6 @@ export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
           value={district}
           onChange={(e) => setDistrict(e.target.value)}
           maxLength={128}
-          placeholder=""
         />
       </Field>
 
@@ -117,7 +115,6 @@ export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
           value={city}
           onChange={(e) => setCity(e.target.value)}
           maxLength={128}
-          placeholder=""
         />
       </Field>
 

@@ -87,7 +87,7 @@ export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
           maxLength={3}
           value={heightCm}
           onChange={(e) => setHeightCm(e.target.value.replace(/\D/g, ""))}
-          placeholder={t("heightLabel").match(/\d+/) ? "170" : "170"}
+          placeholder="170"
         />
       </Field>
 
