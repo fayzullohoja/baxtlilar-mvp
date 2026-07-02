@@ -25,10 +25,14 @@ export default async function AdminDashboard() {
     .maybeSingle();
 
   const [pending, photos, demo, reports] = await Promise.all([
+    // VF-1: считаем ОТКРЫТЫЕ кейсы, а не users.pending_review. Иначе счётчик
+    // (per-user) расходится с очередью (per-case): pending_review без кейса даёт
+    // фантомную работу — число есть, а в очереди пусто. Теперь оба читают
+    // verification_cases → заголовочное число == то, что реально открывается.
     sb
-      .from("users")
+      .from("verification_cases")
       .select("*", { count: "exact", head: true })
-      .eq("verification_status", "pending_review"),
+      .neq("state", "closed"),
     sb
       .from("profile_photos")
       .select("*", { count: "exact", head: true })
