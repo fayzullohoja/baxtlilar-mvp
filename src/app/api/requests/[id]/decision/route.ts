@@ -80,7 +80,23 @@ export async function POST(
     .select("id");
   if (accErr) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
   if (!acc?.length) return NextResponse.json({ ok: false, error: "not_pending" }, { status: 409 });
-  const chatId = await ensureChat(r.sender_id as string, r.receiver_id as string);
+
+  // MATCH-2: accept и создание чата не атомарны. Если ensureChat падает
+  // (transient/гонка), заявка уже 'accepted' → пара застревает без чата и без
+  // восстановления (повторный process_interest упрётся в already_sent).
+  // Откатываем accept обратно в pending, чтобы заявку можно было принять снова.
+  let chatId: string;
+  try {
+    chatId = await ensureChat(r.sender_id as string, r.receiver_id as string);
+  } catch {
+    await sb
+      .from("match_requests")
+      .update({ status: "pending" })
+      .eq("id", id)
+      .eq("status", "accepted");
+    return NextResponse.json({ ok: false, error: "chat_failed" }, { status: 500 });
+  }
+
   // F1: уведомление о принятии — через retry-safe outbox (worker сам найдёт
   // telegram_id и пропустит deleted), а не fire-and-forget notifyUser.
   await enqueueAndDeliver(r.sender_id as string, "interest_accepted");

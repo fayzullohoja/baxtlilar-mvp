@@ -350,6 +350,18 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
     return;
   }
 
+  // TGBOT-2: заблокированный юзер не должен мутировать свой онбординг через
+  // устаревшие consent-кнопки (lang:/pd:/bio:). Хендлеры гейтились только по
+  // onboarding_step — заблокированный mid-онбординга мог кликнуть bio:yes и
+  // продвинуть onboarding_step + verification_status. Короткое замыкание до
+  // диспетча. (pending_ban НЕ трогаем — Option A: невидимое предложение бана,
+  // юзер продолжает как active.)
+  if (user.lifecycle_state === "blocked") {
+    await answerCallbackQuery(cb.id);
+    await promptStep(chatId, user);
+    return;
+  }
+
   const data = cb.data ?? "";
   const [ns, val] = data.split(":");
 

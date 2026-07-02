@@ -43,6 +43,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (await areBlocked(user.id, receiver_id))
     return NextResponse.json({ ok: false, error: "blocked" }, { status: 403 });
 
+  // MATCH-1: получатель должен быть реально совместим (approved + published +
+  // взаимный пол + взаимный возрастной диапазон — те же предикаты, что в
+  // get_recommendations). Без этого интерес по произвольному UUID (из ссылки/
+  // старого фида/перебора) обходил всю matchability, вплоть до одного пола.
+  const { data: matchable } = await sb.rpc("is_matchable", {
+    p_sender: user.id,
+    p_receiver: receiver_id,
+  });
+  if (!matchable)
+    return NextResponse.json({ ok: false, error: "not_eligible" }, { status: 403 });
+
   // вся логика (встречный матч / дубль / отказ / квота / вставка) атомарно в одной транзакции
   const { data, error } = await sb.rpc("process_interest", {
     p_sender: user.id,
