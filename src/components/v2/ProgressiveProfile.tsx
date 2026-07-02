@@ -31,18 +31,13 @@ import {
   LIFE_VALUES_V3,
   labelOf,
 } from "@/lib/profile/options";
-import type { ProfileForMatch } from "@/lib/v2/match-story";
+import type { ProgressiveProfileView } from "@/lib/v2/progressive-view";
 
 type Props = {
-  profile: ProfileForMatch;
+  profile: ProgressiveProfileView;
   /** Locale для labelOf — по умолчанию ru */
   locale?: string;
 };
-
-/** Извлекаем первое слово — фамилия скрыта pre-mutual. */
-function firstWord(s: string): string {
-  return s.trim().split(/\s+/)[0] ?? s;
-}
 
 /**
  * Личностные черты из Big Five (O/C/E/A/ES) 0-100.
@@ -105,7 +100,7 @@ function chip(label: string, key: string | number) {
 
 export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
   const t = useTranslations("Profile");
-  const name = firstWord(profile.display_name);
+  const name = profile.first_name;
   const traits = personalityTraits(profile.vector);
   const valueLabels = profile.top_life_values.map((v: string) =>
     labelOf(LIFE_VALUES_V3, v, locale),

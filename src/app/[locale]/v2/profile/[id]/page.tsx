@@ -19,11 +19,11 @@ import { areBlocked } from "@/lib/safety/blocks";
 import { signedPhotoUrls } from "@/lib/uploads/storage";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { ProgressiveProfile } from "@/components/v2/ProgressiveProfile";
+import { toProgressiveView } from "@/lib/v2/progressive-view";
 import { RevealedProfile, type RevealedProfileData } from "@/components/v2/RevealedProfile";
 import { ProfileSafetyActions } from "@/components/v2/ProfileSafetyActions";
 import { BottomNav } from "@/components/bottom-nav";
 import { getUnreadTotal } from "@/lib/chat/list";
-import type { ProfileForMatch } from "@/lib/v2/match-story";
 
 export const dynamic = "force-dynamic";
 
@@ -115,29 +115,26 @@ export default async function V2ProfileDetailPage({
     );
   }
 
-  // Pre-mutual: anonymized
+  // Pre-mutual: anonymized. APP-1 — в клиентский компонент уходит ТОЛЬКО узкая
+  // проекция (имя без фамилии, город, образование, религия, ценности, bio,
+  // Big Five). Точная дата рождения, семейный статус, дети, предпочтения по
+  // партнёру НЕ передаются на клиент → не могут быть спарсены до взаимного
+  // интереса. См. toProgressiveView.
   const { data: q } = await sb
     .from("quiz_results")
     .select("vector")
     .eq("user_id", id)
     .maybeSingle();
 
-  const progressiveData: ProfileForMatch = {
+  const progressiveData = toProgressiveView({
     display_name: (p!.display_name as string) ?? "",
     city: (p!.city as string) ?? null,
-    top_life_values: (p!.top_life_values as string[]) ?? [],
-    birth_date: (p!.birth_date as string) ?? null,
-    marital_status: (p!.marital_status as string) ?? null,
-    has_children: (p!.has_children as string) ?? null,
-    future_children_plan: (p!.future_children_plan as string) ?? null,
-    religion: (p!.religion as string) ?? null,
     education: (p!.education as string) ?? null,
+    religion: (p!.religion as string) ?? null,
+    top_life_values: (p!.top_life_values as string[]) ?? [],
     bio: (p!.bio as string) ?? null,
-    partner_age_min: (p!.partner_age_min as number) ?? null,
-    partner_age_max: (p!.partner_age_max as number) ?? null,
-    geo_preference: (p!.geo_preference as string) ?? null,
     vector: (q?.vector as Record<string, number>) ?? {},
-  };
+  });
 
   return (
     <>

@@ -14,6 +14,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { ProgressiveProfile } from "@/components/v2/ProgressiveProfile";
+import { toProgressiveView } from "@/lib/v2/progressive-view";
 import { V2PublishButton } from "@/components/v2/PublishButton";
 import type { ProfileForMatch } from "@/lib/v2/match-story";
 
@@ -84,7 +85,7 @@ export default async function V2AnketaPreviewPage({
         }}
       >
         {profile ? (
-          <ProgressiveProfile profile={profile} locale={locale} />
+          <ProgressiveProfile profile={toProgressiveView(profile)} locale={locale} />
         ) : (
           <p
             style={{

@@ -7,6 +7,7 @@ import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { VerificationPlashka } from "@/components/v2/VerificationPlashka";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { ProgressiveProfile } from "@/components/v2/ProgressiveProfile";
+import { toProgressiveView } from "@/lib/v2/progressive-view";
 import { MatchStoryCard } from "@/components/v2/MatchStoryCard";
 import { InterestActions } from "@/components/v2/InterestActions";
 import { PausedResume } from "@/components/v2/PausedResume";
@@ -115,7 +116,9 @@ export default async function MainPage({ params }: { params: Promise<{ locale: s
           />
         }
       >
-        <ProgressiveProfile profile={match.candidate.profile} locale={locale} />
+        {/* APP-1: только узкая pre-mutual проекция уходит в клиент (без точного
+            DOB / статуса / детей / предпочтений). */}
+        <ProgressiveProfile profile={toProgressiveView(match.candidate.profile)} locale={locale} />
         <MatchStoryCard story={match.story} candidateName={candidateFirstName} />
         {/* Spacer чтобы footer-actions не накрывали bottom часть карточки */}
         <div style={{ height: "80px" }} />
