@@ -436,6 +436,16 @@ export function validateExtended(input: unknown): ExtendedProfile {
 /** Список hot-колонок которые пишутся напрямую в user_profiles. Всё остальное
  *  идёт в extended jsonb. Держать в синхроне с миграцией 20260629000000. */
 export const HOT_COLUMNS = new Set([
+  // OB-1 (2026-07-02): identity-поля basic — РЕАЛЬНЫЕ колонки user_profiles.
+  // Их отсутствие здесь заставляло splitHotCold класть их в cold → basic-роут
+  // писал их в extended jsonb, а колонки оставались NULL → publish навсегда
+  // profile_incomplete, gender-wording ломался. Держать в синхроне со схемой.
+  "display_name",
+  "gender",
+  "birth_date",
+  "citizenship",
+  "country_of_residence",
+  "region",
   "birth_country",
   "birth_region",
   "birth_district",

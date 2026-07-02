@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { loadActiveUserApi } from "@/lib/auth/active-guard";
+import { requirePermissionForRequest } from "@/lib/v2/with-permission";
 import { loadChatRow, getLiveState } from "@/lib/chat/live";
 
 export const runtime = "nodejs";
@@ -23,8 +23,13 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
-  const { user, res } = await loadActiveUserApi({ allowPaused: true });
-  if (res) return res;
+  // CHAT-1: SSE-стрим обязан гейтиться той же open_chat-проверкой, что и
+  // polling-фолбэк (messages GET). Иначе член чата, потерявший open_chat
+  // (shadow/de-verified/rejected), читает сообщения через SSE в обход гейта.
+  // open_chat выдаётся verified + paused (paused читает старые чаты).
+  const gate = await requirePermissionForRequest("open_chat");
+  if ("response" in gate) return gate.response;
+  const { user } = gate;
   const { id } = await params;
   const first = await loadChatRow(id, user.id);
   if (!first) return new Response("not found", { status: 404 });
