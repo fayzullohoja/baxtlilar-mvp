@@ -1,0 +1,969 @@
+{
+ "dimensions": [
+  {
+   "dimension": "appsec",
+   "findings": [
+    {
+     "id": "APP-1",
+     "title": "Pre-mutual profile page ships exact DOB, marital status, religion & full bio of any target into client payload",
+     "detail": "GET /[locale]/v2/profile/[id] builds progressiveData with the target's exact birth_date, marital_status, religion, has_children, future_children_plan, education and full bio, then passes it as a prop to the client component ProgressiveProfile (\"use client\"). Next.js serializes client-component props into the RSC/HTML payload, so all of that PII is visible in the browser network tab to ANY verified viewer BEFORE mutual consent — even though the UI only renders first name + city + coarse traits. The whole point of 'progressive disclosure' (exact age/DOB hidden until mutual match) is defeated at the wire level. At 10k users this is a bulk-scrapable PII oracle: iterate profile UUIDs (obtained from the feed/recommend endpoint) and harvest DOB+religion+marital status for every published, active user. In the RUz cultural/legal context (serious-dating app, sensitive personal data) exact DOB + religion + marital status of women is exactly the data the product promised to gate.",
+     "severity": "high",
+     "evidence": "src/app/[locale]/v2/profile/[id]/page.tsx:125-140 (progressiveData includes birth_date, marital_status, religion, bio, has_children); ProfileForMatch type src/lib/v2/match-story.ts:34-38; consumer src/components/v2/ProgressiveProfile.tsx:25 (\"use client\") renders only firstWord(display_name)/city/traits (lines 108-135) — DOB never displayed but is present in props",
+     "recommendation": "Do not pass raw birth_date/marital_status/religion/bio to the pre-mutual client component. On the server, derive only what the UI needs (e.g. an age BUCKET or nothing), strip bio/marital/religion from progressiveData, and send the reveal-level fields only on the isMutual=true branch. Treat every field placed on a client-component prop as publicly readable.",
+     "likelihood": "certain",
+     "effort": "S",
+     "blocks_launch": true
+    },
+    {
+     "id": "APP-2",
+     "title": "Any moderator can permanently deplatform any queued user (10-yr phone tombstone + SHA blacklist) with no second-person control",
+     "detail": "POST /api/admin/cases/[id]/blocking-reject writes a 10-YEAR phone tombstone plus a document-SHA blacklist (permanent, hard-to-reverse deplatform of the user's identity/phone) and is gated only by requireAdminApi() — i.e. ANY admin including a plain 'moderator'. The only scope control is the RPC's not_claimed_by_you check, but admin_claim_verification lets a moderator claim ANY open case by UUID (it only rejects already-claimed or closed cases). By contrast, a normal ban requires the F-119 two-person rule (propose + confirm by a DIFFERENT superadmin). So the MORE destructive, permanent action has WEAKER controls than the reversible one. The moderator-scope guard requireInQueueOrSuper()/checkInQueueOrSuperPage() exists in src/lib/admin/guard.ts but is applied ONLY on server page loads (load-case/load-client), never on the case-processing API routes (claim/draft/decision/blocking-reject). A rogue or compromised moderator account can silently tombstone real users' phones/passports for a decade.",
+     "severity": "high",
+     "evidence": "src/app/api/admin/cases/[id]/blocking-reject/route.ts:18 (requireAdminApi only, no role/scope check), :12 PHONE_TOMBSTONE_DAYS=365*10; claim RPC supabase/migrations/20260627100400_admin_case_rpcs.sql:24-58 (no queue/scope restriction, only closed/already-claimed); scope guard src/lib/admin/guard.ts:310-347 never called from any /api/admin/cases route (grep: draft/decision/claim/blocking-reject all => requireAdminApi only); compare ban two-person rule src/lib/admin/guard.ts:128-138 (superadmin-only)",
+     "recommendation": "Require session.role==='superadmin' for blocking-reject (as ban already is), or subject it to the same two-person confirmation. Apply requireInQueueOrSuper() on claim/draft/decision/blocking-reject API routes so moderator actions are scope-checked and logged to admin_scope_violations, not merely governed by claim.",
+     "likelihood": "possible",
+     "effort": "S",
+     "blocks_launch": false
+    },
+    {
+     "id": "APP-3",
+     "title": "No global rate limiting — bootstrap, profile-view and enumeration endpoints are unbounded at 10k users",
+     "detail": "Rate limiting is per-route and sparse (interest quota, admin/login throttle, chat 10/10s, feed/skip, account export cooldown). There is NO global limiter and NO limit on: POST /api/auth/bootstrap, GET /[locale]/v2/profile/[id], and most onboarding writes. On a single Railway service with no autoscale/replica config, this enables (a) PII scraping via APP-1 by looping profile UUIDs with no throttle, (b) bootstrap flood / initData-verify HMAC CPU burn to exhaust the one instance (healthcheck 120s, restart max 5 → sustained load can crash-loop), and (c) match_requests/report enumeration. The service-role pg pool is a shared choke point; an unauthenticated bootstrap flood forces an HMAC + DB round-trip per request.",
+     "severity": "medium",
+     "evidence": "VERIFIED FACT: rate limiting present only in a few routes + matching/quota.ts, NOT global; single Railway service NIXPACKS, healthcheck /api/health timeout 120s, restartPolicy ON_FAILURE max 5, no autoscale; src/app/api/auth/bootstrap/route.ts (no throttle before verifyInitData + DB select); src/app/[locale]/v2/profile/[id]/page.tsx (no per-viewer throttle)",
+     "recommendation": "Add an IP+session bucketed limiter (reuse the existing admin throttle / daily_request_quotas machinery) in proxy.ts or a shared wrapper for /api/auth/bootstrap and profile reads; add per-viewer profile-view quota. Consider Railway/edge WAF rate rules for /api/* as a floor.",
+     "likelihood": "likely",
+     "effort": "M",
+     "blocks_launch": false
+    },
+    {
+     "id": "APP-4",
+     "title": "Signed-URL TTL for private photos is long (1h) and URLs carry no viewer binding — leakage = replayable PII access",
+     "detail": "Private profile photos and documents are served via HMAC-signed URLs (/api/storage/o/{bucket}/{path}?exp&sig) verified only by signature+expiry, with NO viewer/ownership binding in the serving route (by design — this is a presigned-URL capability model, access control lives at issuance). Issuance is correctly gated (docs only in admin code; photos only post-mutual). The residual risk is TTL: photos use 3600s (1h). A signed photo URL that leaks (Referer header to a third-party site opened from bio/chat, browser history, TG WebView logs, shared screenshot of a URL, proxy logs) is replayable by anyone for a full hour with no session. Because object paths are predictable ({userId}/passport.jpg, {userId}/selfie.jpg, {userId}/photo_N), only the signature is the secret; a leaked valid URL fully exposes another user's private photo until exp.",
+     "severity": "medium",
+     "evidence": "src/app/api/storage/o/[bucket]/[...path]/route.ts:23 (verifyStorageSig only, no ownership check); src/lib/storage/fs-store.ts:41-47 verifyStorageSig (sig over bucket/path:exp, timing-safe); TTL src/lib/uploads/storage.ts:45 PHOTO_TTL_SEC=3600; predictable paths src/lib/uploads/storage.ts:31,97",
+     "recommendation": "Cut photo TTL to ~5 min (docs already 300s), add Referrer-Policy: no-referrer on pages that render signed URLs, and consider binding signatures to the requesting session id where feasible. Keep the presigned model but shrink the replay window.",
+     "likelihood": "possible",
+     "effort": "S",
+     "blocks_launch": false
+    },
+    {
+     "id": "APP-5",
+     "title": "Session/admin cookies never revoked server-side; role change or logout does not invalidate outstanding tokens",
+     "detail": "bx_session and bx_admin are stateless HMAC cookies with a self-contained iat/expiry (30d user, 8h admin). There is no server-side session store or revocation list: clearSession()/logout only deletes the cookie on the current client. A stolen bx_session cookie (e.g. via TG WebView leakage; note SameSite=None+Secure is required for the iframe, widening exposure) remains valid for up to 30 days regardless of user logout, ban, or delete — getCurrentUser only checks that the users row exists, and a deleted row would 401, but a merely blocked/paused user's stolen cookie still authenticates (blocked is handled per-route, not at session load). Admin: bx_admin re-reads role fresh from DB (good, so demotion takes effect), but a leaked admin cookie cannot be force-revoked before its 8h expiry short of DB deletion of the admin.",
+     "severity": "medium",
+     "evidence": "src/lib/auth/session.ts:8 MAX_AGE_SEC=30d, :56-59 clearSession only deletes cookie (no server invalidation); src/lib/auth/current-user.ts:36-42 (only checks row exists); SameSite=None+Secure src/lib/auth/session.ts:26-32; admin src/lib/admin/session.ts:6 MAX_AGE_SEC=8h, freshAdmin re-reads role src/lib/admin/guard.ts:14-17 (mitigates role but not revocation)",
+     "recommendation": "Add a per-user session_epoch / token_version column bumped on logout, ban, delete, and password/secret rotation; include it in the cookie payload and compare at getCurrentUser. This gives real logout and instant ban/kill for stolen cookies without a full session store.",
+     "likelihood": "possible",
+     "effort": "M",
+     "blocks_launch": false
+    },
+    {
+     "id": "APP-6",
+     "title": "SESSION_SECRET is a single shared secret for all HMAC domains; rotation is effectively impossible without mass logout + broken signed URLs",
+     "detail": "SESSION_SECRET signs bx_session, bx_admin, start-tokens, storage signed URLs, and the moderator scope entity-id hash. Domain separation is done via namespace prefixes (good), but there is a single key. Consequences at scale: (1) if SESSION_SECRET leaks, an attacker can forge session cookies for ANY user id (full account takeover of all 10k users) AND mint valid signed URLs for any private passport/selfie path (paths are predictable) AND forge start-tokens (though claim_start_token jti replay still limits reuse). (2) Rotating the secret invalidates every live session, every outstanding signed photo/doc URL, and (per memory note project_baxtlilar_db_session_secret) requires updating the DB GUC app.session_secret in lockstep because phone_hash derivation depends on it — making emergency rotation a coordinated, breaking operation rather than a safe flip. Additionally the real SUPABASE_SERVICE_ROLE_KEY still sits in .env.local on disk though the app migrated off Supabase to native pg — a stale but live high-privilege credential.",
+     "severity": "medium",
+     "evidence": "src/lib/auth/session.ts:18 sign(...SESSION_SECRET); src/lib/admin/session.ts:14; src/lib/telegram/start-token.ts:29; src/lib/storage/fs-store.ts:34; src/lib/admin/guard.ts:263 hashEntityId; env src/lib/env.ts SESSION_SECRET min(32); memory project_baxtlilar_db_session_secret (phone_hash derives via DB GUC from same secret); .env.local contains SUPABASE_SERVICE_ROLE_KEY though src/lib/supabase/admin.ts:15 now uses native pg pool",
+     "recommendation": "Split keys per purpose (session vs storage-signing vs start-token) so one can rotate without breaking the others, and support a key-list (current+previous) for graceful rotation. Document/automate the SESSION_SECRET↔DB GUC co-rotation. Remove the unused SUPABASE_SERVICE_ROLE_KEY from all environments and rotate it in Supabase since it is no longer needed.",
+     "likelihood": "unlikely",
+     "effort": "M",
+     "blocks_launch": false
+    },
+    {
+     "id": "APP-7",
+     "title": "CSP allows script-src 'unsafe-inline' (nonce deferred) — no current XSS sink, but one bio/message HTML sink away from stored XSS",
+     "detail": "CSP is static with script-src 'unsafe-inline' (F-116 deferred; nonce not applied). I verified the only dangerouslySetInnerHTML sinks render static i18n strings (t('req_1')..t('req_4')), not user content, and no other HTML sink renders bio/display_name/messages — so there is NO exploitable XSS today. However, with 'unsafe-inline' active, the first developer who renders any user-controlled field as HTML (bio, display_name, chat body) creates immediate stored XSS. httpOnly protects the cookie value, but injected script can still act AS the victim (send interests, read chats, exfiltrate the start_param from window.location during bootstrap, scrape the pre-mutual PII from APP-1 at scale). This is a latent, one-commit-away critical that the missing CSP hardening fails to contain.",
+     "severity": "low",
+     "evidence": "VERIFIED FACT: CSP static, script-src 'unsafe-inline', nonce not applied (F-116 deferred); grep dangerouslySetInnerHTML → only src/app/[locale]/v2/verify/selfie/page.tsx:267 and doc/page.tsx:243, both rendering static t('req_*') (source line 49: items={[t('req_1')..t('req_4')]}); no user-content HTML sink found",
+     "recommendation": "Apply the nonce-based CSP (finish F-116) to remove 'unsafe-inline' before launch, or at minimum add a lint/CI guard forbidding dangerouslySetInnerHTML on any user-derived value. Keeps the latent sink from ever becoming exploitable.",
+     "likelihood": "unlikely",
+     "effort": "M",
+     "blocks_launch": false
+    },
+    {
+     "id": "APP-8",
+     "title": "Cron and Telegram-webhook secrets compared with non-constant-time !== (minor timing side-channel)",
+     "detail": "The webhook and cron authentication compare the provided secret against the expected value with plain !== (early-exit byte compare), unlike the session/storage paths which correctly use timingSafeEqual/safeEqual. These are high-entropy secrets so a remote timing attack over the network is impractical, and both endpoints are otherwise correctly fail-closed (missing secret → 401/503). Flagged for consistency/defense-in-depth: an attacker who could measure precise timing against the webhook (which is unauthenticated-reachable and processes every request before the check) could in theory attempt secret recovery. Low real risk but trivially fixable and inconsistent with the rest of the codebase's discipline.",
+     "severity": "low",
+     "evidence": "src/app/api/telegram/webhook/route.ts:21 (got !== expected); src/app/api/cron/tg-outbox/route.ts:31 (provided !== cronSecret); contrast safeEqual src/lib/crypto/safe-equal.ts and verifyStorageSig timingSafeEqual",
+     "recommendation": "Use the existing safeEqual() helper for the webhook secret-token and cron-secret comparisons.",
+     "likelihood": "unlikely",
+     "effort": "S",
+     "blocks_launch": false
+    },
+    {
+     "id": "APP-9",
+     "title": "Report dedup and multiple safety paths are fail-open, enabling report-flood / griefing at scale",
+     "detail": "POST /api/report intentionally fails OPEN on the dedup query (comment says 'Fail-open: if dedup query fails, still allow') and there is no per-reporter global rate limit on report submission. Combined with the absence of global rate limiting (APP-3), a single verified account can mass-submit reports (each also auto-blocks the target) to inflate moderation-queue signal or harass targets. Because moderators may prioritize/ban by report count, a coordinated flood from a few accounts can weaponize the moderation pipeline against legitimate users at 10k scale. The per-pair open-report dedup limits duplicate-counting but not distinct-target spraying.",
+     "severity": "low",
+     "evidence": "src/app/api/report/route.ts:43-51 (fail-open dedup), no rate limit on report POST; blockUser called before dedup (:37); moderation prioritizes by report count per src/app/api/report/route.ts:41 comment",
+     "recommendation": "Add a per-reporter rate limit (e.g. N reports / hour via daily_request_quotas) and cap distinct-target reports per window; keep dedup fail-open but bound total volume.",
+     "likelihood": "possible",
+     "effort": "S",
+     "blocks_launch": false
+    }
+   ]
+  },
+  {
+   "dimension": "infra_security",
+   "findings": [
+    {
+     "id": "INFRA-01",
+     "title": "Passport + selfie PII on single unreplicated Railway Volume with no backup/DR — crown-jewel data loss risk",
+     "detail": "supabaseAdmin().storage is wired to createStorage() from src/lib/storage/fs-store.ts (a Railway Volume filesystem store), not object storage. All passports and selfies are written to STORAGE_DIR (prod=/data per docs/ARCHITECTURE.md L44) on the single Railway service instance. There is no volume/backup/replica/snapshot config in railway.json and no backup or DR posture documented anywhere in docs/. A Railway Volume is a single-instance, unreplicated disk; if the volume is lost, corrupted, or the service is recreated, every passport+selfie is gone with no recovery path. For a KYC dating app this is the single highest-value asset and the most regulatorily damaging loss. Postgres (native pg on same Railway) has the same undocumented-backup exposure. At 10k users this is thousands of government-ID images with no verified recoverability.",
+     "severity": "critical",
+     "evidence": "src/lib/supabase/admin.ts:4,16 (storage: createStorage()); src/lib/storage/fs-store.ts:1-14; src/lib/uploads/storage.ts:32-34; docs/ARCHITECTURE.md:41-44 (STORAGE_DIR=/data Railway Volume); railway.json (no volume/backup config); grep for backup|snapshot|restore in docs/ returns nothing",
+     "recommendation": "Before launch: (1) confirm /data is a persistent mounted Railway Volume, not ephemeral container FS (if ephemeral, redeploys already wipe PII); (2) enable Railway Postgres automated backups + verify a restore; (3) set up scheduled off-site copies of the document volume (encrypted) or migrate document storage to a durable object store (S3/R2) with versioning; (4) document RPO/RTO. Treat as launch-blocking.",
+     "blocks_launch": true,
+     "likelihood": "likely",
+     "effort": "L"
+    },
+    {
+     "id": "INFRA-02",
+     "title": "No monitoring, alerting, or incident visibility — a breach or outage is invisible",
+     "detail": "There is no Sentry, Datadog, OpenTelemetry, Logtail, or any error/alerting integration in package.json or the codebase. Observability is limited to console.error/console.warn lines that go only to Railway's ephemeral stdout. There is no way to detect an ongoing outage, a spike in 401/403/500s, repeated admin-login failures, a volume-fill event, or exfiltration of signed URLs. For a service holding passport+selfie PII, the inability to detect and respond to a security incident is itself a compliance and safety failure. At 10k users, silent degradation (e.g. failed push delivery, DB errors, upload floods) will only surface via user complaints.",
+     "severity": "high",
+     "evidence": "grep for sentry|datadog|opentelemetry|logtail|alerting|pagerduty in package.json and src/ returns nothing; error handling throughout is console.error only (e.g. src/app/api/health/route.ts:16, src/lib/admin/guard.ts:112, src/app/api/telegram/webhook/route.ts:35)",
+     "recommendation": "Add error tracking (Sentry) + uptime/health alerting (cron or Railway health hook to a pager/Telegram ops channel) + alerts on admin-login-throttle events, DB connection failures, and volume disk usage. Minimum: one alert channel wired to /api/health failing and to unhandled errors before launch.",
+     "blocks_launch": true,
+     "likelihood": "certain",
+     "effort": "M"
+    },
+    {
+     "id": "INFRA-03",
+     "title": "No global rate limiting on a single non-autoscaling instance — trivial DoS via bot /start, API, or upload floods",
+     "detail": "Rate limiting is per-route and sparse (admin/login, account, interest, feed/skip, chat, matching quota). There is no global limiter and no Redis/edge limiter. The Telegram webhook fans out to bot handlers with no per-user /start cooldown (grep for rate-limit/throttle/flood in src/lib/telegram returns nothing), so an attacker who obtains the webhook secret — or simply floods legitimate /start via many chats — drives unbounded DB writes. Upload endpoints (onboarding/document, onboarding/selfie, profile/photo) buffer up to 12MB per request fully into memory via await file.arrayBuffer() before any size check, with no per-user upload rate limit. This runs on a single Railway instance with no visible autoscale/replica config and restartPolicyMaxRetries:5 — a sustained flood exhausts memory/CPU, the instance crashes, and after 5 restarts it stays down. Availability of the whole platform hinges on one process.",
+     "severity": "high",
+     "evidence": "VERIFIED FACT: rate limiting NOT global; railway.json (no replica/autoscale, restartPolicyMaxRetries:5); src/app/api/onboarding/document/route.ts:22 and selfie/route.ts:25 (await file.arrayBuffer() before size check); src/lib/uploads/storage.ts:26,92 (MAX_BYTES check happens after full buffer in memory); grep rate-limit/throttle in src/lib/telegram → none",
+     "recommendation": "Add a global IP/user rate limiter at the edge (Railway/Cloudflare WAF rate rules) or middleware-level token bucket; add a per-user /start cooldown in bot handlers; enforce a request body-size cap (reject > ~12MB by Content-Length before buffering) and per-user upload throttle; put the app behind Cloudflare (or Railway's edge protections) for L3/L4 DDoS absorption. Consider raising restart retries / adding a replica.",
+     "blocks_launch": true,
+     "likelihood": "likely",
+     "effort": "M"
+    },
+    {
+     "id": "INFRA-04",
+     "title": "SESSION_SECRET is a single high-blast-radius key with no rotation-safe path",
+     "detail": "One env secret, SESSION_SECRET, signs everything: bx_session user cookies, bx_admin cookies, storage signed-URL HMACs, and the moderator entity-id HMAC (hashEntityId). Per operator memory, the DB phone_hash is also derived from the same secret via the app.session_secret Postgres GUC. Rotating SESSION_SECRET therefore simultaneously (a) invalidates all user and admin sessions, (b) breaks every outstanding storage signed URL, and (c) breaks phone-hash lookups unless the DB GUC is updated in the same coordinated step — otherwise phone dedup/blacklist checks silently fail. There is no key-id/versioning scheme to rotate gracefully. If this secret ever leaks, an attacker can forge admin sessions and mint signed URLs to any passport/selfie by path.",
+     "severity": "high",
+     "evidence": "src/lib/admin/session.ts:14 (sign uses SESSION_SECRET); src/lib/storage/fs-store.ts:33 (sigFor uses SESSION_SECRET); src/lib/admin/guard.ts:263 (hashEntityId uses SESSION_SECRET); bx_session HMAC uses same secret (VERIFIED FACT); operator memory: phone_hash derives via app.session_secret GUC, both sides must update together",
+     "recommendation": "Introduce key versioning (accept old+new during rotation) at least for session/storage signing; separate the storage-signing secret from the session secret so a leaked signed-URL secret cannot forge admin sessions; document the DB-GUC coordination step in a runbook; store secrets in Railway with rotation procedure. Not day-one blocking but must be addressed before first rotation event.",
+     "blocks_launch": false,
+     "likelihood": "possible",
+     "effort": "L"
+    },
+    {
+     "id": "INFRA-05",
+     "title": "Admin panel protected only by password + throttle — no 2FA, no IP allowlist, no captcha",
+     "detail": "/admin is gated solely by a login form (bx_admin HMAC cookie). Brute-force defense is admin_login_attempts throttling at 5 failures / 15 min per IP and per login — but there is no MFA/2FA, no captcha, and no network-level restriction (grep for captcha/allowlist/IP-restrict in src/lib/admin and proxy.ts returns nothing). The throttle is per trusted-IP, so a distributed attacker rotating IPs faces only the per-login 5/15min limit against a single known admin username — slow but not infeasible over time, and offers no protection if an admin password is phished/reused. This panel can approve/reject verifications and view every user's passport+selfie; it is the highest-value target on the platform.",
+     "severity": "high",
+     "evidence": "src/app/api/admin/login/route.ts:25 (throttle by ip and loginKey, MAX_FAILS=5/15min per src/lib/admin/throttle.ts:4-5); no captcha/2FA/IP-allowlist anywhere (grep returns nothing); src/proxy.ts:64-70 exempts /api/admin/* from session gate (handled in-route), no network restriction",
+     "recommendation": "Add TOTP 2FA for admin login (superadmin mandatory), restrict /admin to an operator IP allowlist or VPN if feasible, and add a captcha after N failures. Given the panel exposes government-ID PII, at minimum ship 2FA before opening to 10k users.",
+     "blocks_launch": true,
+     "likelihood": "possible",
+     "effort": "M"
+    },
+    {
+     "id": "INFRA-06",
+     "title": "GitHub Actions push-delivery cron is unreliable (failing on free tier) — silent notification loss, single point of failure",
+     "detail": "tg_outbox drain relies on an external cron (.github/workflows/cron-tg-outbox.yml, every 5 min) hitting /api/cron/tg-outbox. Per handoff this GitHub Actions cron was failing on the free tier. GitHub scheduled workflows are best-effort and frequently delayed or skipped under load, and the whole push-notification pipeline (match, interest, verification-approved, new-message) depends on this one 5-minute external trigger with no fallback and no alert when it stops. Combined with no monitoring (INFRA-02), outbox backlog and missed user notifications are invisible. The hybrid sync-attempt-on-enqueue mitigates partly, but any transient failure leaves events stuck until the next successful cron.",
+     "severity": "medium",
+     "evidence": ".github/workflows/cron-tg-outbox.yml:9-14 (schedule */5, GitHub Actions); handoff: GitHub Actions cron failing on free tier; src/app/api/cron/tg-outbox/route.ts:34-36 (single drain path); no alerting on cron failure",
+     "recommendation": "Move the cron to Railway's native scheduled jobs (in-platform, more reliable) or a paid uptime cron (e.g. cron-job.org) with a dead-man's-switch alert if the endpoint isn't hit within N minutes. Add outbox-backlog-size alerting.",
+     "blocks_launch": false,
+     "likelihood": "likely",
+     "effort": "S"
+    },
+    {
+     "id": "INFRA-07",
+     "title": "RLS disabled on all 30 tables — service-role compromise or one missing app guard exposes the entire dataset",
+     "detail": "RLS is disabled on every public table; the only security boundary is app-layer guards (requireActiveUser/withPermission/RPC SECURITY DEFINER). This is a deliberate architecture, but it removes defense-in-depth: any code path that reaches supabaseAdmin() without a correct guard, any SQL-injection in a hand-built query, or any leak of DATABASE_URL/service credentials yields unrestricted read/write to all passport metadata, phone hashes, chats, and PII — the DB itself enforces nothing. 92 files use the admin client and only 34 use guards, so guard coverage is the single thing standing between a bug and full data exposure. At 10k users the blast radius of one un-guarded route is the whole database.",
+     "severity": "medium",
+     "evidence": "VERIFIED FACT: RLS disabled on all 30 tables, supabaseAdmin service-role key in 92 files, 34 files use guards; src/lib/supabase/admin.ts:19-22 (single shared unrestricted client)",
+     "recommendation": "Not necessarily a launch blocker given the deliberate design, but add compensating controls: a lint/CI check that every /api route imports a guard, periodic manual audit of the 92-minus-34 gap, parameterized-query enforcement, and least-privilege DB roles for read-only paths. Longer term, consider enabling RLS as defense-in-depth on the most sensitive tables (users, user_documents).",
+     "blocks_launch": false,
+     "likelihood": "possible",
+     "effort": "L"
+    },
+    {
+     "id": "INFRA-08",
+     "title": "CSP allows script-src 'unsafe-inline' (nonce gap, F-116 deferred)",
+     "detail": "The Content-Security-Policy is static with script-src 'self' 'unsafe-inline' https://telegram.org; the nonce-based hardening (F-116) is explicitly deferred (next.config.ts:14-16). unsafe-inline defeats CSP's primary XSS mitigation for inline scripts. React auto-escaping and the Telegram-locked frame-ancestors reduce practical risk, but any reflected/stored XSS (e.g. via an un-sanitized profile field rendered as HTML) would execute freely. For a PII app this is a meaningful residual once user-generated content is displayed widely.",
+     "severity": "medium",
+     "evidence": "next.config.ts:14-16 (F-116 deferred comment), :26 (script-src 'unsafe-inline'); VERIFIED FACT: CSP static, nonce not applied",
+     "recommendation": "Implement nonce-based CSP via middleware (the deferred F-116) and drop 'unsafe-inline' for script-src; verify in Telegram WebView. Medium priority — schedule shortly after launch, not a hard blocker.",
+     "blocks_launch": false,
+     "likelihood": "possible",
+     "effort": "M"
+    },
+    {
+     "id": "INFRA-09",
+     "title": "Cron and webhook secret comparisons are not timing-safe (inconsistent with rest of codebase)",
+     "detail": "The Telegram webhook (X-Telegram-Bot-Api-Secret-Token) and both cron endpoints (X-Cron-Secret) compare the provided value against the expected secret with plain !== (early-exit string compare), while session and storage-URL verification correctly use crypto.timingSafeEqual/safeEqual. This is an inconsistency; in practice a remote timing attack against a >=16-char high-entropy random secret over the network is not realistically exploitable (jitter dominates), so real risk is low — but it is a cheap fix and closes the discrepancy.",
+     "severity": "low",
+     "evidence": "src/app/api/telegram/webhook/route.ts:21 (got !== expected); src/app/api/cron/tg-outbox/route.ts:31 and housekeeping/route.ts:26 (provided !== cronSecret); contrast src/lib/crypto/safe-equal.ts and src/lib/storage/fs-store.ts:44 which use timingSafeEqual",
+     "recommendation": "Use a constant-time compare (safeEqual) for the webhook and cron secret checks for consistency. Low priority.",
+     "blocks_launch": false,
+     "likelihood": "unlikely",
+     "effort": "S"
+    },
+    {
+     "id": "INFRA-10",
+     "title": "bx_admin cookie is SameSite=lax and only Secure in production, with 8h non-revocable lifetime",
+     "detail": "The admin session cookie (src/lib/admin/session.ts) is httpOnly (good) but SameSite=lax and secure only when NODE_ENV==='production'. Role is re-fetched from DB on every check (good — a deleted admin loses access), but the session token itself is a self-contained signed cookie with no server-side session store, so it cannot be individually revoked before its 8h expiry (only global SESSION_SECRET rotation, which has the blast radius in INFRA-04). SameSite=lax leaves a narrow top-level-navigation CSRF surface, though the proxy.ts Origin check on mutations is the real defense. Lower severity because admin actions are additionally Origin-gated and role-checked.",
+     "severity": "low",
+     "evidence": "src/lib/admin/session.ts:20-26 (sameSite lax, secure only in prod, maxAge 8h, stateless cookie); src/lib/admin/guard.ts:14-17,20-26 (role re-fetched from DB — mitigates stale role but not token revocation)",
+     "recommendation": "Set SameSite=strict for the admin cookie (admin panel is not embedded in Telegram, unlike bx_session), and consider a server-side admin session table to allow individual revocation on suspected compromise. Low priority.",
+     "blocks_launch": false,
+     "likelihood": "unlikely",
+     "effort": "S"
+    },
+    {
+     "id": "INFRA-11",
+     "title": "Checked-safe: storage serving route defends path traversal and enforces signed-URL access",
+     "detail": "The /api/storage/o/[bucket]/[...path] route is NOT vulnerable to path traversal: fs-store.resolveSafe regex-gates the bucket ([a-z0-9-]+) and rejects any resolved path that escapes the bucket base via startsWith(base+sep), and verifyStorageSig checks the HMAC signature and TTL before any fs.readFile. Signed-URL TTLs are short and reasonable (profile photos 3600s, documents 300s). Files are served with Cache-Control: private. This is included as a positive verification of an area the task asked about, not a defect.",
+     "severity": "low",
+     "evidence": "src/app/api/storage/o/[bucket]/[...path]/route.ts:23 (verifyStorageSig before read); src/lib/storage/fs-store.ts:23-29 (resolveSafe bucket regex + traversal guard), :39-45 (timingSafeEqual sig check with exp), :45-52 (TTL 300s docs / 3600s photos), route L31-33 (private cache)",
+     "recommendation": "No action required. Keep TTLs short; consider dropping document TTL below 300s if operationally feasible. Documented here as verified-safe.",
+     "blocks_launch": false,
+     "likelihood": "unlikely",
+     "effort": "S"
+    }
+   ]
+  },
+  {
+   "dimension": "db_scale",
+   "findings": [
+    {
+     "id": "DBS-01",
+     "title": "SSE chat stream polls DB every 1.5s per open chat, draining a 10-connection pool",
+     "detail": "src/app/api/chats/[id]/stream/route.ts holds an open SSE connection for up to 45s (MAX_MS=45000) and inside the loop polls the DB every TICK_MS=1500ms. Each tick calls loadChatRow (1 query on chats + areBlocked lookup) and getLiveState (chat_messages window query + read_through query) = ~3 round-trips. So a single active chat viewer generates ~2 queries/sec sustained for the whole session. All of this goes through one process-wide pg Pool with max=Number(process.env.PG_POOL_MAX ?? 10) (src/lib/db/pool.ts:27). With even a few hundred concurrent open chats across a single Railway instance (no replica config in railway.json), demand vastly exceeds 10 connections; requests queue behind connectionTimeoutMillis=10000 and then error. This is the first thing to break under realistic concurrency at 10k users — it degrades not just chat but every DB-backed route sharing the pool.",
+     "severity": "critical",
+     "evidence": "src/app/api/chats/[id]/stream/route.ts:9-11 (TICK_MS=1500, MAX_MS=45000, maxDuration=60), :59-82 loop; src/lib/chat/live.ts:31-42,50-87 (3 queries/tick); src/lib/db/pool.ts:27 max=10; railway.json (single service, no replicas)",
+     "recommendation": "Move chat live updates off DB-polling: use Postgres LISTEN/NOTIFY or a Redis pub/sub fanout so each SSE connection consumes 0 steady-state pool connections, OR raise TICK_MS and cap concurrent SSE per instance. Independently, put PgBouncer (Supabase pooler / Railway PgBouncer) in front so pg pool max can be small per-process while total server-side connections are bounded, and size PG_POOL_MAX explicitly (currently defaulting to 10).",
+     "likelihood": "certain",
+     "effort": "L",
+     "blocks_launch": true
+    },
+    {
+     "id": "DBS-02",
+     "title": "No connection pooler (PgBouncer) — direct pg connections risk exhaustion under concurrency/restarts",
+     "detail": "DATABASE_URL points at postgres-8jav.railway.internal:5432 (direct Postgres port, not a 6543 transaction-pooler). Connections are managed only by the in-process pg Pool (max default 10, idleTimeoutMillis 30s). There is no PgBouncer/transaction pooler between the app and Postgres. On a single Railway instance this caps at ~10 backends, but any horizontal scaling, a crash-loop restart (restartPolicyMaxRetries=5), or the cron endpoints running concurrently with web traffic all multiply real backends against a small Postgres max_connections. Combined with DBS-01's polling, the effective ceiling is very low and there is no shared pooler to absorb spikes.",
+     "severity": "high",
+     "evidence": ".env.access:34 DATABASE_URL=...railway.internal:5432 (direct, no pooler); src/lib/db/pool.ts:20-31 (single Pool, max 10); railway.json restartPolicyMaxRetries=5",
+     "recommendation": "Introduce a transaction-mode pooler (PgBouncer / Supabase pooler on port 6543) and point DATABASE_URL at it; keep pg Pool max modest per instance. Verify Postgres max_connections headroom on the Railway plan and document the pool-per-instance × instances math.",
+     "likelihood": "likely",
+     "effort": "M",
+     "blocks_launch": true
+    },
+    {
+     "id": "DBS-03",
+     "title": "get_recommendations uses non-sargable age filter and full-scans users on every feed / Match-of-the-Day load",
+     "detail": "The get_recommendations RPC filters candidates with date_part('year', age(cp.birth_date))::int BETWEEN ... on both sides. Wrapping birth_date in age()/date_part makes the predicate non-sargable, so the partial index user_profiles_match_basic_idx (status, gender, birth_date) cannot be used for the age range. The query does users c JOIN user_profiles cp CROSS JOIN v, scanning all active+approved+published profiles, then evaluates 4 correlated EXISTS/NOT EXISTS subqueries (photos, match_views, blocks, match_requests) per surviving row, plus a correlated scalar subquery for main_photo_path. At 10k users this is a full candidate-set scan per call. Match-of-the-Day (src/lib/v2/match-of-the-day.ts:77) calls it for every viewer on the home screen, and recommend.ts requests p_limit=100 — so it's a hot path executed on nearly every session.",
+     "severity": "high",
+     "evidence": "supabase/migrations/20260630000000_recommendations_v3_top_life_values.sql:43-44 (date_part(age()) BETWEEN), :33-60 (cross join + 4 NOT EXISTS + scalar subquery); supabase/migrations/20260629000000_anketa_v3_hybrid.sql:147-149 (index on raw birth_date, unusable for age()); src/lib/matching/recommend.ts:37-40 (p_limit=100); src/lib/v2/match-of-the-day.ts:77",
+     "recommendation": "Rewrite the age predicate to be sargable: compare birth_date against date bounds computed from partner_age_min/max (e.g. cp.birth_date BETWEEN now()-max*interval AND now()-min*interval) so user_profiles_match_basic_idx can be used. Consider a covering composite index on (status, gender, looking_for_gender, birth_date) WHERE status='published'. Measure with EXPLAIN ANALYZE against a 10k-row seed before launch.",
+     "likelihood": "likely",
+     "effort": "M",
+     "blocks_launch": false
+    },
+    {
+     "id": "DBS-04",
+     "title": "get_recommendations has no ORDER BY before LIMIT — top matches silently dropped, scoring is on an arbitrary subset",
+     "detail": "The RPC applies LIMIT p_limit (100) with no ORDER BY. Postgres returns an arbitrary 100 rows (physical/scan order). Ranking then happens in JS (score.ts) over only those 100 rows (recommend.ts:44-65, then slice to `limit`). At small user counts every eligible candidate fits under 100 so this is invisible; past ~100 eligible candidates the true best match for a viewer may never be returned to the scorer, so Match-of-the-Day quality silently degrades exactly as the user base grows. This is a scale-triggered correctness/quality regression, not just perf.",
+     "severity": "medium",
+     "evidence": "supabase/migrations/20260630000000_recommendations_v3_top_life_values.sql:61 (LIMIT with no ORDER BY); src/lib/matching/recommend.ts:37-40 (p_limit=100), :46-65 (JS scoring over returned rows only)",
+     "recommendation": "Either push scoring into SQL with an ORDER BY so LIMIT keeps the best candidates, or raise/remove the SQL LIMIT for viewers with many eligibles and cap after scoring. At minimum add a deterministic ORDER BY (e.g. recently-active) so the truncation is intentional, and document that JS scoring only sees the first N.",
+     "likelihood": "likely",
+     "effort": "M",
+     "blocks_launch": false
+    },
+    {
+     "id": "DBS-05",
+     "title": "No retention/pruning on append-only tables — chat_messages, user_state_transitions, admin_audit_log, tg_outbox, case_events grow unbounded",
+     "detail": "The only garbage collection in the system is gc_start_token_uses (start tokens older than 1h) and admin_sla_reclaim_stale_cases (housekeeping cron). There is no retention job for chat_messages, user_state_transitions, admin_audit_log, tg_outbox (sent rows are never deleted), match_views, or case_events. All grow monotonically. At 10k users chat_messages and user_state_transitions are the fastest-growing (every message, every lifecycle/field change writes a row). tg_outbox in particular is queried on every drain with a partial-index scan; unbounded sent rows bloat the table and its indexes. Over months this inflates table/index size, degrades the hot chat_messages(chat_id, created_at) scans, and grows backup/restore time — a slow-burn that surfaces as gradual latency creep well before any single query 'breaks'.",
+     "severity": "high",
+     "evidence": "supabase/migrations/20260620920000_split_window_and_jti_fixes.sql:226-236 (only gc_start_token_uses); src/app/api/cron/housekeeping/route.ts:33-52 (only gc + sla reclaim); tg_outbox never deletes sent rows (src/lib/v2/tg-outbox-worker.ts:152-157 only sets sent_at); no DELETE for chat_messages/user_state_transitions/admin_audit_log/case_events in any migration",
+     "recommendation": "Add retention tasks to the housekeeping cron: delete/archive tg_outbox rows with sent_at older than N days; define a retention or partitioning strategy for chat_messages and user_state_transitions; time-box admin_audit_log/case_events per legal requirements. Consider monthly partitioning for chat_messages. Schedule periodic VACUUM/ANALYZE.",
+     "likelihood": "certain",
+     "effort": "M",
+     "blocks_launch": false
+    },
+    {
+     "id": "DBS-06",
+     "title": "tg-outbox drains 50 events serially with a blocking Telegram HTTP call each — backlog risk during match/message bursts",
+     "detail": "processOutboxBatch(50) loops rows and awaits processOutboxEvent sequentially; each event does a users lookup, a Telegram sendMessage HTTP POST (network, ~200-500ms, no timeout), and an update. So one drain of 50 events takes ~10-25s wall-clock. Recommended cron interval is 30-60s (route comment). Every new chat message with no prior unread enqueues an outbox row (messages/route.ts:96-99), plus mutual_match/new_interest/interest_accepted events. At 10k users a burst of messaging can enqueue far more than 50 events per minute, so the queue grows faster than a single-threaded 50/tick drain clears it — notifications lag by minutes and the backlog compounds. The GitHub Actions cron was already noted failing on free tier, which would let the queue grow without bound.",
+     "severity": "high",
+     "evidence": "src/lib/v2/tg-outbox-worker.ts:209-230 (serial await loop, limit 50), :117-134 (fetch with no timeout); src/app/api/cron/tg-outbox/route.ts:20,35 (limit 50, recommended 30-60s); src/app/api/chats/[id]/messages/route.ts:96-99 (enqueue per first-in-series message)",
+     "recommendation": "Parallelize delivery within a batch (bounded concurrency, e.g. Promise.all over chunks) and/or raise the per-tick limit and cron frequency; add a fetch timeout to sendMessage so one slow call can't stall the batch. Ensure the cron is on a reliable scheduler (Railway scheduled job, not the failing GitHub Actions free tier) and monitor queue depth (count of sent_at IS NULL).",
+     "likelihood": "likely",
+     "effort": "M",
+     "blocks_launch": false
+    },
+    {
+     "id": "DBS-07",
+     "title": "Missing index for hot chat_messages read/unread/rate-limit queries",
+     "detail": "The only chat_messages index is chat_messages_chat_idx (chat_id, created_at). Several hot queries filter additionally by sender_id and read_at: getLiveState read_through query (chat_id, sender_id, read_at IS NOT NULL ORDER BY created_at DESC), the messages route rate-limit count (chat_id, sender_id, created_at >= since), the unread debounce count (chat_id, sender_id, read_at IS NULL), and the get_chat_list / get_unread_total unread counts (sender_id <> me AND read_at IS NULL). These run per message send and on every SSE tick / chat-list load. With only (chat_id, created_at), Postgres index-scans by chat then filters sender_id/read_at in-heap — cheap per-chat today, but every send and every 1.5s SSE tick pays it, multiplying the DBS-01 load.",
+     "severity": "medium",
+     "evidence": "supabase/migrations/20260531000000_init_schema.sql:192 (only chat_idx); src/lib/chat/live.ts:68-76 (read_through by sender_id+read_at); src/app/api/chats/[id]/messages/route.ts:65-80 (two count queries by sender_id/read_at); supabase/migrations/20260602150000_chat_list_block_filter.sql:29-33 (unread count by sender_id+read_at)",
+     "recommendation": "Add a partial index for unread scans, e.g. chat_messages(chat_id, sender_id) WHERE read_at IS NULL, and consider (chat_id, sender_id, created_at) for the rate-limit/read_through paths. Validate with EXPLAIN on a seeded dataset.",
+     "likelihood": "likely",
+     "effort": "S",
+     "blocks_launch": false
+    },
+    {
+     "id": "DBS-08",
+     "title": "Global statement_timeout=10s can kill the recommendation scan under load, surfacing as empty feed",
+     "detail": "The pool sets statement_timeout=10000ms process-wide (pool.ts:17-18). This is good hygiene, but get_recommendations (DBS-03) is a full candidate scan with correlated subqueries and no usable index for the age range. As the users table grows and buffer cache pressure rises, this query's latency will climb; once any single call exceeds 10s Postgres aborts it. recommend.ts:41 treats any RPC error as `return []`, and match-of-the-day.ts:78 renders the empty-state ('algorithm is searching') — so a timeout is silently indistinguishable from 'no candidates'. Under load this means healthy verified users intermittently see an empty Match-of-the-Day with no error surfaced.",
+     "severity": "medium",
+     "evidence": "src/lib/db/pool.ts:17-18 (statement_timeout=10s); src/lib/matching/recommend.ts:41 (error → []); src/lib/v2/match-of-the-day.ts:78 (null → empty state); RPC scan cost per DBS-03",
+     "recommendation": "Fix DBS-03/DBS-04 so the query is bounded and index-backed. Separately, distinguish RPC errors from empty results in recommend.ts (log/alert on error rather than returning [] silently) so timeouts are observable rather than masquerading as 'no matches'.",
+     "likelihood": "possible",
+     "effort": "S",
+     "blocks_launch": false
+    },
+    {
+     "id": "DBS-09",
+     "title": "get_chat_list runs two correlated lateral subqueries per chat plus a blocks NOT EXISTS, LIMIT 100 with no supporting order index",
+     "detail": "get_chat_list does, for every chat of the user, a LATERAL 'last message' lookup (order by created_at desc limit 1) and a LATERAL count(*) of unread, then a blocks NOT EXISTS, ordered by coalesce(last message time) LIMIT 100. The per-chat lateral last-message and unread-count are served by chat_messages_chat_idx, so each is cheap, but the ORDER BY coalesce(lm.created_at, c.created_at) is computed post-join and cannot use an index, forcing a sort of all the user's chats each call. For a normal user with few chats this is fine; the risk is power users / spam accounts accumulating many chats, and that this RPC is called on every chat-list open and pairs with get_unread_total (a full join scan of that user's messages) for the nav badge. It's a second-tier concern behind the SSE polling.",
+     "severity": "low",
+     "evidence": "supabase/migrations/20260602150000_chat_list_block_filter.sql:15-42 (two laterals + NOT EXISTS + coalesce order + limit 100); :44-60 get_unread_total (join scan); src/lib/chat/list.ts:26-46",
+     "recommendation": "Denormalize last_message_at/last_message_sender onto chats (last_message_at already exists on chats and is maintained on send — use it for ordering instead of the lateral coalesce) and maintain a per-user unread counter or an unread index to avoid the count laterals. Keep the LIMIT and add pagination if any user can exceed 100 chats.",
+     "likelihood": "unlikely",
+     "effort": "M",
+     "blocks_launch": false
+    },
+    {
+     "id": "DBS-10",
+     "title": "Chat message history load caps at 200 rows with no pagination — long chats truncate silently",
+     "detail": "getLiveState loads chat_messages with .limit(200) ordered ascending, and the messages GET/stream paths pass an optional `after` cursor but there is no `before`/backward pagination. For an established couple exchanging thousands of messages, opening a chat only ever fetches the first 200 by created_at ascending (or the window after the cursor). There is no way to page older history, and the 200-row ceiling means the initial load is bounded (good) but history beyond the window is inaccessible. This is a correctness/UX limit that becomes visible only once real chats get long — i.e. after launch with engaged users.",
+     "severity": "low",
+     "evidence": "src/lib/chat/live.ts:58-65 (.limit(200), ascending, only gte(after)); src/app/api/chats/[id]/messages/route.ts:32-34 (only `after` param); no `before`/offset path anywhere",
+     "recommendation": "Add backward pagination (a `before` cursor / keyset pagination on created_at) so clients can load older history in pages, and make the initial window load the most-recent 200 (descending then reverse) rather than the oldest 200.",
+     "likelihood": "possible",
+     "effort": "M",
+     "blocks_launch": false
+    },
+    {
+     "id": "DBS-11",
+     "title": "match_views grows unbounded per viewer and is only ever pruned on account erase — recommendation NOT EXISTS cost climbs",
+     "detail": "Every candidate a user is shown is recorded in match_views (viewer_id, target_id) and it is only deleted in erase_user paths, never on a rolling basis. The get_recommendations NOT EXISTS (match_views WHERE viewer_id=p_viewer AND target_id=c.id) is covered by the PK, so per-lookup it's fine, but the table itself grows without bound as active users see many candidates over time. Beyond storage, a viewer who has seen most of the eligible pool will have get_recommendations return few/zero rows (everyone filtered out), producing empty Match-of-the-Day with no recycling — a product+scale issue as the pool is exhausted per user.",
+     "severity": "low",
+     "evidence": "supabase/migrations/20260531000000_init_schema.sql:164-169 (match_views, PK only, no non-erase pruning); 20260630000000_recommendations_v3_top_life_values.sql:46 (NOT EXISTS match_views); deletes only in erase_user (20260619300000_erase_user.sql:37, 20260620920000:63)",
+     "recommendation": "Introduce a TTL/decay for match_views (e.g. expire views older than N days so previously-seen candidates re-enter the pool) and add retention pruning. This bounds table growth and prevents per-user pool exhaustion producing permanent empty states.",
+     "likelihood": "possible",
+     "effort": "M",
+     "blocks_launch": false
+    },
+    {
+     "id": "DBS-12",
+     "title": "Cron endpoints run heavy DB work through the same 10-connection web pool with no isolation",
+     "detail": "Both cron routes (tg-outbox, housekeeping) call supabaseAdmin() which is the same process-wide pg Pool (max 10) used by all web traffic. A tg-outbox drain (up to 50 sequential events, each 2-3 queries) or housekeeping (gc + sla reclaim, which uses FOR UPDATE SKIP LOCKED over cases) competes for the same 10 connections as user requests. If cron overlaps a traffic spike, it steals connections from the pool that DBS-01/DBS-02 already show is the binding constraint. There is no separate pool or rate isolation for background work.",
+     "severity": "low",
+     "evidence": "src/app/api/cron/tg-outbox/route.ts:3,35 + src/lib/v2/tg-outbox-worker.ts:212-229 (uses supabaseAdmin pool); src/app/api/cron/housekeeping/route.ts:30-52; src/lib/supabase/admin.ts:14-16 (single shared pool); src/lib/db/pool.ts:27 (max 10)",
+     "recommendation": "Give background/cron work its own small dedicated pool (or run crons in a separate worker process/service) so a drain can't starve interactive requests, and cap cron concurrency. Combined with the pooler in DBS-02 this becomes straightforward.",
+     "likelihood": "possible",
+     "effort": "M",
+     "blocks_launch": false
+    }
+   ]
+  },
+  {
+   "dimension": "infra_scale",
+   "findings": [
+    {
+     "id": "INFRA-01",
+     "title": "Premise wrong: stack is Railway Postgres (node-pg) + Railway Volume filesystem, NOT Supabase — invalidates the \"Supabase tier\" question",
+     "detail": "The audit brief lists 'DB: Supabase Postgres' and 'signed URLs from Supabase storage', but the code decisively contradicts this. src/lib/supabase/admin.ts states the name is legacy: 'под капотом теперь native Postgres (node-pg) + файловое хранилище (Railway Volume), без Supabase/PostgREST'. DB is Railway-internal Postgres (postgres-8jav.railway.internal:5432, public proxy thomas.proxy.rlwy.net:26164). Photos/passport/selfie live on a Railway Volume at /data via node:fs, served through /api/storage/o/... with a local-HMAC signed URL. Consequences: (a) there is NO Supabase connection-limit / storage-quota / egress concern — those questions are moot; (b) but every scaling property is now dictated by a single Railway service + single-attach volume + the Node process doing all file I/O and image bandwidth. The whole infra risk profile shifts from 'managed BaaS limits' to 'self-hosted SPOF on one box'.",
+     "severity": "high",
+     "evidence": "src/lib/supabase/admin.ts:6-13 (node-pg + Railway Volume, без Supabase); .env.access:34 DATABASE_URL=...@postgres-8jav.railway.internal:5432/railway; docs/ARCHITECTURE.md:41-44 (Railway Volume, STORAGE_DIR=/data); src/lib/storage/fs-store.ts (fs.readFile/writeFile)",
+     "recommendation": "Re-scope all capacity planning around Railway (Postgres + Volume + web), not Supabase. Update handoff/audit docs so no one provisions or tunes a Supabase tier that doesn't exist. Treat the volume filesystem as the primary durability and scaling constraint (see INFRA-02/03).",
+     "likelihood": "certain",
+     "effort": "S",
+     "blocks_launch": false
+    },
+    {
+     "id": "INFRA-02",
+     "title": "Single Railway Volume = hard single-instance pin; horizontal replicas are architecturally impossible without moving files off /data",
+     "detail": "Photo/document upload and serving read and write the Railway Volume directly (fs.writeFile in fs-store upload, fs.readFile in the /api/storage/o serving route). A Railway Volume is single-attach — it can be mounted to exactly one service instance. Therefore you CANNOT run replicas: a second replica would not see uploaded files, and signed-URL reads would 404 depending on which replica served them. So the missing autoscale/replica config in railway.json is not merely 'unconfigured' — replicas are blocked by the storage design. You are forced into vertical scale on one instance. At ~10k users with bursty few-hundred-concurrent peaks this single Node instance must absorb SSR (/main force-dynamic), all image bandwidth, the bot webhook, and cron drains simultaneously. One instance can plausibly handle it IF adequately sized, but there is zero redundancy: any crash/deploy/OOM = full outage.",
+     "severity": "high",
+     "evidence": "railway.json (no replicas/autoscale keys; restartPolicy ON_FAILURE max 5); src/app/api/storage/o/[bucket]/[...path]/route.ts:27 fs.readFile(objectFsPath(...)); src/lib/storage/fs-store.ts:77-78 fs.writeFile; docs/ARCHITECTURE.md:73 (single service, Volume on /data)",
+     "recommendation": "Decide before serious growth: either (a) accept single-instance and size vertically (recommend ~2 vCPU / 2-4 GB RAM to start, headroom for image reads), or (b) move objects to an S3-compatible object store (Cloudflare R2 / Backblaze B2 / Supabase Storage) so the web tier becomes stateless and replicable. For a 10k launch, single-instance vertical is acceptable; document that replicas are off the table until storage is externalized.",
+     "likelihood": "certain",
+     "effort": "S",
+     "blocks_launch": false
+    },
+    {
+     "id": "INFRA-03",
+     "title": "No confirmed backup/PITR for the Railway Volume holding passport + selfie + profile PII — volume loss = catastrophic, irrecoverable PII loss",
+     "detail": "All identity documents (passport photos, selfies) and profile photos are stored only on the Railway Volume at /data (BUCKET_DOCUMENTS='user-documents', BUCKET_PHOTOS='profile-photos'). There is no code-visible replication or off-box copy — files exist in exactly one place. If the volume is lost, corrupted, or the service is deleted/misconfigured, every user's verification documents and photos are gone with no recovery, and re-verification of the entire base would be required. Railway volume backup/snapshot status cannot be determined from the repo (it is a dashboard setting) — it MUST be confirmed. Given this is legally-sensitive identity data (the MVP audit already flags legal as the top risk domain), running with no verified backup is unacceptable for a real launch. The Postgres DB has the same question (Railway Postgres backup cadence must be confirmed), but DB is more commonly auto-backed-up than a raw volume.",
+     "severity": "critical",
+     "evidence": "src/lib/uploads/storage.ts:6-7 (single buckets on volume); src/lib/storage/fs-store.ts (fs-only, no replication); docs/ARCHITECTURE.md:41-44; premise: RLS disabled on all 30 tables so app is the only guard — data layer has no second line of defense",
+     "recommendation": "Before launch: (1) enable/verify Railway volume backups AND set up an independent scheduled off-box copy of /data to object storage (R2/S3) — a nightly rsync/tar job is enough for 10k. (2) Confirm Railway Postgres automated backup cadence + do a test restore. (3) Document RTO/RPO. Do not launch storing passport/selfie PII on a single unbacked volume.",
+     "likelihood": "possible",
+     "effort": "M",
+     "blocks_launch": true
+    },
+    {
+     "id": "INFRA-04",
+     "title": "All image bandwidth flows through the Node process with full-file buffering (no CDN, no streaming) — memory-spike / OOM risk at 10k",
+     "detail": "Every photo/document view goes through /api/storage/o/... which does fs.readFile of the ENTIRE file into memory (up to MAX_BYTES=12MB), wraps it in a Uint8Array, and returns it — no streaming, no CDN in front. Cache-Control is 'private, max-age=300' so re-opens re-hit the origin after 5 min. At 10k users with ~30k+ images, and a match/feed screen that signs many photo URLs at once, concurrent image loads each pin up to 12MB of heap. A few hundred concurrent image fetches on a small instance can spike RSS into OOM/GC-thrash territory and starve SSR/webhook handling on the same process. This is the real bandwidth bottleneck — and it REPLACES the moot 'Supabase egress' concern from the premise. (Signed-URL generation itself is now free local HMAC, so that sub-concern is also moot.)",
+     "severity": "high",
+     "evidence": "src/app/api/storage/o/[bucket]/[...path]/route.ts:27-34 (fs.readFile whole file, buffered Response, max-age=300); src/lib/uploads/storage.ts:9 MAX_BYTES=12MB; recommend.ts:44 signedPhotoUrls over up to 100 candidates",
+     "recommendation": "Put a CDN/edge cache in front of image serving and lengthen cache TTL (immutable content-addressed paths → max-age=31536000, immutable). Stream files (fs.createReadStream / Response body stream) instead of buffering full 12MB into heap. Longer term, externalize to R2/S3 + CDN so bandwidth never touches the Node process. At minimum, size RAM for peak concurrent image reads.",
+     "likelihood": "likely",
+     "effort": "M",
+     "blocks_launch": false
+    },
+    {
+     "id": "INFRA-05",
+     "title": "Push fanout can take 1.5-3+ hours to drain a 10k broadcast: batch=50, sequential awaits, cron every 30-60s",
+     "detail": "processOutboxBatch drains at most 50 rows per tick and sends them SEQUENTIALLY (for-loop with await processOutboxEvent → one fetch to Telegram sendMessage each). The cron endpoint calls processOutboxBatch(50) and the recommended cadence is every 30-60s. Math: a 10k-user broadcast = 10000/50 = 200 ticks; at 60s/tick that is ~200 minutes (~3.3h) to fully deliver; even at 30s it's ~100 min. This is well under Telegram's ~30 msg/s bot limit (so no rate-limit breach), but the delivery latency is unacceptable for time-sensitive pushes and the queue backs up under any daily-notify burst. It also serializes network round-trips, wasting most of each tick idle.",
+     "evidence": "src/lib/v2/tg-outbox-worker.ts:209-229 (limit=50, sequential for-loop of awaits); src/app/api/cron/tg-outbox/route.ts:19,35 (cadence 30-60s, processOutboxBatch(50)); Telegram bot limit ~30 msg/s",
+     "recommendation": "Raise batch limit (e.g. 200-500) and send with bounded concurrency (Promise pool of ~20-25 in-flight to stay under 30 msg/s), and/or lower cron interval to 10-15s. Add per-tick timing to stay within request timeout. This turns a 3h drain into minutes.",
+     "severity": "medium",
+     "likelihood": "likely",
+     "effort": "M",
+     "blocks_launch": false
+    },
+    {
+     "id": "INFRA-06",
+     "title": "Push delivery reliability hinges on cron that was failing (GitHub Actions free tier) — failed sends may never retry",
+     "detail": "Delivery has two paths: best-effort synchronous tryDeliverNow at enqueue time, and the cron-driven processOutboxBatch retry. Per the handoff, the GitHub Actions cron was failing on free tier. If cron is not reliably running, then any message whose synchronous send fails (bot blocked, transient TG error, deploy in progress) is left pending and NEVER retried — it just accumulates last_error/attempts with nothing draining it. The outbox's whole value (retry-safe, not lost on failure) is nullified without a working scheduler. Additionally attempts>=5 rows are silently abandoned (skipped by the drain query) with no alerting.",
+     "evidence": "src/lib/v2/tg-outbox-worker.ts:241-268 (tryDeliverNow best-effort; enqueueAndDeliver relies on it), :212-218 (drain skips attempts>=5); handoff: GitHub Actions cron failing on free tier; cron requires external trigger with X-Cron-Secret",
+     "recommendation": "Move cron to Railway's native scheduled jobs (or a paid reliable scheduler) and verify it fires on the 30-60s cadence in prod. Add a health metric/alert on pending-outbox depth and on rows stuck at attempts>=5. Confirm both tg-outbox AND housekeeping crons are actually running post-deploy.",
+     "severity": "high",
+     "likelihood": "likely",
+     "effort": "S",
+     "blocks_launch": true
+    },
+    {
+     "id": "INFRA-07",
+     "title": "Zero observability: no error tracking, metrics, uptime monitoring, or structured logging — blind operation of a PII app at 10k",
+     "detail": "No Sentry / OpenTelemetry / Datadog / PostHog / pino / logtail in package.json, and no src/instrumentation.ts. Error handling everywhere is console.error only (pool errors, webhook handler, health check, tg-outbox). At 10k users you would have no visibility into error rates, no crash alerts (the single instance restarts silently under ON_FAILURE max 5, then stops), no latency/throughput metrics, no uptime alerting, and no way to correlate incidents. For an app holding identity PII with the app layer as the ONLY security boundary (RLS disabled on all 30 tables), flying blind is a serious operational risk.",
+     "evidence": "package.json:20-42 (no observability deps); no src/instrumentation.ts; console.error-only in pool.ts:35, webhook/route.ts:35, tg-outbox-worker.ts:131, health/route.ts:15; railway.json restartPolicyMaxRetries:5 (silent give-up)",
+     "recommendation": "Before launch add: (1) error tracking (Sentry via instrumentation.ts) capturing server + edge errors; (2) uptime monitor hitting /api/health with alerting; (3) basic metrics (request rate, p95 latency, outbox depth, pool saturation). These are near-mandatory for a real-user PII launch.",
+     "severity": "high",
+     "likelihood": "certain",
+     "effort": "M",
+     "blocks_launch": false
+    },
+    {
+     "id": "INFRA-08",
+     "title": "Cost estimate at 10k is dominated by one Railway service + volume; ~$40-90/mo — Supabase line items in the premise don't apply",
+     "detail": "Because there is no Supabase, the cost model is: Railway web service (single instance, sized ~2 vCPU / 2-4GB) + Railway Postgres + Railway Volume + egress. Rough monthly at 10k registered / few-hundred-concurrent: Railway usage-based compute for one always-on ~2 vCPU/2-4GB service ≈ $20-40; managed Postgres ≈ $10-25; volume storage for ~30k images (assume avg 1-3MB, not the 12MB cap → ~30-90GB) ≈ few $; egress for image bandwidth is the swing factor and could add $10-40+ depending on view volume (this is exactly why a CDN in INFRA-04 also cuts cost). Total order-of-magnitude ~$40-90/mo, plus ~$10-30 if you add Sentry/uptime. NOTE: these are approximate ranges — Railway pricing is usage-based and should be confirmed against current rates, and avg image size (not MAX_BYTES=12MB) drives volume+egress.",
+     "evidence": "railway.json (single service); .env.access (Railway Postgres); STORAGE_DIR=/data volume; src/lib/uploads/storage.ts:9 (12MB cap is ceiling not mean); no third-party paid services in package.json",
+     "recommendation": "Budget ~$50-100/mo all-in for 10k including observability. Biggest cost lever is image egress → adding a CDN (INFRA-04) both fixes the bottleneck and caps egress cost. Confirm exact Railway rates before finalizing.",
+     "severity": "low",
+     "likelihood": "possible",
+     "effort": "S",
+     "blocks_launch": false
+    },
+    {
+     "id": "INFRA-09",
+     "title": "Match-of-the-Day is recomputed on every /main open (force-dynamic, no match-locking) — wasted CPU + non-deterministic UX at scale",
+     "detail": "/main is dynamic='force-dynamic' and calls getMatchOfTheDay on every render, which calls getRecommendations. That RPC pulls up to 100 candidates (p_limit=100), then JS-scores ALL of them (scoreCandidate loop) and signs up to 100 photo URLs, on EVERY open/refresh. The code comment itself flags the gap: 'Future: добавить match locking — раз в день один и тот же match (через user_daily_match) чтобы избежать рулетки при F5.' So every F5 re-runs full candidate scoring AND can show a DIFFERENT person (roulette). At a few-hundred concurrent with users re-opening, this is real repeated CPU + DB work per open with no caching. Not a blocker at 10k, but wasteful and produces inconsistent UX.",
+     "evidence": "src/app/[locale]/main/page.tsx:15,80 (force-dynamic, getMatchOfTheDay per render); src/lib/v2/match-of-the-day.ts:19-20 (Future: match locking); recommend.ts:38-40 (p_limit=100), :46-62 (JS score all), :44 sign all photo URLs",
+     "recommendation": "Implement the planned user_daily_match table: compute once/day per user, store, and read the cached pick on /main opens. Cuts per-open cost to a single indexed lookup and makes the daily match stable across refreshes.",
+     "severity": "medium",
+     "likelihood": "likely",
+     "effort": "M",
+     "blocks_launch": false
+    },
+    {
+     "id": "INFRA-10",
+     "title": "Missing composite index profile_photos(user_id, status) — hot recommendation RPC does approved-photo EXISTS + main-photo subquery per candidate",
+     "detail": "get_recommendations filters candidates by 'exists (select 1 from profile_photos pp where pp.user_id=c.id and pp.status=''approved'')' and also runs a correlated subquery selecting the main approved photo per candidate (order by is_main desc, ord asc limit 1). The only index on profile_photos is profile_photos_user_idx on (user_id) — there is no (user_id, status) composite. At 10k users with multiple photos each these subqueries do extra filtering work per candidate row on every recommendation call (which itself runs per /main open, see INFRA-09). match_views is fine — its PK (viewer_id, target_id) already covers the NOT EXISTS anti-join. tg_outbox_unsent_idx on (created_at) covers the drain query.",
+     "evidence": "supabase/migrations/...recommendations_v3...sql (EXISTS approved + main-photo subquery); init_schema.sql: 'create index profile_photos_user_idx on profile_photos(user_id)' (no status); match_views PK (viewer_id,target_id) at init_schema.sql:168; tg_outbox_unsent_idx on tg_outbox(created_at)",
+     "recommendation": "Add CREATE INDEX ON profile_photos(user_id, status) (or a partial index WHERE status='approved'). Run EXPLAIN ANALYZE on get_recommendations against a seeded 10k dataset before launch to confirm no seq scans on the hot path.",
+     "severity": "medium",
+     "likelihood": "possible",
+     "effort": "S",
+     "blocks_launch": false
+    },
+    {
+     "id": "INFRA-11",
+     "title": "pg pool max=10 on a single instance is adequate for 10k, but there is no headroom monitoring and cron shares the same pool",
+     "detail": "The pool is capped at max=10 (PG_POOL_MAX default) with statement_timeout=10s and idle_in_transaction=60s — sensible guards (F-115). At 10k users with few-hundred concurrent, and given each app call = one pool.query (per ARCHITECTURE.md), 10 connections is generally fine because image serving uses fs, not the pool, so DB concurrency is lower than HTTP concurrency. Risk: the tg-outbox and housekeeping crons run in the SAME process and draw from the SAME 10-connection pool; a heavy drain tick plus a request burst could transiently exhaust connections and queue requests (connectionTimeoutMillis=10s → 500s). No alerting exists on pool saturation. This is a tuning/observability note, not a blocker.",
+     "evidence": "src/lib/db/pool.ts:27 max=Number(PG_POOL_MAX ?? 10), :17-18 statement/idle timeouts, :29 connectionTimeoutMillis 10s; cron routes use same supabaseAdmin()→pool; ARCHITECTURE.md:38 (one call = one pool.query)",
+     "recommendation": "Keep max=10-15 for one instance (stay well under Railway Postgres max_connections). Add a pool-saturation metric/alert. If cron drains grow heavy, consider a slightly higher pool or a separate small pool for cron. Re-tune only if EXPLAIN + load test show contention.",
+     "severity": "low",
+     "likelihood": "unlikely",
+     "effort": "S",
+     "blocks_launch": false
+    },
+    {
+     "id": "INFRA-12",
+     "title": "TG webhook processes updates synchronously inside the request and shares the one instance — burst /start storms compete with SSR",
+     "detail": "The webhook handler awaits handleUpdate(update) inline before returning 200, on the same single Node instance that serves /main SSR and image bandwidth. Telegram delivers updates fast and (per premise) enqueueAndDeliver + start-token flow run on registration. A burst (e.g. a push campaign driving many simultaneous /start or bot interactions) means many concurrent webhook handlers each doing DB writes, competing with the pool (max 10) and CPU against user SSR/image reads. There is no queue/decoupling and no separate worker — everything is one process. The handler does return 200 on error (good, avoids TG retry storms), but heavy handleUpdate work under burst can slow or starve user-facing requests. Acceptable at 10k if the instance is sized, but there is no isolation between bot ingestion and user traffic.",
+     "evidence": "src/app/api/telegram/webhook/route.ts:32-38 (await handleUpdate inline, always 200); single Railway instance (railway.json); pool max=10 shared (pool.ts:27); no separate worker service",
+     "recommendation": "Keep webhook handler lightweight; offload heavy work (e.g. bulk enqueue) to the outbox/cron rather than doing it inline. If bot traffic grows, split the bot webhook into its own Railway service (it does not need the volume) so bot ingestion cannot starve user SSR/image serving. Load-test a /start burst before launch.",
+     "severity": "medium",
+     "likelihood": "possible",
+     "effort": "M",
+     "blocks_launch": false
+    }
+   ]
+  },
+  {
+   "dimension": "business_model",
+   "findings": [
+    {
+     "id": "BIZ-01",
+     "title": "Zero monetization mechanism exists — Premium spec is 100% unbuilt",
+     "detail": "The premium spec (chat4_premium.md) defines a full tariff model (Free/Plus/Pro/Family/Individual) where the CORE mechanism is: chat only opens after mutual interest AND a paid Plus/Pro subscription (chat_access_enabled gated by subscription_plan). In the actual codebase, chat opens automatically and unconditionally on mutual interest with zero plan check — `src/lib/matching/chat.ts` `ensureChat()` has no subscription/plan gate at all, and `src/app/api/interest/route.ts` calls `enqueueAndDeliver(receiver_id, 'mutual_match')` with no paywall step. There are no `subscription`, `payment`, `tariff`, `plan`, or `billing` tables anywhere in the 50 migration files (verified via grep across all `supabase/migrations/*.sql`); no `subscription_plan`/`chat_access_enabled`/`payment_status` columns exist on any table. `daily_request_quotas` (interests=5/day, views=30/day) is explicitly commented in code as anti-spam only: 'антиспам, защита аудитории — не монетизация' (`src/lib/matching/quota.ts` line 4). No payment SDK (Click/Payme/Uzcard/Humo) appears in package.json or env.ts. This is already flagged in the code-audit doc as SYS-018 (low severity, code-bug framing) — but as a BUSINESS finding it is far more severe: there is no revenue mechanism to launch with at all.",
+     "severity": "critical",
+     "likelihood": "certain",
+     "blocks_launch": true,
+     "evidence": "grep across supabase/migrations/*.sql for subscription/payment/tariff/plan/billing returns zero hits; src/lib/matching/chat.ts ensureChat() has no plan check; src/lib/matching/quota.ts:4 comment 'не монетизация'; package.json has no payment SDK; docs/audit-mvp-vs-spec-2026-07-01.md SYS-018",
+     "recommendation": "Decide explicitly: is 10k-launch a monetization-free growth phase (acceptable IF founder consciously chooses free-for-liquidity strategy) or does it need revenue day one? If revenue is required, minimum viable slice before 10k: (1) DB fields for subscription_plan/status/expiry, (2) gate chat behind Plus using the spec's own can_open_chat() logic, (3) integrate one local provider (Click or Payme) for a single SKU (Plus, 1 month). If NOT required at 10k, explicitly document this as a deliberate 'free growth phase' decision with the founder (per RU-12: don't launch tariffs without terms/refunds/logs) — otherwise the team may believe monetization exists because it's spec'd, and burn runway with zero revenue and no informed decision to have done so."
+    },
+    {
+     "id": "BIZ-02",
+     "title": "Cold-start liquidity: strict mutual gender/age-window matching + verification gate = high risk of empty feed at low density",
+     "detail": "The `get_recommendations` SQL RPC (supabase/migrations/20260630000000_recommendations_v3_top_life_values.sql) requires BOTH sides to be `verification_status = 'approved'`, `lifecycle_state = 'active'`, profile `status = 'published'`, mutual gender match (`cp.gender = v.looking_for_gender AND v.gender = cp.looking_for_gender`), AND both ages inside each other's declared `partner_age_min/max` window, with a photo. There is no fallback/relaxation when the pool is thin (no widening of age window, no cross-city fallback, no 'best available' degrade). Combined with the Match-of-the-Day model (1 recommendation per day, not a feed) documented in `src/lib/v2/match-of-the-day.ts`, a user with even a moderately narrow preference window in a city with few verified opposite-gender users will hit `null` → the app's own comment says 'UI покажет empty state «алгоритм ищет, заходи позже»' — which was already observed live per user's Maestro findings memory. At 10k total users split ~50/50 across UZ regions/cities with narrow self-selected age windows, most users outside Tashkent will likely see empty state most days, especially early in the ramp before density builds. There's also no anti-imbalance mechanism (spec explicitly calls out gender imbalance risk — 80% male / 20% female — as the 'главный риск' in chat4 §16), and none of the recommended mitigations (extra rec limits, trust-score-gated outbound interest, women's early-access Plus) are implemented.",
+     "severity": "critical",
+     "likelihood": "likely",
+     "blocks_launch": true,
+     "evidence": "supabase/migrations/20260630000000_recommendations_v3_top_life_values.sql (hard AND filters, no fallback); src/lib/v2/match-of-the-day.ts lines 15-19 ('Возвращает null если кандидатов нет'); chat4_premium.md §16 gender-imbalance risk section with 10 stated mitigations, none implemented in code",
+     "recommendation": "Before 10k launch: (1) add a degrade path in get_recommendations — if strict query returns 0 rows, progressively relax age window and city constraint rather than returning nothing; (2) track and dashboard gender_balance and empty-state-rate per city from day one (North Star spec already defines gender_balance metric but analytics is deferred per SYS-022); (3) seed/concentrate initial marketing in 1-2 dense cities (Tashkent) rather than spreading 10k thin nationally; (4) consider a manual/editorial fallback recommendation (admin-curated) when algorithmic pool is empty, to avoid dead-end UX during ramp."
+    },
+    {
+     "id": "BIZ-03",
+     "title": "No retention/re-engagement loop — nothing proactively brings users back daily",
+     "detail": "Match-of-the-Day is designed as a 1-recommendation-per-day model, which structurally requires a strong daily-return trigger to work as a habit loop — otherwise users simply forget to open the app. Checked `src/lib/v2/tg-outbox-worker.ts` and all `enqueueAndDeliver()` call sites: notifications only fire reactively on `new_interest`, `mutual_match`, `interest_accepted`, `new_message`. There is no 'your match of the day is ready' push, no D1/D3/D7 reactivation nudge, no cron job that scans for users who haven't opened the app and sends a reminder. The `housekeeping` cron (`src/app/api/cron/housekeeping/route.ts`) only does token garbage-collection and SLA-reclaim — zero retention logic. This is compounded by the already-known fact (per user memory) that GitHub Actions cron delivery was failing on the free tier, meaning even the existing reactive tg_outbox delivery is at risk. Chat11 bizprocess spec explicitly calls for a 'Retention/Reactivation' system (§18: 'напоминания, статус анкеты, интересы, safety tips, premium expiry, profile improvements') — none of this exists in code.",
+     "severity": "high",
+     "likelihood": "likely",
+     "blocks_launch": false,
+     "evidence": "src/lib/v2/tg-outbox-worker.ts enqueueAndDeliver call sites limited to src/app/api/interest/route.ts, src/app/api/requests/[id]/decision/route.ts, src/app/api/chats/[id]/messages/route.ts (all reactive); src/app/api/cron/housekeeping/route.ts has only 2 tasks, neither retention-related; chat11_bizprocess.txt line 243 'Retention / Reactivation'",
+     "recommendation": "Add a daily cron that: (1) enqueues a TG push when a fresh Match-of-the-Day is ready for a user who hasn't opened the app in >24h, (2) sends a D1/D3/D7 reactivation nudge for users who completed onboarding but went dormant, (3) fix the underlying cron reliability issue (GitHub Actions free tier failures, per memory) before relying on any cron-driven retention mechanism — an unreliable retention cron is worse than none because it creates false confidence."
+    },
+    {
+     "id": "BIZ-04",
+     "title": "Long sequential funnel (14-screen anketa → manual verification gate) before any product value is shown",
+     "detail": "The onboarding funnel is: TG bot start → contact share → Mini App bootstrap → ~14 anketa screens (basic, self, appearance, family, family-model, lifestyle, finance, marriage, values, looking-for, partner-extended, birth-place, photos, privacy — confirmed via `src/app/[locale]/v2/anketa/*` directory listing and prior V4 anketa review) → document+selfie verification submitted for MANUAL admin review → only after `verification_status='approved'` does `get_recommendations` return anything. This means the user invests significant time (14 screens) and hands over sensitive documents (passport/selfie) BEFORE seeing a single candidate or any concrete value — pure faith-based conversion. Verification is manual (per verified facts: no OneID/MyID integration in MVP, single manual passport+selfie path per ONB-07/08/09 in the audit doc), so there's also a SLA/wait-time step between anketa-completion and first-value, during which users can easily churn while waiting.",
+     "severity": "high",
+     "likelihood": "likely",
+     "blocks_launch": false,
+     "evidence": "src/app/[locale]/v2/anketa/* directory (13 step subdirs + preview); get_recommendations RPC requires verification_status='approved' for both viewer and candidate (20260630000000_recommendations_v3_top_life_values.sql); docs/audit-mvp-vs-spec-2026-07-01.md ONB-07/08/09/16/17/18 'нет OneID/MyID; у всех единый ручной passport+selfie путь'",
+     "recommendation": "Instrument and monitor the funnel drop-off at each of the 14 anketa steps plus the verification-submit → verification-approved gap (this is exactly what North Star funnel analytics — SYS-022 — is meant to cover, but it's deferred). Consider showing a low-fidelity preview of 'what recommendations could look like' earlier in the funnel (before full anketa completion) to sustain motivation. Track and staff verification SLA aggressively at 10k scale — a manual-review bottleneck that was fine at low volume can become a silent churn generator once submission volume rises; admin-gap-report already flags a verification trigger bug worth re-checking under load."
+    },
+    {
+     "id": "BIZ-05",
+     "title": "Trust/safety mechanisms exist in DB/code but analytics + escalation ladder are deferred — reputational risk in a marriage-market context is asymmetric",
+     "detail": "For a serious-intent marriage platform in Uzbekistan, a single bad public incident (harassment complaint going viral, a woman's data/photos leaking, a family being embarrassed publicly) can be existential — far more damaging than for casual dating apps, because family/community reputation is at stake culturally. Verified facts note: rate limiting exists but is NOT global; anti-abuse (phone_blacklist, containsContact filter) exists; but the audit doc flags SAF-018 'нет автоматической эскалационной лестницы санкций' (no automatic sanction escalation) and SAF-013 'нет Safety Center' as not-yet-built (Stage 2). At 10k users, manual moderation of every complaint/photo doesn't scale without an escalation ladder, and RLS is disabled platform-wide (service-role key access only, app-layer guards as the sole boundary per verified facts) — meaning a single app-layer guard bug could expose sensitive data broadly, which is a bigger deal in this vertical than in generic SaaS.",
+     "severity": "high",
+     "likelihood": "possible",
+     "blocks_launch": false,
+     "evidence": "docs/audit-mvp-vs-spec-2026-07-01.md SAF-018 (no escalation ladder, Stage 2), SAF-013 (no Safety Center); verified facts: RLS disabled on all 30 tables, rate limiting not global; chat5_safety spec (not fully read here but referenced across other chats) frames safety as prerequisite to trust in a marriage-market",
+     "recommendation": "Before scaling past pilot volume: (1) implement at minimum a semi-automated sanction escalation (repeat complaints → auto-restrict, not just manual review queue), (2) load-test the moderation queue throughput against realistic complaint rates at 10k MAU, (3) prepare a PR/comms playbook specifically for the culturally sensitive scenario (family complaint, leaked data) given the higher reputational stakes than a typical dating app — this is a business continuity risk, not just a safety feature gap."
+    },
+    {
+     "id": "BIZ-06",
+     "title": "UZ personal-data law risk: RLS disabled + sensitive PD (religion, family, health-adjacent anketa fields) collected without confirmed distinct legal basis",
+     "detail": "This is already the single largest finding in the existing legal-focused audit (LEGAL-008, critical: 'Специальные ПД без отдельного правового основания'; LEGAL-006/007/009/011: sensitive-data blocks, photos, and biometric verification collected without separate consent records) — I am not re-deriving these, just flagging the BUSINESS consequence: this is a genuine regulatory risk under Uzbekistan's PD law (biometric/sensitive categories typically require distinct legal basis + consent trail), and a violation discovered post-launch at 10k users (vs. a handful of test users) multiplies exposure — both financial (potential fines) and reputational (a marriage-market audience is trust-sensitive; a PD scandal could be fatal to the brand). Compounding factor for THIS audit's lens: RLS is disabled on all 30 tables, meaning the only technical boundary preventing over-broad data exposure is app-layer code correctness across 34 files — a single missed guard is a data-protection incident, not just a bug.",
+     "severity": "critical",
+     "likelihood": "certain",
+     "blocks_launch": true,
+     "evidence": "docs/audit-mvp-vs-spec-2026-07-01.md LEGAL-008 (critical), LEGAL-005/006/007/009/015/023 (high); verified facts: RLS disabled on all 30 public tables, RLS is not the security boundary",
+     "recommendation": "This is already flagged as P0 in the existing audit's fix plan ('Правовое основание для чувствительных ПД (блокер запуска)') — reiterating here only to connect it explicitly to business risk: do not scale to 10k before legal sign-off on sensitive-PD basis and consent records exist. The cost of fixing this now (schema + consent screens) is trivial compared to the cost of a regulatory complaint or press story once 10k Uzbek families' religion/health/family data is implicated."
+    },
+    {
+     "id": "BIZ-07",
+     "title": "Individual/manual-matchmaking tier described in spec has zero operational build — no manager workflow, no shortlist tooling",
+     "detail": "The Individual tier (spec: personal manager, consultation, shortlist of 3-5 candidates, meeting coordination) targets the highest-value segment (busy professionals, 30+, divorced, diaspora, affluent families) and was meant to be included even in MVP as 'a заявка' (an application form, per chat4 §22 item 14). No `individual_status`, `individual_application`, or manager-assignment tooling appears anywhere in the codebase (confirmed absent alongside the broader subscription/payment absence). This segment is plausibly the highest-margin, highest-willingness-to-pay cohort and the easiest to monetize without needing marketplace liquidity at all (it's a service business, not dependent on matching density) — its complete absence means a monetizable, liquidity-independent revenue stream is being left entirely on the table.",
+     "severity": "medium",
+     "likelihood": "certain",
+     "blocks_launch": false,
+     "evidence": "No individual_status/individual_application tables or routes found in supabase/migrations or src; chat4_premium.md §9 and §22 item 14 specify Individual as MVP-scoped even as just an application form",
+     "recommendation": "Even a minimal 'Individual application' form (name/phone/what they're looking for → routed to a Telegram group or admin inbox for manual founder/ops follow-up) requires very little engineering and could generate real revenue independent of the matching algorithm's liquidity problems. Consider prioritizing this as a cheap, high-leverage addition before or alongside the 10k launch."
+    },
+    {
+     "id": "BIZ-08",
+     "title": "No re-roll/lock mechanism for Match-of-the-Day — code comment admits it's not built yet, risking a 'slot machine' perception or dead-end UX",
+     "detail": "`src/lib/v2/match-of-the-day.ts` comment explicitly states: 'Future: добавить match locking — раз в день один и тот же match (через user_daily_match таблицу) чтобы избежать рулетки при F5.' Currently, calling `getMatchOfTheDay` likely re-runs `getRecommendations(viewerId, 1)` fresh each time (no persistence of 'today's pick'), meaning a user refreshing the page could get a different top candidate each time (since scoring order could shift as match_views/interests change), or repeatedly see the same one with no visible state — either way, this is not yet a deterministic 'one editorial recommendation per day' product experience as designed, undermining the core differentiation of the pivot (editorial single-match vs. feed).",
+     "severity": "medium",
+     "likelihood": "likely",
+     "blocks_launch": false,
+     "evidence": "src/lib/v2/match-of-the-day.ts lines 18-19 (explicit 'Future' comment, not yet implemented); no user_daily_match table found in supabase/migrations",
+     "recommendation": "Implement the daily-lock table before or shortly after 10k launch — this is core to the product's stated differentiation ('1 recommendation + editorial story', not a feed) per the V2 pivot memory. Without it, the experience risks feeling arbitrary/buggy rather than intentional, especially if users notice the candidate changing on refresh."
+    },
+    {
+     "id": "BIZ-09",
+     "title": "No analytics/funnel instrumentation live to detect any of the above risks in production at 10k scale",
+     "detail": "The spec defines a full funnel event taxonomy and North Star metric (`verified_mutual_interests_with_chat_started`), plus explicit anti-vanity-metric guidance. The existing code audit confirms this is deferred (SYS-022/024/025/027: 'North Star метрика, funnel-события snake_case, §2.4 формулы, per-role дашборды — аналитика отложена'). This means at 10k-user launch, the team will have no systematic visibility into exactly the failure modes flagged in this report — empty-feed rate, gender balance, onboarding drop-off per screen, verification SLA, mutual-interest-to-chat conversion. Flying blind at 10k scale on a cold-start-sensitive marketplace is itself a business risk: problems will be diagnosed anecdotally/too late rather than caught early via dashboards.",
+     "severity": "high",
+     "likelihood": "certain",
+     "blocks_launch": true,
+     "evidence": "docs/audit-mvp-vs-spec-2026-07-01.md SYS-022/024/025/027 ('аналитика отложена (Sprint 2-4)'); chat13_system.md §2.1-2.4 defines North Star + funnel formulas none of which appear implemented in src/",
+     "recommendation": "Before or immediately at 10k launch, implement at minimum the North Star metric query and 3-4 critical funnel counters (onboarding_completion_rate, verification_approval_rate, empty_feed_rate/gender_balance, mutual_to_chat_rate) as simple SQL/admin-panel views even without a full event-tracking pipeline — these are queryable directly from existing tables (users, user_profiles, match_requests, chats) without needing the full analytics build-out, and would materially de-risk the launch by making the problems in this report visible in near-real-time rather than discovered via user complaints."
+    },
+    {
+     "id": "BIZ-10",
+     "title": "Cron infrastructure (delivery + potential future retention/matching jobs) already known-unreliable — a business-continuity risk for any daily-cadence product mechanic",
+     "detail": "Per user memory/verified facts, the GitHub Actions cron triggering `/api/cron/tg-outbox` was failing due to free-tier limits. Since the core product mechanic is now daily-cadence (Match-of-the-Day refresh, any future retention pushes, notification delivery), reliability of the cron trigger is a business-critical dependency, not just an ops nit — if the daily match doesn't refresh reliably, or notifications silently stop firing, users experience an apparently broken/stale product with no error surfaced to them.",
+     "severity": "medium",
+     "likelihood": "likely",
+     "blocks_launch": false,
+     "evidence": "User memory: baxtlilar_2026-07-01_maestro_findings.md and handoff note GitHub Actions cron was failing (free tier); railway.json config shows single-service Railway hosting with no visible dedicated cron service",
+     "recommendation": "Move cron triggering off the free-tier GitHub Actions dependency to a paid/reliable scheduler (Railway's own cron, or a paid uptime/cron service) before 10k launch, and add alerting if the cron hasn't fired successfully within its expected window — silent cron failure directly degrades the core Match-of-the-Day experience and notification delivery."
+    }
+   ]
+  },
+  {
+   "dimension": "business_ops",
+   "findings": [
+    {
+     "id": "OPS-01",
+     "title": "Moderation throughput bug (VF-1) turns launch spike into permanently stuck users",
+     "detail": "The needs_changes -> resubmit path (/api/onboarding/fix/route.ts:58-63) transitions users.verification_status back to pending_review but never creates a verification_cases row (contrast with selfie/route.ts:73-85 which does). Per admin-gap-report VF-1 (critical), this is a normal, common cycle -- many first-time passport photo submissions get rejected for retake -- so at 10k signups this is not an edge case, it is a routine fraction of the funnel. Every affected user inflates the dashboard 'Заявки на проверке' counter (src/app/admin/page.tsx:29-31, counts users.verification_status) but has zero open case, so they appear in neither loadMyQueue nor loadUnassignedQueue (src/lib/admin/load-queue.ts:90-113, both query verification_cases). Result: moderators see a nonzero, growing number with nothing to click on, and the affected users are stuck in pending_review forever with no operator-visible path to a case.",
+     "severity": "critical",
+     "likelihood": "certain",
+     "blocks_launch": true,
+     "evidence": "src/app/api/onboarding/fix/route.ts:58-63 (no case insert) vs src/app/api/onboarding/selfie/route.ts:73-85 (idempotent case insert); src/app/admin/page.tsx:29-31; src/lib/admin/load-queue.ts:90-113; admin-gap-report-2026-07-01.md VF-1/VF-2/VF-3/VF-5",
+     "recommendation": "Ship the report's proposed fix before launch: single AFTER INSERT OR UPDATE trigger on users WHEN verification_status='pending_review' that idempotently inserts a verification_cases row if none open (NOT EXISTS). This is scoped as one migration (report calls it 'S' effort, P0) and closes VF-1/VF-2/VF-5 simultaneously. Also switch the dashboard counter to count verification_cases WHERE state<>'closed' (VF-3) so the number moderators see matches what they can actually open."
+    },
+    {
+     "id": "OPS-02",
+     "title": "No moderator staffing plan exists for verification throughput at 10k users, and per-case work is manual data entry, not a click",
+     "detail": "Approving a case requires the moderator to manually transcribe 17 passport fields (last_name, first_name, birth_date, gender, citizenship, birth_place, passport_series, passport_number, pinfl, issued_by, issued_at, expires_at, region_code, district_code, locality, street_address -- src/lib/admin/passport-validation.ts:7-24) that then run through validatePassportPayload before admin_approve_verification RPC accepts them (src/app/api/admin/cases/[id]/decision/route.ts:36-60), plus a manual 3-checkbox face-match attestation with no similarity score (FaceMatchStep.tsx:17-48, matches gap-report SG-08). This is real data-entry time (3-8 min/case is a defensible band), not a rubber-stamp. At 10k signups spread over a ~20 working-day launch ramp, that is ~500 verification cases/day; at a 5 min/case midpoint and ~6 productive moderation hours/day, one moderator clears ~72 cases/day, so the queue needs approximately 7 moderators (range: 4 at the fast/3-min end, 11 at the slow/8-min end with rejections and re-checks). If the signup curve is front-loaded (e.g. a marketing push drives 5k signups in week one), daily load doubles and so does the required headcount, or the backlog balloons -- and because of OPS-01 that backlog is partly invisible on the dashboard. No document, config, or staffing plan for this exists anywhere in the repo.",
+     "severity": "critical",
+     "likelihood": "certain",
+     "blocks_launch": true,
+     "evidence": "src/lib/admin/passport-validation.ts:7-24 (17-field payload); src/app/api/admin/cases/[id]/decision/route.ts:36-60; src/components/admin-ops/case/FaceMatchStep.tsx:17-48; admin-gap-report SG-08; no staffing/roster docs found in repo",
+     "recommendation": "Before opening signups at 10k scale, commit to a concrete moderator roster sized to the actual expected signup curve (not a flat 10k/day-one assumption) -- staff for the ~7-moderator midpoint if the launch ramp is ~3-4 weeks, more if front-loaded. Track actual cases/hour per moderator in week one and re-forecast. Given this is a verify-walled dating app, verification IS the product's critical path -- under-staffing it stalls the entire funnel, not just a support queue."
+    },
+    {
+     "id": "OPS-03",
+     "title": "Zero bulk actions anywhere in the admin panel -- every moderation action is one row at a time",
+     "detail": "Grep for 'bulk' across src/app/admin, src/lib/admin, and src/components/admin-ops returns zero hits. Photo review (PhotosScreen.tsx:30-37) has quickApprove/quickReject per single photo with no multi-select. The verification queue tables (queue/mine/page.tsx:104-206) render one row per case with no checkboxes or batch operations. Reports table (reports/page.tsx) is the same pattern. At 10k users producing up to 30,000 photo-review actions (3 photos/user max, MAX_PHOTOS=3 in src/app/api/onboarding/profile/photo/route.ts:9) and ~10,000 verification cases, single-row-at-a-time operation multiplies moderator click-count and fatigue without any efficiency lever (no select-all-and-approve-clean-batch, no keyboard-driven review flow).",
+     "severity": "high",
+     "likelihood": "certain",
+     "blocks_launch": false,
+     "evidence": "grep -rn bulk src/app/admin src/lib/admin src/components/admin-ops -> 0 hits; src/app/admin/photos/PhotosScreen.tsx:30-37; src/app/admin/queue/mine/page.tsx:104-206; src/app/api/onboarding/profile/photo/route.ts:9 (MAX_PHOTOS=3)",
+     "recommendation": "P1: add keyboard-driven single-case review (next/prev + approve/reject hotkeys) to cut per-case time even without true multi-select bulk approve (which is riskier for compliance on identity docs). For low-risk photo review, add real multi-select bulk-approve for the 'clean' cases where no policy flags trip."
+    },
+    {
+     "id": "OPS-04",
+     "title": "The only SLA mechanism (7-day stale-case reclaim) has no scheduler wired to it in production -- likely never runs",
+     "detail": "admin_sla_reclaim_stale_cases (supabase/migrations/20260630010000_verification_case_sla.sql:12-43) is the entire SLA infrastructure per the gap-report (SG-04), and it is only invoked from /api/cron/housekeeping (src/app/api/cron/housekeeping/route.ts). Searching the repo for any scheduler that calls housekeeping finds nothing: railway.json has no cron/schedule field (only build/deploy/healthcheck config), and .github/workflows/ contains exactly one workflow file, cron-tg-outbox.yml, which only POSTs /api/cron/tg-outbox every 5 minutes -- it never calls /api/cron/housekeeping. Per project memory, the tg-outbox GitHub Action itself is already known-broken (private repo free tier exhausted). If housekeeping is likewise unscheduled (or scheduled on the same dead mechanism), cases abandoned by a moderator (vacation, turnover) never get reclaimed -- the report's stated 7-day SLA is fictional in production; those users are stuck indefinitely, not for a week.",
+     "severity": "critical",
+     "likelihood": "likely",
+     "blocks_launch": true,
+     "evidence": "supabase/migrations/20260630010000_verification_case_sla.sql:1-43; src/app/api/cron/housekeeping/route.ts:1-60; railway.json (no cron field); .github/workflows/ contains only cron-tg-outbox.yml; project memory notes GitHub Actions cron already failing on free tier",
+     "recommendation": "Verify immediately whether anything currently calls /api/cron/housekeeping in production (check Railway logs / external cron-job.org config, since the memory note says this was the suggested alternative to GitHub Actions). If nothing calls it, wire it to a working external scheduler (cron-job.org or Railway's own scheduled service, not GitHub Actions free tier) before launch -- this is cheap (one cron registration) but currently the single point of recovery for abandoned cases at scale."
+    },
+    {
+     "id": "OPS-05",
+     "title": "Dashboard has no SLA/due-date/priority surface -- operators cannot see what is overdue (SG-04)",
+     "detail": "src/app/admin/page.tsx:27-103 is flat StatCards (pending count, photos count, reports count, population, demographics) with no due_at, priority, average moderation time, or 'needs attention' view. There is no per-case age indicator anywhere in the queue UI (queue/mine/page.tsx renders created_at as a raw timestamp, no overdue highlighting). Combined with OPS-04 (the only SLA mechanism likely not scheduled), operators at 10k scale have no way to know which cases are aging past a target SLA until a user complains or the founder manually audits the DB.",
+     "severity": "high",
+     "likelihood": "certain",
+     "blocks_launch": false,
+     "evidence": "src/app/admin/page.tsx:27-103; src/app/admin/queue/mine/page.tsx:104-206 (no age/overdue styling); admin-gap-report SG-04",
+     "recommendation": "P1 per report: add due_at/priority columns to verification_cases and reports, surface an overdue-highlighted 'Требуют внимания' section on the dashboard. Medium effort (report estimates M-L), but this is the difference between operators managing the queue proactively vs. reactively at 10k scale."
+    },
+    {
+     "id": "OPS-06",
+     "title": "Reports/complaints handling is superadmin-only -- cannot scale by hiring moderators",
+     "detail": "src/app/admin/reports/page.tsx:65 calls notFound() if session.role !== 'superadmin'. Only two roles exist in the system (role in ('superadmin','moderator'), init_schema.sql:221), so complaint triage is hard-gated to whichever small number of people hold superadmin. Unlike verification (which moderators can be hired to clear), reports handling cannot be scaled horizontally by adding moderator headcount -- it is capped at founder/superadmin bandwidth. The report handling itself is also thin: only 3 status transitions (in_progress/action_taken/not_confirmed, report-actions.tsx:12-15), no assignment, priority, evidence attachment, related-chat view, or escalation (SG-05, high). At 10k users, report volume (fake profiles, harassment, contact-sharing attempts) will scale with population and this is a hard ceiling, not a soft one.",
+     "severity": "high",
+     "likelihood": "likely",
+     "blocks_launch": true,
+     "evidence": "src/app/admin/reports/page.tsx:63-66; supabase/migrations/20260531000000_init_schema.sql:221 (2-role check constraint); src/components/admin/report-actions.tsx:12-15; admin-gap-report SG-05, SG-01",
+     "recommendation": "Before 10k launch, either grant a moderator-tier permission to triage reports (requires the RBAC work in SG-01/SG-02, which the report scopes as L-effort P2) or explicitly staff enough superadmins/founders to cover report volume. At minimum, build the /admin/reports/[id] detail view + assignment (P1 per report) so whoever handles reports can work a real queue instead of a flat list with 3 buttons."
+    },
+    {
+     "id": "OPS-07",
+     "title": "No 2FA on admin accounts holding passport PII and ban authority",
+     "detail": "src/app/api/admin/login/route.ts is password-only: verifyPassword() then immediately setAdminSession() (line ~40-61), no second factor. admin_users table (init_schema.sql:218-224) has no TOTP/2FA columns at all. Per gap-report SG-03 (high), a single leaked password grants full access to passport documents, selfies, PINFL, and ban/restrict authority for the entire user base. At 10k users with a moderator team of ~7+ people (per OPS-02), the credential attack surface (phishing, password reuse, shared devices) scales with headcount, and this is exactly the kind of control the parallel MVP legal audit flagged as the top launch risk area (consents/sensitive PII handling).",
+     "severity": "high",
+     "likelihood": "possible",
+     "blocks_launch": true,
+     "evidence": "src/app/api/admin/login/route.ts (password-only flow); supabase/migrations/20260531000000_init_schema.sql:218-224 (no totp columns); admin-gap-report SG-03",
+     "recommendation": "Add TOTP-based 2FA before scaling the moderator team past 2-3 trusted people. This is scoped by the report as part of a larger RBAC/staff L-effort item, but 2FA alone (TOTP secret column + verification step in login route) can be shipped independently and cheaply, and should be prioritized ahead of the rest of SG-01/02/03 given the PII exposure."
+    },
+    {
+     "id": "OPS-08",
+     "title": "No staff/roles management screen -- admins are provisioned by direct DB INSERT",
+     "detail": "Per gap-report SG-02 (high), there is no /admin/staff route, no staff API, and admin_users has no status/department/last_activity/invitation columns (init_schema.sql:218-224). Onboarding a new moderator (needed per OPS-02's ~7-person staffing requirement) requires someone to manually run SQL against production to insert a row with a hashed password -- there is no self-service invite flow, no way to deactivate a departing moderator's account from the UI, and no visibility into who is currently staffed or when they last worked a case.",
+     "severity": "high",
+     "likelihood": "certain",
+     "blocks_launch": false,
+     "evidence": "admin-gap-report SG-02; supabase/migrations/20260531000000_init_schema.sql:218-224 (admin_users has only id/login/role/password_hash/created_at)",
+     "recommendation": "Build a minimal /admin/staff screen (list, invite via generated temp password, deactivate) before scaling to a 5-10 person moderation team -- doing this via raw SQL for each hire/departure is an operational bottleneck and a security risk (no audit trail for who provisioned an account, no fast revoke path if a moderator's access needs to be pulled)."
+    },
+    {
+     "id": "OPS-09",
+     "title": "No RBAC granularity -- two hardcoded roles, all-or-nothing access to identity documents and ban power",
+     "detail": "role in ('superadmin','moderator') is a DB check constraint (init_schema.sql:221), mirrored in session.ts:10 and guard.ts:11. Every permission check in the codebase is a binary superOnly / role !== 'superadmin' branch. There is no way to grant a moderator narrower permissions like 'view identity documents' vs 'download identity documents' vs 'open chat for complaint review' as the spec's 18-role matrix envisions (SG-01, high). Practically, this means every hired moderator gets the same access level as every other moderator, with no least-privilege tiering, and any org growth (e.g. a junior reviewer who should only see photos, not passports) requires code changes, not config.",
+     "severity": "medium",
+     "likelihood": "certain",
+     "blocks_launch": false,
+     "evidence": "supabase/migrations/20260531000000_init_schema.sql:221; src/lib/admin/session.ts:10; src/lib/admin/guard.ts:11; admin-gap-report SG-01",
+     "recommendation": "P2 per report (L effort -- new tables, permission-guard rework). Not launch-blocking at initial headcount (~7 moderators all doing the same verification job), but plan the RBAC migration before headcount or role diversity grows further, since retrofitting permission granularity onto a live admin_audit_log and guard system is more expensive later."
+    },
+    {
+     "id": "OPS-10",
+     "title": "ProfileTab shows only ~15 of the V4 anketa's ~40 fields -- moderators reviewing profiles are missing finance, lifestyle (incl. alcohol/drugs fields), family-model, and the full partner-preference block",
+     "detail": "Per gap-report §3 (PD-01 through PD-14), ProfileTab's SELECT (ProfileTab.tsx:41-45) never fetches the extended jsonb column, so an entire class of anketa content is invisible in the client card: extended.lifestyle (alcohol_level, drugs_use -- explicitly flagged by the report as 'relevant for moderation' and currently invisible, PD-09 high), extended.finance, family-model fields, and the Big Five quiz vector (quiz_results, PD-13 high, zero grep hits in src/app/admin). At 10k users, if content moderation of anketas (SG-07: no profile-content moderation exists at all -- text/goals are not approval-gated before publishing to Matching) is ever added, or if a moderator needs to sanity-check a report ('this user's profile says X'), they are working from a client card with roughly a third of the actual submitted data.",
+     "severity": "high",
+     "likelihood": "certain",
+     "blocks_launch": false,
+     "evidence": "src/app/admin/clients/[id]/ProfileTab.tsx:41-45 (narrow SELECT); admin-gap-report §3 PD-01..PD-14, especially PD-09 (alcohol/drugs invisible) and SG-07 (no content moderation gate before publish)",
+     "recommendation": "P1 per report: rewrite the ProfileTab SELECT+render to include the extended jsonb (one-file fix per the report, M effort) before scaling headcount, since new moderators trained on an incomplete card will develop blind spots that are hard to retrain later. If profile-content moderation (SG-07) is in scope for 10k launch, this is a prerequisite, not optional polish."
+    },
+    {
+     "id": "OPS-11",
+     "title": "No content-moderation gate on profile text before it reaches Matching (SG-07)",
+     "detail": "Per gap-report SG-07 (high): only identity (passport+selfie) verification exists as a gate. Bio text, stated goals, and other free-text anketa fields are not approval-gated before a profile is published into the matching pool -- ProfileTab is entirely read-only (ProfileTab.tsx:80) and there is no 'Анкеты' section in the admin sidebar at all. At 10k users this means any user who passes identity verification can publish arbitrary bio/goals text (contact info attempts are caught by the containsContact regex per VERIFIED FACTS, but non-contact abusive/inappropriate/spam text is not screened) with zero human review before matching begins.",
+     "severity": "high",
+     "likelihood": "likely",
+     "blocks_launch": false,
+     "evidence": "admin-gap-report SG-07; src/app/admin/clients/[id]/ProfileTab.tsx:80 (read-only)",
+     "recommendation": "Decide explicitly whether pre-publish content moderation is in scope for 10k launch. If not, at minimum ensure the reports flow (OPS-06) and phrase-based auto-flagging can catch abusive bios post-publish quickly, since there is currently no pre-publish net at all beyond the identity check and the contact-info regex."
+    },
+    {
+     "id": "OPS-12",
+     "title": "Single Railway instance with no visible autoscale/replica config + max-5-retry restart policy: a launch signup spike has no headroom",
+     "detail": "Per VERIFIED FACTS: single Railway service, NIXPACKS, healthcheck /api/health with 120s timeout, restartPolicy ON_FAILURE max 5 retries, no visible autoscale or replica configuration (confirmed directly by reading railway.json, which has only build/deploy/healthcheck keys, no scaling config). Combined with rate limiting that VERIFIED FACTS notes is 'present in a few routes... NOT global,' a marketing-driven launch spike (e.g. a Telegram channel post driving thousands of /start events in a short window) has no autoscale to absorb load and only 5 restart attempts before Railway stops trying, which would take the whole app (including the admin panel moderators depend on) offline simultaneously with the highest-need moment for both onboarding and moderation capacity.",
+     "severity": "high",
+     "likelihood": "possible",
+     "blocks_launch": true,
+     "evidence": "railway.json (build/deploy keys only, no scale/replica field); VERIFIED FACTS (rate limiting not global, restartPolicy max 5)",
+     "recommendation": "Before a marketing-driven launch, either throttle the signup funnel intentionally (staged rollout / invite codes, controlling the rate at which /start events arrive) or confirm the Railway plan supports horizontal scaling and configure it explicitly -- do not rely on default single-instance behavior for a spike. Load-test the onboarding path (TG initData verify + start-token consume + bootstrap) at a realistic burst rate before opening broadly."
+    },
+    {
+     "id": "OPS-13",
+     "title": "No incident-response/on-call process exists in the repo or docs for admin-panel or moderation outages",
+     "detail": "No PagerDuty/on-call config, runbook, or escalation doc was found anywhere in src/app/admin, src/lib/admin, or docs/. The only 'incident response' capability referenced in the gap-report is the superadmin unblock-verification path (VF-2, which itself has the same case-creation bug as VF-1) and the two-person ban confirm/cancel dispatcher (guard.ts:128-253, F-119) which is a good control for ban actions specifically but is not a general incident process. There is no alerting on cron failures (the housekeeping/tg-outbox cron silently returns per-task ok:false in JSON with no notification, per housekeeping/route.ts structure), no alert if the admin login throttle triggers en masse (possible credential-stuffing signal), and no defined who-gets-paged-if-the-verification-queue-stops-moving process.",
+     "severity": "medium",
+     "likelihood": "likely",
+     "blocks_launch": false,
+     "evidence": "grep for on-call/runbook/pagerduty across repo and docs/ -- no hits; src/app/api/cron/housekeeping/route.ts returns per-task ok/error in response body only, no external alert wiring; src/lib/admin/guard.ts:128-253 (F-119 two-person ban, the closest thing to a formal process that exists)",
+     "recommendation": "Before 10k launch, write a minimal runbook (who to page if: verification queue stops moving / cron jobs silently fail / admin login is locked out / a mass-ban or data-exposure incident occurs) and wire at least a basic alert (e.g. a Slack/Telegram webhook) on cron task failures from housekeeping and tg-outbox, since right now those failures are only visible if someone manually checks the JSON response or Railway logs."
+    },
+    {
+     "id": "OPS-14",
+     "title": "Photo review queue is a separate, high-volume bottleneck (up to 30,000 review actions) with only single-item quick-approve",
+     "detail": "Each user can upload up to MAX_PHOTOS=3 (src/app/api/onboarding/profile/photo/route.ts:9), so at 10k users the photo queue can reach ~30,000 individual photo-review actions, larger in raw count than the ~10,000 verification cases. PhotosScreen.tsx offers only per-item quickApprove/quickReject (lines 30-37) with an 'Overdue >24h' filter tab but no bulk approve for clean photos and no visible per-moderator throughput tracking. Even at a fast ~20-30 sec/photo glance-approve rate, 30,000 photos is roughly 170-250 moderator-hours total (~4-6 moderator-weeks at full time), which is a meaningful add-on to the verification staffing in OPS-02, not a rounding error, and currently has to be split across the same 2-role moderator pool with no dedicated tooling to speed it up.",
+     "severity": "medium",
+     "likelihood": "likely",
+     "blocks_launch": false,
+     "evidence": "src/app/api/onboarding/profile/photo/route.ts:9 (MAX_PHOTOS=3); src/app/admin/photos/PhotosScreen.tsx:30-93 (single-item actions only, no bulk)",
+     "recommendation": "Size staffing to include photo review as its own line item (not folded silently into verification headcount), and prioritize a lightweight bulk-approve or fast-review-mode (e.g. spacebar-to-approve keyboard flow) for photos specifically, since photo review has a much better bulk-safety profile than passport data entry (lower per-item risk, higher volume) and is the cheapest place to buy back moderator time."
+    },
+    {
+     "id": "OPS-15",
+     "title": "Admin dashboard queue counters can silently diverge from reality (VF-3) even after the VF-1 trigger fix, if not also fixed",
+     "detail": "Per gap-report VF-3 (high): the dashboard 'Заявки на проверке' counter and the actual queue use structurally different predicates -- the counter is per-user (users.verification_status='pending_review', page.tsx:29-31) while the queue is per-case/per-assignee (verification_cases state<>'closed', load-queue.ts). Even after the VF-1 trigger closes the immediate case-creation gap, these two counting models can still drift under edge cases (e.g. a user with multiple historical cases, or timing windows around case creation), because they are not reading from the same source of truth. This directly undermines operator trust in the dashboard numbers precisely at the moment (10k scale) when operators most need to trust an at-a-glance signal instead of manually auditing the DB.",
+     "severity": "medium",
+     "likelihood": "possible",
+     "blocks_launch": false,
+     "evidence": "src/app/admin/page.tsx:29-31 (counts users table); src/lib/admin/load-queue.ts:90-113 (counts verification_cases table); admin-gap-report VF-3",
+     "recommendation": "Implement the report's VF-3 fix alongside VF-1: switch the dashboard counter to COUNT(verification_cases WHERE state<>'closed') so it reads the same source as the queue. Low incremental cost once the VF-1 migration is being written anyway."
+    }
+   ]
+  }
+ ],
+ "blockers": [
+  {
+   "id": "APP-1",
+   "title": "Pre-mutual profile page ships exact DOB, marital status, religion & full bio of any target into client payload",
+   "detail": "GET /[locale]/v2/profile/[id] builds progressiveData with the target's exact birth_date, marital_status, religion, has_children, future_children_plan, education and full bio, then passes it as a prop to the client component ProgressiveProfile (\"use client\"). Next.js serializes client-component props into the RSC/HTML payload, so all of that PII is visible in the browser network tab to ANY verified viewer BEFORE mutual consent — even though the UI only renders first name + city + coarse traits. The whole point of 'progressive disclosure' (exact age/DOB hidden until mutual match) is defeated at the wire level. At 10k users this is a bulk-scrapable PII oracle: iterate profile UUIDs (obtained from the feed/recommend endpoint) and harvest DOB+religion+marital status for every published, active user. In the RUz cultural/legal context (serious-dating app, sensitive personal data) exact DOB + religion + marital status of women is exactly the data the product promised to gate.",
+   "severity": "high",
+   "evidence": "src/app/[locale]/v2/profile/[id]/page.tsx:125-140 (progressiveData includes birth_date, marital_status, religion, bio, has_children); ProfileForMatch type src/lib/v2/match-story.ts:34-38; consumer src/components/v2/ProgressiveProfile.tsx:25 (\"use client\") renders only firstWord(display_name)/city/traits (lines 108-135) — DOB never displayed but is present in props",
+   "recommendation": "Do not pass raw birth_date/marital_status/religion/bio to the pre-mutual client component. On the server, derive only what the UI needs (e.g. an age BUCKET or nothing), strip bio/marital/religion from progressiveData, and send the reveal-level fields only on the isMutual=true branch. Treat every field placed on a client-component prop as publicly readable.",
+   "likelihood": "certain",
+   "effort": "S",
+   "blocks_launch": true
+  },
+  {
+   "id": "INFRA-01",
+   "title": "Passport + selfie PII on single unreplicated Railway Volume with no backup/DR — crown-jewel data loss risk",
+   "detail": "supabaseAdmin().storage is wired to createStorage() from src/lib/storage/fs-store.ts (a Railway Volume filesystem store), not object storage. All passports and selfies are written to STORAGE_DIR (prod=/data per docs/ARCHITECTURE.md L44) on the single Railway service instance. There is no volume/backup/replica/snapshot config in railway.json and no backup or DR posture documented anywhere in docs/. A Railway Volume is a single-instance, unreplicated disk; if the volume is lost, corrupted, or the service is recreated, every passport+selfie is gone with no recovery path. For a KYC dating app this is the single highest-value asset and the most regulatorily damaging loss. Postgres (native pg on same Railway) has the same undocumented-backup exposure. At 10k users this is thousands of government-ID images with no verified recoverability.",
+   "severity": "critical",
+   "evidence": "src/lib/supabase/admin.ts:4,16 (storage: createStorage()); src/lib/storage/fs-store.ts:1-14; src/lib/uploads/storage.ts:32-34; docs/ARCHITECTURE.md:41-44 (STORAGE_DIR=/data Railway Volume); railway.json (no volume/backup config); grep for backup|snapshot|restore in docs/ returns nothing",
+   "recommendation": "Before launch: (1) confirm /data is a persistent mounted Railway Volume, not ephemeral container FS (if ephemeral, redeploys already wipe PII); (2) enable Railway Postgres automated backups + verify a restore; (3) set up scheduled off-site copies of the document volume (encrypted) or migrate document storage to a durable object store (S3/R2) with versioning; (4) document RPO/RTO. Treat as launch-blocking.",
+   "blocks_launch": true,
+   "likelihood": "likely",
+   "effort": "L"
+  },
+  {
+   "id": "INFRA-02",
+   "title": "No monitoring, alerting, or incident visibility — a breach or outage is invisible",
+   "detail": "There is no Sentry, Datadog, OpenTelemetry, Logtail, or any error/alerting integration in package.json or the codebase. Observability is limited to console.error/console.warn lines that go only to Railway's ephemeral stdout. There is no way to detect an ongoing outage, a spike in 401/403/500s, repeated admin-login failures, a volume-fill event, or exfiltration of signed URLs. For a service holding passport+selfie PII, the inability to detect and respond to a security incident is itself a compliance and safety failure. At 10k users, silent degradation (e.g. failed push delivery, DB errors, upload floods) will only surface via user complaints.",
+   "severity": "high",
+   "evidence": "grep for sentry|datadog|opentelemetry|logtail|alerting|pagerduty in package.json and src/ returns nothing; error handling throughout is console.error only (e.g. src/app/api/health/route.ts:16, src/lib/admin/guard.ts:112, src/app/api/telegram/webhook/route.ts:35)",
+   "recommendation": "Add error tracking (Sentry) + uptime/health alerting (cron or Railway health hook to a pager/Telegram ops channel) + alerts on admin-login-throttle events, DB connection failures, and volume disk usage. Minimum: one alert channel wired to /api/health failing and to unhandled errors before launch.",
+   "blocks_launch": true,
+   "likelihood": "certain",
+   "effort": "M"
+  },
+  {
+   "id": "INFRA-03",
+   "title": "No global rate limiting on a single non-autoscaling instance — trivial DoS via bot /start, API, or upload floods",
+   "detail": "Rate limiting is per-route and sparse (admin/login, account, interest, feed/skip, chat, matching quota). There is no global limiter and no Redis/edge limiter. The Telegram webhook fans out to bot handlers with no per-user /start cooldown (grep for rate-limit/throttle/flood in src/lib/telegram returns nothing), so an attacker who obtains the webhook secret — or simply floods legitimate /start via many chats — drives unbounded DB writes. Upload endpoints (onboarding/document, onboarding/selfie, profile/photo) buffer up to 12MB per request fully into memory via await file.arrayBuffer() before any size check, with no per-user upload rate limit. This runs on a single Railway instance with no visible autoscale/replica config and restartPolicyMaxRetries:5 — a sustained flood exhausts memory/CPU, the instance crashes, and after 5 restarts it stays down. Availability of the whole platform hinges on one process.",
+   "severity": "high",
+   "evidence": "VERIFIED FACT: rate limiting NOT global; railway.json (no replica/autoscale, restartPolicyMaxRetries:5); src/app/api/onboarding/document/route.ts:22 and selfie/route.ts:25 (await file.arrayBuffer() before size check); src/lib/uploads/storage.ts:26,92 (MAX_BYTES check happens after full buffer in memory); grep rate-limit/throttle in src/lib/telegram → none",
+   "recommendation": "Add a global IP/user rate limiter at the edge (Railway/Cloudflare WAF rate rules) or middleware-level token bucket; add a per-user /start cooldown in bot handlers; enforce a request body-size cap (reject > ~12MB by Content-Length before buffering) and per-user upload throttle; put the app behind Cloudflare (or Railway's edge protections) for L3/L4 DDoS absorption. Consider raising restart retries / adding a replica.",
+   "blocks_launch": true,
+   "likelihood": "likely",
+   "effort": "M"
+  },
+  {
+   "id": "INFRA-05",
+   "title": "Admin panel protected only by password + throttle — no 2FA, no IP allowlist, no captcha",
+   "detail": "/admin is gated solely by a login form (bx_admin HMAC cookie). Brute-force defense is admin_login_attempts throttling at 5 failures / 15 min per IP and per login — but there is no MFA/2FA, no captcha, and no network-level restriction (grep for captcha/allowlist/IP-restrict in src/lib/admin and proxy.ts returns nothing). The throttle is per trusted-IP, so a distributed attacker rotating IPs faces only the per-login 5/15min limit against a single known admin username — slow but not infeasible over time, and offers no protection if an admin password is phished/reused. This panel can approve/reject verifications and view every user's passport+selfie; it is the highest-value target on the platform.",
+   "severity": "high",
+   "evidence": "src/app/api/admin/login/route.ts:25 (throttle by ip and loginKey, MAX_FAILS=5/15min per src/lib/admin/throttle.ts:4-5); no captcha/2FA/IP-allowlist anywhere (grep returns nothing); src/proxy.ts:64-70 exempts /api/admin/* from session gate (handled in-route), no network restriction",
+   "recommendation": "Add TOTP 2FA for admin login (superadmin mandatory), restrict /admin to an operator IP allowlist or VPN if feasible, and add a captcha after N failures. Given the panel exposes government-ID PII, at minimum ship 2FA before opening to 10k users.",
+   "blocks_launch": true,
+   "likelihood": "possible",
+   "effort": "M"
+  },
+  {
+   "id": "DBS-01",
+   "title": "SSE chat stream polls DB every 1.5s per open chat, draining a 10-connection pool",
+   "detail": "src/app/api/chats/[id]/stream/route.ts holds an open SSE connection for up to 45s (MAX_MS=45000) and inside the loop polls the DB every TICK_MS=1500ms. Each tick calls loadChatRow (1 query on chats + areBlocked lookup) and getLiveState (chat_messages window query + read_through query) = ~3 round-trips. So a single active chat viewer generates ~2 queries/sec sustained for the whole session. All of this goes through one process-wide pg Pool with max=Number(process.env.PG_POOL_MAX ?? 10) (src/lib/db/pool.ts:27). With even a few hundred concurrent open chats across a single Railway instance (no replica config in railway.json), demand vastly exceeds 10 connections; requests queue behind connectionTimeoutMillis=10000 and then error. This is the first thing to break under realistic concurrency at 10k users — it degrades not just chat but every DB-backed route sharing the pool.",
+   "severity": "critical",
+   "evidence": "src/app/api/chats/[id]/stream/route.ts:9-11 (TICK_MS=1500, MAX_MS=45000, maxDuration=60), :59-82 loop; src/lib/chat/live.ts:31-42,50-87 (3 queries/tick); src/lib/db/pool.ts:27 max=10; railway.json (single service, no replicas)",
+   "recommendation": "Move chat live updates off DB-polling: use Postgres LISTEN/NOTIFY or a Redis pub/sub fanout so each SSE connection consumes 0 steady-state pool connections, OR raise TICK_MS and cap concurrent SSE per instance. Independently, put PgBouncer (Supabase pooler / Railway PgBouncer) in front so pg pool max can be small per-process while total server-side connections are bounded, and size PG_POOL_MAX explicitly (currently defaulting to 10).",
+   "likelihood": "certain",
+   "effort": "L",
+   "blocks_launch": true
+  },
+  {
+   "id": "DBS-02",
+   "title": "No connection pooler (PgBouncer) — direct pg connections risk exhaustion under concurrency/restarts",
+   "detail": "DATABASE_URL points at postgres-8jav.railway.internal:5432 (direct Postgres port, not a 6543 transaction-pooler). Connections are managed only by the in-process pg Pool (max default 10, idleTimeoutMillis 30s). There is no PgBouncer/transaction pooler between the app and Postgres. On a single Railway instance this caps at ~10 backends, but any horizontal scaling, a crash-loop restart (restartPolicyMaxRetries=5), or the cron endpoints running concurrently with web traffic all multiply real backends against a small Postgres max_connections. Combined with DBS-01's polling, the effective ceiling is very low and there is no shared pooler to absorb spikes.",
+   "severity": "high",
+   "evidence": ".env.access:34 DATABASE_URL=...railway.internal:5432 (direct, no pooler); src/lib/db/pool.ts:20-31 (single Pool, max 10); railway.json restartPolicyMaxRetries=5",
+   "recommendation": "Introduce a transaction-mode pooler (PgBouncer / Supabase pooler on port 6543) and point DATABASE_URL at it; keep pg Pool max modest per instance. Verify Postgres max_connections headroom on the Railway plan and document the pool-per-instance × instances math.",
+   "likelihood": "likely",
+   "effort": "M",
+   "blocks_launch": true
+  },
+  {
+   "id": "INFRA-03",
+   "title": "No confirmed backup/PITR for the Railway Volume holding passport + selfie + profile PII — volume loss = catastrophic, irrecoverable PII loss",
+   "detail": "All identity documents (passport photos, selfies) and profile photos are stored only on the Railway Volume at /data (BUCKET_DOCUMENTS='user-documents', BUCKET_PHOTOS='profile-photos'). There is no code-visible replication or off-box copy — files exist in exactly one place. If the volume is lost, corrupted, or the service is deleted/misconfigured, every user's verification documents and photos are gone with no recovery, and re-verification of the entire base would be required. Railway volume backup/snapshot status cannot be determined from the repo (it is a dashboard setting) — it MUST be confirmed. Given this is legally-sensitive identity data (the MVP audit already flags legal as the top risk domain), running with no verified backup is unacceptable for a real launch. The Postgres DB has the same question (Railway Postgres backup cadence must be confirmed), but DB is more commonly auto-backed-up than a raw volume.",
+   "severity": "critical",
+   "evidence": "src/lib/uploads/storage.ts:6-7 (single buckets on volume); src/lib/storage/fs-store.ts (fs-only, no replication); docs/ARCHITECTURE.md:41-44; premise: RLS disabled on all 30 tables so app is the only guard — data layer has no second line of defense",
+   "recommendation": "Before launch: (1) enable/verify Railway volume backups AND set up an independent scheduled off-box copy of /data to object storage (R2/S3) — a nightly rsync/tar job is enough for 10k. (2) Confirm Railway Postgres automated backup cadence + do a test restore. (3) Document RTO/RPO. Do not launch storing passport/selfie PII on a single unbacked volume.",
+   "likelihood": "possible",
+   "effort": "M",
+   "blocks_launch": true
+  },
+  {
+   "id": "INFRA-06",
+   "title": "Push delivery reliability hinges on cron that was failing (GitHub Actions free tier) — failed sends may never retry",
+   "detail": "Delivery has two paths: best-effort synchronous tryDeliverNow at enqueue time, and the cron-driven processOutboxBatch retry. Per the handoff, the GitHub Actions cron was failing on free tier. If cron is not reliably running, then any message whose synchronous send fails (bot blocked, transient TG error, deploy in progress) is left pending and NEVER retried — it just accumulates last_error/attempts with nothing draining it. The outbox's whole value (retry-safe, not lost on failure) is nullified without a working scheduler. Additionally attempts>=5 rows are silently abandoned (skipped by the drain query) with no alerting.",
+   "evidence": "src/lib/v2/tg-outbox-worker.ts:241-268 (tryDeliverNow best-effort; enqueueAndDeliver relies on it), :212-218 (drain skips attempts>=5); handoff: GitHub Actions cron failing on free tier; cron requires external trigger with X-Cron-Secret",
+   "recommendation": "Move cron to Railway's native scheduled jobs (or a paid reliable scheduler) and verify it fires on the 30-60s cadence in prod. Add a health metric/alert on pending-outbox depth and on rows stuck at attempts>=5. Confirm both tg-outbox AND housekeeping crons are actually running post-deploy.",
+   "severity": "high",
+   "likelihood": "likely",
+   "effort": "S",
+   "blocks_launch": true
+  },
+  {
+   "id": "BIZ-01",
+   "title": "Zero monetization mechanism exists — Premium spec is 100% unbuilt",
+   "detail": "The premium spec (chat4_premium.md) defines a full tariff model (Free/Plus/Pro/Family/Individual) where the CORE mechanism is: chat only opens after mutual interest AND a paid Plus/Pro subscription (chat_access_enabled gated by subscription_plan). In the actual codebase, chat opens automatically and unconditionally on mutual interest with zero plan check — `src/lib/matching/chat.ts` `ensureChat()` has no subscription/plan gate at all, and `src/app/api/interest/route.ts` calls `enqueueAndDeliver(receiver_id, 'mutual_match')` with no paywall step. There are no `subscription`, `payment`, `tariff`, `plan`, or `billing` tables anywhere in the 50 migration files (verified via grep across all `supabase/migrations/*.sql`); no `subscription_plan`/`chat_access_enabled`/`payment_status` columns exist on any table. `daily_request_quotas` (interests=5/day, views=30/day) is explicitly commented in code as anti-spam only: 'антиспам, защита аудитории — не монетизация' (`src/lib/matching/quota.ts` line 4). No payment SDK (Click/Payme/Uzcard/Humo) appears in package.json or env.ts. This is already flagged in the code-audit doc as SYS-018 (low severity, code-bug framing) — but as a BUSINESS finding it is far more severe: there is no revenue mechanism to launch with at all.",
+   "severity": "critical",
+   "likelihood": "certain",
+   "blocks_launch": true,
+   "evidence": "grep across supabase/migrations/*.sql for subscription/payment/tariff/plan/billing returns zero hits; src/lib/matching/chat.ts ensureChat() has no plan check; src/lib/matching/quota.ts:4 comment 'не монетизация'; package.json has no payment SDK; docs/audit-mvp-vs-spec-2026-07-01.md SYS-018",
+   "recommendation": "Decide explicitly: is 10k-launch a monetization-free growth phase (acceptable IF founder consciously chooses free-for-liquidity strategy) or does it need revenue day one? If revenue is required, minimum viable slice before 10k: (1) DB fields for subscription_plan/status/expiry, (2) gate chat behind Plus using the spec's own can_open_chat() logic, (3) integrate one local provider (Click or Payme) for a single SKU (Plus, 1 month). If NOT required at 10k, explicitly document this as a deliberate 'free growth phase' decision with the founder (per RU-12: don't launch tariffs without terms/refunds/logs) — otherwise the team may believe monetization exists because it's spec'd, and burn runway with zero revenue and no informed decision to have done so."
+  },
+  {
+   "id": "BIZ-02",
+   "title": "Cold-start liquidity: strict mutual gender/age-window matching + verification gate = high risk of empty feed at low density",
+   "detail": "The `get_recommendations` SQL RPC (supabase/migrations/20260630000000_recommendations_v3_top_life_values.sql) requires BOTH sides to be `verification_status = 'approved'`, `lifecycle_state = 'active'`, profile `status = 'published'`, mutual gender match (`cp.gender = v.looking_for_gender AND v.gender = cp.looking_for_gender`), AND both ages inside each other's declared `partner_age_min/max` window, with a photo. There is no fallback/relaxation when the pool is thin (no widening of age window, no cross-city fallback, no 'best available' degrade). Combined with the Match-of-the-Day model (1 recommendation per day, not a feed) documented in `src/lib/v2/match-of-the-day.ts`, a user with even a moderately narrow preference window in a city with few verified opposite-gender users will hit `null` → the app's own comment says 'UI покажет empty state «алгоритм ищет, заходи позже»' — which was already observed live per user's Maestro findings memory. At 10k total users split ~50/50 across UZ regions/cities with narrow self-selected age windows, most users outside Tashkent will likely see empty state most days, especially early in the ramp before density builds. There's also no anti-imbalance mechanism (spec explicitly calls out gender imbalance risk — 80% male / 20% female — as the 'главный риск' in chat4 §16), and none of the recommended mitigations (extra rec limits, trust-score-gated outbound interest, women's early-access Plus) are implemented.",
+   "severity": "critical",
+   "likelihood": "likely",
+   "blocks_launch": true,
+   "evidence": "supabase/migrations/20260630000000_recommendations_v3_top_life_values.sql (hard AND filters, no fallback); src/lib/v2/match-of-the-day.ts lines 15-19 ('Возвращает null если кандидатов нет'); chat4_premium.md §16 gender-imbalance risk section with 10 stated mitigations, none implemented in code",
+   "recommendation": "Before 10k launch: (1) add a degrade path in get_recommendations — if strict query returns 0 rows, progressively relax age window and city constraint rather than returning nothing; (2) track and dashboard gender_balance and empty-state-rate per city from day one (North Star spec already defines gender_balance metric but analytics is deferred per SYS-022); (3) seed/concentrate initial marketing in 1-2 dense cities (Tashkent) rather than spreading 10k thin nationally; (4) consider a manual/editorial fallback recommendation (admin-curated) when algorithmic pool is empty, to avoid dead-end UX during ramp."
+  },
+  {
+   "id": "BIZ-06",
+   "title": "UZ personal-data law risk: RLS disabled + sensitive PD (religion, family, health-adjacent anketa fields) collected without confirmed distinct legal basis",
+   "detail": "This is already the single largest finding in the existing legal-focused audit (LEGAL-008, critical: 'Специальные ПД без отдельного правового основания'; LEGAL-006/007/009/011: sensitive-data blocks, photos, and biometric verification collected without separate consent records) — I am not re-deriving these, just flagging the BUSINESS consequence: this is a genuine regulatory risk under Uzbekistan's PD law (biometric/sensitive categories typically require distinct legal basis + consent trail), and a violation discovered post-launch at 10k users (vs. a handful of test users) multiplies exposure — both financial (potential fines) and reputational (a marriage-market audience is trust-sensitive; a PD scandal could be fatal to the brand). Compounding factor for THIS audit's lens: RLS is disabled on all 30 tables, meaning the only technical boundary preventing over-broad data exposure is app-layer code correctness across 34 files — a single missed guard is a data-protection incident, not just a bug.",
+   "severity": "critical",
+   "likelihood": "certain",
+   "blocks_launch": true,
+   "evidence": "docs/audit-mvp-vs-spec-2026-07-01.md LEGAL-008 (critical), LEGAL-005/006/007/009/015/023 (high); verified facts: RLS disabled on all 30 public tables, RLS is not the security boundary",
+   "recommendation": "This is already flagged as P0 in the existing audit's fix plan ('Правовое основание для чувствительных ПД (блокер запуска)') — reiterating here only to connect it explicitly to business risk: do not scale to 10k before legal sign-off on sensitive-PD basis and consent records exist. The cost of fixing this now (schema + consent screens) is trivial compared to the cost of a regulatory complaint or press story once 10k Uzbek families' religion/health/family data is implicated."
+  },
+  {
+   "id": "BIZ-09",
+   "title": "No analytics/funnel instrumentation live to detect any of the above risks in production at 10k scale",
+   "detail": "The spec defines a full funnel event taxonomy and North Star metric (`verified_mutual_interests_with_chat_started`), plus explicit anti-vanity-metric guidance. The existing code audit confirms this is deferred (SYS-022/024/025/027: 'North Star метрика, funnel-события snake_case, §2.4 формулы, per-role дашборды — аналитика отложена'). This means at 10k-user launch, the team will have no systematic visibility into exactly the failure modes flagged in this report — empty-feed rate, gender balance, onboarding drop-off per screen, verification SLA, mutual-interest-to-chat conversion. Flying blind at 10k scale on a cold-start-sensitive marketplace is itself a business risk: problems will be diagnosed anecdotally/too late rather than caught early via dashboards.",
+   "severity": "high",
+   "likelihood": "certain",
+   "blocks_launch": true,
+   "evidence": "docs/audit-mvp-vs-spec-2026-07-01.md SYS-022/024/025/027 ('аналитика отложена (Sprint 2-4)'); chat13_system.md §2.1-2.4 defines North Star + funnel formulas none of which appear implemented in src/",
+   "recommendation": "Before or immediately at 10k launch, implement at minimum the North Star metric query and 3-4 critical funnel counters (onboarding_completion_rate, verification_approval_rate, empty_feed_rate/gender_balance, mutual_to_chat_rate) as simple SQL/admin-panel views even without a full event-tracking pipeline — these are queryable directly from existing tables (users, user_profiles, match_requests, chats) without needing the full analytics build-out, and would materially de-risk the launch by making the problems in this report visible in near-real-time rather than discovered via user complaints."
+  },
+  {
+   "id": "OPS-01",
+   "title": "Moderation throughput bug (VF-1) turns launch spike into permanently stuck users",
+   "detail": "The needs_changes -> resubmit path (/api/onboarding/fix/route.ts:58-63) transitions users.verification_status back to pending_review but never creates a verification_cases row (contrast with selfie/route.ts:73-85 which does). Per admin-gap-report VF-1 (critical), this is a normal, common cycle -- many first-time passport photo submissions get rejected for retake -- so at 10k signups this is not an edge case, it is a routine fraction of the funnel. Every affected user inflates the dashboard 'Заявки на проверке' counter (src/app/admin/page.tsx:29-31, counts users.verification_status) but has zero open case, so they appear in neither loadMyQueue nor loadUnassignedQueue (src/lib/admin/load-queue.ts:90-113, both query verification_cases). Result: moderators see a nonzero, growing number with nothing to click on, and the affected users are stuck in pending_review forever with no operator-visible path to a case.",
+   "severity": "critical",
+   "likelihood": "certain",
+   "blocks_launch": true,
+   "evidence": "src/app/api/onboarding/fix/route.ts:58-63 (no case insert) vs src/app/api/onboarding/selfie/route.ts:73-85 (idempotent case insert); src/app/admin/page.tsx:29-31; src/lib/admin/load-queue.ts:90-113; admin-gap-report-2026-07-01.md VF-1/VF-2/VF-3/VF-5",
+   "recommendation": "Ship the report's proposed fix before launch: single AFTER INSERT OR UPDATE trigger on users WHEN verification_status='pending_review' that idempotently inserts a verification_cases row if none open (NOT EXISTS). This is scoped as one migration (report calls it 'S' effort, P0) and closes VF-1/VF-2/VF-5 simultaneously. Also switch the dashboard counter to count verification_cases WHERE state<>'closed' (VF-3) so the number moderators see matches what they can actually open."
+  },
+  {
+   "id": "OPS-02",
+   "title": "No moderator staffing plan exists for verification throughput at 10k users, and per-case work is manual data entry, not a click",
+   "detail": "Approving a case requires the moderator to manually transcribe 17 passport fields (last_name, first_name, birth_date, gender, citizenship, birth_place, passport_series, passport_number, pinfl, issued_by, issued_at, expires_at, region_code, district_code, locality, street_address -- src/lib/admin/passport-validation.ts:7-24) that then run through validatePassportPayload before admin_approve_verification RPC accepts them (src/app/api/admin/cases/[id]/decision/route.ts:36-60), plus a manual 3-checkbox face-match attestation with no similarity score (FaceMatchStep.tsx:17-48, matches gap-report SG-08). This is real data-entry time (3-8 min/case is a defensible band), not a rubber-stamp. At 10k signups spread over a ~20 working-day launch ramp, that is ~500 verification cases/day; at a 5 min/case midpoint and ~6 productive moderation hours/day, one moderator clears ~72 cases/day, so the queue needs approximately 7 moderators (range: 4 at the fast/3-min end, 11 at the slow/8-min end with rejections and re-checks). If the signup curve is front-loaded (e.g. a marketing push drives 5k signups in week one), daily load doubles and so does the required headcount, or the backlog balloons -- and because of OPS-01 that backlog is partly invisible on the dashboard. No document, config, or staffing plan for this exists anywhere in the repo.",
+   "severity": "critical",
+   "likelihood": "certain",
+   "blocks_launch": true,
+   "evidence": "src/lib/admin/passport-validation.ts:7-24 (17-field payload); src/app/api/admin/cases/[id]/decision/route.ts:36-60; src/components/admin-ops/case/FaceMatchStep.tsx:17-48; admin-gap-report SG-08; no staffing/roster docs found in repo",
+   "recommendation": "Before opening signups at 10k scale, commit to a concrete moderator roster sized to the actual expected signup curve (not a flat 10k/day-one assumption) -- staff for the ~7-moderator midpoint if the launch ramp is ~3-4 weeks, more if front-loaded. Track actual cases/hour per moderator in week one and re-forecast. Given this is a verify-walled dating app, verification IS the product's critical path -- under-staffing it stalls the entire funnel, not just a support queue."
+  },
+  {
+   "id": "OPS-04",
+   "title": "The only SLA mechanism (7-day stale-case reclaim) has no scheduler wired to it in production -- likely never runs",
+   "detail": "admin_sla_reclaim_stale_cases (supabase/migrations/20260630010000_verification_case_sla.sql:12-43) is the entire SLA infrastructure per the gap-report (SG-04), and it is only invoked from /api/cron/housekeeping (src/app/api/cron/housekeeping/route.ts). Searching the repo for any scheduler that calls housekeeping finds nothing: railway.json has no cron/schedule field (only build/deploy/healthcheck config), and .github/workflows/ contains exactly one workflow file, cron-tg-outbox.yml, which only POSTs /api/cron/tg-outbox every 5 minutes -- it never calls /api/cron/housekeeping. Per project memory, the tg-outbox GitHub Action itself is already known-broken (private repo free tier exhausted). If housekeeping is likewise unscheduled (or scheduled on the same dead mechanism), cases abandoned by a moderator (vacation, turnover) never get reclaimed -- the report's stated 7-day SLA is fictional in production; those users are stuck indefinitely, not for a week.",
+   "severity": "critical",
+   "likelihood": "likely",
+   "blocks_launch": true,
+   "evidence": "supabase/migrations/20260630010000_verification_case_sla.sql:1-43; src/app/api/cron/housekeeping/route.ts:1-60; railway.json (no cron field); .github/workflows/ contains only cron-tg-outbox.yml; project memory notes GitHub Actions cron already failing on free tier",
+   "recommendation": "Verify immediately whether anything currently calls /api/cron/housekeeping in production (check Railway logs / external cron-job.org config, since the memory note says this was the suggested alternative to GitHub Actions). If nothing calls it, wire it to a working external scheduler (cron-job.org or Railway's own scheduled service, not GitHub Actions free tier) before launch -- this is cheap (one cron registration) but currently the single point of recovery for abandoned cases at scale."
+  },
+  {
+   "id": "OPS-06",
+   "title": "Reports/complaints handling is superadmin-only -- cannot scale by hiring moderators",
+   "detail": "src/app/admin/reports/page.tsx:65 calls notFound() if session.role !== 'superadmin'. Only two roles exist in the system (role in ('superadmin','moderator'), init_schema.sql:221), so complaint triage is hard-gated to whichever small number of people hold superadmin. Unlike verification (which moderators can be hired to clear), reports handling cannot be scaled horizontally by adding moderator headcount -- it is capped at founder/superadmin bandwidth. The report handling itself is also thin: only 3 status transitions (in_progress/action_taken/not_confirmed, report-actions.tsx:12-15), no assignment, priority, evidence attachment, related-chat view, or escalation (SG-05, high). At 10k users, report volume (fake profiles, harassment, contact-sharing attempts) will scale with population and this is a hard ceiling, not a soft one.",
+   "severity": "high",
+   "likelihood": "likely",
+   "blocks_launch": true,
+   "evidence": "src/app/admin/reports/page.tsx:63-66; supabase/migrations/20260531000000_init_schema.sql:221 (2-role check constraint); src/components/admin/report-actions.tsx:12-15; admin-gap-report SG-05, SG-01",
+   "recommendation": "Before 10k launch, either grant a moderator-tier permission to triage reports (requires the RBAC work in SG-01/SG-02, which the report scopes as L-effort P2) or explicitly staff enough superadmins/founders to cover report volume. At minimum, build the /admin/reports/[id] detail view + assignment (P1 per report) so whoever handles reports can work a real queue instead of a flat list with 3 buttons."
+  },
+  {
+   "id": "OPS-07",
+   "title": "No 2FA on admin accounts holding passport PII and ban authority",
+   "detail": "src/app/api/admin/login/route.ts is password-only: verifyPassword() then immediately setAdminSession() (line ~40-61), no second factor. admin_users table (init_schema.sql:218-224) has no TOTP/2FA columns at all. Per gap-report SG-03 (high), a single leaked password grants full access to passport documents, selfies, PINFL, and ban/restrict authority for the entire user base. At 10k users with a moderator team of ~7+ people (per OPS-02), the credential attack surface (phishing, password reuse, shared devices) scales with headcount, and this is exactly the kind of control the parallel MVP legal audit flagged as the top launch risk area (consents/sensitive PII handling).",
+   "severity": "high",
+   "likelihood": "possible",
+   "blocks_launch": true,
+   "evidence": "src/app/api/admin/login/route.ts (password-only flow); supabase/migrations/20260531000000_init_schema.sql:218-224 (no totp columns); admin-gap-report SG-03",
+   "recommendation": "Add TOTP-based 2FA before scaling the moderator team past 2-3 trusted people. This is scoped by the report as part of a larger RBAC/staff L-effort item, but 2FA alone (TOTP secret column + verification step in login route) can be shipped independently and cheaply, and should be prioritized ahead of the rest of SG-01/02/03 given the PII exposure."
+  },
+  {
+   "id": "OPS-12",
+   "title": "Single Railway instance with no visible autoscale/replica config + max-5-retry restart policy: a launch signup spike has no headroom",
+   "detail": "Per VERIFIED FACTS: single Railway service, NIXPACKS, healthcheck /api/health with 120s timeout, restartPolicy ON_FAILURE max 5 retries, no visible autoscale or replica configuration (confirmed directly by reading railway.json, which has only build/deploy/healthcheck keys, no scaling config). Combined with rate limiting that VERIFIED FACTS notes is 'present in a few routes... NOT global,' a marketing-driven launch spike (e.g. a Telegram channel post driving thousands of /start events in a short window) has no autoscale to absorb load and only 5 restart attempts before Railway stops trying, which would take the whole app (including the admin panel moderators depend on) offline simultaneously with the highest-need moment for both onboarding and moderation capacity.",
+   "severity": "high",
+   "likelihood": "possible",
+   "blocks_launch": true,
+   "evidence": "railway.json (build/deploy keys only, no scale/replica field); VERIFIED FACTS (rate limiting not global, restartPolicy max 5)",
+   "recommendation": "Before a marketing-driven launch, either throttle the signup funnel intentionally (staged rollout / invite codes, controlling the rate at which /start events arrive) or confirm the Railway plan supports horizontal scaling and configure it explicitly -- do not rely on default single-instance behavior for a spike. Load-test the onboarding path (TG initData verify + start-token consume + bootstrap) at a realistic burst rate before opening broadly."
+  }
+ ]
+}

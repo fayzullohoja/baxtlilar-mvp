@@ -1,0 +1,1548 @@
+{
+ "plans": [
+  {
+   "workstream": "verification",
+   "goal": "Make verification_cases the single source of truth for the moderation queue so every path that puts a user into verification_status='pending_review' guarantees exactly one open case, the dashboard counter matches the queue exactly, the moderator scope guard is case-based, and abandoned cases are actually reclaimed by a scheduled cron. \"Done\" = all three pending_review paths (selfie, fix-after-needs_changes, super-admin unblock) produce an open case; dashboard \"Заявки на проверке\" count == open-case queue count; a stale claimed case is re-queued automatically by a scheduled job (not an unscheduled endpoint). Tooling only — moderators already exist; no staffing, no Supabase-specific work (native node-pg only).",
+   "sequencing_note": "VER-1 (DB trigger) is the keystone and must land first — it makes the invariant self-enforcing and unblocks VER-2..VER-4. VER-2 (dashboard counter) and VER-5 (cron scheduling) are independent of each other and can proceed in parallel once VER-1 is merged. VER-3 (remove app-level case-insert from selfie/fix, now redundant) depends on VER-1 being deployed. VER-4 (guard unification to case-based) depends on VER-1 because it relies on \"open case exists\" as the scope predicate. VER-6 (verification/backfill test) runs last to prove the whole invariant. Migration ordering: new migration file timestamped after 20260630010000_verification_case_sla.sql.",
+   "open_decisions": [
+    "VER-4 guard predicate: should a moderator be scoped to ANY open case (state<>'closed') on the user, or only to cases assigned to them / unassigned+new? Current CaseStudio already scopes decisions by assignee_id client-side; recommend guard = 'user has an open case' (keeps doc-view parity with old pending_review behaviour) and leave decision-level assignee check where it is. Confirm before implementing.",
+    "VER-5 scheduler choice: Railway scheduled job (cron field) vs external cron-job.org hitting /api/cron/housekeeping with X-Cron-Secret. Launch audit OPS-04/Cluster F recommends a scheduler with a dead-man's-switch alert. Pick one; both are S effort. Recommend Railway scheduled job for co-location + add a failure alert.",
+    "SLA idle window: keep 168h (7d) reclaim default, or shorten for launch (e.g. 48–72h) so abandoned cases surface faster at 10k volume? Product decision; default stays 168h unless overridden."
+   ],
+   "tasks": [
+    {
+     "task_id": "VER-1",
+     "title": "Single-source-of-truth DB trigger: auto-create verification_case on pending_review",
+     "what": "Add one AFTER INSERT OR UPDATE ON users trigger (WHEN new.verification_status='pending_review') that idempotently inserts a verification_case (state='new') if the user has no open case (NOT EXISTS state<>'closed'). This is the invariant enforcer that closes VF-1, VF-2, VF-5 at once. transition_user (20260619500001:202) and admin_unblock_verification (20260620920000:145) both do a plain UPDATE users SET verification_status=..., and selfie/fix routes also route through transition_user — so an AFTER-UPDATE row-level trigger fires on every path. Trigger function: SECURITY DEFINER, set search_path=public,pg_temp; guard body with IF new.verification_status='pending_review' AND NOT EXISTS(select 1 from verification_cases where user_id=new.id and state<>'closed') THEN insert into verification_cases(user_id,state) values(new.id,'new'); END IF; RETURN new. Use a WHEN clause on the trigger to skip non-pending rows cheaply. Must NOT resurrect closed cases (a fresh approve/reject sets verification_status to verified/rejected, so WHEN never fires there) and must NOT double-insert when an open case already exists (needs_changes→fix cycle: case was closed by admin_reject, user goes back to pending_review with zero open cases → trigger correctly creates a new open case). Keep created_at default now(); do not set verification_submitted_at here.",
+     "files": [
+      "supabase/migrations/20260702100000_verification_case_autocreate_trigger.sql"
+     ],
+     "acceptance": "After migration: (1) UPDATE users SET verification_status='pending_review' for a user with no open case creates exactly one verification_cases row state='new'; (2) repeating the UPDATE (or a second pending_review transition) creates NO additional case (idempotent via NOT EXISTS); (3) admin_reject(needs_changes) closes the case, then a subsequent transition to pending_review via fix/route creates a new open case; (4) approve→verified and reject→rejected transitions create no case; (5) trigger is a no-op for any UPDATE that does not set verification_status='pending_review'. Verify with a psql script running all 5 scenarios.",
+     "effort": "S",
+     "depends_on": [],
+     "db_changes": "New migration: CREATE FUNCTION verification_case_autocreate() + CREATE TRIGGER users_verification_case_autocreate AFTER INSERT OR UPDATE OF verification_status ON users FOR EACH ROW WHEN (new.verification_status='pending_review') EXECUTE FUNCTION verification_case_autocreate(). No new tables/indexes (verification_cases_user_idx + verification_cases_state_idx already exist from 20260627100100).",
+     "risk": "Must use SECURITY DEFINER because callers run under invoker rights (transition_user is plain; admin_unblock is security invoker) and the trigger inserts into verification_cases — confirm the executing role has insert rights, or keep DEFINER owned by table owner. Concurrency: two rapid pending_review updates could race the NOT EXISTS check and insert two cases; mitigate with a partial unique index (one open case per user) — see VER-1b note in risk. Recommend adding a partial unique index CREATE UNIQUE INDEX verification_cases_one_open_per_user ON verification_cases(user_id) WHERE state<>'closed' in the SAME migration and having the trigger swallow unique_violation, making it race-safe."
+    },
+    {
+     "task_id": "VER-2",
+     "title": "Dashboard 'Заявки на проверке' counts open cases, not pending_review users",
+     "what": "Change the dashboard's pending counter from counting users WHERE verification_status='pending_review' to counting verification_cases WHERE state<>'closed', so the headline number equals what actually opens in the queue (fixes VF-3). In src/app/admin/page.tsx the first Promise.all query (lines 28-31) selects from 'users' with eq('verification_status','pending_review'); replace with sb.from('verification_cases').select('*',{count:'exact',head:true}).neq('state','closed'). pendingCount label and the /admin/queue/mine href stay. This makes the counter source-identical to loadMyQueue/loadUnassignedQueue predicates (load-queue.ts:96 neq('state','closed') / :110 eq('state','new')).",
+     "files": [
+      "src/app/admin/page.tsx"
+     ],
+     "acceptance": "Dashboard 'Заявки на проверке' value equals COUNT(verification_cases WHERE state<>'closed'). With VER-1 deployed, this equals the number of distinct users in pending_review (invariant holds), and equals the total rows a moderator can open across mine+unassigned queues. Seed a DB with N open cases (some assigned, some new) → dashboard shows N. Close one via approve → dashboard decrements to N-1 immediately on next load.",
+     "effort": "S",
+     "depends_on": [
+      "VER-1"
+     ],
+     "db_changes": "None (read-only count change).",
+     "risk": "Counter now includes assigned/in_review cases (whole open set), which is correct per spec ('what really opens') but is a slightly higher number than the old per-user-onboarding count if any case is open for a user no longer in onboarding — acceptable and more honest. No index needed; verification_cases_state_idx covers the count."
+    },
+    {
+     "task_id": "VER-3",
+     "title": "Remove now-redundant app-level case creation from selfie & fix routes",
+     "what": "Once VER-1 enforces case creation in the DB, delete the ad-hoc idempotent case-insert block from selfie/route.ts (lines 67-85: the sb.from('verification_cases').select openCase + conditional insert) and DO NOT add the equivalent missing block to fix/route.ts (which was the VF-1 root cause). The trigger now covers both. Keep the transition_user call and verification_submitted_at logic in selfie/route.ts intact. This removes the last two places where the invariant was maintained by hand, so no future pending_review path can regress. fix/route.ts needs no code change beyond a comment noting the DB trigger now creates the case; verify it already transitions to pending_review (it does, lines 58-63).",
+     "files": [
+      "src/app/api/onboarding/selfie/route.ts",
+      "src/app/api/onboarding/fix/route.ts"
+     ],
+     "acceptance": "selfie/route.ts no longer queries or inserts verification_cases; a full selfie upload still results in exactly one open case (created by trigger). fix/route.ts (needs_changes→resubmit) results in exactly one open case with no app-level insert. No duplicate cases under either path. Manual e2e: fresh user completes selfie → 1 open case; get needs_changes → case closed; resubmit via fix → 1 new open case.",
+     "effort": "S",
+     "depends_on": [
+      "VER-1"
+     ],
+     "db_changes": "None.",
+     "risk": "Ordering: VER-3 must deploy AFTER VER-1 is live in the same environment, else there is a window with zero case-creation. Deploy trigger migration first, then the route change. If deploys are atomic (migration runs on boot before serving), this is safe in one release."
+    },
+    {
+     "task_id": "VER-4",
+     "title": "Unify moderator scope guard to case-based predicate",
+     "what": "Replace the third, stricter scope definition in guard.ts (requireInQueueOrSuper :328 and checkInQueueOrSuperPage :370, currently inQueue = verification_status='pending_review' AND lifecycle_state='onboarding') with a case-based predicate: a moderator is in-scope for a user iff that user has an open verification_case (state<>'closed'). This aligns the guard with the queue and the /admin/cases/[id] flow (page.tsx uses only requireAdmin; CaseStudio.tsx scopes by currentAdminId==assignee_id). Query verification_cases WHERE user_id=$1 AND state<>'closed' LIMIT 1 instead of the users-column derivation. Superadmin bypass unchanged. Scope-violation recording (recordScopeViolation) unchanged except it fires when no open case exists. Keep the existence-oracle 403/hide semantics identical.",
+     "files": [
+      "src/lib/admin/guard.ts"
+     ],
+     "acceptance": "A moderator can doc-view / open a user page iff the user has an open case (matches exactly what appears in their queue). A user in pending_review WITHOUT an open case can no longer be reached — but with VER-1 that state is now impossible. A user with a closed case (verified/rejected) is out-of-scope → 403/hide + scope violation recorded (when user exists). Superadmin still bypasses. Test: moderator hits /api/.../doc for an open-case user → 200; for a verified user → 403 + admin_scope_violations row.",
+     "effort": "M",
+     "depends_on": [
+      "VER-1"
+     ],
+     "db_changes": "None (uses existing verification_cases_user_idx).",
+     "risk": "Behaviour change: old guard also required lifecycle_state='onboarding'; case-based drops that. Confirm no legitimate case exists for a non-onboarding user that should be hidden — acceptable since an open case IS the definition of moderatable work. Two call sites (API + server-page) must be changed identically to avoid a split-brain guard. This is the OPEN DECISION item — confirm predicate before coding."
+    },
+    {
+     "task_id": "VER-5",
+     "title": "Actually schedule the SLA / housekeeping cron (OPS-04 fix)",
+     "what": "The SLA reclaim RPC admin_sla_reclaim_stale_cases (20260630010000) is only invoked from POST /api/cron/housekeeping, which nothing schedules — railway.json has no cron field and .github/workflows only has cron-tg-outbox.yml. Add a real scheduler so abandoned claimed cases (assigned/in_review/data_entry/ready_to_decide, updated_at older than 168h) are re-queued to state='new'. Option A (recommended): add a Railway scheduled job that POSTs /api/cron/housekeeping with header X-Cron-Secret=CRON_SECRET on an hourly (or 6h) cadence. Option B: add .github/workflows/cron-housekeeping.yml mirroring cron-tg-outbox.yml (curl POST with secret) on a schedule. Also add a failure/dead-man's-switch alert per Cluster F (alert if the job returns non-200 or hasn't run). Document the chosen cadence in the housekeeping route header comment (already says 'Railway scheduled job').",
+     "files": [
+      ".github/workflows/cron-housekeeping.yml",
+      "railway.json"
+     ],
+     "acceptance": "A verification_case left in state='assigned' with updated_at older than the idle window is automatically moved back to state='new' with assignee_id=null within one cron interval, WITHOUT any manual endpoint call — proven by observing the reclaim in a scheduled run (or by a documented Railway scheduled-job config that hits the endpoint). Cron auth: request without correct X-Cron-Secret returns 401; with it returns 200 and results[] includes admin_sla_reclaim_stale_cases ok:true. A failed run raises an alert (dead-man's-switch).",
+     "effort": "S",
+     "depends_on": [],
+     "db_changes": "None (RPC already exists).",
+     "risk": "cron-tg-outbox GH Actions is reported flaky on free tier (launch audit Cluster F) — prefer Railway scheduled job or a paid/reliable cron; whichever is chosen, the alert is the real fix. Ensure CRON_SECRET is set in the scheduler's env. If using Railway scheduled jobs, this is dashboard config + a documented note rather than a repo file — capture it in railway.json comment or ops runbook so it's reproducible."
+    },
+    {
+     "task_id": "VER-6",
+     "title": "Invariant + reclaim verification harness (psql/e2e)",
+     "what": "Add a repeatable verification script proving the whole invariant end-to-end against a seeded DB: (a) all three pending_review paths → exactly one open case (selfie transition, needs_changes→fix transition, admin_unblock_verification); (b) dashboard-equivalent COUNT(verification_cases WHERE state<>'closed') == COUNT(DISTINCT users in pending_review with an open case); (c) a stale claimed case is reclaimed by admin_sla_reclaim_stale_cases; (d) idempotency: repeated pending_review updates never create a second open case (relies on VER-1 partial unique index). This is the acceptance gate for the workstream, not production code.",
+     "files": [
+      "scripts/verify/verification-invariant.sql"
+     ],
+     "acceptance": "Script runs green: 3/3 paths yield one open case each; count identity holds; stale case reclaimed; no duplicate open cases after repeated transitions. Any regression (e.g. removing the trigger) makes the script fail loudly.",
+     "effort": "S",
+     "depends_on": [
+      "VER-1",
+      "VER-2",
+      "VER-3",
+      "VER-5"
+     ],
+     "db_changes": "None (test-only; may create/rollback seed rows in a transaction).",
+     "risk": "Must run against a schema with all migrations applied; wrap in BEGIN/ROLLBACK to avoid polluting data. Keep it native-pg (psql), not Supabase tooling."
+    }
+   ]
+  },
+  {
+   "workstream": "appsec_p0",
+   "goal": "Close the pre-mutual PII leak (APP-1, Cluster D of launch-readiness-2026-07-02.md) so that no exact/sensitive personal data of a candidate is serialized into any client-side (RSC/HTML) payload before mutual interest, and pin the already-correct case/chat/interest ownership enforcement with regression tests + a CI guard (RLS is OFF — code is the only boundary). Done = (a) network payload for /main, /v2/profile/[id] pre-mutual, /v2/anketa/preview contains only the fields ProgressiveProfile actually renders; a scrape-by-UUID of the RSC payload returns nothing beyond what the UI shows; (b) chat/interest/requests routes have tests proving cross-user (IDOR) access is rejected, and a CI check fails if an /api route ships without a permission/ownership guard.",
+   "sequencing_note": "VER-1 first (introduce ProgressiveProfileView type + server mapper), then VER-2/VER-3/VER-4 in parallel wire the three call sites onto it (they all depend on VER-1). VER-5 (payload assertion tests) after the three sites are converted. IDOR half (VER-6 tests, VER-7 CI guard, VER-8 stream-route guard consistency) is independent of the PII half and can run in parallel from the start. Ship the PII half as one PR (VER-1..VER-5) since it is the cheapest P0 blocker.",
+   "open_decisions": [
+    "Hide religion pre-mutual? ProgressiveProfile currently RENDERS religion pre-mutual by an explicit locked founder decision (memory 2026-06-25, and component doc lists it as shown). The task/audit lists religion among fields to strip, but the acceptance 'payload contains no pre-mutual PII' is literally unsatisfiable for religion while it stays on screen — so acceptance targets UNRENDERED fields. DEFAULT: keep religion + bio visible. Legal Cluster A treats religion as sensitive PD; if founder+lawyer decide to hide it pre-mutual, it is a one-line change to the view type + UI (drop the religion span + field). Do NOT strip unilaterally.",
+    "bio is rendered pre-mutual by the same locked decision — keep it; it is already anti-contact sanitized at input. Same legal-review caveat as religion.",
+    "Should the stream route (/api/chats/[id]/stream) be migrated to requirePermissionForRequest('open_chat') for parity with sibling chat routes? IDOR is already blocked there by loadChatRow; this is a low-sev scope-consistency cleanup, not a P0 blocker — confirm whether to fold into this workstream or defer to P1 session-hardening."
+   ],
+   "tasks": [
+    {
+     "task_id": "VER-1",
+     "title": "Introduce ProgressiveProfileView type + server-side mapper (strip unrendered PII at the prop boundary)",
+     "what": "Define a new narrow type ProgressiveProfileView containing ONLY the fields ProgressiveProfile actually renders: first_name (server-computed = first word of display_name; surname never sent), city, education, religion, top_life_values, bio, and traits: string[] (the 1-3 derived Big-Five phrases). Add a pure server mapper toProgressiveView(p: ProfileForMatch): ProgressiveProfileView that (a) derives first_name via firstWord(display_name), (b) moves the existing personalityTraits(vector) logic server-side and emits traits[] instead of the raw vector, (c) copies city/education/religion/top_life_values/bio, and (d) OMITS birth_date, marital_status, has_children, future_children_plan, partner_age_min, partner_age_max, geo_preference, and the raw vector. Keep ProfileForMatch and the full DB SELECT unchanged — match-of-the-day.ts genuinely needs birth_date/marital_status server-side for generateMatchStory. Extract personalityTraits into a shared server-importable module (e.g. keep it in match-story.ts or a new lib/v2/progressive-view.ts) so both the mapper and any test can call it.",
+     "files": [
+      "src/lib/v2/progressive-view.ts",
+      "src/components/v2/ProgressiveProfile.tsx",
+      "src/lib/v2/match-story.ts"
+     ],
+     "acceptance": "ProgressiveProfileView type has no birth_date/marital_status/has_children/future_children_plan/partner_age_min/partner_age_max/geo_preference/vector/display_name(surname) members. toProgressiveView(fullProfile) returns an object whose JSON.stringify contains none of those keys and no raw O/C/E/A/ES scores. Unit test: given a ProfileForMatch with a known birth_date and full name, the mapped view contains only first name, no birth_date, and traits as string phrases identical to the old client-side output.",
+     "effort": "S",
+     "depends_on": [],
+     "db_changes": "",
+     "risk": "personalityTraits currently lives in the client component; moving it server-side must keep byte-identical output (same >60/<40 thresholds, same slice(0,3)) so the rendered UI is unchanged."
+    },
+    {
+     "task_id": "VER-2",
+     "title": "Convert ProgressiveProfile client component to consume ProgressiveProfileView",
+     "what": "Change ProgressiveProfile's Props from { profile: ProfileForMatch } to { profile: ProgressiveProfileView }. Replace internal firstWord(profile.display_name) with profile.first_name, replace personalityTraits(profile.vector) with profile.traits, and keep the render of city/education/religion/values/bio unchanged. Remove the now-dead firstWord/personalityTraits definitions from the component (or re-import types only). This is the component that must no longer receive any unrendered PII.",
+     "files": [
+      "src/components/v2/ProgressiveProfile.tsx"
+     ],
+     "acceptance": "ProgressiveProfile no longer imports ProfileForMatch as its prop type and no longer references birth_date/marital_status/has_children/vector/display_name. TypeScript compiles. Rendered output (name, city·education·religion line, personality phrases, value chips, bio, privacy footer) is visually identical to before for the same input.",
+     "effort": "S",
+     "depends_on": [
+      "VER-1"
+     ],
+     "db_changes": "",
+     "risk": "Three call sites pass this prop; they must all be migrated (VER-3/4 + preview) or the build breaks — coordinate in one PR."
+    },
+    {
+     "task_id": "VER-3",
+     "title": "Fix /main (Match of the Day) call site — send only the view",
+     "what": "In app/[locale]/main/page.tsx, wrap match.candidate.profile with toProgressiveView(...) before passing to ProgressiveProfile. The full ProfileForMatch stays server-side inside getMatchOfTheDay for generateMatchStory; only the mapped view crosses to the client. Confirm match.story (MatchStoryCard) is safe as-is: generateMatchStory emits only bucketed/relational phrases (e.g. 'возраст слегка вне диапазона', match-story.ts:164-172) and never raw birth_date/city verbatim beyond city which is already rendered — no change needed to the story, but note it in the PR.",
+     "files": [
+      "src/app/[locale]/main/page.tsx"
+     ],
+     "acceptance": "Network/RSC payload for GET /<locale>/main (verified user with a match) contains no birth_date, marital_status, has_children, future_children_plan, partner_age_min/max, geo_preference, raw O/C/E/A/ES vector, or surname. candidateFirstName still renders. MatchStoryCard still renders reasons/cautions/advice.",
+     "effort": "S",
+     "depends_on": [
+      "VER-1",
+      "VER-2"
+     ],
+     "db_changes": "",
+     "risk": "candidateFirstName is currently derived from match.candidate.profile.display_name at line 104 — keep that server-side derivation (it never reaches client as full name) or reuse view.first_name."
+    },
+    {
+     "task_id": "VER-4",
+     "title": "Fix /v2/profile/[id] pre-mutual call site — send only the view (the primary APP-1 leak)",
+     "what": "In app/[locale]/v2/profile/[id]/page.tsx, build the pre-mutual client prop via toProgressiveView(...) instead of the current progressiveData object literal (lines 125-140) that copies birth_date/marital_status/has_children/future_children_plan/partner_age_min/partner_age_max/geo_preference/vector straight into a client prop. Keep the full server SELECT (it is used only server-side). The post-mutual RevealedProfile branch (isMutual===true) stays FULL and unchanged — that reveal is intended and gated by hasMutualChat.",
+     "files": [
+      "src/app/[locale]/v2/profile/[id]/page.tsx"
+     ],
+     "acceptance": "For a pre-mutual viewer, GET /<locale>/v2/profile/<uuid> RSC payload contains none of birth_date/marital_status/has_children/future_children_plan/partner_age_min/partner_age_max/geo_preference/raw vector/surname. Iterating this endpoint over a list of candidate UUIDs (bulk scrape) yields only first-name/city/education/religion/values/bio/derived-traits — the same data the UI shows. Post-mutual branch still returns full RevealedProfile (photos, age, marital, religion).",
+     "effort": "S",
+     "depends_on": [
+      "VER-1",
+      "VER-2"
+     ],
+     "db_changes": "",
+     "risk": "Do not touch the isMutual guard or areBlocked/lifecycle/status redirects — the leak is purely the prop, not the access gate."
+    },
+    {
+     "task_id": "VER-5",
+     "title": "Fix /v2/anketa/preview self-view call site + payload-shape regression tests",
+     "what": "Convert app/[locale]/v2/anketa/preview/page.tsx to pass toProgressiveView(...) as well (self-view is not a cross-user leak, but must use the same type so the component contract stays single-shape). Then add regression tests asserting the payload shape: (1) a test that toProgressiveView output serialized to JSON contains no forbidden keys; (2) an integration/e2e assertion (Playwright or route-level render test) that fetches the pre-mutual profile page and greps the response body for a seeded candidate's birth_date value and confirms it is ABSENT, while the seeded city IS present. This is the machine-checkable form of the acceptance 'scrape test returns nothing'.",
+     "files": [
+      "src/app/[locale]/v2/anketa/preview/page.tsx",
+      "src/lib/v2/progressive-view.test.ts",
+      "e2e/premutual-payload-scrape.spec.ts"
+     ],
+     "acceptance": "Tests pass and fail-closed: injecting a forbidden field back into ProgressiveProfileView (or reverting any call site to pass the full ProfileForMatch) makes the payload-scrape test RED. Seeded birth_date string never appears in any of the three pre-mutual page response bodies; seeded city does appear.",
+     "effort": "M",
+     "depends_on": [
+      "VER-1",
+      "VER-2",
+      "VER-3",
+      "VER-4"
+     ],
+     "db_changes": "",
+     "risk": "e2e scrape test needs a seeded pre-mutual pair fixture (viewer + candidate, no mutual chat); if e2e infra is heavy, a route-level render test that snapshots the serialized RSC/HTML string is an acceptable equivalent."
+    },
+    {
+     "task_id": "VER-6",
+     "title": "IDOR/ownership regression tests for chat, interest, and requests routes (RLS is OFF — pin the app-layer boundary)",
+     "what": "Ownership is ALREADY enforced (no P0 fix needed): loadChatRow(id, user.id) rejects non-participants and blocked pairs on every chat route (messages GET/POST, read, typing, stream); requests/[id]/decision checks r.sender_id===user.id for withdraw and r.receiver_id===user.id for accept/decline; interest forces p_sender=user.id and rejects receiver_id===user.id. Lock this with tests so a future refactor cannot silently open an IDOR hole. Add tests: (a) user C (not a participant) calling POST/GET /api/chats/<chatAB>/messages, /read, /typing, /stream gets 404 not_found; (b) user C posting to /api/requests/<reqAB>/decision with accept/decline/withdraw gets 403 forbidden (and only receiver can accept/decline, only sender can withdraw); (c) POST /api/interest with receiver_id===self → 400 bad_target, and sender_id cannot be spoofed (it is taken from session, assert body sender field is ignored).",
+     "files": [
+      "src/app/api/chats/[id]/__tests__/ownership.test.ts",
+      "src/app/api/requests/[id]/__tests__/decision-ownership.test.ts",
+      "src/app/api/interest/__tests__/ownership.test.ts"
+     ],
+     "acceptance": "Each cross-user access attempt is rejected with the documented status (chat routes 404, requests 403, interest 400/ignored-spoof). Tests fail if loadChatRow's participant check or the sender_id/receiver_id equality checks are removed.",
+     "effort": "M",
+     "depends_on": [],
+     "db_changes": "",
+     "risk": "Tests must mock/seed at the loadChatRow / supabaseAdmin layer consistently with existing test harness (see permissions.test.ts / with-permission.test.ts patterns)."
+    },
+    {
+     "task_id": "VER-7",
+     "title": "CI guard: every /api route must import a permission/ownership guard",
+     "what": "Add a CI/lint check (script under scripts/ or a test) that scans src/app/api/**/route.ts and fails if a route handler file does not import at least one of the recognized guards: requirePermissionForRequest / requireAllPermissionsForRequest (from lib/v2/with-permission), loadActiveUserApi (from lib/auth/active-guard), or an explicit allowlist entry (e.g. health, cron with secret check, telegram webhook with secret). This is the compensating control called out in launch-readiness §3 for RLS being off — it prevents a new route reaching supabaseAdmin() ungated. Seed the allowlist from the current api tree (account, admin, auth, block, cron, feed, health, interest, onboarding, report, requests, storage, telegram).",
+     "files": [
+      "scripts/check-api-guards.ts",
+      "package.json"
+     ],
+     "acceptance": "Adding a new src/app/api/foo/route.ts that calls supabaseAdmin() without importing any recognized guard and without an allowlist entry makes the check FAIL in CI. All existing routes pass (or are explicitly allowlisted with a documented reason).",
+     "effort": "M",
+     "depends_on": [],
+     "db_changes": "",
+     "risk": "Static import-presence check can be fooled by dynamic imports; acceptable as a floor. Keep the allowlist small and commented so genuinely-public routes (health) are auditable."
+    },
+    {
+     "task_id": "VER-8",
+     "title": "Align stream route guard with sibling chat routes (low-sev scope consistency)",
+     "what": "app/[locale]/../api/chats/[id]/stream/route.ts authenticates via loadActiveUserApi({allowPaused:true}) and skips the requirePermissionForRequest('open_chat') gate that messages/read/typing use. IDOR is still blocked there by loadChatRow, so this is NOT a P0 leak — but for defense-in-depth consistency (a paused/shadow-edge role shouldn't hold an open SSE stream that the permission matrix would deny), add the open_chat permission check to match siblings, or explicitly document why stream intentionally uses only loadActiveUserApi(allowPaused). Gate behind the open_decision above.",
+     "files": [
+      "src/app/api/chats/[id]/stream/route.ts"
+     ],
+     "acceptance": "Either: stream route returns 403 for a role lacking open_chat (parity with messages route) AND paused users can still stream (allowPaused preserved); OR a code comment documents the deliberate divergence. No regression to existing SSE behavior for verified/paused participants.",
+     "effort": "S",
+     "depends_on": [],
+     "db_changes": "",
+     "risk": "paused role has open_chat in the matrix, so adding requirePermissionForRequest('open_chat') must not break paused users' existing streams — verify against ROLE_PERMISSIONS.paused which includes open_chat."
+    }
+   ]
+  },
+  {
+   "workstream": "infra_security_p0",
+   "goal": "Close the four launch-blocking infra/security P0 clusters from launch-readiness-2026-07-02.md before opening the app to real users: (B) паспорта/селфи имеют off-site зашифрованный backup + Postgres auto-backup с ПРОВЕДЁННЫМ restore-тестом; (I) админ-логин требует TOTP-2FA (обязательно для superadmin, доступ к паспортам); (E) есть глобальный rate-limit + потолок body-size на upload-роутах + Cloudflare/WAF как rate-floor; (F) housekeeping-cron реально планируется и любой сбой крона / застой outbox шлёт алерт. Webhook secret_token уже реализован и fail-closed (verified) — сводится к constant-time hardening вместе с cron-секретами (INFRA-09). Stack: Next 16 (self-hosted next start на Railway, single instance), native node-pg + Railway Volume /data, hand-rolled crypto (scrypt/HMAC) — новые зависимости добавляем только с явным решением.",
+   "sequencing_note": "Порядок: (1) SEC-hardening constant-time (SEC-5) — тривиально, разблокирует чистый прод-baseline. (2) Rate-limit ядро (SEC-3a) → затем body-cap (SEC-3b) и WAF (SEC-3c) параллельно; rate-limit — предпосылка для staged-rollout/invite-codes из другого воркстрима. (3) TOTP: миграция (SEC-2a) → enrollment (SEC-2b) → двухшаговый login + enforcement (SEC-2c); enforcement НЕ включать до того, как superadmin реально прошёл enrollment (иначе self-lockout). (4) Backup: скрипт (SEC-1a) + Railway toggle (SEC-1b) параллельно, затем ОБЯЗАТЕЛЬНЫЙ restore-тест (SEC-1c) — acceptance = restore реально выполнен, не «скрипт есть». (5) Cron: schedule housekeeping (SEC-4a) + alert-path (SEC-4b) — alert-path нужен и для backup-крона, и для outbox-depth, делать раньше, если backup идёт по крону. SEC-2 (TOTP) — самый крупный и рисковый, начинать первым по календарю, мержить последним после ручного enrollment-теста.",
+   "open_decisions": [
+    "Off-site backup target: Cloudflare R2 vs AWS S3. R2 — нет egress-платы (дешевле для restore-тестов), S3 — зрелее. Рекомендация: R2. Нужно решение учредителя + провижн бакета/ключей.",
+    "Encryption key management для off-site tar: age/gpg symmetric с ключом в Railway env (BACKUP_ENCRYPTION_KEY) vs SSE на стороне R2/S3. Рекомендация: age/gpg на нашей стороне (zero-trust к провайдеру), ключ в env + оффлайн-копия у учредителя. Где хранится оффлайн-копия ключа — иначе backup нерасшифруем при потере env.",
+    "Backup cron runner: сам скрипт tar→R2 гонять как отдельный Railway scheduled job (bash) или как /api/cron/backup endpoint под X-Cron-Secret (как housekeeping). Volume single-attach смонтирован к web-инстансу → endpoint имеет доступ к /data; отдельный job — нет. Рекомендация: endpoint-путь, т.к. только web-инстанс видит /data.",
+    "TOTP: hand-roll RFC 6238 через node:crypto (паритет с существующим scrypt/HMAC-стилем, ноль новых deps) vs добавить otplib/@noble. Рекомендация: hand-roll (~40 строк HMAC-SHA1 + base32), т.к. codebase намеренно lean и crypto-native. Требует qrcode для otpauth — QR можно рендерить на клиенте (otpauth:// строку показываем + опционально client-side qr), чтобы не тянуть серверный qrcode-dep.",
+    "Recovery codes для TOTP: генерировать N одноразовых кодов при enrollment (hashed в admin_users/новой таблице) — иначе потеря телефона = перманентный lockout superadmin. Нужно решение: делать в MVP или принять риск ручного reset через SQL.",
+    "Cron reliability: остаться на GitHub Actions free-tier (best-effort, доку C3 говорит что падает) + dead-man's-switch, ИЛИ перенести на Railway scheduled jobs / cron-job.org (надёжнее). Рекомендация: Railway scheduled jobs для housekeeping+backup, GH Actions оставить только как fallback для outbox.",
+    "Alert channel: Telegram-сообщение в ops-чат через существующий Bot API (ноль новых deps, токен уже есть) vs Slack webhook vs Sentry. Рекомендация: Telegram ops-chat для крон/outbox-алертов (дёшево, MVP). OPS_ALERT_CHAT_ID в env.",
+    "Rate-limit backing store: in-memory token-bucket в proxy.ts (корректно для single-instance, реплики архитектурно невозможны из-за single-attach volume) vs Postgres (переживает рестарт/деплой, паттерн admin_login_attempts). ВЕРИФИЦИРОВАТЬ что middleware у нас runs in-process на next start (не edge-isolated) — иначе in-memory per-isolate и бесполезен. Рекомендация: in-memory для флуда + Postgres-fallback для дорогих роутов (bootstrap)."
+   ],
+   "tasks": [
+    {
+     "task_id": "SEC-5",
+     "title": "Constant-time сравнение webhook/cron секретов (INFRA-09)",
+     "what": "Заменить прямые `got !== expected` / `provided !== cronSecret` на существующий safeEqual (src/lib/crypto/safe-equal.ts) в telegram-webhook и обоих cron-роутах. Устраняет теоретический timing-канал на секретах, приводит к тому же стандарту, что уже применён в verifyStorageSig и admin-session. Сохранить fail-closed поведение (missing secret у cron → 503 остаётся). Webhook secret_token VERIFIED уже реализован end-to-end: scripts/set-webhook.mjs передаёт secret_token в setWebhook, env.ts делает TELEGRAM_WEBHOOK_SECRET REQUIRED (min 16, fail-closed на boot), route отбраковывает 401 — строить нечего, только hardening сравнения.",
+     "files": [
+      "src/app/api/telegram/webhook/route.ts",
+      "src/app/api/cron/tg-outbox/route.ts",
+      "src/app/api/cron/housekeeping/route.ts"
+     ],
+     "db_changes": "",
+     "acceptance": "Все три сравнения секретов идут через safeEqual; unit-тест: валидный секрет → проходит, невалидный (в т.ч. префикс валидного) → 401, отсутствующий заголовок → 401; cron без env CRON_SECRET → 503; webhook без TELEGRAM_WEBHOOK_SECRET не стартует (env.parse бросает). Нет прямых !== на секретных строках в этих файлах (grep-проверка).",
+     "effort": "S",
+     "depends_on": [],
+     "risk": "safeEqual бросает на разной длине — обёрнуто внутри хелпера (сравнивает длину заранее), но проверить что got может быть null (header отсутствует): safeEqual(null-cast) → привести к строке до вызова, иначе Buffer.from(null) кинет."
+    },
+    {
+     "task_id": "SEC-3a",
+     "title": "Глобальный rate-limit (IP + session token-bucket) в middleware",
+     "what": "Добавить token-bucket rate-limit в src/proxy.ts (middleware) поверх существующих CSRF/session-гардов. Ключ = trustedIp(req) (уже есть, src/lib/http/ip.ts) для анонимных + bx_session-хэш для авторизованных. Отдельные, более жёсткие ведёрки для дорогих/абьюзабельных путей: /api/auth/bootstrap (масс-регистрация), чтение профиля/feed. Per-user кулдаун на /start (bot) — в handleUpdate. Реализовать in-memory token-bucket модуль src/lib/http/rate-limit.ts (Map + refill по времени); для bootstrap продублировать в Postgres (паттерн admin_login_attempts) чтобы лимит переживал деплой. При превышении → 429 с Retry-After. ВЕРИФИЦИРОВАТЬ до реализации: middleware у нас исполняется in-process (next start на Railway, не edge-isolated) — иначе in-memory Map per-isolate и бесполезен; если edge — только Postgres-путь.",
+     "files": [
+      "src/proxy.ts",
+      "src/lib/http/rate-limit.ts",
+      "src/lib/telegram/bot/handlers.ts"
+     ],
+     "db_changes": "Опц.: таблица request_rate (ip/key, bucket, window_started_at) ИЛИ переиспользовать паттерн admin_login_attempts для bootstrap-лимита. Индекс по (key, window). Мигр. в supabase/migrations/ как native SQL.",
+     "acceptance": "N+1-й запрос с одного IP в окне → 429 + Retry-After (тест: цикл fetch на /api/auth/bootstrap превышает порог → 429). Легитимный трафик одного юзера (открытие app, feed, чат-поллинг 1.5с) НЕ ловит 429 при нормальном темпе. /start от одного tg_id чаще кулдауна → бот молча дедупит. Health/webhook/cron/storage-serving исключены из лимита (не ломать TG-доставку/serving). Подтверждено (лог/эксперимент), что middleware runs in-process.",
+     "effort": "L",
+     "depends_on": [],
+     "risk": "Chat SSE поллит БД каждые 1.5с (DBS-01) — легко пересечь наивный лимит и сломать чат; лимиты калибровать по реальному темпу поллинга, чат-поллинг вынести в щадящее ведро или исключить. TG WebView за CGNAT → много юзеров с одного IP: IP-лимит должен быть достаточно широким, точечные лимиты вешать на session-ключ."
+    },
+    {
+     "task_id": "SEC-3b",
+     "title": "Потолок body-size на upload-роутах (anti-OOM)",
+     "what": "Ввести жёсткий лимит размера тела ДО полной буферизации на роутах загрузки паспорта/селфи/фото. Сейчас каждый делает `await file.arrayBuffer()` в память без cap → одиночный инстанс (2-4GB RAM, force-dynamic SSR + вся картинко-полоса) уязвим к OOM (доку: «картинки текут через Node с полной буферизацией»). В middleware отвергать по Content-Length > MAX (напр. 12MB, текущий cap) до route-handler; в самих роутах — вторая проверка размера буфера (chunked/omitted Content-Length middleware не ловит) с 413 payload_too_large до записи на volume. Вынести MAX_UPLOAD_BYTES в общий модуль.",
+     "files": [
+      "src/proxy.ts",
+      "src/app/api/onboarding/selfie/route.ts",
+      "src/app/api/onboarding/document/route.ts",
+      "src/app/api/onboarding/profile/photo/route.ts",
+      "src/lib/uploads/storage.ts"
+     ],
+     "db_changes": "",
+     "acceptance": "POST с Content-Length > MAX → 413 из middleware без чтения тела. POST без/с обманным Content-Length но телом > MAX → 413 из роута до записи в /data (тест на реальном большом буфере). Легитимное фото 1-3MB грузится как раньше. Значение MAX едино для трёх роутов (импорт из одного места).",
+     "effort": "M",
+     "depends_on": [
+      "SEC-3a"
+     ],
+     "risk": "Next 16 formData()/route могут иметь свой bodyParser-лимит — согласовать, чтобы наш 413 срабатывал раньше и с понятной ошибкой, а не generic 500. Проверить, что uploadDocumentImage не начинает писать частично до проверки."
+    },
+    {
+     "task_id": "SEC-3c",
+     "title": "Cloudflare / WAF перед Railway как rate-floor (config, не код)",
+     "what": "Поставить Cloudflare (или эквивалент) proxy перед прод-доменом Railway: DNS-проксирование (оранжевое облако), managed WAF ruleset, edge rate-limit как нижний барьер до того, как трафик доходит до единственного инстанса, базовая DDoS-защита. Убедиться, что trustedIp() продолжает извлекать реальный клиентский IP (CF ставит CF-Connecting-IP / X-Forwarded-For — при необходимости добавить CF-Connecting-IP в приоритет src/lib/http/ip.ts). Проверить, что TG WebView и bot-webhook проходят через CF без блокировок (webhook — от серверов Telegram, не блокировать).",
+     "files": [
+      "src/lib/http/ip.ts"
+     ],
+     "db_changes": "",
+     "acceptance": "Прод-домен резолвится через CF (proxied). Тестовый флуд-скрипт ловит CF edge rate-limit до Railway (проверка по CF-логам/аналитике). trustedIp() возвращает реальный клиентский IP за CF (лог admin-login IP корректен, не CF-edge-IP). Bot-webhook и mini-app открываются нормально. Изменение — уровня инфра-конфига + опц. правка приоритета заголовка в ip.ts.",
+     "effort": "M",
+     "depends_on": [],
+     "risk": "CF в режиме proxy может ломать TG WebView / SSE (буферизация) — проверить, что /api/chats/[id]/stream (SSE) не буферизуется CF (нужен bypass/cache-off для стрима). Неверный порядок заголовков → throttle/audit по CF-IP вместо клиента."
+    },
+    {
+     "task_id": "SEC-2a",
+     "title": "Миграция: totp_secret + enrollment-поля в admin_users",
+     "what": "Native SQL-миграция (в supabase/migrations/, имя каталога легаси — стек node-pg, не Supabase): добавить в admin_users колонки totp_secret text null (base32, зашифрован-at-rest опц.), totp_enrolled_at timestamptz null. Опц. таблица admin_totp_recovery_codes (admin_id, code_hash, used_at) если решаем делать recovery (см. open_decisions). Существующая схема admin_users: id/login/role/password_hash/created_at — только ADD COLUMN, обратно-совместимо (null = не enrolled).",
+     "files": [
+      "supabase/migrations/20260702100000_admin_totp.sql"
+     ],
+     "db_changes": "ALTER TABLE admin_users ADD COLUMN totp_secret text, ADD COLUMN totp_enrolled_at timestamptz. Опц. CREATE TABLE admin_totp_recovery_codes(admin_id uuid references admin_users(id) on delete cascade, code_hash text, used_at timestamptz).",
+     "acceptance": "Миграция применяется на копии прод-схемы без ошибок; существующие admin_users получают totp_secret=null (не enrolled, login-совместимость сохранена до включения enforcement). Rollback-путь задокументирован.",
+     "effort": "S",
+     "depends_on": [],
+     "risk": "totp_secret at-rest: если не шифровать, дамп БД раскрывает 2FA-семя. Минимум — тот же уровень защиты, что и password_hash; рассмотреть шифрование секрета ключом из env (как SESSION_SECRET-производные)."
+    },
+    {
+     "task_id": "SEC-2b",
+     "title": "TOTP enrollment flow (генерация секрета, otpauth URI, verify)",
+     "what": "Модуль src/lib/admin/totp.ts: RFC 6238 через node:crypto (HMAC-SHA1, 30s step, 6 цифр, ±1 окно допуска на clock-skew) — hand-roll в стиле существующего scrypt/HMAC (ноль новых deps, см. open_decisions), включая base32-энкод/декод секрета. Enrollment endpoint(ы) под admin-session: POST /api/admin/totp/enroll — генерит секрет, сохраняет как pending (не активирует), возвращает otpauth://-строку (QR рендерит клиент); POST /api/admin/totp/enroll/verify — принимает первый код, при успехе ставит totp_enrolled_at=now (активация), выдаёт recovery-коды (если решено). Мини UI-экран в /admin для enrollment. Записать в admin_audit_log (action='totp_enroll').",
+     "files": [
+      "src/lib/admin/totp.ts",
+      "src/app/api/admin/totp/enroll/route.ts",
+      "src/app/api/admin/totp/enroll/verify/route.ts",
+      "src/app/admin/(...)/totp-setup/page.tsx"
+     ],
+     "db_changes": "Пишет в admin_users.totp_secret/totp_enrolled_at (из SEC-2a); опц. recovery-codes insert.",
+     "acceptance": "Superadmin в /admin проходит enrollment: сканирует QR (otpauth URI), вводит 6-значный код из Google Authenticator → totp_enrolled_at выставлен. totp.ts verify: код из эталонного authenticator принимается, код ±1 шаг принимается, устаревший/чужой код отвергается (unit-тест против известных RFC 6238 test-vectors). Enroll-роуты требуют валидную admin-session (иначе 401). Событие в audit-log.",
+     "effort": "L",
+     "depends_on": [
+      "SEC-2a"
+     ],
+     "risk": "Clock-skew: сервер и телефон должны совпадать в пределах окна — допуск ±1 шаг обязателен, иначе ложные отказы. base32: свой энкодер должен точно соответствовать RFC 4648 (иначе authenticator сгенерит другой код) — покрыть test-vectors."
+    },
+    {
+     "task_id": "SEC-2c",
+     "title": "Двухшаговый admin-login с TOTP + enforcement для superadmin",
+     "what": "Расширить src/app/api/admin/login/route.ts: после успешной проверки пароля, если у админа totp_enrolled_at не null → НЕ выдавать полную admin-session, а промежуточное состояние pending_totp (подписанная короткоживущая cookie, содержит adminId+role, флаг totp_pending) и вернуть {ok:true, totp_required:true}. Новый POST /api/admin/login/totp принимает 6-значный код против totp_secret (+ recovery-код как fallback), при успехе апгрейдит до полной bx_admin-сессии (setAdminSession). Enforcement: superadmin ОБЯЗАН иметь TOTP — если totp_enrolled_at=null у superadmin, login редиректит на enrollment (не выдаёт полную сессию). Троттлинг (isLoginThrottled) распространить на totp-шаг (по adminId), чтобы не брутфорсить 6 цифр. Audit: action='login' только после прохождения TOTP.",
+     "files": [
+      "src/app/api/admin/login/route.ts",
+      "src/app/api/admin/login/totp/route.ts",
+      "src/lib/admin/session.ts",
+      "src/proxy.ts"
+     ],
+     "db_changes": "Читает totp_secret/totp_enrolled_at; при recovery — помечает admin_totp_recovery_codes.used_at.",
+     "acceptance": "Enrolled admin: пароль-ОК → {totp_required:true}, полной bx_admin-cookie НЕТ; неверный TOTP → 401, верный → полная сессия, доступ к /admin. Superadmin без enrollment → принудительно на totp-setup, не получает доступ к паспортам. TOTP-шаг троттлится (5 неверных кодов/15мин по adminId → 429). Recovery-код одноразовый (повтор → отказ). Migration-safe: НЕ включать enforcement в прод до того, как superadmin реально прошёл SEC-2b (иначе self-lockout).",
+     "effort": "L",
+     "depends_on": [
+      "SEC-2b"
+     ],
+     "risk": "Self-lockout: если enforcement выкатить до enrollment живого superadmin — никто не войдёт. Обязателен порядок: enroll на проде вручную → потом флаг enforcement. pending_totp cookie должна быть подписана (HMAC как bx_admin) и коротко жить (<5мин), иначе обход пароля."
+    },
+    {
+     "task_id": "SEC-1a",
+     "title": "Ночной зашифрованный off-site backup /data (паспорта/селфи) → R2/S3",
+     "what": "Backup-эндпоинт /api/cron/backup под X-Cron-Secret (endpoint-путь, т.к. только web-инстанс видит single-attach volume /data): tar каталога STORAGE_DIR (/data) → шифрование (age/gpg symmetric ключом BACKUP_ENCRYPTION_KEY из env) → загрузка в R2/S3 бакет с датой в ключе, ротация (хранить N дней). Логировать размер/кол-во файлов/длительность. Триггер — Railway scheduled job / cron-job.org (см. SEC-4a) раз в сутки. НЕ класть ключ шифрования только в env без оффлайн-копии (см. open_decisions — иначе backup нерасшифруем при потере env).",
+     "files": [
+      "src/app/api/cron/backup/route.ts",
+      "src/lib/backup/volume-backup.ts",
+      "src/lib/env.ts"
+     ],
+     "db_changes": "",
+     "acceptance": "Вызов эндпоинта с валидным X-Cron-Secret → в R2/S3 появляется зашифрованный tar с датой, содержащий полный срез /data (кол-во объектов совпадает с list). Без секрета → 401/503 (constant-time, как SEC-5). Ключ шифрования и его оффлайн-копия задокументированы. env расширен BACKUP_ENCRYPTION_KEY + R2/S3-креды (fail-closed валидация).",
+     "effort": "M",
+     "depends_on": [],
+     "risk": "tar большого /data (30-90GB на масштабе) в одном запросе может упереться в память/таймаут инстанса — стримить tar напрямую в upload (multipart), не буферизовать; на MVP-объёме ок, но заложить стриминг. Backup конкурирует за тот же диск/CPU что и живой трафик — гонять ночью."
+    },
+    {
+     "task_id": "SEC-1b",
+     "title": "Включить Railway Postgres auto-backup + подтвердить persistent volume",
+     "what": "Ops-задача (Railway dashboard): (1) подтвердить, что /data — персистентный Railway Volume, а не эфемерная FS (доку требует явного подтверждения); (2) включить встроенные авто-бэкапы Railway Postgres (managed snapshots), задать частоту/ретенцию; (3) задокументировать расположение и retention снапшотов. Кода почти нет — конфиг + запись RPO/RTO в runbook.",
+     "files": [
+      "docs/launch-readiness-2026-07-02.md"
+     ],
+     "db_changes": "Railway managed Postgres auto-backup (dashboard toggle), не SQL-миграция.",
+     "acceptance": "Скриншот/подтверждение: /data помечен persistent volume; Railway Postgres auto-backup включён с заданной ретенцией; в доке зафиксированы RPO (макс. потеря данных) и RTO (время восстановления) для БД. Не 'greenlit' — реально включено.",
+     "effort": "S",
+     "depends_on": [],
+     "risk": "Если /data окажется эфемерным — это скрытый critical (данные уже под угрозой), эскалировать немедленно. Managed-снапшот Railway может не покрывать volume (только БД) — потому SEC-1a (volume off-site) отдельно и обязателен."
+    },
+    {
+     "task_id": "SEC-1c",
+     "title": "Провести реальный restore-тест (БД + volume) и задокументировать RPO/RTO",
+     "what": "ПРОВЕСТИ, не описать: восстановить (a) Railway Postgres-снапшот в отдельную БД и убедиться, что схема+данные целы; (b) скачать последний зашифрованный volume-backup из R2/S3, расшифровать ключом, распаковать во временный каталог и проверить, что паспорта/селфи читаются (кол-во+хэши совпадают с оригиналом, случайная выборка открывается). Зафиксировать фактические RPO/RTO по таймингу и краткий restore-runbook (шаги, где ключ, кого звать).",
+     "files": [
+      "docs/launch-readiness-2026-07-02.md",
+      "docs/restore-runbook.md"
+     ],
+     "db_changes": "",
+     "acceptance": "Restore ФАКТИЧЕСКИ выполнен: (a) БД-снапшот развёрнут, выборочные строки users/admin_users присутствуют; (b) volume-backup расшифрован и распакован, sha256 случайной выборки файлов совпадает с оригиналом на /data, файлы открываются как валидные изображения. В доке — измеренные RPO/RTO и пошаговый runbook. Acceptance НЕ 'скрипт существует', а 'restore проведён и верифицирован'.",
+     "effort": "M",
+     "depends_on": [
+      "SEC-1a",
+      "SEC-1b"
+     ],
+     "risk": "Первый restore часто вскрывает, что backup неполон/ключ не тот/tar битый — на то и тест ДО запуска. Если ключ шифрования недоступен при восстановлении — весь volume-backup бесполезен (тест это ловит)."
+    },
+    {
+     "task_id": "SEC-4a",
+     "title": "Надёжно планировать housekeeping-cron (SLA reclaim сейчас фиктивен)",
+     "what": "/api/cron/housekeeping (gc_start_token_uses + admin_sla_reclaim_stale_cases) НИЧЕМ не планируется — в railway.json нет cron-поля, GH Actions гонит только tg-outbox. => 7-дневный SLA-reclaim брошенных verification-кейсов не выполняется никогда (Кластер F/C3). Добавить надёжный планировщик: Railway scheduled job (или cron-job.org) на POST /api/cron/housekeeping раз в час с X-Cron-Secret; аналогично запланировать SEC-1a backup (раз в сутки). GH Actions free-tier оставить максимум как fallback для outbox (доку: падает на free-tier). Idem-потентность RPC уже обеспечена.",
+     "files": [
+      "railway.json",
+      ".github/workflows/cron-tg-outbox.yml",
+      "docs/restore-runbook.md"
+     ],
+     "db_changes": "",
+     "acceptance": "housekeeping вызывается по расписанию (лог/аудит показывает регулярные вызовы каждый час); стейл verification-кейс старше 7д реально возвращается в очередь (проверка на тестовом кейсе). backup-cron (SEC-1a) запланирован раз в сутки. Планировщик — не GH free-tier для критичных задач.",
+     "effort": "S",
+     "depends_on": [],
+     "risk": "Railway scheduled jobs исполняются в отдельном контейнере без доступа к volume — для backup (нужен /data) использовать HTTP-триггер на web-инстанс (endpoint-путь SEC-1a), а не job с прямым доступом к диску."
+    },
+    {
+     "task_id": "SEC-4b",
+     "title": "Алерты на сбой крона, застой outbox и mass admin-login-throttle",
+     "what": "Alert-path (сейчас его нет — только console.error в эфемерный stdout). Дёшево: Telegram-сообщение в ops-чат через существующий Bot API (ноль новых deps, токен есть), OPS_ALERT_CHAT_ID в env. Триггеры: (1) любой cron-вызов вернул ok:false / 5xx / не вызывался в срок (dead-man's-switch — cron-job.org или Railway healthcheck на факт исполнения); (2) глубина tg_outbox (pending) выше порога ИЛИ есть строки attempts>=5 (застряли, processOutboxBatch их скипает навсегда) — проверять в housekeeping и алертить; (3) всплеск admin-login-throttle (сигнал credential-stuffing) — при recordLoginAttempt/throttle. Модуль src/lib/ops/alert.ts (sendOpsAlert). Мини restore/oncall-runbook: кого будить если очередь встала / крон сдох / админ залочен / mass-ban.",
+     "files": [
+      "src/lib/ops/alert.ts",
+      "src/app/api/cron/housekeeping/route.ts",
+      "src/app/api/cron/tg-outbox/route.ts",
+      "src/lib/admin/throttle.ts",
+      "src/lib/env.ts",
+      "docs/oncall-runbook.md"
+     ],
+     "db_changes": "SELECT count по tg_outbox WHERE sent_at is null и WHERE attempts>=5 (индекс tg_outbox_unsent_idx уже есть). Опц. RPC outbox_health().",
+     "acceptance": "Симуляция: cron-роут возвращает ok:false → приходит Telegram-алерт в ops-чат. Инъекция N pending / строки с attempts>=5 в tg_outbox → housekeeping шлёт алерт о застое. >K неудачных admin-login с разных ключей в окне → алерт credential-stuffing. Алерты дедуплицируются (не спамят каждую минуту). Runbook описывает реакцию на каждый алерт.",
+     "effort": "M",
+     "depends_on": [
+      "SEC-4a"
+     ],
+     "risk": "sendOpsAlert через Bot API сам может упасть/зашуметь — не блокировать основной путь (try/catch, best-effort, как adminAudit в login-роуте) и вводить cooldown, иначе шторм алертов при длительном инциденте. Застрявшие attempts>=5 строки нужен ещё и ручной reset (attempts=0) — упомянуть в runbook."
+    }
+   ]
+  },
+  {
+   "workstream": "db_scale_p0",
+   "goal": "The system survives launch-scale concurrency (hundreds of open chats, /main opens, cron) on Railway single-attach Postgres without exhausting DB connections or degrading unrelated routes. Concretely: (1) connection pooling via PgBouncer transaction-mode with an explicit, sized app pool; (2) the live-chat SSE stream no longer polls the DB every 1.5s — idle DB-connection count is independent of the number of open SSE streams; (3) the hot recommendation path and per-SSE-tick chat reads are index-backed; (4) get_recommendations no longer silently drops the true top match nor masks scan timeouts as \"no candidates\"; (5) an EXPLAIN ANALYZE harness on a 10k-row seed proves index scans before launch. Addresses launch-readiness IDs DBS-01..DBS-08, INFRA-09, INFRA-10.",
+   "sequencing_note": "Two independent tracks that can run in parallel: (A) connection/SSE track VER... no — use these IDs: DB-1 (PgBouncer + pool) and DB-2/DB-3 (LISTEN/NOTIFY SSE) form the connection track; DB-4/DB-5/DB-6 (indexes, sargable rewrite, RPC correctness) form the query track; DB-7 (10k seed) then DB-8 (EXPLAIN harness) verify the query track. Recommended order: land DB-1 first (unblocks safe pooling and is the single biggest fix, DBS-01). In parallel start DB-4 (indexes) and DB-7 (seed) since they have no code deps. DB-2/DB-3 (SSE rewrite) is the largest single item and can proceed independently of the query track. DB-5 and DB-6 depend on DB-4 (indexes) and DB-7 (seed) for their acceptance. DB-8 depends on DB-4/DB-5/DB-6 landing and DB-7 seed. CRITICAL cross-cutting: DB-1's PgBouncer transaction-mode forces two design constraints that must be honored by other tasks — (a) DB-3's listener must use a DIRECT (non-pooled, 5432) connection, and (b) pool.ts startup GUCs (statement_timeout etc.) must move off the connection-startup `options` string to ALTER ROLE / per-txn SET or they are dropped by the pooler. Both are called out in the respective tasks.",
+   "open_decisions": [
+    "DBS-04 (silent best-match loss): scoring lives in JS (src/lib/matching/score.ts), so NO SQL pre-ORDER-BY short of moving the score into SQL can guarantee the true top-1 survives a LIMIT truncation. Two honest options for MVP: (a) score ALL viable candidates in JS by raising p_limit high / removing the LIMIT (the hard filters — mutual gender + age window + published + >=1 approved photo — likely reduce the viable set to low hundreds per viewer, not 10k, so this is cheap); or (b) port scoreCandidate() into the SQL RPC and ORDER BY score in-DB. DB-6 assumes option (a) as the MVP default; confirm with founder whether the viable-set size makes (a) safe or (b) is warranted. Verify actual viable-set size on the 10k seed (DB-7/DB-8) before committing.",
+    "PgBouncer hosting: run PgBouncer as a separate Railway service/sidecar vs. Railway's managed pooler if offered. Affects DB-1 wiring (two URLs: pooled 6543 + direct 5432) and whether the direct URL for DB-3 is even reachable from the app network. Confirm Railway topology.",
+    "LISTEN/NOTIFY vs Redis pub/sub for DB-2/DB-3: plan assumes Postgres LISTEN/NOTIFY (no new infra, 0 idle DB cost with a shared listener). If a Redis instance is already provisioned for other reasons, pub/sub is marginally simpler operationally. Default: Postgres LISTEN/NOTIFY.",
+    "NOTIFY delivery mechanism for DB-2: DB trigger on chat_messages/chats (fires atomically on commit, covers all write paths) vs. app-level pg_notify calls in the 3 routes. Plan defaults to triggers for atomicity/robustness; app-level is acceptable if trigger maintenance is judged too heavy.",
+    "Typing signal over NOTIFY: typing_*_until is ephemeral (6s TTL) and currently piggybacks on the chat row. Decide whether typing warrants a NOTIFY channel at all or whether the client can keep a lightweight local optimistic indicator — affects DB-2 scope (whether the /typing route/chats trigger emits)."
+   ],
+   "tasks": [
+    {
+     "task_id": "DB-1",
+     "title": "PgBouncer (transaction-mode) + explicit sized app pool + relocate startup GUCs",
+     "what": "Introduce PgBouncer in transaction pooling mode in front of Railway Postgres and point the app pool at it. Add a second env var for the DIRECT (non-pooled, 5432) connection used only by the LISTEN listener (DB-3) and by migrations. In src/lib/env.ts add DATABASE_URL (pooled, 6543) and a new DATABASE_DIRECT_URL (direct, 5432) plus optional PG_POOL_MAX (already read from process.env in pool.ts but undocumented). In src/lib/db/pool.ts: set an explicit `max` derived from PG_POOL_MAX with a sane default (e.g. 15) sized against Postgres max_connections and the pooler's pool_size; CRITICAL — REMOVE the `-c statement_timeout=... -c idle_in_transaction_session_timeout=... -c application_name=...` from the pg `options` startup string, because PgBouncer transaction mode drops/rejects startup GUCs, and instead apply these via `ALTER ROLE <app_user> SET statement_timeout='10000'` etc. (new migration) or per-transaction SET. Document the two URLs and pooler settings in .env.local.example and CLAUDE.md. Update README migration command to use DATABASE_DIRECT_URL.",
+     "files": [
+      "src/lib/db/pool.ts",
+      "src/lib/env.ts",
+      ".env.local.example",
+      "supabase/migrations/20260702000000_role_gucs.sql",
+      "CLAUDE.md",
+      "README.md"
+     ],
+     "acceptance": "With PgBouncer transaction-mode in front, N concurrent app requests do not open more than PG_POOL_MAX backend connections to Postgres (verify via pg_stat_activity count by application_name under a concurrency test). statement_timeout=10s and idle_in_transaction_session_timeout=60s are observably in effect on pooled connections (SHOW statement_timeout returns 10s inside an app query) despite the options string being removed. A forgotten/slow query is still killed at 10s. DATABASE_DIRECT_URL is present and reaches Postgres bypassing the pooler.",
+     "effort": "M",
+     "depends_on": [],
+     "db_changes": "New migration ALTER ROLE <app_user> SET statement_timeout, idle_in_transaction_session_timeout, application_name (replaces the connection-startup options that transaction-mode PgBouncer drops).",
+     "risk": "Transaction-mode PgBouncer silently drops session-level features; must confirm every code path is transaction-scoped (no session-pinned LISTEN, no session GUCs relied upon). prepared-statement/portal issues with node-pg under transaction pooling — verify pg queries don't rely on server-side prepared statements across pooled txns."
+    },
+    {
+     "task_id": "DB-2",
+     "title": "Add commit-atomic NOTIFY on chat message insert, read-receipt update, and typing",
+     "what": "Emit Postgres NOTIFY on a per-chat channel so instances can push live updates without polling. Preferred (default): a DB trigger AFTER INSERT ON chat_messages and AFTER UPDATE OF read_at ON chat_messages that calls pg_notify('chat_<chat_id>' or a single 'chat_events' channel with chat_id in payload) with a compact JSON payload (kind: 'message'|'read', chat_id, and minimal fields); plus a trigger AFTER UPDATE OF typing_a_until/typing_b_until ON chats emitting kind:'typing'. This covers all three SSE payload dimensions ({messages, read_through, typing}) and all write paths — including the app routes messages/route.ts (insert at line 85), read/route.ts (bulk read_at update, lines 24-29), typing/route.ts (chats update, line 28) — atomically on commit. Keep payloads small (IDs + kind), not full rows, to avoid the 8000-byte NOTIFY limit; the SSE stream re-reads the specific changed data via existing getLiveState on wake.",
+     "files": [
+      "supabase/migrations/20260702010000_chat_notify_triggers.sql"
+     ],
+     "acceptance": "Inserting a chat_messages row, updating read_at, or updating typing_*_until each produces exactly one NOTIFY on the chat channel with a payload under 8000 bytes containing chat_id and kind. A LISTEN'ing psql session receives all three event kinds. Direct (non-route) inserts into chat_messages also notify (trigger, not app-level).",
+     "effort": "M",
+     "depends_on": [],
+     "db_changes": "New migration: pg_notify triggers on chat_messages (AFTER INSERT, AFTER UPDATE OF read_at) and chats (AFTER UPDATE OF typing_a_until, typing_b_until). Channel naming + payload shape defined here.",
+     "risk": "NOTIFY 8KB payload cap — must send IDs/kind only, not message bodies. Bulk read_at update in /read touches many rows; use a statement-level trigger (or dedupe) so one /read call emits one NOTIFY, not one-per-row."
+    },
+    {
+     "task_id": "DB-3",
+     "title": "Rewrite SSE stream: shared per-process LISTEN listener + in-process fan-out (remove 1.5s DB polling)",
+     "what": "Replace the 1.5s DB-polling loop in src/app/api/chats/[id]/stream/route.ts with an event-driven model. Create a single process-wide listener module (e.g. src/lib/chat/notify-listener.ts) that opens ONE dedicated pg Client on DATABASE_DIRECT_URL (NOT the pooled URL and NOT from the pool — transaction-mode PgBouncer cannot hold a session LISTEN), issues LISTEN once for the chat_events channel, and fans out incoming notifications to in-process SSE subscribers via an EventEmitter keyed by chat_id. The stream route subscribes to its chat_id, and on each relevant NOTIFY calls the existing getLiveState(id, user.id, chat, cursor) once to fetch just the delta, then pushes the SSE frame. Keep heartbeat pings and the MAX_MS early-close. Keep loadChatRow's block-check on subscribe and re-check on receipt so blocked streams still tear down. The existing client fallback polling in ChatRoom.tsx (EventSource onerror → FALLBACK_POLL_MS) stays as-is (no change needed) as a safety net. Result: at rest, zero DB queries per open SSE stream; DB is touched only when a real event fires.",
+     "files": [
+      "src/app/api/chats/[id]/stream/route.ts",
+      "src/lib/chat/notify-listener.ts",
+      "src/lib/db/pool.ts"
+     ],
+     "acceptance": "With K open SSE streams and no chat activity, the number of Postgres backends attributable to SSE is exactly 1 per app instance (the shared listener), independent of K — verified via pg_stat_activity. A new message / read / typing event reaches the correct stream(s) within ~1s without any per-tick polling query. The shared listener auto-reconnects (re-LISTENs) on connection drop. Blocked pair: stream tears down on next event or heartbeat. Client still works if EventSource fails (fallback poll path unchanged).",
+     "effort": "L",
+     "depends_on": [
+      "DB-2",
+      "DB-1"
+     ],
+     "db_changes": "None (consumes DB-2 channel).",
+     "risk": "Serverless/multi-instance: NOTIFY reaches every instance's listener backend, so fan-out is correct across instances; but a per-request LISTEN (the wrong design) would recreate connection exhaustion — the listener MUST be a single shared connection. Next.js module singleton lifetime across route invocations must be verified (module-level singleton, guarded init). Listener must use direct 5432 URL, never the pooler."
+    },
+    {
+     "task_id": "DB-4",
+     "title": "Add missing hot-path indexes (approved photos, unread messages)",
+     "what": "Add the two partial indexes flagged INFRA-10 and DBS-07. (1) profile_photos partial index supporting the correlated approved-photo lookup and EXISTS in get_recommendations: `CREATE INDEX profile_photos_approved_idx ON profile_photos (user_id, is_main DESC, ord) WHERE status='approved'` (covers both the EXISTS filter and the ORDER BY is_main desc, ord LIMIT 1 subselect at recommendations RPC lines 30-32/45). (2) chat_messages partial unread index for the per-SSE-tick / per-send read-through and unread scans: `CREATE INDEX chat_messages_unread_idx ON chat_messages (chat_id, sender_id) WHERE read_at IS NULL` (serves getLiveState read_through query in live.ts:68-76, the unreadFromMe count in messages/route.ts:75-80, and the /read update predicate). Keep the existing chat_messages(chat_id, created_at) for the message-window scan.",
+     "files": [
+      "supabase/migrations/20260702020000_scale_indexes.sql"
+     ],
+     "acceptance": "After migration, EXPLAIN ANALYZE on a 10k seed shows the approved-photo subselect/EXISTS in get_recommendations uses profile_photos_approved_idx (Index Scan/Index Only Scan, not Seq Scan), and the read_through/unread queries use chat_messages_unread_idx. No duplicate/unused index warnings.",
+     "effort": "S",
+     "depends_on": [],
+     "db_changes": "New migration: two partial indexes (profile_photos WHERE status='approved'; chat_messages WHERE read_at IS NULL).",
+     "risk": "CREATE INDEX locks; use CREATE INDEX CONCURRENTLY if run against a live DB with data (note: CONCURRENTLY cannot run inside the concatenated-migration transaction — may need to run this migration standalone). Partial-index predicate must exactly match query predicates or the planner won't use it."
+    },
+    {
+     "task_id": "DB-5",
+     "title": "Make get_recommendations age filter sargable (birth_date BETWEEN) + covering index",
+     "what": "Rewrite the two non-sargable age predicates in the latest get_recommendations RPC (current def: supabase/migrations/20260630000000_recommendations_v3_top_life_values.sql, lines 43-44) from `date_part('year', age(cp.birth_date))::int BETWEEN v.partner_age_min AND v.partner_age_max` to a sargable birth_date range: candidate born between (current_date - (max_age+1) years + 1 day) and (current_date - min_age years), i.e. compute date bounds from the viewer's partner_age_min/max and compare cp.birth_date directly. Mirror the reverse predicate (v.age between cp.partner_age_min and cp.partner_age_max) — this side is on the viewer's own age vs candidate window; keep it correct but note it's a scalar comparison, not the hot scan. Add a supporting index on user_profiles enabling the candidate scan by the hard filters, e.g. `CREATE INDEX user_profiles_reco_idx ON user_profiles (looking_for_gender, gender, status, birth_date) WHERE status='published'` (order tuned to the mutual-gender + published + birth_date-range access pattern). CAUTION: the bound inversion — a HIGHER max age maps to an EARLIER birth_date — and age() truncation vs date-arithmetic birthday edges must be handled so the rewritten predicate returns the identical candidate set.",
+     "files": [
+      "supabase/migrations/20260702030000_recommendations_sargable.sql",
+      "src/lib/matching/recommend.ts"
+     ],
+     "acceptance": "On the 10k seed, the rewritten RPC returns the EXACT SAME candidate set (same user_ids) as the current date_part(age()) version for a battery of viewers spanning age-window edges and birthday-boundary dates (assert set equality, not just row count). EXPLAIN ANALYZE shows an Index Scan on user_profiles using user_profiles_reco_idx (or the birth_date range), NOT a Seq Scan over all profiles. recommend.ts still consumes the same return columns (no signature change).",
+     "effort": "M",
+     "depends_on": [
+      "DB-4",
+      "DB-7"
+     ],
+     "db_changes": "CREATE OR REPLACE FUNCTION get_recommendations with sargable birth_date bounds; new supporting index on user_profiles. Preserves return-table shape (vals=top_life_values) for recommend.ts/score.ts compat.",
+     "risk": "Off-by-one / bound inversion / birthday-edge mismatch vs age() truncation is the whole risk — acceptance is set-equality on the seed, not 'looks indexed'. Keep the RPC return columns byte-compatible with recommend.ts."
+    },
+    {
+     "task_id": "DB-6",
+     "title": "Fix silent best-match loss (DBS-04) and timeout-masked-as-empty (DBS-08)",
+     "what": "Two correctness fixes around the LIMIT. (1) DBS-04: the RPC currently `LIMIT p_limit` (called with 100 from recommend.ts:39) with NO ORDER BY, so once >100 candidates match, the JS scorer (score.ts) never sees the true top-1. Since the score is JS-side, adopt the open-decision default (option a): raise/remove the LIMIT so ALL viable candidates (post hard-filter) are scored in JS — verify on the seed that the viable set is bounded (low hundreds) so this is safe; if the seed shows it can blow past a safe ceiling, escalate to porting score into SQL (option b) per open_decisions. Update recommend.ts p_limit accordingly and document why. (2) DBS-08: getRecommendations currently swallows RPC error and returns [] (recommend.ts:41 `if (error || !rows) return []`), so a statement_timeout kill under load is indistinguishable from a genuine empty result and surfaces as 'алгоритм ищет'. Distinguish: on a query error/timeout, log + surface a distinct signal (throw or return a typed error) so match-of-the-day / UI can show a retry state rather than the permanent empty state, and so timeouts are observable.",
+     "files": [
+      "src/lib/matching/recommend.ts",
+      "src/lib/v2/match-of-the-day.ts",
+      "supabase/migrations/20260702030000_recommendations_sargable.sql"
+     ],
+     "acceptance": "On the 10k seed, for a viewer with >100 matching candidates, the candidate ultimately shown (top by score.ts) is provably the global max score across ALL viable candidates, not just among the first 100 returned (test asserts this against a brute-force JS scoring of the full filtered set). A forced statement_timeout / RPC error produces a distinct error signal (logged + typed) — NOT a silent empty array indistinguishable from 'no candidates'; match-of-the-day surfaces retry vs genuine-empty differently.",
+     "effort": "M",
+     "depends_on": [
+      "DB-5",
+      "DB-7"
+     ],
+     "db_changes": "Possibly none beyond DB-5 (LIMIT change is app-side if option a). Only if option b chosen: port scoreCandidate into SQL + ORDER BY score in RPC.",
+     "risk": "Removing/raising the LIMIT trades correctness for scan cost — must confirm on the seed that the viable set per viewer stays bounded, else it reintroduces a heavy scan. Error-surfacing change must not break the legitimate empty-state UX."
+    },
+    {
+     "task_id": "DB-7",
+     "title": "10k-row seed generator across FKs, enums, and realistic distributions",
+     "what": "Build a repeatable seed script that populates ~10k users with the full graph needed to exercise the hot paths: users (lifecycle_state='active', verification_status='approved'), user_profiles (published, valid gender/looking_for_gender pairings, birth_date spanning the age windows, city distribution weighted to Tashkent per the 80/20 gender-imbalance concern, top_life_values arrays, partner_age_min/max), profile_photos (>=1 approved per active user, is_main/ord set), quiz_results vectors, plus a realistic spread of chats + chat_messages (some unread) and match_requests/match_views/blocks so the NOT EXISTS filters and unread indexes are actually exercised. Must satisfy all FK and enum/check constraints so it loads clean via the direct URL. Idempotent / re-runnable (truncate-and-reseed guard). Place under scripts/.",
+     "files": [
+      "scripts/seed-10k.mjs"
+     ],
+     "acceptance": "Running the seed against a fresh DB (direct URL) inserts ~10k active+approved+published users each with >=1 approved photo, valid mutual-gender/age distributions, and a nontrivial chat/message/match graph, with ZERO FK/enum/check violations. Re-running is safe (idempotent). Produces enough viable candidates per sample viewer to make the LIMIT and index tests meaningful (some viewers with >100 matches).",
+     "effort": "M",
+     "depends_on": [],
+     "db_changes": "None (data only). Must respect all init_schema + later-migration constraints (enums onboarding_step, lifecycle/verification states, profile_photos status, etc.).",
+     "risk": "Getting distributions wrong (e.g. no viewer exceeds 100 matches, or nobody passes mutual filters) makes DB-5/DB-6 acceptance vacuous. Must model the mutual gender+age constraints so pairs actually match."
+    },
+    {
+     "task_id": "DB-8",
+     "title": "EXPLAIN ANALYZE harness proving index scans on the 10k seed",
+     "what": "Create a runnable harness (script + checked-in expected results / assertions) that, against the DB-7 seed, runs EXPLAIN (ANALYZE, BUFFERS) on: get_recommendations for a spread of viewers; the getLiveState read_through query; the messages/route unread-count query; and the /read update. Assert plan shape: Index Scan/Index Only Scan on user_profiles_reco_idx, profile_photos_approved_idx, chat_messages_unread_idx — and NO Seq Scan on user_profiles / profile_photos / chat_messages on the hot paths. Capture timings as a pre-launch baseline. Wire this to run in CI or as a documented pre-launch gate.",
+     "files": [
+      "scripts/explain-harness.mjs",
+      "docs/db-scale-explain-baseline.md"
+     ],
+     "acceptance": "Harness runs green against the 10k seed: every hot query uses the intended index (assertion fails on any Seq Scan of user_profiles/profile_photos/chat_messages in the hot paths), get_recommendations p95 under a defined threshold (e.g. <50ms) on the seed, and a baseline plan+timing report is written. Re-runnable before each launch-affecting DB change.",
+     "effort": "S",
+     "depends_on": [
+      "DB-4",
+      "DB-5",
+      "DB-6",
+      "DB-7"
+     ],
+     "db_changes": "None (read-only EXPLAIN).",
+     "risk": "EXPLAIN plans are data-dependent; must ANALYZE the seed tables first or the planner picks seq scans on stale stats and the harness reports false failures. Thresholds must reflect PgBouncer/prod-like settings, not a warm local cache."
+    }
+   ]
+  },
+  {
+   "workstream": "observability_p0",
+   "goal": "Baxtlilar перестаёт быть 'слепым': unhandled-ошибки на сервере/клиенте/edge автоматически попадают в дашборд с PII-скрабом; внешний uptime-монитор бьёт тревогу при падении /api/health (включая деградацию БД, не только процесса); /api/metrics отдаёт насыщение pg-пула, глубину/возраст tg_outbox (включая dead-letter), глубину очереди верификации и 5xx-счётчик; алерт в Telegram срабатывает при: (a) сбое cron (housekeeping/tg-outbox) через внешний dead-man's-switch, (b) tg_outbox backlog age > порога. Закрывает Кластер G (launch-readiness §2) и часть Кластера F/C3 (cron-надёжность).",
+   "sequencing_note": "OBS-2 (health hardening) блокирует OBS-3 (внешний uptime-монитор) — иначе монитор слеп к деградации БД. OBS-1 (Sentry) и OBS-9 (CSP tunnel) должны идти вместе — иначе client-side ошибки тихо блокируются CSP connect-src 'self' и acceptance-критерий 'ошибка попадает в дашборд' не выполняется для браузерной половины. OBS-4 (metrics) зависит от OBS-6 (outbox route возвращает честный статус + считает dead-letter). OBS-7/OBS-8 (алертинг) зависят от OBS-4 и переиспользуют src/lib/telegram/notify.ts как транспорт — Prometheus/Grafana не планируется, потребителя метрик нет. Рекомендованный порядок: OBS-2 → OBS-6 → OBS-1+OBS-9 (параллельно) → OBS-4 → OBS-3, OBS-5, OBS-7, OBS-8 (параллельно после OBS-4).",
+   "tasks": [
+    {
+     "task_id": "OBS-1",
+     "title": "Sentry: server + edge + client wiring (Next 16)",
+     "what": "Установить @sentry/nextjs (peer подтверждён: ^16.0.0-0, совместим с next@16.2.6 в package.json). Запустить npx @sentry/wizard@latest -i nextjs либо вручную создать instrumentation.ts (register() для server+edge init + onRequestError хук — обязателен в Next 16 App Router для захвата ошибок Server Components/Route Handlers), instrumentation-client.ts (актуальное имя client-init файла в свежих @sentry/nextjs; sentry.client.config.ts считается deprecated путём — проверить версию на момент имплементации), sentry.server.config.ts, sentry.edge.config.ts. Обернуть next.config.ts в withSentryConfig(...) поверх существующего withNextIntl-враппера (проверить порядок композиции). Добавить в src/lib/env.ts SENTRY_DSN (опционально в dev), в CI/build — SENTRY_AUTH_TOKEN/SENTRY_ORG/SENTRY_PROJECT для source-map upload. КРИТИЧНО (PII, паспортное приложение): sendDefaultPii:false явно + beforeSend/beforeSendTransaction хук, вычищающий cookie (bx_session, bx_admin), заголовки X-Cron-Secret и X-Telegram-Bot-Api-Secret-Token, тела запросов на /api/onboarding/*, /api/admin/clients/*, /api/storage/*.",
+     "files": [
+      "/Users/fayzullohoja/Code/baxtlilar/instrumentation.ts (new)",
+      "/Users/fayzullohoja/Code/baxtlilar/instrumentation-client.ts (new)",
+      "/Users/fayzullohoja/Code/baxtlilar/sentry.server.config.ts (new)",
+      "/Users/fayzullohoja/Code/baxtlilar/sentry.edge.config.ts (new)",
+      "/Users/fayzullohoja/Code/baxtlilar/next.config.ts",
+      "/Users/fayzullohoja/Code/baxtlilar/package.json",
+      "/Users/fayzullohoja/Code/baxtlilar/src/lib/env.ts",
+      "/Users/fayzullohoja/Code/baxtlilar/.env.local.example"
+     ],
+     "acceptance": "Намеренно брошенная необработанная ошибка в серверном route handler, в Server Component и в клиентском компоненте (3 отдельные проверки) — каждая появляется в Sentry-дашборде со stack trace и request-контекстом в течение ~1 минуты; событие НЕ содержит значений bx_session/bx_admin cookie, X-Cron-Secret, тел onboarding/admin/storage роутов.",
+     "effort": "M",
+     "depends_on": [],
+     "risk": "Точный набор файлов версионно-чувствителен у @sentry/nextjs — пин версии проверять против next@16.2.6, не полагаться на память; порядок withSentryConfig(withNextIntl(nextConfig)) может конфликтовать с next-intl plugin — проверить сборку локально."
+    },
+    {
+     "task_id": "OBS-9",
+     "title": "CSP: разрешить Sentry ingest через tunnel (не через connect-src wildcard)",
+     "what": "next.config.ts сейчас имеет connect-src 'self' без исключений. Дефолтный Sentry client SDK шлёт события на *.ingest.sentry.io напрямую из браузера — будет молча заблокирован CSP, клиентские ошибки никогда не долетят (тихий провал OBS-1 для браузерной половины). Включить Sentry tunnel-опцию (tunnel: '/monitoring' в client Sentry.init) — события идут на same-origin роут /monitoring, сервер проксирует на Sentry ingest. Обходит также блокировку в TG WebView. НЕ расширять connect-src на сторонние домены.",
+     "files": [
+      "/Users/fayzullohoja/Code/baxtlilar/next.config.ts",
+      "/Users/fayzullohoja/Code/baxtlilar/instrumentation-client.ts"
+     ],
+     "acceptance": "В браузере с DevTools Network спровоцировать клиентскую ошибку — исходящий запрос идёт на /monitoring (same-origin), не на ingest.sentry.io напрямую; событие тем не менее видно в Sentry-дашборде; CSP connect-src остаётся 'self' без добавленных доменов.",
+     "effort": "S",
+     "depends_on": [
+      "OBS-1"
+     ],
+     "risk": "Tunnel-роут увеличивает bandwidth через тот же Node-инстанс, уже перегруженный буферизацией картинок (INFRA-04) — держать tracesSampleRate низким (<=0.1)."
+    },
+    {
+     "task_id": "OBS-2",
+     "title": "Health-check: честный HTTP-статус вместо ok:true всегда",
+     "what": "src/app/api/health/route.ts:20 возвращает NextResponse.json({ok:true, db, ts}) с HTTP 200 ВСЕГДА, даже когда db===false (DB down). Минимальный payload (F-117, anti-recon) — оставить как есть. Но HTTP-статус должен отражать реальность: 503 когда db===false, 200 когда db===true. Не менять состав полей — только код ответа. Метрики пула — не сюда (см. OBS-4), health должен остаться дешёвым (Railway healthcheckPath дёргает его часто).",
+     "files": [
+      "/Users/fayzullohoja/Code/baxtlilar/src/app/api/health/route.ts"
+     ],
+     "acceptance": "Временно сломать DATABASE_URL/остановить БД в staging — GET /api/health возвращает HTTP 503 с телом {ok:true, db:false, ts}; при живой БД — HTTP 200. Внешний uptime-монитор (OBS-3), проверяющий статус-код, теперь детектит DB-outage.",
+     "effort": "S",
+     "depends_on": [],
+     "risk": "railway.json healthcheckTimeout=120 + restartPolicyMaxRetries=5 — 503 из-за временной недоступности БД (напр. failover) теперь активно триггерит рестарт здорового веб-процесса; согласовать с инфра-воркстримом, не гасить restart policy молча."
+    },
+    {
+     "task_id": "OBS-6",
+     "title": "Cron-роуты (tg-outbox, housekeeping): честный не-200 статус при сбоях + dead-letter учёт",
+     "what": "src/app/api/cron/tg-outbox/route.ts POST возвращает {ok:true, ...stats} с implicit 200 ДАЖЕ когда все sends failed (failed>0, sent=0) — GH Actions workflow алертит только на STATUS!=200, массовый сбой отправки (напр. невалидный bot token) никогда не триггерит ::error::. Исправить: если stats.failed>0 && stats.sent===0 — вернуть 502/207. processOutboxBatch() (tg-outbox-worker.ts:209-230) фильтрует lt('attempts',5) — записи attempts>=5 & sent_at IS NULL тихо выпадают навсегда (комментарий в коде строка 206 это признаёт). Добавить в ответ route dead_letter_count (COUNT WHERE attempts>=5 AND sent_at IS NULL) — нужен для OBS-4/OBS-7. housekeeping/route.ts уже возвращает 207 при частичном отказе — verify, не менять.",
+     "files": [
+      "/Users/fayzullohoja/Code/baxtlilar/src/app/api/cron/tg-outbox/route.ts",
+      "/Users/fayzullohoja/Code/baxtlilar/src/lib/v2/tg-outbox-worker.ts"
+     ],
+     "acceptance": "Тест: смоделировать полный отказ Bot API (mock fetch → not ok) на батче из >=1 pending записи — POST /api/cron/tg-outbox возвращает статус !=200; ответ содержит dead_letter_count.",
+     "effort": "S",
+     "depends_on": [],
+     "risk": "Единичный юзер без telegram_id (штатный сценарий, не сбой) не должен ложно триггерить not-200/алерт — различить 'частичный штатный skip' от 'массовый отказ send'."
+    },
+    {
+     "task_id": "OBS-4",
+     "title": "Secret-protected /api/metrics: pg-pool, tg_outbox depth/age/dead-letter, verification queue depth, 5xx rate",
+     "what": "Новый роут GET /api/metrics, защищённый тем же паттерном что cron-роуты (X-Cron-Secret либо отдельный METRICS_SECRET в env.ts). JSON-ответ (не Prometheus text-format — скрейпера в стеке нет): (1) pg pool — pool().totalCount/idleCount/waitingCount из node-pg Pool (src/lib/pool.ts), насыщение = totalCount-idleCount относительно PG_POOL_MAX; (2) tg_outbox — COUNT WHERE sent_at IS NULL (depth), MAX(now()-created_at) WHERE sent_at IS NULL (oldest pending age сек), COUNT WHERE attempts>=5 AND sent_at IS NULL (dead-letter, из OBS-6); (3) verification queue depth — COUNT FROM verification_cases WHERE state<>'closed' (тот же источник истины, что рекомендован в launch-readiness Кластер C для дашборд-счётчика); (4) 5xx rate — читает агрегат из OBS-5.",
+     "files": [
+      "/Users/fayzullohoja/Code/baxtlilar/src/app/api/metrics/route.ts (new)",
+      "/Users/fayzullohoja/Code/baxtlilar/src/lib/env.ts"
+     ],
+     "acceptance": "GET /api/metrics без секрета → 401/503; с валидным секретом → 200 JSON со всеми полями (pool_total, pool_idle, pool_waiting, outbox_depth, outbox_oldest_age_seconds, outbox_dead_letter_count, verification_queue_depth, five_xx_rate_5min); проверено вручную вставкой тестовой pending outbox-записи с created_at в прошлом — outbox_oldest_age_seconds отражает реальный возраст.",
+     "effort": "M",
+     "depends_on": [
+      "OBS-6"
+     ],
+     "risk": "COUNT-запросы без индексов на tg_outbox/verification_cases при росте таблиц — проверить, что tg_outbox_unsent_idx(created_at) покрывает depth/age запрос; для verification_cases WHERE state<>'closed' может понадобиться partial index."
+    },
+    {
+     "task_id": "OBS-5",
+     "title": "5xx rate: rolling-window счётчик через onRequestError или lightweight in-memory counter",
+     "what": "Единственный веб-инстанс (реплики архитектурно невозможны — single-attach volume) — in-memory counter безопасен, Redis не нужен для MVP. Реализовать rolling-window счётчик 5xx-ответов (bucket по минутам за последние 5 мин), инкрементируемый из onRequestError-хука в instrumentation.ts (ловит неперехваченные ошибки Route Handlers/Server Components) — но НЕ явные NextResponse.json(...,{status:5xx}) без throw, те роуты нужно инкрементировать вручную или через обёртку в src/proxy.ts (прочитать файл перед реализацией — определить, видит ли Routing Middleware финальный статус ответа Route Handler). Значение читает OBS-4.",
+     "files": [
+      "/Users/fayzullohoja/Code/baxtlilar/src/proxy.ts",
+      "/Users/fayzullohoja/Code/baxtlilar/instrumentation.ts",
+      "/Users/fayzullohoja/Code/baxtlilar/src/lib/observability/five-xx-counter.ts (new)"
+     ],
+     "acceptance": "Намеренно вызвать 3 разных 5xx-ответа (напр. временно сломав DB) в течение окна — GET /api/metrics five_xx_rate_5min отражает рост; после окна (5 мин) счётчик спадает к 0 без ручного сброса.",
+     "effort": "M",
+     "depends_on": [
+      "OBS-1"
+     ],
+     "risk": "In-memory counter теряется при каждом рестарте процесса (единственный инстанс) — приемлемо для MVP-порога тревоги, задокументировать ограничение; на пост-10k этапе (R2/S3+реплики) заменить на Redis-backed."
+    },
+    {
+     "task_id": "OBS-3",
+     "title": "Внешний uptime-монитор на /api/health",
+     "what": "Настроить внешний uptime-сервис (UptimeRobot / Better Uptime / Checkly) на GET https://<railway-domain>/api/health, интервал 1-5 мин, алерт на HTTP-статус !=200 (теперь осмысленно детектит DB-outage благодаря OBS-2) и на response-time деградацию. Уведомление — в тот же Telegram-канал, что и остальные алерты (OBS-7/8). Задокументировать в runbook (launch-readiness §6 уже отмечает отсутствие runbook), кто реагирует.",
+     "files": [
+      "external service config (UptimeRobot/Better Uptime dashboard)",
+      "/Users/fayzullohoja/Code/baxtlilar/docs/runbook-observability.md (new, опционально)"
+     ],
+     "acceptance": "Временно вернуть 503 с /api/health (остановив тестовую БД в staging) — внешний монитор присылает алерт в Telegram в течение заданного интервала (<=5 мин); при восстановлении — recovery-уведомление.",
+     "effort": "S",
+     "depends_on": [
+      "OBS-2"
+     ],
+     "risk": "Бесплатные тиры часто имеют минимальный интервал 5 мин — если нужна секундная реакция, платный тир (уже учтён в launch-readiness бюджете +$10-30/мес)."
+    },
+    {
+     "task_id": "OBS-7",
+     "title": "Алерт на tg_outbox backlog age > порога (независимый dead-man's-switch)",
+     "what": "Циркулярность: если cron мёртв, он не может сам себя алертить, поэтому проверка возраста backlog должна жить вне приложения. Вариант A (проще): расширить .github/workflows/cron-tg-outbox.yml — после вызова /api/cron/tg-outbox дёрнуть /api/metrics, проверить outbox_oldest_age_seconds > THRESHOLD (напр. 900с), при превышении отправить сообщение в Telegram через прямой Bot API curl (GH Actions secrets: TELEGRAM_BOT_TOKEN, ALERT_CHAT_ID) по тому же паттерну sendMessage, что в tg-outbox-worker.ts:117-134. Вариант B (надёжнее): healthchecks.io dead-man's switch, пингуемый ПОСЛЕ успешного дрейна — если пинг не пришёл, healthchecks.io алертит независимо от состояния Baxtlilar-инфры. Рекомендация: B как основной механизм, A как дублирующий сигнал.",
+     "files": [
+      "/Users/fayzullohoja/Code/baxtlilar/.github/workflows/cron-tg-outbox.yml",
+      "/Users/fayzullohoja/Code/baxtlilar/.github/workflows/cron-housekeeping.yml (new, если housekeeping не запланирован — см. риск)",
+      "external: healthchecks.io config"
+     ],
+     "acceptance": "Искусственно поднять outbox_oldest_age_seconds выше порога (остановив worker/Bot API, накопив pending) — алерт приходит в Telegram в течение согласованного окна (<=20 мин); отдельно — искусственно уронить сам GH Actions cron (невалидный CRON_SECRET) — healthchecks.io switch алертит независимо от внутреннего состояния приложения.",
+     "effort": "S",
+     "depends_on": [
+      "OBS-4",
+      "OBS-6"
+     ],
+     "risk": "Launch-readiness Кластер C3 подозревает, что housekeeping SLA-крон (7-дневный reclaim) вообще ничем не запланирован (в railway.json нет cron-поля, GH Actions гонит только tg-outbox) — ПРОВЕРИТЬ фактическое состояние в Railway dashboard первым шагом этой задачи, не предполагать; если подтвердится отсутствие — завести cron-housekeeping.yml по аналогии."
+    },
+    {
+     "task_id": "OBS-8",
+     "title": "Алерт на сбой cron-вызова (не-200) + на admin-login mass-throttle",
+     "what": "Расширить .github/workflows/cron-tg-outbox.yml: текущий блок `if [ \"$STATUS\" != \"200\" ]; then echo '::error::...'; exit 1; fi` алертит только внутри GH Actions UI, не долетает до человека без активного наблюдения — добавить шаг отправки в Telegram-канал алертов при STATUS!=200 (curl к Bot API sendMessage). Второе: алерт на всплеск admin-login throttle (launch-readiness §6: 'массовый admin-login-throttle — сигнал credential-stuffing', сейчас нигде не алертится, только троттлится в src/lib/admin/throttle.ts) — прочитать throttle.ts перед реализацией (in-memory vs DB-backed стор определяет способ агрегации), добавить в OBS-4 metrics счётчик admin_login_failures_5min, алертить при превышении порога (напр. >20 неудачных попыток за 5 мин).",
+     "files": [
+      "/Users/fayzullohoja/Code/baxtlilar/.github/workflows/cron-tg-outbox.yml",
+      "/Users/fayzullohoja/Code/baxtlilar/src/app/api/metrics/route.ts",
+      "/Users/fayzullohoja/Code/baxtlilar/src/lib/admin/throttle.ts"
+     ],
+     "acceptance": "Намеренно уронить cron-вызов (невалидный CRON_SECRET в тестовом workflow_dispatch) — сообщение об ошибке приходит в Telegram в течение ~1 минуты. Смоделировать >20 неудачных admin-login попыток за 5 мин — admin_login_failures_5min в /api/metrics отражает всплеск.",
+     "effort": "S",
+     "depends_on": [
+      "OBS-4"
+     ],
+     "risk": "src/lib/admin/throttle.ts нужно прочитать перед реализацией — если in-memory на единственном инстансе агрегация тривиальна, если DB-backed нужен доп. индексированный запрос по timestamp."
+    }
+   ],
+   "open_decisions": [
+    "Выбор error-tracking вендора: план фиксирует Sentry (@sentry/nextjs) как единственный реалистичный вариант при 'or similar' — подтвердить у учредителя перед платным тиром, если бесплатный лимит (5k events/мес) окажется мал при 10k пользователей.",
+    "Выбор внешнего uptime-сервиса (OBS-3): UptimeRobot vs Better Uptime vs Checkly не зафиксирован — нужно решение по бюджету/фичам (Better Uptime даёт incident-management из коробки, ближе к нужде в runbook).",
+    "OBS-7 Вариант A vs B (dead-man's-switch): рекомендован B (healthchecks.io) как истинно независимый механизм, но требует ещё одного внешнего аккаунта — нужно решение, готовы ли заводить.",
+    "Housekeeping SLA-крон (упомянут как 'возможно вообще не запущен' в launch-readiness Кластер C3) — ПРОВЕРИТЬ фактическое состояние в Railway перед OBS-7 (может уже существовать как Railway scheduled job вне репозитория)."
+   ]
+  },
+  {
+   "workstream": "legal_consent_p0",
+   "goal": "Bring the sensitive-PD + photo consent contour to launch-ready: no sensitive/photo anketa data is collected without an explicit, separately-recorded consent captured in the mini-app; every consent row carries status/source/action_id/category proof; users can withdraw consent and staff can see per-user legal status. Scope = build screens + DB + records + withdrawal + admin view; all user-facing copy is placeholder marked LAWYER_REVIEW (lawyer reviews wording in parallel). Fixes LEGAL-005, 006, 007, 008 (critical), 009, 015 from audit-mvp-vs-spec-2026-07-01.md; addresses Cluster A of launch-readiness-2026-07-02.md.",
+   "sequencing_note": "Do LC-1 (consents schema migration) first — every other task reads/writes the enriched columns. Then LC-2 (server consent helper) which LC-4/LC-5/LC-7 depend on. LC-3 (step-machine plumbing) and LC-6 (legal copy) are independent and can start in parallel with LC-1. LC-4 (sensitive gate) and LC-5 (photo gate) depend on LC-1+LC-2+LC-3+LC-6. LC-7 (withdrawal) depends on LC-1+LC-2. LC-8 (admin legal view) depends on LC-1. LC-9 (restart wipe verify) depends only on LC-1. Migration filenames must sort AFTER 20260701010000_anketa_v4_enum_values.sql — use 20260702xxxxxx prefixes. NB: despite the supabase/ dir name, storage is native pg + Railway Volume; treat SQL files as plain migrations, no Supabase-specific tooling.",
+   "open_decisions": [
+    "Lawyer must supply final RU/UZ wording + the exact enumerated sensitive-data category list and the two-checkbox labels for Screen 3 (sensitive) and Screen 4 (photo) — code ships LAWYER_REVIEW placeholders and reads the category list from a single constant so copy swap is non-breaking.",
+    "Withdrawal semantics: confirm that withdrawing sensitive-PD consent should (a) only flip consent status to 'withdrawn' and stop future processing, or (b) also purge/anonymize the already-collected sensitive fields (extended.finance/lifestyle). Plan implements (a) status-flip + audit now; (b) purge is flagged as a follow-up tied to the LEGAL-023/024 retention-matrix workstream, not this P0.",
+    "Where the sensitive-consent gate sits relative to profile_family_model: plan inserts it immediately before profile_finance (first sensitive screen). Confirm religion/values (profile_values) is NOT treated as sensitive for MVP gating — audit scopes sensitive gate to finance/lifestyle/health; religion is currently collected on profile_values without a gate. If founder wants religion behind the gate too, the gate step must move earlier (before profile_values).",
+    "consent_type taxonomy: plan adds 'sensitive' (finance/lifestyle/health) and 'photo'. Confirm identity/verification consent (LEGAL-011, Screen 5) is out of scope for this P0 (currently folded into bot 'biometric')."
+   ],
+   "tasks": [
+    {
+     "task_id": "LC-1",
+     "title": "Migration: enrich consents table with status/source/action_id/category + status enum + backfill",
+     "what": "Add compliance-proof columns to consents so a consent record is legally complete and revocable. New migration file. Add: consent_status enum type ('active','withdrawn','outdated'); columns consent_status not null default 'active', source text ('tg_bot'|'mini_app'), action_id text (unique technical proof id, default gen_random_uuid()::text), categories text[] (sensitive-data categories for consent_type='sensitive'), withdrawn_at timestamptz, withdrawn_reason text, telegram_id bigint (bind proof to TG id at consent time — LEGAL-016). Backfill: consent_status='active', source='tg_bot' and a generated action_id for all existing bot rows. Keep existing UNIQUE(user_id,consent_type,consent_version). Add index on (user_id, consent_status).",
+     "files": [
+      "supabase/migrations/20260702000000_consents_status_source_action.sql"
+     ],
+     "db_changes": "CREATE TYPE consent_status enum; ALTER TABLE consents ADD consent_status/source/action_id/categories/withdrawn_at/withdrawn_reason/telegram_id; backfill UPDATE; new index consents_user_status_idx.",
+     "acceptance": "Migration applies cleanly on a DB seeded from all prior migrations. After apply: every legacy bot row has consent_status='active', source='tg_bot', non-null action_id. Insert without consent_status defaults to 'active'. Enum rejects any value outside {active,withdrawn,outdated}. Existing UNIQUE still enforced.",
+     "effort": "M",
+     "depends_on": [],
+     "risk": "action_id backfill must be per-row unique — use gen_random_uuid()::text in the UPDATE, not a constant. Do not add NOT NULL to categories (only sensitive rows carry it)."
+    },
+    {
+     "task_id": "LC-2",
+     "title": "Server helper: recordConsentMiniApp() with full proof capture",
+     "what": "Create a server-only helper mirroring bot handlers.ts recordConsent() but for the mini-app, capturing real proof instead of hardcoded constants. Signature: recordConsentMiniApp({ userId, telegramId, types, categories?, text, lang, ip, userAgent, source }) → returns action_id. Writes consents rows with consent_status='active', source (default 'mini_app'), generated action_id, categories (for sensitive), telegram_id, ip, user_agent, language, consent_text_sha256 = sha256(text + '::' + LEGAL_VERSION). Idempotent upsert on (user_id,consent_type,consent_version) ignoreDuplicates. Caller extracts real ip/user_agent from request headers. Reuse LEGAL_VERSION from @/content/legal.",
+     "files": [
+      "src/lib/legal/record-consent.ts"
+     ],
+     "db_changes": "",
+     "acceptance": "Integration: calling with types=['sensitive'], categories=['finance','lifestyle'] inserts one row with consent_status='active', source='mini_app', non-null action_id, categories={finance,lifestyle}, telegram_id set, consent_text_sha256 = sha256(text+'::'+LEGAL_VERSION). Second identical call does not duplicate. ip/user_agent reflect passed request values, not 'tg-webhook'.",
+     "effort": "M",
+     "depends_on": [
+      "LC-1"
+     ],
+     "risk": "Must import supabaseAdmin from @/lib/supabase/admin and be 'server-only'. sha formula must match the bot's so cross-source verification stays consistent."
+    },
+    {
+     "task_id": "LC-3",
+     "title": "State-machine plumbing: insert profile_consent_sensitive and profile_consent_photos steps",
+     "what": "Add two onboarding steps and wire the flow so sensitive/photo screens are gated. types.ts: add OnboardingStep 'profile_consent_sensitive' and 'profile_consent_photos'. router.ts: add ONBOARDING_PATHS ('/v2/anketa/consent-sensitive','/v2/anketa/consent-photos'). ALLOWED_TRANSITIONS: re-route profile_family_model → profile_consent_sensitive → profile_finance (was family_model→finance); and profile_partner_extended/profile_privacy → profile_consent_photos → profile_photos. Add profile_preview back-edges to both new steps. Keep legacy direct edges only where in-flight users could be stranded (mirror existing pattern). Add DB enum values for both new onboarding_step values in a paired migration.",
+     "files": [
+      "src/lib/state-machine/types.ts",
+      "src/lib/state-machine/router.ts",
+      "supabase/migrations/20260702000100_consent_gate_steps.sql"
+     ],
+     "db_changes": "ALTER TYPE onboarding_step ADD VALUE IF NOT EXISTS 'profile_consent_sensitive'; ADD VALUE 'profile_consent_photos'.",
+     "acceptance": "TS compiles with no missing-key errors in the exhaustive Record<OnboardingStep,...> maps. A user at profile_family_model can only transition to profile_consent_sensitive — tryTransition to profile_finance returns wrong_step. Same for profile_photos gated behind profile_consent_photos. Migration adds both enum values idempotently.",
+     "effort": "M",
+     "depends_on": [],
+     "risk": "ALLOWED_TRANSITIONS and ONBOARDING_PATHS are exhaustive Records keyed by OnboardingStep — every new step MUST be added to BOTH or the TS build fails. ALTER TYPE ADD VALUE may need its own migration/txn depending on runner."
+    },
+    {
+     "task_id": "LC-4",
+     "title": "Sensitive-PD consent screen (Screen 3) + record endpoint before finance/lifestyle/health",
+     "what": "Build the gate at profile_consent_sensitive. Server page /v2/anketa/consent-sensitive using requireUserAtStep(locale,'profile_consent_sensitive'), MiniAppShell + Headline/Lead. Client form with TWO required checkboxes (labels = LAWYER_REVIEW placeholders) and a visible enumerated list of sensitive categories (finance, lifestyle/habits, health) — 'Продолжить' disabled until both checked. POST /api/onboarding/profile/consent-sensitive: loadUserForStep('profile_consent_sensitive'), read real ip/user-agent headers, call recordConsentMiniApp({types:['sensitive'],categories:[...],source:'mini_app'}), then tryTransition → profile_finance; return next path. Add ru/uz i18n keys as LAWYER_REVIEW placeholders. Category list read from one shared constant (src/content/legal.ts).",
+     "files": [
+      "src/app/[locale]/v2/anketa/consent-sensitive/page.tsx",
+      "src/components/v2/AnketaConsentSensitiveForm.tsx",
+      "src/app/api/onboarding/profile/consent-sensitive/route.ts",
+      "src/content/legal.ts",
+      "messages/ru.json",
+      "messages/uz.json"
+     ],
+     "db_changes": "",
+     "acceptance": "Completing family_model lands the user on /v2/anketa/consent-sensitive, NOT finance. Continue disabled until both boxes ticked. On submit, one consents row (consent_type='sensitive', categories include finance/lifestyle/health, consent_status='active', source='mini_app', action_id present) is written and the user advances to /v2/anketa/finance. Loading /v2/anketa/finance directly before consenting redirects back to the gate. All visible strings are LAWYER_REVIEW placeholders.",
+     "effort": "L",
+     "depends_on": [
+      "LC-1",
+      "LC-2",
+      "LC-3",
+      "LC-6"
+     ],
+     "risk": "Gate must be non-skippable — rely on requireUserAtStep + ALLOWED_TRANSITIONS, not client guards. Category list must be the single source of truth shared with recorded categories[] so screen text and DB record cannot drift."
+    },
+    {
+     "task_id": "LC-5",
+     "title": "Photo consent screen (Screen 4) + record endpoint before photo upload",
+     "what": "Build the gate at profile_consent_photos, before any photo upload. Server page /v2/anketa/consent-photos with requireUserAtStep(...,'profile_consent_photos'). Client form: TWO required checkboxes (LAWYER_REVIEW placeholders) covering (a) consent to process uploaded images/likeness and (b) confirmation of rights to third-party/family images — 'Продолжить' disabled until both checked. POST /api/onboarding/profile/consent-photos: loadUserForStep, real ip/UA, recordConsentMiniApp({types:['photo'],source:'mini_app'}), tryTransition → profile_photos. Add ru/uz LAWYER_REVIEW keys. Also delivers the interactive third-party/family-photo warning (LEGAL-010) at the consent point.",
+     "files": [
+      "src/app/[locale]/v2/anketa/consent-photos/page.tsx",
+      "src/components/v2/AnketaConsentPhotosForm.tsx",
+      "src/app/api/onboarding/profile/consent-photos/route.ts",
+      "messages/ru.json",
+      "messages/uz.json"
+     ],
+     "db_changes": "",
+     "acceptance": "Reaching the photos stage first lands on /v2/anketa/consent-photos. Continue disabled until both boxes checked. On submit a consents row consent_type='photo', consent_status='active', source='mini_app', action_id present is written; user advances to /v2/anketa/photos. Loading /v2/anketa/photos or POSTing /api/onboarding/profile/photo before photo consent redirects/409s back to the gate. Strings are LAWYER_REVIEW placeholders.",
+     "effort": "L",
+     "depends_on": [
+      "LC-1",
+      "LC-2",
+      "LC-3",
+      "LC-6"
+     ],
+     "risk": "Photo upload endpoint (/api/onboarding/profile/photo) currently gates on profile_photos; the new gate must sit before it so no photo can be uploaded pre-consent. Verify the upload route's loadUserForStep expectation still matches after step insertion."
+    },
+    {
+     "task_id": "LC-6",
+     "title": "Legal content: sensitive + photo consent copy blocks and category constant (LAWYER_REVIEW)",
+     "what": "Extend src/content/legal.ts with structured placeholder copy for the two new consents so screens and recorded consent_text share one source. Add: SENSITIVE_CATEGORIES constant (['finance','lifestyle_habits','health'] with ru/uz labels); CONSENT_SENSITIVE and CONSENT_PHOTO blocks (title + body + 2 checkbox labels, ru/uz), each marked LAWYER_REVIEW in comments. Keep the existing DRAFT/requires-lawyer banner. Only bump LEGAL_VERSION if the consent surface materially changes (coordinate sha with LC-2). Placeholders only — do NOT wordsmith.",
+     "files": [
+      "src/content/legal.ts",
+      "messages/ru.json",
+      "messages/uz.json"
+     ],
+     "db_changes": "",
+     "acceptance": "src/content/legal.ts exports SENSITIVE_CATEGORIES, CONSENT_SENSITIVE, CONSENT_PHOTO, each with ru+uz fields and a LAWYER_REVIEW marker. LC-4/LC-5 import these (no duplicated copy). Type-checks. consent_text passed to recordConsentMiniApp is derived from these blocks so consent_text_sha256 is stable and reproducible.",
+     "effort": "S",
+     "depends_on": [],
+     "risk": "If LEGAL_VERSION is bumped, existing bot consent rows keep their old version (fine — versioned records); avoid bumping unless the lawyer requires it. No hardcoded sha comparison should assume a single version."
+    },
+    {
+     "task_id": "LC-7",
+     "title": "Consent withdrawal mechanism (self-service action + status flip + audit)",
+     "what": "Let a user withdraw a consent, flipping consent_status to 'withdrawn' with proof. Add withdraw_consent action to POST /api/account (alongside pause/resume/delete/export): body { action:'withdraw_consent', consent_type }, loadActiveUserApi, UPDATE consents SET consent_status='withdrawn', withdrawn_at=now(), withdrawn_reason='user_self_service' WHERE user_id=$ AND consent_type=$ AND consent_status='active'; write an audit/transition record. Add a settings-screen entry point listing the user's consents with status and a 'Withdraw' control for withdrawable types (sensitive/photo) — labels LAWYER_REVIEW. Also delivers the profile consent-history view (LEGAL-018). Comment: withdrawing does not itself purge already-collected sensitive fields (see open_decisions / retention-matrix follow-up).",
+     "files": [
+      "src/app/api/account/route.ts",
+      "src/app/[locale]/v2/settings/page.tsx",
+      "src/components/v2/SettingsActions.tsx",
+      "messages/ru.json",
+      "messages/uz.json"
+     ],
+     "db_changes": "",
+     "acceptance": "POST /api/account {action:'withdraw_consent',consent_type:'sensitive'} for a user with an active sensitive consent sets that row's consent_status='withdrawn' and withdrawn_at, and inserts an audit/transition record. A second call is a no-op. Settings screen renders the user's consents with status and a Withdraw control for sensitive/photo only (not terms/privacy/pd). Strings are LAWYER_REVIEW placeholders.",
+     "effort": "M",
+     "depends_on": [
+      "LC-1",
+      "LC-2"
+     ],
+     "risk": "Do not cascade-delete the consent row (withdrawal proof must be retained). Ensure the withdraw path is idempotent and only affects the requesting user's rows."
+    },
+    {
+     "task_id": "LC-8",
+     "title": "Admin: per-user legal/consent status view (client detail Legal tab)",
+     "what": "Give staff visibility of each user's legal status. Add a Legal/Consents tab to admin client detail (clients/[id]) mirroring the existing tab pattern (IdentityTab/ModerationTab). Loader lists all consents for the user: consent_type, consent_version, consent_status, source, action_id, categories, accepted_at, withdrawn_at, telegram_id, ip/user_agent. Render a status matrix (per consent_type: active/withdrawn/outdated/missing) so a moderator can see whether sensitive + photo consents are present and active. Read-only (no admin mutation in this P0). Reuse existing admin guard (superadmin/moderator); no new role.",
+     "files": [
+      "src/app/admin/clients/[id]/LegalTab.tsx",
+      "src/app/admin/clients/[id]/page.tsx",
+      "src/lib/admin/load-legal-status.ts"
+     ],
+     "db_changes": "",
+     "acceptance": "Admin client detail shows a Legal/Consents tab. For a user who completed sensitive + photo consent, the tab shows those consent_type rows as 'active' with version, source='mini_app', action_id, categories, timestamp. For a user who has not consented, that type shows 'missing'. A withdrawn consent shows 'withdrawn' with withdrawn_at. Tab loads under existing admin auth (moderator can view).",
+     "effort": "M",
+     "depends_on": [
+      "LC-1"
+     ],
+     "risk": "Client detail page.tsx wires tabs statically — add the tab there and follow the existing loader/tab-prop pattern (load-client.ts). Keep it read-only to avoid scope-creep into RBAC/2FA (separate workstream)."
+    },
+    {
+     "task_id": "LC-9",
+     "title": "Verify restart-onboarding wipes consents (locked decision) + regression guard",
+     "what": "Locked decision: restart-onboarding WIPES consents. erase_user already deletes consents; the admin_restart_onboarding(p_user_id,p_admin_id,p_wipe_consents) RPC (admin-gap-report OA-2/§108) must DELETE consents when p_wipe_consents=true so a restarted user must re-consent to sensitive/photo. This task: confirm/adjust the restart RPC to delete consents rows on wipe (mind append-only case triggers, §98), and add a regression test asserting that after restart-with-wipe a user has zero consents and is forced back through the new consent gates. If the restart RPC does not yet exist, this task specifies the consents-deletion clause it must contain — coordinate with the admin restart workstream to avoid a duplicate RPC.",
+     "files": [
+      "supabase/migrations/20260702000200_restart_wipes_consents.sql",
+      "src/app/api/admin/users/[id]/restart-onboarding/route.ts"
+     ],
+     "db_changes": "In admin_restart_onboarding RPC, when p_wipe_consents true: DELETE FROM consents WHERE user_id=p_user_id (mind append-only case triggers noted in admin-gap-report §98).",
+     "acceptance": "After admin restart-onboarding with wipe=true on a fully-consented user: count(*) FROM consents WHERE user_id=$ is 0; onboarding_step is reset to a pre-consent step; re-walking onboarding forces both new consent gates again. Restart with wipe=false (if supported) leaves consents intact. No FK/trigger error thrown.",
+     "effort": "S",
+     "depends_on": [
+      "LC-1"
+     ],
+     "risk": "The restart RPC is owned by a separate admin workstream — this task must not create a competing RPC. If that RPC lands first, reduce this to adding the consents-wipe clause + the regression test."
+    }
+   ]
+  },
+  {
+   "workstream": "revenue_mvp",
+   "goal": "Ship revenue-from-day-1: Plus (149 000 сум/мес) gates chat after mutual interest. A verified user with an active Plus/Pro subscription (or whose pair-partner has one) can open the chat and message; everyone else sees a paywall instead of the composer. Both Click and Payme webhooks activate the subscription idempotently (replay-safe), atomically grant Plus, unlock the locked chat, and emit analytics. Plan limits (pending requests, active acquaintances) are enforced per plan. Subscription expiry downgrades to free via cron; mutual-interest lock expires after 7 days via cron. Chat gating is a pair-level chat_status property, kept orthogonal to the existing Role/Permission matrix. Source of truth: subscriptions table; users.base_plan + plan_expires_at are denormalized for cheap reads.",
+   "sequencing_note": "DB layer first (REV-1 schema, REV-2 grant/downgrade/limit RPCs) — everything depends on it. Then wire mutual-interest lock into process_interest (REV-3) and the chat chokepoints (REV-4 loadChatRow + API routes, REV-5 chat detail page + paywall UI). Payment plumbing (REV-6 env, REV-7 payment_sessions + create-session route, REV-8 Click webhook, REV-9 Payme webhook) can proceed in parallel with the gating work once REV-1/REV-2 land, but all webhooks call the REV-2 grant RPC so they depend on it. Tariff/paywall screens (REV-10, REV-11) depend on REV-7 for the create-session call. Limit enforcement (REV-12) depends on REV-2 counters + REV-3. Analytics (REV-13) is a thin dependency used by webhooks and UI. Cron sweeps (REV-14) depend on REV-2 downgrade RPC and REV-3 lock. Admin read-only view (REV-15) last. Acceptance gates: (a) sandbox Click OR Payme test payment flips payment_sessions→paid, base_plan→plus, chat_status locked→open in one atomic RPC; (b) re-POSTing the same webhook payload is a no-op (idempotent); (c) cron with plan_expires_at in the past downgrades base_plan→free and re-applies free limits without re-locking already-open chats.",
+   "open_decisions": [
+    "Either-party vs both-party unlock: face-value reading of Экран 2/3 (Free user sees 'подключите Plus'; after payment chat opens) and the pair-level chat_status field imply EITHER party's active Plus unlocks the pair (payer unlocks for both). Recommended default = either-party unlock. Has a free-rider revenue implication — confirm with founder. Plan is written to this default; flip is a one-line change in the grant RPC + process_interest lock predicate.",
+    "Chat fate on subscription expiry (spec §24-q12, unresolved): recommended MVP = grandfather already-open chats (do NOT retroactively re-lock — hostile UX), downgrade only limits/new-chat gating. REV-14 built to this. Confirm with founder.",
+    "Mutual-interest 7-day retention (spec §Экран2 'confirm with owner'): recommended mutual_interest_retention_days=7, lock→expired via cron. Configurable constant.",
+    "Pro price not finalized (spec offers 249k/299k/399k). MVP SKU is Plus 149 000 only; Pro screen/SKU is built as data-driven (price from a plan-catalog constant) so the number can be set later without code changes. Pro purchase is in scope structurally but the single required MVP SKU is Plus.",
+    "Gifting (Экран 7) is explicitly out of MVP per locked decisions and spec §22-23 (gift = next stage). Not planned here; payment_sessions.kind carries a 'gift' value reserved but unused.",
+    "'Active acquaintance' (active_connection) definition for slot accounting: recommended = an open chat row (chat_status='open') that is not closed/blocked. There is no chat-close feature in the current codebase, so Plus active_connection_limit=1 effectively means 'first mutual unlocks, second mutual with no Plus upgrade shows active-connection-limit paywall'. A 'finish acquaintance' action (to free a slot) is noted as a follow-up dependency, not built in this workstream."
+   ],
+   "tasks": [
+    {
+     "task_id": "REV-1",
+     "title": "DB schema: base_plan on users + subscriptions + chat_status + payment_sessions + analytics_events",
+     "what": "New migration adding: (1) enum plan_tier ('free','plus','pro'); users.base_plan plan_tier not null default 'free', users.plan_expires_at timestamptz (denormalized fast-read fields). (2) subscriptions table (id uuid pk, user_id fk, plan plan_tier, status text check in ('active','expired','cancelled') default 'active', provider text check in ('click','payme'), started_at timestamptz default now(), expires_at timestamptz, source_screen text, created_at). Index on (user_id, status). (3) chats.status text not null default 'open' check in ('open','locked_requires_plus','expired') + chats.locked_at timestamptz + chats.lock_expires_at timestamptz (pair-level gate; existing rows backfill 'open'). (4) payment_sessions table (id uuid pk, user_id fk, plan plan_tier, duration text check in ('1_month','3_months','12_months'), amount int, currency text default 'UZS', provider text check in ('click','payme'), kind text default 'self' check in ('self','gift'), status text not null default 'pending' check in ('pending','paid','failed','cancelled'), provider_txn_id text, chat_id uuid null references chats(id), created_at, updated_at); unique index on (provider, provider_txn_id) where provider_txn_id is not null (idempotency guard). (5) analytics_events table (id uuid pk, user_id uuid null, event_type text not null, props jsonb not null default '{}', created_at timestamptz default now()); index on (event_type, created_at). set_updated_at trigger on subscriptions + payment_sessions.",
+     "files": [
+      "supabase/migrations/20260703000000_revenue_mvp_schema.sql"
+     ],
+     "acceptance": "Migration applies cleanly on a DB seeded from init_schema. Existing chats rows get status='open'. Existing users get base_plan='free'. Unique (provider, provider_txn_id) rejects a duplicate insert. All columns readable via supabaseAdmin().from('subscriptions'/'payment_sessions'/'analytics_events').select().",
+     "effort": "M",
+     "depends_on": [],
+     "db_changes": "New migration: plan_tier enum, users.base_plan+plan_expires_at, subscriptions, chats.status+lock cols, payment_sessions, analytics_events; idempotency unique index; updated_at triggers.",
+     "risk": "chats.status default must be 'open' so all existing pairs keep working; the lock only ever applies to NEW mutuals created after REV-3 ships. Do not backfill locks retroactively."
+    },
+    {
+     "task_id": "REV-2",
+     "title": "Grant/downgrade/limit-counter RPCs (SECURITY DEFINER, idempotent grant)",
+     "what": "PL/pgSQL functions mirroring the process_interest pattern (advisory lock + status-transition replay guard). (1) grant_plan(p_session uuid) returns table(result text, chat_id uuid): takes advisory lock on the session; if payment_sessions.status already 'paid' → return ('already_granted', chat_id) (idempotent no-op); else set status='paid', insert/extend subscriptions row (active, expires_at = now()+duration), set users.base_plan + plan_expires_at, and if session.chat_id is set and that chat.status='locked_requires_plus' → set chat.status='open' (either-party unlock: the payer unlocking their own locked pair). Return ('granted', chat_id). (2) expire_subscriptions() returns int: for users where plan_expires_at < now() and base_plan<>'free' → base_plan='free', mark subscriptions expired; returns count. Does NOT re-lock open chats (grandfather). (3) count_pending_interests(p_user uuid) returns int and count_active_connections(p_user uuid) returns int — helpers for limit checks (pending = match_requests where sender=user, status='pending', auto_decline_at>now(); active = chats where user is a party and status='open'). (4) plan_limits(p_plan plan_tier) returns table(pending_limit int, active_limit int) — SQL constant map (free 2/0, plus 3/1, pro 5/2). Register grant_plan, count_* , plan_limits set-returning fns in SET_RETURNING array.",
+     "files": [
+      "supabase/migrations/20260703001000_revenue_rpcs.sql",
+      "src/lib/db/query-builder.ts"
+     ],
+     "acceptance": "Calling grant_plan twice with the same session id activates the plan once and returns 'already_granted' the second time (verified by row counts). expire_subscriptions() flips an over-due user to free and leaves an already-open chat status='open'. plan_limits('plus') returns (3,1). SET_RETURNING contains the new set-returning fn names so .rpc() returns arrays.",
+     "effort": "L",
+     "depends_on": [
+      "REV-1"
+     ],
+     "db_changes": "grant_plan, expire_subscriptions, count_pending_interests, count_active_connections, plan_limits functions; SET_RETURNING registration in query-builder.ts (code, not DB).",
+     "risk": "grant_plan is the single atomic chokepoint for both webhooks — must be idempotent under concurrent replay (advisory lock keyed by session id). Duration→interval mapping must be exact (1_month=1 mon, etc.)."
+    },
+    {
+     "task_id": "REV-3",
+     "title": "Lock chat at mutual interest when acquirer lacks active Plus (process_interest)",
+     "what": "Extend process_interest RPC: at the mutual branch (step 4) and the existing-chat branch (step 3), decide the created/returned chat.status. If EITHER party has base_plan in ('plus','pro') with plan_expires_at>now() → chat opens (status stays 'open'); else insert chat with status='locked_requires_plus', locked_at=now(), lock_expires_at=now()+interval '7 days'. Also enforce active_connection_limit: if the acquirer already has active_connection_count >= plan_limits(base_plan).active_limit, still create the pair as locked (do not open a chat beyond limit) and return a distinct result so the route can surface the active-connection-limit paywall. Return an extra column chat_status so the API route knows whether to fire 'mutual_match' (open) vs 'mutual_interest_locked' (locked) outbox event. Update the interest route (src/app/api/interest/route.ts) mutual branch to branch on chat_status: open → enqueueAndDeliver('mutual_match') + next=/v2/chats/{id}; locked → enqueueAndDeliver('mutual_interest_locked') + next=/v2/tariffs?ctx=mutual&chat={id}; write analytics events mutual_interest_created + (locked ? mutual_interest_locked_for_free : chat_unlocked).",
+     "files": [
+      "supabase/migrations/20260703002000_process_interest_plus_gate.sql",
+      "src/app/api/interest/route.ts",
+      "src/lib/v2/tg-outbox-worker.ts"
+     ],
+     "acceptance": "Two Free users reaching mutual interest create a chat with status='locked_requires_plus' and lock_expires_at ~7d out; the interest route returns next pointing at the tariffs screen and enqueues 'mutual_interest_locked' (NOT 'mutual_match'). If one party has active Plus, chat is created 'open' and 'mutual_match' fires as before.",
+     "effort": "L",
+     "depends_on": [
+      "REV-1",
+      "REV-2"
+     ],
+     "db_changes": "Rewrite process_interest to set chat.status + lock timestamps and return chat_status; unchanged signature otherwise (still in SET_RETURNING).",
+     "risk": "The current 'mutual_match'/'interest_accepted' templates say 'chat opened' — must add a new 'mutual_interest_locked' OutboxEventType + RU/UZ templates that do NOT imply an open chat and follow the no-pressure copy rules (no 'кандидат ждёт', no urgency). Route must not return an openable chat_id path when locked."
+    },
+    {
+     "task_id": "REV-4",
+     "title": "Enforce chat_status at every message API chokepoint (loadChatRow)",
+     "what": "Add status to loadChatRow's select in src/lib/chat/live.ts (ChatRow gets status). Introduce a distinct return signal for locked chats (e.g. return { chat, locked: true } or a typed 'locked' result) rather than 404, so callers can 403 with error='chat_locked_requires_plus'. Update all four API routes that use loadChatRow — messages GET+POST, stream, read, typing (src/app/api/chats/[id]/messages/route.ts, .../stream/route.ts, .../read/route.ts, .../typing/route.ts) — to reject send_message/open_chat when chat.status !== 'open' with 403 {error:'chat_locked_requires_plus', chat_id}. Keep the existing open_chat/send_message permission gate (Role layer) untouched and orthogonal: gate = hasPermission(open_chat) AND chat.status==='open'. Do NOT add plus/pro to the Role enum or ROLE_PERMISSIONS.",
+     "files": [
+      "src/lib/chat/live.ts",
+      "src/app/api/chats/[id]/messages/route.ts",
+      "src/app/api/chats/[id]/stream/route.ts",
+      "src/app/api/chats/[id]/read/route.ts",
+      "src/app/api/chats/[id]/typing/route.ts"
+     ],
+     "acceptance": "POST /api/chats/{lockedId}/messages returns 403 chat_locked_requires_plus for a Free user; GET stream/read/typing likewise refuse on a locked chat. After the chat is unlocked (status='open'), all four succeed. An already-open chat is unaffected. Role/Permission matrix unchanged (grep shows no plan strings in permissions.ts).",
+     "effort": "M",
+     "depends_on": [
+      "REV-1",
+      "REV-3"
+     ],
+     "db_changes": "None (reads chats.status).",
+     "risk": "loadChatRow is shared by 4 routes — the locked signal must be handled in each; a missed route is a gate bypass. Keep block/404 semantics for genuinely inaccessible chats distinct from the 'locked' (paywall) case."
+    },
+    {
+     "task_id": "REV-5",
+     "title": "Chat detail page: render paywall instead of composer when locked (bypass of loadChatRow)",
+     "what": "The page src/app/[locale]/v2/chats/[id]/page.tsx loads the chat row directly (its own supabaseAdmin query), bypassing loadChatRow — so it needs the same gate. Add status to its chat select; when status='locked_requires_plus', render a locked-chat variant (like GhostChat but with the mutual-interest paywall: 'У вас взаимный интерес' + Plus card + 'Подключить Plus' CTA linking to /v2/tariffs?ctx=mutual&chat={id}, per Экран 2 copy) instead of the message thread + V2ChatRoom composer. When status='expired' (lock lapsed), render the expired-interest terminal screen. Chat list page (src/app/[locale]/v2/chats/page.tsx) should visually mark locked rows (e.g. lock affordance / muted last-message = 'Чат откроется с Plus') — getChatList / get_chat_list RPC must surface chat status.",
+     "files": [
+      "src/app/[locale]/v2/chats/[id]/page.tsx",
+      "src/app/[locale]/v2/chats/page.tsx",
+      "src/lib/chat/list.ts",
+      "src/components/v2/ChatRoom.tsx"
+     ],
+     "acceptance": "Opening a locked chat as a Free user shows the mutual-interest paywall (no composer), CTA routes to /v2/tariffs?ctx=mutual&chat={id}. Opening the same chat after unlock shows the normal thread + composer. Chat list shows a locked indicator on locked pairs.",
+     "effort": "M",
+     "depends_on": [
+      "REV-1",
+      "REV-3",
+      "REV-10"
+     ],
+     "db_changes": "get_chat_list RPC (in a migration) extended to return chat status for the list indicator.",
+     "risk": "This UI page is a second, independent chokepoint the advisor flagged — must not be forgotten, else a locked chat renders a working composer whose POSTs then 403 (confusing UX + looks like a bug)."
+    },
+    {
+     "task_id": "REV-6",
+     "title": "Env: Click + Payme merchant credentials (optional/guarded) + example",
+     "what": "Add to the zod schema in src/lib/env.ts, as .optional() (so non-payment environments still boot — the schema .parse() throws on missing required): CLICK_MERCHANT_ID, CLICK_SERVICE_ID, CLICK_SECRET_KEY, CLICK_MERCHANT_USER_ID; PAYME_MERCHANT_ID, PAYME_MERCHANT_KEY (used as Basic-auth password for webhook verification); optional PAYMENTS_ENABLED flag. Document all in .env.local.example with comments. Add a small helper paymentsConfig() that throws a clear error if a webhook route is hit while the relevant provider vars are unset.",
+     "files": [
+      "src/lib/env.ts",
+      ".env.local.example"
+     ],
+     "acceptance": "App boots with payment vars unset (they are optional). Webhook route returns a clear 503/'provider_not_configured' when its vars are missing. .env.local.example lists every new var with a one-line comment.",
+     "effort": "S",
+     "depends_on": [],
+     "db_changes": "None.",
+     "risk": "Must be optional — making them required would break every existing deploy/CI that lacks them (env().parse throws at first import)."
+    },
+    {
+     "task_id": "REV-7",
+     "title": "payment_sessions model + create-session API (POST /api/payments/session)",
+     "what": "Server route that a paywall CTA calls: requirePermissionForRequest('open_chat') (must be a verified user), body { plan:'plus'|'pro', duration:'1_month'|'3_months'|'12_months', provider:'click'|'payme', source_screen, chat_id? }. Look up price from a plan-catalog constant (new src/lib/payments/catalog.ts: PLUS 1m=149000, plus data-driven 3m/12m and Pro placeholders), insert a payment_sessions row (status='pending', amount from catalog, chat_id if provided), emit analytics 'payment_started'. Return the provider redirect/checkout URL: for Click build the pay.click.uz redirect URL (service_id, merchant_id, amount, transaction_param=session.id, return_url); for Payme build the checkout.paycom.uz URL (base64 of m=MERCHANT_ID;ac.order_id=session.id;a=amount_in_tiyin). Include a thin server-side lib src/lib/payments/click.ts + src/lib/payments/payme.ts holding URL builders + (in REV-8/9) signature verification.",
+     "files": [
+      "src/app/api/payments/session/route.ts",
+      "src/lib/payments/catalog.ts",
+      "src/lib/payments/click.ts",
+      "src/lib/payments/payme.ts"
+     ],
+     "acceptance": "POST with {plan:'plus',duration:'1_month',provider:'click',chat_id} inserts a pending payment_sessions row with amount=149000 and returns a valid Click checkout URL carrying transaction_param=session.id. Same for Payme (base64 ac.order_id=session.id, a in tiyin). analytics_events gets a 'payment_started' row.",
+     "effort": "M",
+     "depends_on": [
+      "REV-1",
+      "REV-6",
+      "REV-13"
+     ],
+     "db_changes": "Inserts into payment_sessions (schema from REV-1).",
+     "risk": "Amount units: Click uses сум, Payme uses tiyin (×100). Getting the unit wrong makes every Payme charge 1/100th. Amounts must come from the server catalog, never trusted from the client body."
+    },
+    {
+     "task_id": "REV-8",
+     "title": "Click webhook: Prepare + Complete, signature verify, idempotent grant",
+     "what": "POST /api/payments/click/webhook implementing Click Merchant API two-phase callback (action=0 Prepare, action=1 Complete). Verify the MD5 sign_string per the Click Merchant API contract (concatenation of click_trans_id, service_id, SECRET_KEY, merchant_trans_id, [merchant_prepare_id on Complete], amount, action, sign_time) using safe-equal (src/lib/crypto/safe-equal.ts). Map merchant_trans_id → payment_sessions.id, validate amount matches the session, set provider_txn_id=click_trans_id. On successful Complete → call grant_plan(session.id) RPC (idempotent), then emit analytics 'payment_success' + 'chat_unlocked' (if a chat was unlocked) and enqueue an outbox 'chat_unlocked' notify to the payer. Respond with Click's required JSON envelope (click_trans_id, merchant_trans_id, merchant_confirm_id, error, error_note) with correct error codes (-1 sign check failed, -4 already paid, -5 user/order not found, -9 transaction cancelled, 0 success). Guard: return 'provider_not_configured' if REV-6 vars unset.",
+     "files": [
+      "src/app/api/payments/click/webhook/route.ts",
+      "src/lib/payments/click.ts"
+     ],
+     "acceptance": "A signed sandbox Click Prepare+Complete sequence flips the session to 'paid', activates Plus, unlocks the linked chat (status→open), and re-POSTing the same Complete returns Click's 'already paid' code without double-granting. A wrong signature is rejected (-1). ACCEPTANCE also requires: 'verify the exact sign_string field order + error-code set against current Click Merchant API v2 docs before shipping' (do not trust a from-memory formula).",
+     "effort": "L",
+     "depends_on": [
+      "REV-2",
+      "REV-7",
+      "REV-13"
+     ],
+     "db_changes": "Reads/writes payment_sessions; calls grant_plan RPC.",
+     "risk": "Signature field order and the JSON response envelope are Click-specific and easy to get wrong from memory — treat the doc as source of truth (acceptance line). Idempotency comes from grant_plan's status guard + unique (provider, provider_txn_id)."
+    },
+    {
+     "task_id": "REV-9",
+     "title": "Payme webhook: JSON-RPC Merchant API, Basic-auth verify, idempotent grant",
+     "what": "POST /api/payments/payme/webhook implementing Payme Merchant API (JSON-RPC 2.0). Verify Authorization: Basic base64('Paycom:'+MERCHANT_KEY) with safe-equal. Implement methods: CheckPerformTransaction (validate order/session exists, state pending, amount matches → allow), CreateTransaction (record provider_txn_id=params.id, state), PerformTransaction (→ call grant_plan(session.id), emit analytics 'payment_success'+'chat_unlocked', return perform_time+state), CancelTransaction (mark session failed/cancelled; if already performed handle reversal state per Payme rules), CheckTransaction (return current state/times), GetStatement (optional). Return Payme's error objects with correct codes (-31001 wrong amount, -31003 transaction not found, -31050..-31099 custom, -32504 auth, -31008 unable-to-perform). Guard: 'provider_not_configured' if vars unset.",
+     "files": [
+      "src/app/api/payments/payme/webhook/route.ts",
+      "src/lib/payments/payme.ts"
+     ],
+     "acceptance": "Sandbox Payme CheckPerform→Create→Perform sequence activates Plus and unlocks the chat exactly once; a repeated PerformTransaction returns the same result (idempotent) without double-grant; bad Basic-auth returns -32504; wrong amount returns -31001. ACCEPTANCE also requires: 'verify the method set, transaction state machine, and error codes against current Payme Merchant API docs before shipping'.",
+     "effort": "L",
+     "depends_on": [
+      "REV-2",
+      "REV-7",
+      "REV-13"
+     ],
+     "db_changes": "Reads/writes payment_sessions (state, provider_txn_id); calls grant_plan RPC.",
+     "risk": "Payme's transaction state machine (Create/Perform/Cancel + amount in tiyin) is stricter than Click's; the CheckPerform amount validation and cancel/reversal states must match the doc. Idempotency via grant_plan status guard + provider_txn_id uniqueness."
+    },
+    {
+     "task_id": "REV-10",
+     "title": "Tariffs screen (Экран 1/3) + mutual-interest paywall (Экран 2) in mini-app",
+     "what": "New route /v2/tariffs (src/app/[locale]/v2/tariffs/page.tsx) rendering Экран 1 (Free/Plus/Pro cards + 'Важно' block, exact copy from spec §Экран1) with source_screen tracking (main_menu, after_mutual_interest, paywall, profile_settings). New /v2/tariffs/plus (Экран 3 'Подключение Plus') with duration selector (1m default, 3m, 12m), payment-method picker (Click, Payme for MVP; Uzcard/Humo labelled 'later'), safety block, legal line, and a 'Подключить Plus' button that POSTs to /api/payments/session (REV-7) and redirects to the returned checkout URL. When ctx=mutual&chat={id}, the tariffs entry shows the Экран 2 paywall variant first ('У вас взаимный интерес', Plus card, 'Подключить Plus' / 'Посмотреть тарифы' / 'Продолжить позже'). All copy no-pressure per spec (no timer, no 'кандидат ждёт'). Add i18n RU/UZ strings. Wire BottomNav/settings entry point to /v2/tariffs.",
+     "files": [
+      "src/app/[locale]/v2/tariffs/page.tsx",
+      "src/app/[locale]/v2/tariffs/plus/page.tsx",
+      "src/components/v2/TariffCards.tsx",
+      "src/components/v2/PlusPaywall.tsx",
+      "messages/ru.json",
+      "messages/uz.json"
+     ],
+     "acceptance": "/v2/tariffs renders 3 tariff cards with 149 000 сум/мес Plus + 'Важно' block. Selecting 1 month + Click and pressing 'Подключить Plus' calls /api/payments/session and navigates to the checkout URL. /v2/tariffs?ctx=mutual&chat={id} shows the Экран 2 mutual-interest paywall. Copy passes the forbidden-phrases check (no urgency/pressure).",
+     "effort": "L",
+     "depends_on": [
+      "REV-7"
+     ],
+     "db_changes": "None.",
+     "risk": "Copy is legally sensitive (Legal reviews externally) — use the spec's exact approved wording and the mandatory 'не даёт власть / не гарантирует брак' safety blocks."
+    },
+    {
+     "task_id": "REV-11",
+     "title": "Pro connect screen (Экран 4) — structural, data-driven price",
+     "what": "New /v2/tariffs/pro (src/app/[locale]/v2/tariffs/pro/page.tsx) mirroring the Plus screen for Pro (Экран 4 copy: 'Подключение Pro', Pro feature list, duration selector, safety block 'Pro не даёт власть над другими'). Price is read from the REV-7 catalog constant (not hardcoded in JSX) so the unresolved Pro price (249k/299k/399k) can be set once. 'Подключить Pro' POSTs /api/payments/session with plan='pro'. Reuse TariffCards/PlusPaywall components parameterized by plan.",
+     "files": [
+      "src/app/[locale]/v2/tariffs/pro/page.tsx",
+      "src/components/v2/PlusPaywall.tsx",
+      "src/lib/payments/catalog.ts",
+      "messages/ru.json",
+      "messages/uz.json"
+     ],
+     "acceptance": "/v2/tariffs/pro renders the Pro screen with price sourced from catalog; changing the catalog constant changes the displayed price with no JSX edit. 'Подключить Pro' creates a pro payment session. Pro is reachable from tariffs + from limit-upgrade CTAs (REV-12).",
+     "effort": "M",
+     "depends_on": [
+      "REV-7",
+      "REV-10"
+     ],
+     "db_changes": "None.",
+     "risk": "Pro is not the required MVP SKU; keep it structurally present but do not block launch on the final Pro price (open decision)."
+    },
+    {
+     "task_id": "REV-12",
+     "title": "Plan limits: pending-request + active-acquaintance enforcement + limit screens (Экран 5/6)",
+     "what": "Enforce per-plan limits using plan_limits + count_* RPCs (REV-2). In src/app/api/interest/route.ts (and/or inside process_interest): before creating a new outgoing interest, if count_pending_interests(user) >= plan_limits(base_plan).pending_limit → return 409 {error:'pending_interest_limit_reached', reason_code}. (Free pending=2, Plus=3, Pro=5.) For active acquaintances (Free active=0, Plus=1, Pro=2): a new mutual that would exceed the acquirer's active_limit keeps the chat locked and the route/UI surfaces reason_code='active_connection_limit_reached'. Build the two limit screens per Экран 5 (pending, 'Лимит ожидающих запросов', 3/3 progress, 'Перейти на Pro'/'Управлять'/'Дождаться') and Экран 6 (active, 'Лимит активных знакомств', 2/2, upgrade→Pro when on Plus, manage when on Pro) as mini-app screens shown on the reason_code. Update DAILY_LIMITS note in src/lib/matching/quota.ts to clarify daily-send cap is DISTINCT from pending/active limits (three separate concepts). Emit analytics pending_interest_limit_reached / active_connection_limit_reached + upgrade-clicked events.",
+     "files": [
+      "src/app/api/interest/route.ts",
+      "src/app/[locale]/v2/limits/pending/page.tsx",
+      "src/app/[locale]/v2/limits/active/page.tsx",
+      "src/components/v2/LimitScreen.tsx",
+      "src/lib/matching/quota.ts",
+      "messages/ru.json",
+      "messages/uz.json"
+     ],
+     "acceptance": "A Plus user with 3 live pending interests gets 409 pending_interest_limit_reached on a 4th and the pending-limit screen renders 3/3 with a Pro upgrade CTA. A Plus user with 1 open acquaintance who reaches a 2nd mutual gets the active-connection-limit screen (chat stays locked). Numbers match spec: Free 2/0, Plus 3/1, Pro 5/2. The daily-send cap (5) remains independent.",
+     "effort": "L",
+     "depends_on": [
+      "REV-2",
+      "REV-3",
+      "REV-10",
+      "REV-13"
+     ],
+     "db_changes": "None beyond REV-2 RPCs (limit checks read counters).",
+     "risk": "Three distinct limits (daily send cap vs pending outstanding vs active acquaintances) must not be conflated. Active-limit release requires a 'finish acquaintance' action that does not exist yet (open decision) — MVP keeps the extra mutual locked rather than silently opening."
+    },
+    {
+     "task_id": "REV-13",
+     "title": "Analytics events table + insert helper (spec §21 event taxonomy)",
+     "what": "Thin server helper src/lib/analytics/track.ts: track(eventType, { userId?, ...props }) inserting into analytics_events (REV-1). Define a typed union of the MVP event names from spec §21 / Экран handoffs actually used in this workstream: payment_started, payment_success, payment_failed, chat_unlocked (chat_unlocked_after_payment), subscription_activated, subscription_expired, mutual_interest_created, mutual_interest_locked_for_free, plus_paywall_shown, plus_cta_clicked, tariff_screen_opened, pending_interest_limit_reached, active_connection_limit_reached. Best-effort (never throws into the request path). Used by REV-7/8/9/10/12/14.",
+     "files": [
+      "src/lib/analytics/track.ts",
+      "src/lib/analytics/events.ts"
+     ],
+     "acceptance": "track('payment_success', {userId, provider, plan, amount}) inserts one analytics_events row; a DB failure in track() is swallowed (logged, not thrown) so it can't break a webhook. Event-name typo is a TS error (typed union).",
+     "effort": "S",
+     "depends_on": [
+      "REV-1"
+     ],
+     "db_changes": "Inserts into analytics_events.",
+     "risk": "Must be non-throwing in the webhook path — an analytics insert failure must never cause a webhook to report failure to Click/Payme (they would retry forever)."
+    },
+    {
+     "task_id": "REV-14",
+     "title": "Cron sweeps: subscription-expiry downgrade + mutual-interest 7-day lock expiry",
+     "what": "Reuse the existing cron pattern (/api/cron/tg-outbox + CRON_SECRET header + Railway scheduled job). New route /api/cron/subscriptions calling expire_subscriptions() RPC (REV-2): downgrade over-due users to free, re-apply free limits, emit 'subscription_expired' analytics + optional outbox notify; does NOT re-lock already-open chats (grandfather, open decision). New route /api/cron/mutual-lock-expiry: set chats.status='expired' where status='locked_requires_plus' and lock_expires_at < now(); expire the underlying match_requests/mark interest expired; emit 'mutual_interest_expired'. Both require X-Cron-Secret and 503 if CRON_SECRET unset (same as tg-outbox).",
+     "files": [
+      "src/app/api/cron/subscriptions/route.ts",
+      "src/app/api/cron/mutual-lock-expiry/route.ts",
+      "supabase/migrations/20260703003000_mutual_lock_expiry_fn.sql"
+     ],
+     "acceptance": "With CRON_SECRET set, hitting /api/cron/subscriptions downgrades a user whose plan_expires_at is in the past to base_plan='free' and leaves their open chats open; hitting /api/cron/mutual-lock-expiry flips a locked chat older than 7 days to status='expired'. Missing secret → 503. Wrong secret → 401/403.",
+     "effort": "M",
+     "depends_on": [
+      "REV-2",
+      "REV-3"
+     ],
+     "db_changes": "expire_mutual_locks() function (or inline SQL); reuses expire_subscriptions.",
+     "risk": "Must be idempotent (safe to run every N minutes) and must not re-lock grandfathered open chats. Railway scheduled job config lives outside the repo — note it in the runbook."
+    },
+    {
+     "task_id": "REV-15",
+     "title": "Admin read-only subscription/payment visibility (variant A polish, not re-skin)",
+     "what": "In the existing admin ops tool, surface subscription + payment state on the client detail view: base_plan, plan_expires_at, subscription status/provider/started/expires, last payment_session (provider, status, amount, txn_id), whether a chat was unlocked after payment, and current pending/active-connection usage vs limit. Read-only for MVP (no admin grant/refund actions). Follows admin-gap SG-11 (payments module absent) as a minimal read view, not the full Screen 12/16 ops module.",
+     "files": [
+      "src/app/admin/clients/[id]/ProfileTab.tsx",
+      "src/lib/admin/load-client.ts",
+      "src/components/admin-ops/case/CaseHeader.tsx"
+     ],
+     "acceptance": "Opening a client in the admin tool shows their plan, subscription status/expiry, latest payment provider+status+amount, and pending/active usage. No write actions added. Data matches subscriptions/payment_sessions rows.",
+     "effort": "M",
+     "depends_on": [
+      "REV-1",
+      "REV-2"
+     ],
+     "db_changes": "load-client select extended to join subscriptions/payment_sessions (read-only).",
+     "risk": "Scope creep — keep strictly read-only; admin-driven grants/refunds are out of MVP."
+    }
+   ]
+  },
+  {
+   "goal": "Admin console reworked so operators can (1) see every field the V4 anketa collects — including finance/lifestyle/family-model/partner-extended/Big Five — on the client card, (2) perform the full set of account-lifecycle actions (ban propose/confirm/cancel, unban, unblock-verification, hard-delete, restart-onboarding) from a superadmin-only danger zone with confirm dialogs and audit, and (3) get a visually consistent ops-tool (variant A polish: Inter everywhere, token-driven radii, no stray neutrals) without touching mini-app editorial design. Acceptance = code review confirms no raw SQL literals for radius/color, SELECT/render covers all PD-01..PD-14 gaps, both new RPCs pass a manual smoke test (delete/restart on a throwaway user), and ban/unban buttons are reachable only for superadmin and reflect pending_ban state correctly.",
+   "workstream": "admin_rework",
+   "sequencing_note": "Order: AR-6 (RPC migrations) and AR-1..AR-5 (ProfileTab rewrite) can run in parallel — independent files. AR-7 (danger-zone API routes) depends on AR-6 (needs the RPCs to exist in the target DB). AR-8 (danger-zone UI) depends on AR-7 (calls those routes). AR-9 (Big Five tab) is fully independent. Design polish AR-10/AR-11/AR-12 is fully independent of everything else and safe to parallelize. Recommended single-engineer sequence: AR-6 → AR-7 → AR-8 → AR-1 → AR-2..AR-5 (can interleave) → AR-9 → AR-10..AR-12. Note: VF-1 (the users→verification_cases auto-create trigger, gap report P0) is a separate, already-flagged workstream and NOT included in this plan — but AR-6's RPCs are written defensively (explicit named-trigger disable/enable around case_events) regardless of whether VF-1 lands first, so there is no hard dependency either direction.",
+   "tasks": [
+    {
+     "task_id": "AR-1",
+     "title": "ProfileTab: rewrite SELECT to include extended jsonb + all hot columns",
+     "what": "Replace the narrow SELECT in ProfileTab (currently 16 columns, src/app/admin/clients/[id]/ProfileTab.tsx:41-45) with a full column list covering every V4 hot column plus `extended`. Hot columns to add: height_cm, weight_kg, birth_country, birth_region, birth_district, birth_city, activity_field, employment_format, native_language, children_count, youngest_child_age, religion_practice, religion_partner_match, post_marriage_living, family_role_model, wife_work_after_marriage_view, partner_height_min, partner_height_max, partner_top_qualities, partner_religion_match, partner_preferred_countries, region, country_of_residence, district, district_visible_public, profile_visibility_mode, needs_v4_review. Add extended (jsonb) to SELECT and type it as `{ finance?: {...}, lifestyle?: {...}, family?: { decision_model, household_responsibility_model } }` per the shapes written in src/app/api/onboarding/profile/finance/route.ts and lifestyle/route.ts. Extend the `Profile` type at ProfileTab.tsx:18-36 accordingly. Also fetch `gender` (already selected) for use by AR-3's gender-wording helper.",
+     "files": [
+      "src/app/admin/clients/[id]/ProfileTab.tsx"
+     ],
+     "acceptance": "SELECT statement lists every hot column named above plus `extended`; TypeScript `Profile` type has matching optional fields incl. nested `extended.finance`/`extended.lifestyle`/`extended.family`; `npx tsc --noEmit` passes; manually verified against a seeded test profile that all new columns come back non-null when populated via the onboarding API routes.",
+     "effort": "S",
+     "depends_on": []
+    },
+    {
+     "task_id": "AR-2",
+     "title": "ProfileTab: render Appearance + Birth place + About-extended sections",
+     "what": "Add three new field groups to the ProfileTab render (after the existing basic-info grid, ProfileTab.tsx:104-139): (a) Appearance — height_cm, weight_kg (PD-01); (b) Birth place (self-reported, distinct from passport `birth_place` shown in IdentityTab) — birth_country/region/district/city via labelOf(CITIZENSHIP,...) and labelOf(UZ_REGIONS,...) from options.ts (PD-02); (c) About extras — activity_field, employment_format, native_language via labelOf(ACTIVITY_FIELDS,...), labelOf(EMPLOYMENT_FORMAT,...), labelOf(LANGUAGES_LIST,...) (PD-03). Add a small `SectionLabel` header above each new group (reuse the existing uppercase-11px style already used for 'Ценности').",
+     "files": [
+      "src/app/admin/clients/[id]/ProfileTab.tsx"
+     ],
+     "acceptance": "Each of PD-01, PD-02, PD-03 gaps closed: fields render with Russian labels from options.ts, show '—' when null, and birth-place section is visually distinct from IdentityTab's passport birth_place (different section header, e.g. 'Место рождения (по анкете)').",
+     "effort": "M",
+     "depends_on": [
+      "AR-1"
+     ]
+    },
+    {
+     "task_id": "AR-3",
+     "title": "ProfileTab: render Family, Values/Religion, Marriage, Family-model sections with gender-conditional labels",
+     "what": "Add/extend groups: (a) Family — children_count, youngest_child_age alongside existing has_children (PD-04); (b) Values/Religion — religion_practice, religion_partner_match added next to existing religion (PD-05); (c) Marriage — post_marriage_living via labelOf(POST_MARRIAGE_LIVING,...) (PD-06); (d) Family model — family_role_model, wife_work_after_marriage_view (hot) plus extended.family.decision_model, extended.family.household_responsibility_model (cold). For household_responsibility_model and any other option whose label depends on the *profile owner's* gender (not the viewing admin), reuse `@/lib/profile/gender-wording` (the same module the mini-app family-model screen uses, src/app/[locale]/v2/anketa/family-model/page.tsx:12) instead of plain `labelOf`, passing the client's own `gender` fetched in AR-1 — do not re-implement gender-conditional strings inline in ProfileTab.",
+     "files": [
+      "src/app/admin/clients/[id]/ProfileTab.tsx"
+     ],
+     "acceptance": "PD-04, PD-05, PD-06, PD-07 gaps closed; household_responsibility_model (and any other gender-wording-registered field) renders the same label an M or F profile owner would see in the mini-app for that value — verified by comparing against src/lib/profile/gender-wording.ts CONST_REGISTRY output for both genders on a test profile.",
+     "effort": "M",
+     "depends_on": [
+      "AR-1"
+     ]
+    },
+    {
+     "task_id": "AR-4",
+     "title": "ProfileTab: render Finance (new) and Lifestyle (new) sections from extended jsonb",
+     "what": "Add two entirely new sections reading from extended.finance and extended.lifestyle (currently zero coverage, PD-08/PD-09): Finance — income_source_stability, financial_stability_importance, family_finance_management, financial_priorities[], monthly_income_range, financial_obligations, via labelOf(INCOME_SOURCE_STABILITY,...), labelOf(FAMILY_FINANCE_MANAGEMENT,...), labelOf(FINANCIAL_PRIORITIES,...) etc from options.ts. Lifestyle — lifestyle_pace, free_time_activities[], daily_routine, bad_habits_level, nutrition_style, alcohol_level, drugs_use via labelOf(LIFESTYLE_PACE,...), labelOf(FREE_TIME_ACTIVITIES,...), labelOf(BAD_HABITS_LEVEL,...), labelOf(ALCOHOL_LEVEL,...), labelOf(DRUGS_USE,...). Flag alcohol_level and drugs_use visually (e.g. warning-colored StatusPill or ADMIN.warning text) since gap report notes these are moderation-relevant and currently invisible to moderators.",
+     "files": [
+      "src/app/admin/clients/[id]/ProfileTab.tsx"
+     ],
+     "acceptance": "PD-08, PD-09 gaps closed; both sections render '—' gracefully when extended.finance/lifestyle keys are absent (pre-V4 profiles); alcohol_level/drugs_use visually flagged when set to a non-default/concerning value (verified against ALCOHOL_LEVEL/DRUGS_USE option lists in options.ts).",
+     "effort": "M",
+     "depends_on": [
+      "AR-1"
+     ]
+    },
+    {
+     "task_id": "AR-5",
+     "title": "ProfileTab: render Partner-extended, Location, Privacy sections + gender/birth_date/citizenship provenance flag",
+     "what": "Extend the existing 'Ищет' partner block (ProfileTab.tsx:122-133) with partner_height_min/max, partner_top_qualities[] (via labelOf(PARTNER_QUALITIES,...)), partner_religion_match, partner_preferred_countries[] (PD-10). Add Location group: district, district_visible_public (as a badge), region, country_of_residence alongside existing city (PD-11). Add Privacy group: profile_visibility_mode via labelOf(PROFILE_VISIBILITY_MODE,...) (PD-12). For PD-14: fetch gender/birth_date/citizenship from user_profiles in ProfileTab and compare against the passport values already shown in IdentityTab/ClientHero (loaded via load-client.ts); if they disagree (or passport is absent so only the anketa value exists), render a small inline flag/badge next to the field, e.g. 'анкета ≠ паспорт' — do this without duplicating the full identity fetch: either accept identity as a prop passed down from page.tsx (which already calls loadClient) or add a lightweight targeted SELECT.",
+     "files": [
+      "src/app/admin/clients/[id]/ProfileTab.tsx",
+      "src/app/admin/clients/[id]/page.tsx"
+     ],
+     "acceptance": "PD-10, PD-11, PD-12 gaps closed. PD-14: when a verified user's anketa gender/birth_date/citizenship differs from user_identity's passport values, ProfileTab shows a visible mismatch indicator; when unverified (no identity row), anketa fields are shown as the sole source without false mismatch flags.",
+     "effort": "M",
+     "depends_on": [
+      "AR-1"
+     ]
+    },
+    {
+     "task_id": "AR-6",
+     "title": "New migration: admin_hard_delete_user + admin_restart_onboarding RPCs",
+     "what": "Add a new migration file (e.g. supabase/migrations/20260703000000_admin_hard_delete_restart.sql, timestamp after 20260701010000) defining two SECURITY DEFINER PL/pgSQL functions, both of which must first `ALTER TABLE case_events DISABLE TRIGGER case_events_no_update;` before any DELETE that could cascade into case_events, and `ALTER TABLE case_events ENABLE TRIGGER case_events_no_update;` in a following statement (or wrapped so it re-enables even on early return — use a single transaction, disable/do-work/re-enable, no early RETURN between disable and enable). Do NOT touch case_notes (no blocking trigger exists there, confirmed against supabase/migrations/20260627100100_verification_cases.sql:61-68) and do NOT use session_replication_role or DISABLE TRIGGER ALL (would also suppress FK cascade triggers and orphan rows).\n\n`admin_hard_delete_user(p_user_id uuid, p_admin_id uuid)`: raw cascade delete per gap report §4.2 — delete verification_cases for the user first (cascades case_events/case_notes), then `DELETE FROM users WHERE id=p_user_id`. All other FKs (consents, user_documents, user_profiles, profile_photos, otp_codes, quiz_answers, quiz_results, match_requests, match_views, chats, chat_messages, daily_request_quotas, user_state_transitions, reports, blocks, tg_outbox, start_token_uses, user_identity) are ON DELETE CASCADE already — verify against init_schema.sql FK definitions before relying on this, do not re-declare. Do NOT insert into document_sha_blacklist or phone_blacklist (those columns are ON DELETE SET NULL, safe to leave untouched — this is intentionally NOT erase_user's soft-delete path). Return `{ok:true}` or `{ok:false, error:'not_found'}`.\n\n`admin_restart_onboarding(p_user_id uuid, p_admin_id uuid, p_wipe_consents boolean default true)`: guard first — if users.lifecycle_state IN ('blocked','pending_ban') return `{ok:false, error:'blocked_or_pending_ban'}` (do not restart a banned/pending-ban user). Otherwise: delete rows from user_profiles, profile_photos, quiz_answers, quiz_results, user_documents, user_identity, verification_cases (cascades case_events) for p_user_id; if p_wipe_consents, also delete consents (per LOCKED DECISIONS this is hardcoded true, not a caller-exposed political choice — keep the parameter for testability but the route always passes true); UPDATE users SET onboarding_step='language', verification_status='not_started', profile_completion='not_started', quiz_completion='not_started', lifecycle_state='onboarding', sanction_level=default, paused_at=null, blocked_at=null, blocked_reason=null WHERE id=p_user_id, KEEPING telegram_id and id untouched; INSERT into user_state_transitions manually (mirroring erase_user's pattern at 20260619300000_erase_user.sql, since this bypasses tryTransition's forward-only guard). Return `{ok:true}` or the guard error.\n\nBoth RPCs write nothing to admin_audit_log themselves (audit is written by the calling route, before the RPC call per gap report's ordering recommendation for hard-delete) — RPCs are pure state mutation.",
+     "files": [
+      "supabase/migrations/20260703000000_admin_hard_delete_restart.sql"
+     ],
+     "acceptance": "Migration applies cleanly on a copy of prod schema. Manual test: seed a throwaway user through full onboarding to 'active', call admin_hard_delete_user via psql — users row and all FK-cascaded children gone, document_sha_blacklist/phone_blacklist untouched, no 'case_events is append-only' exception. Seed a second throwaway user to mid-onboarding, call admin_restart_onboarding — user_profiles/photos/quiz/documents/identity/verification_cases/consents gone, users row still exists with same id+telegram_id, onboarding_step='language', lifecycle_state='onboarding'. Calling admin_restart_onboarding on a blocked or pending_ban user returns the guard error and makes no changes (verify via SELECT before/after).",
+     "effort": "M",
+     "depends_on": []
+    },
+    {
+     "task_id": "AR-7",
+     "title": "Danger-zone API routes: hard-delete + restart-onboarding, storage cleanup, audit",
+     "what": "Two new superadmin-only API routes following the ban/unban/unblock-verification pattern (src/app/api/admin/users/[id]/ban/route.ts, unban/route.ts, unblock-verification/route.ts): `POST /api/admin/users/[id]/delete` and `POST /api/admin/users/[id]/restart-onboarding`. Both: requireAdminApi() → 403 if role!=='superadmin' → typed-confirmation body `{confirm:'DELETE'|'RESTART', reason}` with `reason.trim().length>=3` else 400 → fetch `users.updated_at` for optimistic concurrency, pass as `expected_updated_at`-style param if the RPC needs it (RPC from AR-6 does not check updated_at itself — implement the check in the route: re-fetch user's updated_at right before calling RPC, reject if it moved since the value the confirm-dialog was shown against, mirroring decision/route.ts:29's pattern) → for /delete ONLY: BEFORE calling the RPC, collect all storage paths (users.avatar_path, profile_photos.storage_path for all rows, user_documents storage paths for all rows — check actual column names against src/lib/uploads/storage.ts / the documents table schema) then call adminAudit({action:'hard_delete_user',...}) BEFORE the RPC call (per gap report ordering — audit must survive even if user row disappears), then call admin_hard_delete_user RPC, then delete the collected storage paths via the storage adapter (`@/lib/storage/fs-store` through supabaseAdmin().storage), best-effort (log failures, don't fail the request — DB deletion is the erasure-of-record; storage cleanup failure shouldn't leave a half-deleted user) → for /restart-onboarding: same confirm+reason+concurrency pattern, additionally 409 if lifecycle_state is 'blocked' or 'pending_ban' (belt-and-suspenders with the RPC guard), collect and delete profile_photos + user_documents storage paths the same way (identity/quiz have no files), call admin_restart_onboarding RPC with p_wipe_consents=true, adminAudit({action:'restart_onboarding',...}) after success, best-effort push notification to user via notifyUser if telegram_id present (mirror ban/route.ts's notify pattern) telling them onboarding was reset.",
+     "files": [
+      "src/app/api/admin/users/[id]/delete/route.ts",
+      "src/app/api/admin/users/[id]/restart-onboarding/route.ts"
+     ],
+     "acceptance": "Both routes reject non-superadmin with 403 (moderator session test), reject confirm-body mismatch and reason<3 chars with 400, reject stale expected_updated_at with 409, and reject restart-onboarding on blocked/pending_ban users with 409. Successful /delete leaves zero rows in users/user_profiles/profile_photos/user_documents/user_identity/verification_cases for that id, zero files under that user's storage prefix, and one admin_audit_log row with action='hard_delete_user' predating the user-row deletion (i.e. entity_id remains queryable in audit log after delete since admin_audit_log.entity_id is plain text not FK, per gap report §4.2). Successful /restart-onboarding leaves the users row with onboarding_step='language', same id/telegram_id, zero rows in the wiped child tables, and an admin_audit_log row.",
+     "effort": "M",
+     "depends_on": [
+      "AR-6"
+     ]
+    },
+    {
+     "task_id": "AR-8",
+     "title": "Danger-zone client component: superadmin-only actions panel (ban/unban/unblock/delete/restart)",
+     "what": "Convert ModerationTab into (or add a sibling) client-component 'Danger zone' following the DecisionPanel.tsx pattern ('use client', Button + Dialog from @/components/admin-ops, fetch POST, router.refresh(), inline errors, busy-state disables). Gate the entire panel on `session.role==='superadmin'` — role must be threaded down from page.tsx (already available per gap report §4.1, 'role уже прокинута в page.tsx:68 → OpsShell') to this component as a prop. Render distinct actions reflecting the real ban state machine, not a single 'ban' button: if lifecycle_state==='active'/'onboarding' show 'Propose ban' (POST /ban {action:'propose', reason}); if lifecycle_state==='pending_ban' show current proposer + reason (read-only) and two buttons 'Confirm ban' (POST /ban {action:'confirm'}, disabled with tooltip if session.adminId === pending_ban_by_admin_id — two-person rule) and 'Cancel ban proposal' (POST /ban {action:'cancel'}); if lifecycle_state==='blocked' show 'Unban' (POST /unban) with a confirm Dialog; if verification_status is a blocking-rejected state show 'Unblock verification' (POST /unblock-verification) with confirm Dialog showing phone/sha tombstone counts returned. Always show, superadmin-only, two destructive actions at the bottom with red Dialog confirmations requiring the user to type reason (>=3 chars): 'Restart onboarding' (POST /restart-onboarding, blocked if lifecycle_state is blocked/pending_ban — show why) and 'Delete permanently' (POST /delete, typed-confirmation input requiring the literal string 'DELETE' before the submit button enables, per gap report's typed-confirmation requirement). Fetch pending_ban_by_admin_id/pending_ban_reason/pending_ban_at from users for rendering the pending_ban state (extend load-client.ts or fetch inline).",
+     "files": [
+      "src/app/admin/clients/[id]/ModerationTab.tsx",
+      "src/lib/admin/load-client.ts",
+      "src/app/admin/clients/[id]/page.tsx"
+     ],
+     "acceptance": "As moderator session: danger zone panel entirely absent (not just disabled) from the rendered page. As superadmin: (a) active user shows only Propose-ban + Restart + Delete; (b) after proposing ban with reason, state flips to pending_ban and same-admin sees Confirm disabled with an explanatory message, different-admin session sees Confirm enabled; (c) confirming moves to blocked and reveals Unban; (d) Restart-onboarding on a blocked user is disabled/blocked with visible reason; (e) Delete requires typing 'DELETE' before the button enables and shows a red warning matching the copy style of DecisionPanel's blocking-reject warning box.",
+     "effort": "L",
+     "depends_on": [
+      "AR-7"
+     ]
+    },
+    {
+     "task_id": "AR-9",
+     "title": "Quiz/Big Five tab: new ClientTabs entry + loader + render",
+     "what": "PD-13. Add a 6th tab 'Психотест' (or 'Big Five') to ClientTabs.tsx (currently identity/profile/photos/activity/moderation, src/components/admin-ops/ClientTabs.tsx:4-10). Add a loader (new file src/lib/admin/load-quiz.ts or inline in page.tsx) that selects `vector, completed_at` from quiz_results for the user. Render the 5-trait vector `{O,C,E,A,ES}` (0-100 each, per src/lib/matching/score.ts:6) as labeled bars/gauges with Russian trait names (Открытость/Добросовестность/Экстраверсия/Доброжелательность/Эмоциональная стабильность — confirm exact RU labels against src/lib/quiz/questions.ts or v2 quiz UI copy) plus completed_at timestamp. Render '—' / 'Тест не пройден' if no quiz_results row.",
+     "files": [
+      "src/components/admin-ops/ClientTabs.tsx",
+      "src/app/admin/clients/[id]/page.tsx",
+      "src/lib/admin/load-quiz.ts"
+     ],
+     "acceptance": "New tab appears in ClientTabs for all admin roles (no gap-report reason to restrict this one), routes to ?tab=quiz, renders all 5 Big Five trait values with RU labels matching the mini-app's quiz copy, and gracefully shows 'not completed' state for users who haven't finished the quiz.",
+     "effort": "M",
+     "depends_on": []
+    },
+    {
+     "task_id": "AR-10",
+     "title": "Design D1: remove editorial serif from OpsSidebar logo",
+     "what": "OpsSidebar.tsx:94 renders 'Baxtlilar Ops' with `fontFamily:'var(--font-v2-display)'` (the mini-app editorial serif token) inside an explicitly sans-serif ops tool. Replace with ADMIN.fontSans (Inter) or remove the inline fontFamily override entirely so it inherits the body's --admin-font-sans.",
+     "files": [
+      "src/components/admin-ops/OpsSidebar.tsx"
+     ],
+     "acceptance": "OpsSidebar logo renders in Inter/sans, verified visually and via preview_inspect computed font-family — no reference to --font-v2-display remains anywhere under src/components/admin-ops or src/app/admin.",
+     "effort": "S",
+     "depends_on": []
+    },
+    {
+     "task_id": "AR-11",
+     "title": "Design D2: add radius tokens to admin-tokens.ts and adopt across admin-ops components",
+     "what": "admin-tokens.ts currently has zero radius fields even though globals.css defines --admin-radius:6px and --admin-radius-lg:8px (unused anywhere, D3-adjacent). Add `radius: 6` and `radiusLg: 8` to the ADMIN export in src/lib/admin/admin-tokens.ts. Then grep every inline `borderRadius:` literal under src/components/admin-ops and src/app/admin and replace hardcoded 4/6/8 with ADMIN.radius or ADMIN.radiusLg consistently (cards/dialogs=radiusLg, buttons/search/pills/inputs=radius). Fix the one-off login-card 10px radius at src/app/admin/login/page.tsx:65 to ADMIN.radiusLg (8px), eliminating the orphan value the gap report flags (D2).",
+     "files": [
+      "src/lib/admin/admin-tokens.ts",
+      "src/app/admin/login/page.tsx",
+      "src/components/admin-ops/Button.tsx",
+      "src/components/admin-ops/Dialog.tsx",
+      "src/components/admin-ops/Drawer.tsx",
+      "src/components/admin-ops/Field.tsx",
+      "src/components/admin-ops/StatusPill.tsx",
+      "src/components/admin-ops/case/DecisionPanel.tsx",
+      "src/components/admin-ops/clients/ClientsTable.tsx",
+      "src/components/admin-ops/clients/SearchBar.tsx",
+      "src/components/admin-ops/photo/PhotoDrawer.tsx",
+      "src/components/admin-ops/photo/PhotosTable.tsx",
+      "src/app/admin/clients/[id]/ProfileTab.tsx",
+      "src/app/admin/clients/[id]/ModerationTab.tsx",
+      "src/app/admin/clients/[id]/IdentityTab.tsx",
+      "src/app/admin/clients/[id]/PhotosTab.tsx",
+      "src/app/admin/clients/[id]/ActivityTab.tsx"
+     ],
+     "acceptance": "grep for literal `borderRadius: [0-9]` and `10px` returns zero hits under src/components/admin-ops and src/app/admin (excluding legitimate non-token uses like avatar circles at 50%); login card radius visually matches other admin-ops cards (8px); ADMIN.radius/ADMIN.radiusLg exported and imported at every prior hardcode site.",
+     "effort": "M",
+     "depends_on": []
+    },
+    {
+     "task_id": "AR-12",
+     "title": "Design D5 + D6: body background token + font-loading fix",
+     "what": "D5: src/app/admin/layout.tsx:13 sets `bg-slate-100 text-slate-800` on body (a third, cold Tailwind neutral distinct from --admin-bg #fafaf8) — causes a cold flash before OpsShell repaints. Replace with inline style or a small admin-scoped class using var(--admin-bg)/var(--admin-ink-900) so first paint matches the ops palette. D6: Admin claims Inter + JetBrains Mono (admin-tokens.ts fontSans/fontMono) but neither is loaded via next/font or @font-face anywhere in the admin tree — falls back to system/Menlo. Add next/font/google Inter (and JetBrains Mono if budget allows, else update the token comment to state the fallback is intentional) loaded in src/app/admin/layout.tsx, applied via a CSS variable or className on body, so --admin-font-sans resolves to the actually-loaded Inter rather than silently falling through to system-ui.",
+     "files": [
+      "src/app/admin/layout.tsx",
+      "src/app/globals.css"
+     ],
+     "acceptance": "Cold-load /admin/login in an incognito/no-cache session shows warm off-white (#fafaf8-family) background from first paint, not Tailwind slate-100; computed font-family on body (via preview_inspect) resolves to 'Inter' (loaded, not fallback) confirmed by checking the actual font file is fetched in network tab, not just the CSS declaration.",
+     "effort": "S",
+     "depends_on": []
+    },
+    {
+     "task_id": "AR-13-DEFERRED",
+     "title": "[DEFERRED to P1, not in this build] SLA dashboard — due_at/priority/capacity on cases+reports",
+     "what": "Per docs/admin-gap-report-2026-07-01.md SG-04: dashboard (src/app/admin/page.tsx:59-103) is flat StatCards with no due_at/priority/assigned_at/average_moderation_time/'Требуют внимания' overdue view. Requires schema additions (due_at/priority columns on verification_cases and reports) plus a new dashboard section. Listed here for tracking only — explicitly out of scope for admin_rework per the task's P1 designation; do not implement in this pass.",
+     "files": [],
+     "acceptance": "N/A — deferred. Tracked so it is not silently dropped from the roadmap.",
+     "effort": "L",
+     "depends_on": []
+    },
+    {
+     "task_id": "AR-14-DEFERRED",
+     "title": "[DEFERRED to P1, not in this build] /admin/reports/[id] detail view",
+     "what": "Per docs/admin-gap-report-2026-07-01.md SG-05: reports/page.tsx is a flat superadmin-only list with only 3 status transitions (in_progress/action_taken/not_confirmed) and no detail page, no assignment/priority/evidence/related-chat/escalate-to-legal/notes, and reports table lacks priority/assigned_to/category/evidence columns. Listed here for tracking only — explicitly out of scope for admin_rework per the task's P1 designation; do not implement in this pass.",
+     "files": [],
+     "acceptance": "N/A — deferred. Tracked so it is not silently dropped from the roadmap.",
+     "effort": "L",
+     "depends_on": []
+    }
+   ],
+   "open_decisions": [
+    "None blocking — restart-onboarding consents WIPE is already locked by the founder decision quoted in the prompt (superseding gap-report OA-2's 'externalize as political question'); hardcoded into AR-6/AR-7.",
+    "Exact Russian labels for the 5 Big Five traits (O/C/E/A/ES) in AR-9 should be pulled verbatim from src/lib/quiz/questions.ts or the v2 quiz UI at implementation time rather than invented fresh, to stay consistent with what the end-user saw when answering.",
+    "AR-9 (quiz tab) visibility was left un-gated (visible to both moderator and superadmin) since the gap report doesn't flag it as sensitive like identity data — confirm this is acceptable, or gate superadmin-only for consistency with ClientTabs' existing superOnly pattern used elsewhere (e.g. 'Клиенты' nav item)."
+   ]
+  },
+  {
+   "goal": "Two P0 deliverables ship before 10k launch: (1) get_recommendations degrades gracefully instead of returning empty when the strict mutual-match pool is thin, with the 'Алгоритм ищет' empty-state becoming a true last-resort rather than the common case outside Tashkent (fixes BIZ-02 / launch-readiness Cluster J); (2) North Star metric (chat13 §2.1: verified_mutual_interests_with_chat_started) plus 3-4 funnel counters are queryable as SQL views/RPCs surfaced in /admin/analytics, giving the founder launch visibility without building a full event pipeline (fixes BIZ-09 / Cluster K). No marketing/growth work — that's external. No monetization/chat-gating work — that's the separate payments workstream (Plus gates chat_status=locked_requires_plus later).",
+   "workstream": "business_matching_p0",
+   "sequencing_note": "MATCH-1 → MATCH-2 → MATCH-3 → MATCH-4 → MATCH-5 is a strict chain (RPC → recommend.ts wiring → story honesty → main page copy → tests) and should land as one PR since MATCH-2 alone would silently degrade matches without the compensating honesty/UI work. FUNNEL-1 → FUNNEL-2 → FUNNEL-3 is independent of MATCH-* and can run in parallel by a second engineer; FUNNEL-2 (page) depends only on FUNNEL-1 (RPC). FUNNEL-4 (North Star) can start immediately since chat13 §2.1 gives the exact formula, but its accuracy depends on FUNNEL-1's mutual/chat counters existing first for cross-checking, so sequence it last. Total: one PR for MATCH-*, one PR for FUNNEL-*, may ship in either order — no cross-dependency between the two clusters.",
+   "open_decisions": [
+    "North Star formula per chat13 §2.1 requires `complaints_in_first_N_days=0` AND `block_right_after_start=false` as qualifiers on each mutual-chat pair. There is no events pipeline (SYS-022/024/025/027 explicitly deferred) and `reports`/`blocks` rows aren't timestamped relative to chat-open in a way that lets us compute this cheaply today. FUNNEL-4 proposes a simplified proxy (raw count of chats with a first message, MINUS pairs where either side reported/blocked the other at any point after chat creation) and flags the delta from the exact spec formula in the RPC's SQL comment. Founder should confirm the proxy is acceptable for MVP or descope the safety qualifiers to a v2 refinement.",
+    "chat13 confirms first-mutual (`match_requests.status='accepted'`) and chat-unlocked (`chats` row via `ensureChat`) are the SAME event today because `ensureChat` fires synchronously in `src/app/api/requests/[id]/decision/route.ts:83` on accept. FUNNEL-1's counters intentionally track both as separate rows so the funnel view has the right shape when the Plus-gating payments workstream ships `chat_status=locked_requires_plus` — but until then they will read identical numbers. Confirm this duplication is acceptable to display in the interim (with a footnote) rather than hiding one column.",
+    "Degradation ladder only has ONE relaxable dimension in the real code: mutual age-range. The launch-readiness doc's prose ('прогрессивно расширять возраст/город') is aspirational — city/geo has no hard SQL filter in get_recommendations today (v3 migration), it only affects JS scoring in score.ts (+30 for same city). So MATCH-1 relaxes age only; there is no 'city' degradation to build. Confirm this narrower scope matches founder intent, since the doc implied a broader ladder.",
+    "match_views permanently dedupes viewed candidates (1/day model). A sparse-pool user will eventually exhaust all candidates even after full age-relaxation and hit permanent empty state — degradation reduces but does not eliminate empty feeds. Re-surfacing previously-viewed profiles after N days is out of scope for this P0 and is not proposed here; flagging so the empty-state copy isn't oversold as 'temporary' when the pool is truly exhausted."
+   ],
+   "tasks": [
+    {
+     "task_id": "MATCH-1",
+     "title": "Add relax-level parameter to get_recommendations RPC",
+     "what": "New migration recreates `public.get_recommendations(p_viewer uuid, p_limit int, p_relax_level int default 0)`. p_relax_level controls ONLY the mutual age-range clauses (the only relaxable dimension that actually exists in the v3 RPC — city has no hard filter to relax, it's JS-scoring-only in score.ts). Level 0 = current strict behavior (both `date_part('year', age(cp.birth_date)) between v.partner_age_min and v.partner_age_max` AND `v.age between cp.partner_age_min and cp.partner_age_max`, unchanged). Level 1 = widen the VIEWER's own partner_age_min/max by ±5 (floored at 18, never below — legal/product invariant, must not go below 18 under any relax level) before applying the mutual check. Level 2 = additionally drop the candidate-side preference clause (`v.age between cp.partner_age_min and cp.partner_age_max`), i.e. viewer's widened window still applies but candidate's stated preference is no longer enforced. ALL OTHER filters are invariant across every level and must be re-verified unchanged at each level: `c.lifecycle_state='active'`, `c.verification_status='approved'`, viewer-gate (u.lifecycle_state='active' and u.verification_status='approved'), `cp.status='published'`, mutual gender match (`cp.gender=v.looking_for_gender` and `v.gender=cp.looking_for_gender`), has-approved-photo exists-clause, match_views dedup, blocks exclusion, match_requests pending/accepted/auto_decline exclusion. Return an extra `relax_level int` column on every row so callers know which tier produced the candidate.",
+     "files": [
+      "/Users/fayzullohoja/Code/baxtlilar/supabase/migrations/20260702000000_recommendations_v4_relax_level.sql (new)"
+     ],
+     "acceptance": "SQL test/manual: viewer with narrow partner_age_min=partner_age_max=25 in a city with only 30-year-old candidates returns 0 rows at p_relax_level=0, returns the 30-year-old at p_relax_level=1 (25±5=20-30, edge-inclusive) tagged relax_level=1, and the invariant filters (gender, verification, published, blocked, dedup, existing-request) still exclude non-matching rows at every level — write explicit fixture rows for each invariant (a blocked pair, a non-approved-photo candidate, a pending-request pair) and confirm none leak through at level 2 either. Age floor of 18 verified: viewer with partner_age_min=18 at relax level 1 does not request candidates below 18.",
+     "effort": "M",
+     "depends_on": [],
+     "risk": "Over-relaxing by editing the wrong clause could leak wrong-gender, unverified, or blocked candidates in a marriage app — worse than an empty feed. Every invariant filter must be copy-pasted unchanged from the v3 migration, not rewritten from memory.",
+     "db_changes": "New migration recreating get_recommendations with p_relax_level param and relax_level return column; no schema/table changes."
+    },
+    {
+     "task_id": "MATCH-2",
+     "title": "Wire progressive relaxation loop into getRecommendations",
+     "what": "In `src/lib/matching/recommend.ts`, call the RPC in a loop: try p_relax_level=0 first; if `rows` is empty, retry at level 1; if still empty, retry at level 2; if still empty, return `[]` (triggers existing empty state). Thread `relax_level` from the RPC row into the returned `Candidate` type (new field `relaxLevel: number`) so downstream (MATCH-3) can detect a degraded match. Keep existing JS scoring (score.ts) unchanged — it runs on whichever tier's rows came back.",
+     "files": [
+      "/Users/fayzullohoja/Code/baxtlilar/src/lib/matching/recommend.ts"
+     ],
+     "acceptance": "Unit/integration test (or manual via seeded DB): a viewer with a pool only satisfiable at relax_level=2 gets a non-empty `Candidate[]` with `relaxLevel=2` on every returned candidate; a viewer with a healthy strict pool gets `relaxLevel=0` and identical results to pre-change behavior (regression safety — this must not change output for users who already get matches today).",
+     "effort": "S",
+     "depends_on": [
+      "MATCH-1"
+     ],
+     "risk": "Looping 3x means up to 3 sequential RPC round-trips for the worst case (sparse pool) — acceptable at MVP scale (1 call/user/day pattern from match-of-the-day.ts) but note as future perf watch-item if getRecommendations is ever called more frequently than daily.",
+     "db_changes": ""
+    },
+    {
+     "task_id": "MATCH-3",
+     "title": "Make match story honest about degraded matches (no overclaiming)",
+     "what": "`generateMatchStory` (src/lib/v2/match-story.ts) currently generates 'why this match' copy assuming full compatibility. When `getMatchOfTheDay` (src/lib/v2/match-of-the-day.ts) receives a top candidate with `relaxLevel > 0`, thread that through to `generateMatchStory` (new optional param) so it does NOT claim age-preference alignment it doesn't have, and instead surfaces an honest note (e.g. 'мы расширили возрастной диапазon подбора, чтобы найти вам анкету' framing — exact copy TBD with product, not this task) rather than fabricating a match reason. Add `relaxLevel` to the `MatchOfTheDay` return type so `main/page.tsx` can pass it to `MatchStoryCard` if UI copy changes are needed there too (see MATCH-4).",
+     "files": [
+      "/Users/fayzullohoja/Code/baxtlilar/src/lib/v2/match-of-the-day.ts",
+      "/Users/fayzullohoja/Code/baxtlilar/src/lib/v2/match-story.ts"
+     ],
+     "acceptance": "Given a candidate with relaxLevel=2 whose age falls outside the viewer's stated partner_age_min/max, generateMatchStory's output does NOT include any age-compatibility claim (grep-testable: story text must not assert age match when the underlying age gap violates the viewer's original preference) and includes a distinct honest-degradation signal the UI can render differently. relaxLevel=0 candidates produce byte-identical story output to current behavior (regression test).",
+     "effort": "S",
+     "depends_on": [
+      "MATCH-2"
+     ],
+     "risk": "If skipped, a tier-2 candidate outside the user's stated age preference gets a story that implies compatibility it doesn't have — a trust/credibility issue in a marriage-serious product, worse than the empty state it replaces.",
+     "db_changes": ""
+    },
+    {
+     "task_id": "MATCH-4",
+     "title": "Empty state becomes true last-resort; copy reflects degradation reality",
+     "what": "In `src/app/[locale]/main/page.tsx`, the existing 'Алгоритм ищет подходящего человека' block (lines ~82-101) only renders now when getMatchOfTheDay returns null AFTER all 3 relax tiers failed (automatic, since MATCH-2 already exhausts tiers before returning empty — no page-level change needed to trigger it less often). The task here is narrower: verify/adjust the empty-state copy so it doesn't imply 'try again tomorrow will definitely work' when the pool is structurally exhausted via match_views dedup (see open_decisions) — soften to avoid overpromising. No functional routing change required, this is a copy-accuracy pass given the new reality that empty now means 'genuinely exhausted all 3 tiers', not 'strict filter came up dry'.",
+     "files": [
+      "/Users/fayzullohoja/Code/baxtlilar/src/app/[locale]/main/page.tsx"
+     ],
+     "acceptance": "Manual review: empty-state copy reviewed against the fact that it now only fires after full degradation attempt; no code claims removed functionality. Screenshot before/after not required — this is a copy-only diff, verify Russian text reads accurately.",
+     "effort": "S",
+     "depends_on": [
+      "MATCH-2"
+     ],
+     "risk": "Low — copy-only change, but skipping it means the empty state undersells how hard the system already tried, which could be misread by founder/support as 'the degradation didn't work' when it did.",
+     "db_changes": ""
+    },
+    {
+     "task_id": "MATCH-5",
+     "title": "Tests for degradation ladder + invariant filters",
+     "what": "Add/extend test coverage: (a) unit tests for the relax-loop logic in recommend.ts (mock RPC responses per tier), (b) a SQL-level fixture test (or documented manual QA script if no SQL test harness exists in repo) proving the never-relax invariants hold at every tier per MATCH-1's acceptance criteria, (c) unit test for match-story.ts honesty behavior from MATCH-3.",
+     "files": [
+      "/Users/fayzullohoja/Code/baxtlilar/src/lib/matching/recommend.test.ts (new)",
+      "/Users/fayzullohoja/Code/baxtlilar/src/lib/v2/match-story.test.ts"
+     ],
+     "acceptance": "`npm test` (or repo's test runner — confirm via package.json) passes with new tests covering: strict-tier passthrough (no regression), tier-1 relaxation triggers only on empty tier-0, tier-2 relaxation triggers only on empty tier-1, invariant filters never bypassed, story honesty at relaxLevel>0.",
+     "effort": "S",
+     "depends_on": [
+      "MATCH-2",
+      "MATCH-3"
+     ],
+     "risk": "",
+     "db_changes": ""
+    },
+    {
+     "task_id": "FUNNEL-1",
+     "title": "get_admin_funnel RPC — signup→verified→published→first-mutual→chat-unlocked counters, gender-segmented",
+     "what": "New migration adds `get_admin_funnel()` returning jsonb, following the exact pattern of `get_admin_demographics()` (20260601200000_admin_demographics.sql). Stages mapped to existing columns (no event pipeline, per BIZ-09 doc's explicit 'no full pipeline needed'): signup = `users` where deleted_at is null; verified = `verification_status='approved'`; published = `user_profiles.status='published'`; first_mutual = distinct users appearing in a `match_requests` row with `status='accepted'`; chat_unlocked = distinct users appearing in a `chats` row (user_a or user_b) — see open_decisions re: this being numerically identical to first_mutual today via `ensureChat` synchronous call in requests/[id]/decision/route.ts:83. Each stage segmented by `user_profiles.gender` (m/f/null) reusing the pattern from get_admin_demographics's gender jsonb_build_object. Additionally compute `empty_feed_rate`: count of active+approved+published users for whom `get_recommendations(user_id, 1, 0)` (STRICT tier 0 — NOT the degraded/relaxed result, this is deliberate per the BIZ-02 liquidity signal) returns 0 rows, segmented by gender and by city — this is the metric that proves/disproves cold-start liquidity and must NOT be computed post-degradation or it will read near-zero and hide the problem. Reasonable to compute this as a set-returning loop or EXISTS-based aggregate rather than calling the RPC per-user if performance is a concern at 10k scale — implementer's discretion, document the choice in the migration comment.",
+     "files": [
+      "/Users/fayzullohoja/Code/baxtlilar/supabase/migrations/20260702010000_admin_funnel.sql (new)"
+     ],
+     "acceptance": "RPC returns jsonb with keys: signup{m,f,total}, verified{m,f,total}, published{m,f,total}, first_mutual{m,f,total}, chat_unlocked{m,f,total}, empty_feed_rate{m,f,total,by_city:[{city,rate}]}. Manually verified against current DB state (mentioned in memory: DB was TRUNCATEd 2026-07-01, so counts will be near-zero/empty until test data exists — acceptance is structural correctness of the jsonb shape and correct filter logic, verifiable via a seeded test scenario, not live counts). Each stage count is monotonically non-increasing (verified ≤ signup, published ≤ verified, etc.) when tested against seeded fixtures — a violated monotonicity indicates a wrong join/filter.",
+     "effort": "M",
+     "depends_on": [],
+     "risk": "empty_feed_rate computed via strict tier-0 RPC call per active user could be slow at 10k scale if implemented naively as N calls; consider inlining the tier-0 filter logic as a set-based query instead of N RPC calls — flag for review at implementation time.",
+     "db_changes": "New migration: new RPC function get_admin_funnel(), read-only, no table/schema changes."
+    },
+    {
+     "task_id": "FUNNEL-2",
+     "title": "Воронка section in /admin/analytics",
+     "what": "Extend `src/app/admin/analytics/page.tsx` (same file, same pattern as the existing Демография sections) with a new 'Воронка' section below/beside the existing ones: calls `get_admin_funnel()` via `unwrapOne(await supabaseAdmin().rpc('get_admin_funnel'))` (mirrors the existing get_admin_demographics call exactly), renders a funnel bar/table (signup→verified→published→first_mutual→chat_unlocked with conversion % between consecutive stages, reusing the `pct()` helper already in the file), a gender_balance callout (reuse `GenderBar` component), and an empty_feed_rate callout with the by-city breakdown table (reuse the existing table/th/td style constants). A footnote line noting first_mutual and chat_unlocked currently read identical numbers (see open_decisions) so the founder isn't confused by two equal columns.",
+     "files": [
+      "/Users/fayzullohoja/Code/baxtlilar/src/app/admin/analytics/page.tsx"
+     ],
+     "acceptance": "Navigating to /admin/analytics as superadmin shows a new Воронка section with 5 stage counts, conversion percentages between stages, gender-segmented bars (reusing GenderBar), and empty-feed-rate with city breakdown; page still renders 'Нет данных' gracefully if get_admin_funnel returns null (matches existing d===null handling pattern in the file); no new route/nav entry needed since /admin/analytics is already in OpsSidebar.tsx under 'АНАЛИТИКА'.",
+     "effort": "S",
+     "depends_on": [
+      "FUNNEL-1"
+     ],
+     "risk": "",
+     "db_changes": ""
+    },
+    {
+     "task_id": "FUNNEL-3",
+     "title": "Verification SLA / drop-off supplementary counters (the 3rd-4th of the '3-4 funnel counters')",
+     "what": "BIZ-09's fix line names 4 counters explicitly: onboarding_completion, verification_approval, empty_feed/gender_balance, mutual_to_chat. FUNNEL-1/2 cover empty_feed/gender_balance and mutual_to_chat (via the funnel stages). This task adds the remaining two as additional keys on the SAME `get_admin_funnel()` RPC (avoid a second RPC/round-trip): `onboarding_completion_rate` = users with lifecycle_state != 'onboarding' (i.e. reached 'active') / total non-deleted users (proxy for chat13 §2.4's `consent_accepted/app_opened` — app_opened isn't tracked without an event pipeline, so total signups is the best available denominator, document this substitution in the migration comment) and `verification_approval_rate` = count(verification_status='approved') / count(verification_submitted_at is not null) (chat13 §2.4 formula: verification_approved/verification_submitted, directly computable from existing columns). Render both as additional stat cards in the FUNNEL-2 section using the existing `MiniStat` component.",
+     "files": [
+      "/Users/fayzullohoja/Code/baxtlilar/supabase/migrations/20260702010000_admin_funnel.sql (same file as FUNNEL-1, not a separate migration)",
+      "/Users/fayzullohoja/Code/baxtlilar/src/app/admin/analytics/page.tsx"
+     ],
+     "acceptance": "get_admin_funnel() jsonb includes onboarding_completion_rate and verification_approval_rate as top-level numeric (0-1) keys; /admin/analytics renders both as MiniStat cards with % formatting via the existing pct() helper; rates match chat13 §2.4 formulas exactly for verification_approval_rate, with onboarding_completion_rate's substitution (signup denominator instead of app_opened) documented inline in the SQL comment and in the admin UI as a tooltip/footnote so the founder knows it's a proxy.",
+     "effort": "S",
+     "depends_on": [
+      "FUNNEL-1"
+     ],
+     "risk": "onboarding_completion_rate as specified in chat13 (consent_accepted/app_opened) is not computable without event tracking; using signup-count as denominator changes what the metric measures (a coarser proxy). Must be labeled as such, not presented as the exact chat13 metric.",
+     "db_changes": "Folds into FUNNEL-1's migration — add the two extra jsonb keys to the same get_admin_funnel() function body rather than creating a second RPC."
+    },
+    {
+     "task_id": "FUNNEL-4",
+     "title": "North Star metric (verified_mutual_interests_with_chat_started) as SQL view/RPC",
+     "what": "Per chat13 §2.1, implement `verified_mutual_interests_with_chat_started` as its own RPC/view (`get_admin_north_star()` or a `SELECT` view `north_star_pairs`), computing: pairs where both users are verification_status='approved' AND both user_profiles.status='published' AND a match_requests row exists with status='accepted' (mutual_interest_created) AND a chats row exists for the pair (chat_opened, via ensureChat) AND at least one chat_messages row exists for that chat_id (first_message_sent). The two safety qualifiers from the exact chat13 formula (`complaints_in_first_N_days=0`, `block_right_after_start=false`) are NOT cheaply computable without an events pipeline — implement a simplified proxy per open_decisions (exclude pairs where a `reports` or `blocks` row exists between the two users, without the time-window nuance) and document the delta from the spec formula directly in the SQL comment, citing chat13 §2.1. Surface the resulting count as a single top-line stat card ('Северная звезда') at the top of /admin/analytics, above the existing Демография cards.",
+     "files": [
+      "/Users/fayzullohoja/Code/baxtlilar/supabase/migrations/20260702020000_admin_north_star.sql (new)",
+      "/Users/fayzullohoja/Code/baxtlilar/src/app/admin/analytics/page.tsx"
+     ],
+     "acceptance": "RPC/view returns a single count (and ideally a 7d/30d trend if cheap to add via created_at windowing, matching the reg_7d/reg_30d pattern already in get_admin_demographics) matching the proxy definition above; SQL comment explicitly cites 'chat13 §2.1' and lists which qualifiers are exact vs proxied; /admin/analytics shows it as the top-line headline stat, visually distinct from the funnel/demographics sections below it (it's the ONE number, not a table).",
+     "effort": "S",
+     "depends_on": [
+      "FUNNEL-1"
+     ],
+     "risk": "Proxy formula is a founder-facing simplification of an explicit chat13 spec formula — must not be silently presented as exact. Get founder sign-off on the proxy per open_decisions before treating this as final.",
+     "db_changes": "New migration: new RPC/view for North Star count, read-only, no table/schema changes."
+    }
+   ]
+  }
+ ]
+}

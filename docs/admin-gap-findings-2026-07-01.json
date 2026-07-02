@@ -1,0 +1,382 @@
+{
+ "gapsByArea": [
+  {
+   "area": "profile_display",
+   "gaps": [
+    {
+     "gap_id": "PD-01",
+     "title": "appearance screen fully absent: height_cm / weight_kg not shown",
+     "detail": "The entire V4 'appearance' anketa screen (height_cm, weight_kg) is never selected or rendered. ProfileTab's SELECT omits both columns, and there is no UI field for either. Admin cannot see the user's self-reported height/weight that the mini-app collects and uses in matching.",
+     "code_location": "src/app/admin/clients/[id]/ProfileTab.tsx:41-45",
+     "severity": "high",
+     "kind": "data_mismatch",
+     "fix_hint": "Add height_cm, weight_kg to the SELECT and render them (e.g. an 'Внешность' section: рост/вес)."
+    },
+    {
+     "gap_id": "PD-02",
+     "title": "birth-place screen fully absent: birth_country / birth_region / birth_district / birth_city not shown",
+     "detail": "The entire V4 'birth-place' screen (birth_country, birth_region, birth_district, birth_city — the profile's self-reported birthplace) is never queried or displayed. Note: the Hero/IdentityTab show birth_place, but that value comes from the passport table user_identity (load-client.ts:71), NOT from the profile's birth_* columns, so the self-reported anketa answers are invisible.",
+     "code_location": "src/app/admin/clients/[id]/ProfileTab.tsx:41-45",
+     "severity": "high",
+     "kind": "data_mismatch",
+     "fix_hint": "Add birth_country/birth_region/birth_district/birth_city to SELECT and a 'Место рождения (анкета)' section, distinct from the passport birth_place."
+    },
+    {
+     "gap_id": "PD-03",
+     "title": "self screen partially absent: activity_field, employment_format, native_language not shown",
+     "detail": "From the V4 'self' screen only bio and education are surfaced. activity_field (сфера деятельности), employment_format (формат занятости), and native_language (родной язык) are never selected or rendered. Options for these exist (ACTIVITY_FIELDS, EMPLOYMENT_FORMAT, LANGUAGES_LIST) but ProfileTab ignores the columns.",
+     "code_location": "src/app/admin/clients/[id]/ProfileTab.tsx:41-45",
+     "severity": "high",
+     "kind": "data_mismatch",
+     "fix_hint": "Add activity_field, employment_format, native_language to SELECT and render with ACTIVITY_FIELDS / EMPLOYMENT_FORMAT / LANGUAGES_LIST labels."
+    },
+    {
+     "gap_id": "PD-04",
+     "title": "family screen partially absent: children_count and youngest_child_age not shown",
+     "detail": "has_children IS shown (ProfileTab.tsx:118), but the quantitative follow-ups children_count and youngest_child_age from the V4 'family' screen are never selected or rendered. Admin sees 'есть/нет детей' but not how many or the youngest child's age.",
+     "code_location": "src/app/admin/clients/[id]/ProfileTab.tsx:41-45",
+     "severity": "medium",
+     "kind": "data_mismatch",
+     "fix_hint": "Add children_count, youngest_child_age to SELECT; show them conditionally when has_children indicates children exist."
+    },
+    {
+     "gap_id": "PD-05",
+     "title": "values/religion screen partially absent: religion_practice, religion_partner_match not shown",
+     "detail": "religion IS shown (ProfileTab.tsx:120), but religion_practice (степень практики; RELIGION_PRACTICE options exist) and religion_partner_match are not selected or displayed. religion_partner_match was moved to partner-extended in V4 but remains a user_profiles column; neither hot column reaches the admin card.",
+     "code_location": "src/app/admin/clients/[id]/ProfileTab.tsx:41-45",
+     "severity": "medium",
+     "kind": "data_mismatch",
+     "fix_hint": "Add religion_practice and religion_partner_match (plus partner_religion_match) to SELECT and render with RELIGION_PRACTICE / RELIGION_PARTNER_MATCH labels."
+    },
+    {
+     "gap_id": "PD-06",
+     "title": "marriage screen absent: post_marriage_living not shown",
+     "detail": "The V4 'marriage' screen field post_marriage_living (где жить после свадьбы; POST_MARRIAGE_LIVING options exist, value 'separate_near' renamed to 'separate' in the V4 migration) is never selected or rendered in ProfileTab.",
+     "code_location": "src/app/admin/clients/[id]/ProfileTab.tsx:41-45",
+     "severity": "medium",
+     "kind": "data_mismatch",
+     "fix_hint": "Add post_marriage_living to SELECT and render with POST_MARRIAGE_LIVING labels."
+    },
+    {
+     "gap_id": "PD-07",
+     "title": "family-model screen fully absent: family_role_model, wife_work_after_marriage_view, decision_model, household_responsibility_model not shown",
+     "detail": "The entire V4 'family-model' screen is invisible. Hot columns family_role_model (FAMILY_ROLE_MODEL) and wife_work_after_marriage_view (WIFE_WORK_VIEW) are not selected. The COLD family sub-object in extended jsonb (extended.family.decision_model, extended.family.household_responsibility_model — FAMILY_DECISION_MODEL / HOUSEHOLD_RESPONSIBILITY_MODEL; the V4 migration removed by_domain and renamed flexible→mostly_partner) is never read at all, because ProfileTab never selects the extended column.",
+     "code_location": "src/app/admin/clients/[id]/ProfileTab.tsx:41-45",
+     "severity": "high",
+     "kind": "data_mismatch",
+     "fix_hint": "Add family_role_model, wife_work_after_marriage_view and the extended column to SELECT; render extended.family.decision_model / household_responsibility_model with their option labels."
+    },
+    {
+     "gap_id": "PD-08",
+     "title": "finance screen (NEW) fully absent: entire extended.finance section not shown",
+     "detail": "The NEW V4 'finance' screen lives entirely in extended.finance jsonb (income_source_stability, financial_stability_importance, family_finance_management, financial_priorities[], monthly_income_range, financial_obligations). ProfileTab never selects the extended column, so none of these appear anywhere in the admin card. No admin file references 'finance' or 'extended' (grep of src/app/admin + src/lib/admin returns zero matches).",
+     "code_location": "src/app/admin/clients/[id]/ProfileTab.tsx:41-45",
+     "severity": "high",
+     "kind": "data_mismatch",
+     "fix_hint": "Select the extended jsonb column and render extended.finance.* using INCOME_SOURCE_STABILITY / FAMILY_FINANCE_MANAGEMENT / FINANCIAL_PRIORITIES / MONTHLY_INCOME_RANGE / FINANCIAL_OBLIGATIONS labels."
+    },
+    {
+     "gap_id": "PD-09",
+     "title": "lifestyle screen (NEW) fully absent: entire extended.lifestyle section not shown",
+     "detail": "The NEW V4 'lifestyle' screen lives entirely in extended.lifestyle jsonb (lifestyle_pace, free_time_activities[], daily_routine, bad_habits_level, nutrition_style, alcohol_level, drugs_use). Because ProfileTab never selects the extended column, none of these render. Option sets (LIFESTYLE_PACE, FREE_TIME_ACTIVITIES, DAILY_ROUTINE, BAD_HABITS_LEVEL, NUTRITION_STYLE, ALCOHOL_LEVEL, DRUGS_USE) exist but are unused by the admin card. drugs_use/alcohol_level are moderation-relevant yet invisible to moderators.",
+     "code_location": "src/app/admin/clients/[id]/ProfileTab.tsx:41-45",
+     "severity": "high",
+     "kind": "data_mismatch",
+     "fix_hint": "Select extended and render extended.lifestyle.* with the corresponding option labels; surface bad_habits_level/alcohol_level/drugs_use prominently for moderation."
+    },
+    {
+     "gap_id": "PD-10",
+     "title": "partner-extended screen fully absent: partner_height_min/max, partner_top_qualities[], partner_religion_match, partner_preferred_countries[] not shown",
+     "detail": "Only looking_for_gender + partner_age_min/max are shown (ProfileTab.tsx:122-133). The rest of the V4 'partner-extended' screen is absent: partner_height_min, partner_height_max, partner_top_qualities[] (PARTNER_QUALITIES), and the NEW V4 columns partner_religion_match and partner_preferred_countries[] (PARTNER_PREFERRED_COUNTRIES, added in the V4 migration). Admin sees only gender+age preference, not the user's stated partner requirements.",
+     "code_location": "src/app/admin/clients/[id]/ProfileTab.tsx:41-45",
+     "severity": "high",
+     "kind": "data_mismatch",
+     "fix_hint": "Add partner_height_min/max, partner_top_qualities, partner_religion_match, partner_preferred_countries to SELECT; render height range, quality chips, and preferred-country/religion-match labels."
+    },
+    {
+     "gap_id": "PD-11",
+     "title": "basic screen: district / district_visible_public (NEW) not shown; region and country_of_residence also missing",
+     "detail": "The NEW V4 profile columns district and district_visible_public (added in the V4 migration — район проживания + public-visibility flag) are never selected or rendered. Note: IdentityTab.tsx:90 shows district_code, but that is the PASSPORT registration district from user_identity, a different concept from the profile's self-reported district. Additionally region and country_of_residence (basic screen) are not shown — only city is (ProfileTab.tsx:116). gender and city ARE displayed, so they are not gaps.",
+     "code_location": "src/app/admin/clients/[id]/ProfileTab.tsx:41-45",
+     "severity": "medium",
+     "kind": "data_mismatch",
+     "fix_hint": "Add district, district_visible_public, region, country_of_residence to SELECT; render district with its visibility flag, clearly separate from the passport district_code."
+    },
+    {
+     "gap_id": "PD-12",
+     "title": "privacy screen absent: profile_visibility_mode not shown",
+     "detail": "The V4 'privacy' screen field profile_visibility_mode (PROFILE_VISIBILITY_MODE options exist) is never selected or rendered. Admin/moderators cannot see the visibility mode the user chose for their profile.",
+     "code_location": "src/app/admin/clients/[id]/ProfileTab.tsx:41-45",
+     "severity": "medium",
+     "kind": "data_mismatch",
+     "fix_hint": "Add profile_visibility_mode to SELECT and render with PROFILE_VISIBILITY_MODE labels; also show district_visible_public alongside."
+    },
+    {
+     "gap_id": "PD-13",
+     "title": "quiz Big Five vector absent: quiz_results.vector never read by admin card",
+     "detail": "The V4 quiz (Big Five) result is stored in quiz_results.vector (jsonb) — table defined at supabase/migrations/20260531000000_init_schema.sql:141-145. No admin file queries quiz_results (grep of src/app/admin + src/lib/admin finds zero references), so the psychometric vector that matching relies on is completely invisible in the client card. There is also no dedicated tab for it (ClientTabs lists only identity/profile/photos/activity/moderation — ClientTabs.tsx:5-9).",
+     "code_location": "src/app/admin/clients/[id]/page.tsx:71-75",
+     "severity": "high",
+     "kind": "data_mismatch",
+     "fix_hint": "Load quiz_results.vector for the user and render the Big Five factors (e.g. in ProfileTab or a new 'Quiz' section); optionally show completed_at."
+    },
+    {
+     "gap_id": "PD-14",
+     "title": "self-reported gender/birth_date/citizenship shown only from passport, not from profile",
+     "detail": "The Hero and IdentityTab present gender, birth_date/age, and citizenship, but these come from the passport table user_identity (load-client.ts:71, IdentityTab.tsx:59-65, ClientHero.tsx:11/94), NOT from the profile's self-reported user_profiles values. ProfileTab does show profile gender (ProfileTab.tsx:115) but not the profile's birth_date. When a user has no verified identity row, the profile's own gender/birth_date/citizenship are the only source and are largely not surfaced — the card silently relies on passport data instead of the anketa answers.",
+     "code_location": "src/lib/admin/load-client.ts:60-64",
+     "severity": "low",
+     "kind": "data_mismatch",
+     "fix_hint": "When rendering the profile, source gender/birth_date/citizenship from user_profiles (not only user_identity) so unverified users' self-reported values are visible, and flag divergences between profile and passport."
+    }
+   ]
+  },
+  {
+   "area": "verification_flow",
+   "gaps": [
+    {
+     "gap_id": "VF-1",
+     "title": "needs_changes re-submit (fix route) reaches pending_review but creates NO verification_case → counted on dashboard, invisible/unopenable in queue",
+     "detail": "admin_reject_verification with outcome='needs_changes' CLOSES the case (verification_cases.state='closed') and sets users.verification_status='needs_changes' (20260627100400_admin_case_rpcs.sql:286-298). The user then re-submits via /api/onboarding/fix, which transitions verification_status back to 'pending_review' (fix/route.ts:58-63) but performs NO verification_cases insert — unlike selfie/route.ts:73-85 which has the idempotent case-creation block. Result: the user is now counted by the dashboard 'Заявки на проверке' card (admin/page.tsx:29-31 counts users.verification_status='pending_review') but has ZERO open cases. loadMyQueue (load-queue.ts:90-99, state<>'closed') and loadUnassignedQueue (load-queue.ts:102-112, state='new') both read verification_cases, so the user appears in NEITHER queue and there is no /admin/cases/[id] row to open. Operator sees 'нужно верифицировать' (count > 0, accent border) but the queue is empty and the user is permanently stuck in pending_review with no way for a moderator to action them. This is the primary live bug and it triggers on the completely normal needs_changes → re-upload cycle.",
+     "code_location": "src/app/api/onboarding/fix/route.ts:58",
+     "severity": "critical",
+     "kind": "bug",
+     "fix_hint": "Enforce the invariant verification_status='pending_review' ⟺ exactly one open verification_case (state<>'closed'). Preferred single-source fix: an AFTER INSERT OR UPDATE trigger on users WHEN new.verification_status='pending_review' that inserts a state='new' case if none open exists — atomic and covers every path (transition_user writes users.verification_status via a plain UPDATE, and admin_unblock_verification does a direct UPDATE, so a table trigger catches all of them). App-level alternative: extract the selfie/route.ts:73-85 idempotent block into ensureOpenVerificationCase(userId) and call it from fix/route.ts and the unblock RPC — but note this is the same scattered pattern that produced the bug."
+    },
+    {
+     "gap_id": "VF-2",
+     "title": "Superadmin unblock-verification RPC returns user to pending_review but creates NO verification_case",
+     "detail": "The current admin_unblock_verification (latest def: 20260620920000_split_window_and_jti_fixes.sql:100-149, 3-arg signature matching the route call at unblock-verification/route.ts:38-42) sets users.verification_status='pending_review' and onboarding_step='moderation_pending' (lines 145-149) but does NOT insert a verification_case. After a superadmin revokes a blocking-reject, the user is counted by the dashboard but again has no open case → invisible/unopenable in the new queue/case studio. Same divergence class as VF-1, on the incident-response/misclick path. (Note: the route.ts comment references a legacy 4-arg p_phone_hash version, but the highest-timestamp migration redefines it to the 3-arg form the route actually calls, so this path is live, not latent behind a signature error.)",
+     "code_location": "src/app/api/admin/users/[id]/unblock-verification/route.ts:38",
+     "severity": "high",
+     "kind": "bug",
+     "fix_hint": "Covered automatically by the AFTER UPDATE trigger on users in the VF-1 fix (the RPC's UPDATE users SET verification_status='pending_review' would fire it). If choosing the app-level approach instead, add an ensureOpenVerificationCase(userId) insert inside the admin_unblock_verification RPC after the users UPDATE."
+    },
+    {
+     "gap_id": "VF-3",
+     "title": "Dashboard counter and queue use different sources of truth (users.verification_status vs verification_cases)",
+     "detail": "The 'Заявки на проверке' StatCard counts users where verification_status='pending_review' (admin/page.tsx:29-31, no lifecycle filter, links to /admin/queue/mine) while the destination queue lists open verification_cases only (load-queue.ts:95 state<>'closed' for mine; load-queue.ts:108 state='new' for unassigned). These two populations only coincide when the pending_review⟺open-case invariant holds — which VF-1/VF-2 break. Even structurally the counter can never equal the visible queue: a case in state assigned/in_review/data_entry/ready_to_decide with no assignee-match will not show in loadMyQueue for a given admin, and only state='new' shows in unassigned. The counter is a per-user count; the queue is a per-case, per-assignee view. Any non-zero mismatch presents to the operator as phantom work.",
+     "code_location": "src/app/admin/page.tsx:29",
+     "severity": "high",
+     "kind": "data_mismatch",
+     "fix_hint": "After enforcing the invariant, make the dashboard count read the same source as the queue: count verification_cases where state<>'closed' (matching loadMyQueue's predicate), not users.verification_status. This keeps the headline number consistent with what's actually openable. Counting only state='new' would undercount claimed-but-open cases."
+    },
+    {
+     "gap_id": "VF-4",
+     "title": "Guard predicate (pending_review AND lifecycle_state='onboarding') is a third, stricter definition of 'in queue' — and the new case studio bypasses it entirely",
+     "detail": "checkInQueueOrSuperPage / requireInQueueOrSuper define 'in the moderation queue' as verification_status='pending_review' AND lifecycle_state='onboarding' (guard.ts:328 and guard.ts:370) — stricter than both the counter (VF-3) and the case-based queue. This is a fourth divergent predicate on the counter/queue/guard/case-existence axis. Compounding it: the primary new flow /admin/cases/[id] (cases/[id]/page.tsx:16-19) calls only requireAdmin() and scopes access by case assignee_id inside CaseStudio (CaseStudio.tsx:90) — it NEVER calls checkInQueueOrSuperPage. So a moderator's data-scope for the main verification flow is governed by case assignment, while the guard's stricter user-column predicate only governs the legacy /admin/verifications and /admin/users pages. The two scoping models can disagree (e.g. a user in pending_review with lifecycle_state != 'onboarding' would pass case-based access but be hidden by the guard), and the guard predicate can diverge from case existence in either direction.",
+     "code_location": "src/lib/admin/guard.ts:328",
+     "severity": "medium",
+     "kind": "design",
+     "fix_hint": "Pick one source of truth for 'is this user actionable by a moderator' and reuse it in the guard. Once cases are the source of truth (VF-1), express in-scope as 'user has an open verification_case assigned to this admin (or unassigned+new)', so the guard's legacy-page check matches the case studio's assignment-based access rather than re-deriving from user columns."
+    },
+    {
+     "gap_id": "VF-5",
+     "title": "Only two code paths ever create a verification_case; every other path into pending_review depends on a pre-existing open case",
+     "detail": "Enumerated case-creation sites: (1) one-time backfill in 20260627100100_verification_cases.sql:85-92 (only for users already pending_review at migration time, idempotent via NOT EXISTS open case); (2) selfie/route.ts:80-84 (idempotent guard on any non-closed case for the user). No DB trigger auto-creates cases (confirmed: no 'insert into verification_cases' anywhere in migrations except the backfill; user_identity only references the table via FK). Paths that set verification_status='pending_review' WITHOUT creating a case: fix/route.ts:58 (VF-1) and admin_unblock_verification (VF-2). Additionally, selfie/route.ts's idempotency guard (neq state 'closed') means a re-submission after needs_changes finds the prior case ALREADY closed, so even the selfie path would fail to create a fresh case on that cycle — but needs_changes re-entry goes through fix/route.ts (per state machine types.ts:108 needs_changes→moderation_pending / doc_upload / selfie_upload), not selfie/route.ts, so the missing-case gap lands squarely on fix. This inventory shows the invariant is maintained by scattered ad-hoc inserts rather than a single enforced rule.",
+     "code_location": "src/app/api/onboarding/selfie/route.ts:80",
+     "severity": "medium",
+     "kind": "spec_gap",
+     "fix_hint": "Consolidate case creation into one enforced mechanism (the AFTER UPDATE trigger from VF-1). Removing the responsibility from selfie/route.ts and fix/route.ts and centralizing it in the DB guarantees no future pending_review path can regress the invariant."
+    }
+   ]
+  },
+  {
+   "area": "operator_actions",
+   "gaps": [
+    {
+     "gap_id": "OA-1",
+     "title": "No hard-DELETE operator action for test/spam accounts (only soft erase_user exists)",
+     "detail": "There is no admin route or RPC to hard-remove a user across all tables. Confirmed by grep: no admin delete/reset/hard_delete route in src/app/api/admin/ and no reset/purge/hard_delete RPC in supabase/migrations/. The only deletion path is the SOFT, GDPR/erasure-oriented erase_user RPC (supabase/migrations/20260620920000_split_window_and_jti_fixes.sql:35), invoked ONLY by the USER-facing endpoint /api/account?action=delete (src/app/api/account/route.ts:87). erase_user is wrong for a test/spam hard-delete for three reasons: (1) it KEEPS the users row as a tombstone (sets deleted_at + lifecycle_state='deleted', nulls telegram_id/phone) rather than removing it (lines 77-87); (2) it INSERTS document_sha_blacklist rows for passport/selfie SHAs (lines 42-52) and the /api/account caller also inserts a 90-day phone_blacklist tombstone (route.ts:64-73) — poisoning the anti-catfish blacklist with junk test SHAs/phones, which is actively harmful for a throwaway account; (3) it does NOT touch several child tables that reference users. A true hard delete via `DELETE FROM users WHERE id=$1` is SAFE and cascades cleanly: I grepped every migration for FKs to users(id) and ALL child tables are `on delete cascade` (consents, user_documents, user_profiles, profile_photos, otp_codes, quiz_answers, quiz_results, match_requests, match_views, chats, chat_messages, daily_request_quotas, user_state_transitions, reports, blocks — init_schema.sql:56-256; tg_outbox 20260625000000:36; start_token_uses 20260620920000:198; user_identity 20260627100200:10; verification_cases+case_events+case_notes 20260627100100:24,42,63). The ONLY non-cascade FKs are document_sha_blacklist.source_user_id and phone_blacklist.linked_user_id, both `on delete set null` (20260620300000:28, 20260620500000:15) — so a raw DELETE will NOT fail on any restrict/no-action FK, and correctly leaves anti-abuse tombstones intact if any exist. NOTE case_events/case_notes have an append-only BEFORE UPDATE OR DELETE trigger (20260627100100:52-58) that raises on direct delete, but the FK cascade from verification_cases bypasses row-level triggers only if... actually the trigger fires on cascade deletes too, so the delete must remove verification_cases rows in a way the trigger allows OR the cascade will raise — this must be validated (drop case_events rows are protected). admin_audit_log.entity_id is plain text, not an FK (init_schema.sql:225-240), so the audit record survives the row deletion.",
+     "code_location": "src/app/api/account/route.ts:45",
+     "severity": "high",
+     "kind": "missing_action",
+     "fix_hint": "Add POST /api/admin/users/[id]/delete (new route.ts) following the ban/unban superadmin pattern. Gate superadmin-only exactly like unban/route.ts:16-17 (session.role!=='superadmin' -> 403). Require a typed confirmation body (e.g. {confirm:'DELETE', reason} with reason.length>=3) plus expected_updated_at optimistic-concurrency guard (as decision/route.ts:29). Implement a dedicated admin_hard_delete_user(p_user_id, p_admin_id) PL/pgSQL RPC (security invoker, single transaction) that: collects profile_photos.path + docs-bucket paths BEFORE deletion (mirror account/route.ts:75-99 storage cleanup), deletes verification_cases rows for the user FIRST (so case_events/case_notes cascade before the append-only DELETE trigger blocks — validate this trigger interaction; may need to temporarily use a SECURITY DEFINER function or session_replication_role), then `DELETE FROM users WHERE id=p_user_id` letting all cascade FKs fire. Do NOT insert document_sha_blacklist or phone_blacklist tombstones (unlike erase_user/account.delete) — this is a throwaway account. Storage removal is best-effort post-transaction (BUCKET_PHOTOS/BUCKET_DOCUMENTS, see account/route.ts:6,96-99). Write adminAudit({action:'hard_delete_user', entity:'user', entityId:id, reason, ip:trustedIp(req)}) — guard.ts:40 — BEFORE the row disappears (entity_id survives as text). Confirmation dialog in UI via Dialog + danger styling (DecisionPanel.tsx pattern)."
+    },
+    {
+     "gap_id": "OA-2",
+     "title": "No RESTART-onboarding operator action (reset user to redo onboarding from scratch)",
+     "detail": "There is no route or RPC to reset a user so they re-run onboarding. Requested reset per the onboarding_step enum (init_schema.sql:7): onboarding_step='language', verification_status='not_started', profile_completion='not_started', quiz_completion='not_started', lifecycle_state='onboarding'; wipe user_profiles, profile_photos, quiz_answers, quiz_results, user_documents, user_identity, verification_cases (+cascading case_events/case_notes); KEEP the users row + telegram_id (identity anchor) so the same TG account resumes. Two correctness traps confirmed against code: (1) This CANNOT be implemented with the existing tryTransition/transition helper. transition() (src/lib/state-machine/transitions.ts:59-66) validates onboarding_step against ALLOWED_TRANSITIONS, which is a FORWARD-only graph (types-v3.test.ts asserts profile_basic->profile_appearance->... forward edges only). Sending onboarding_step backward from 'active'/'profile_*' to 'language' will throw TransitionError -> tryTransition returns {ok:false,error:'wrong_step'} (transitions.ts:99). So a backward reset needs a dedicated RPC that bypasses the forward-only guard, not tryTransition. (2) The reset must NOT insert document_sha_blacklist/phone_blacklist tombstones — if it reuses erase_user or blocking-reject logic, the user's own passport/phone SHA lands on the blacklist and they can't re-verify with their own document during the redo (the onboarding document upload path already checks these tombstones — see src/app/api/onboarding/document/route.ts:25 comment on SHA-tombstone from blocking-reject/erase_user). (3) consents (init_schema.sql:54, stores ip/user_agent/accepted_at as legal records) — wiping them forces re-consent but destroys the prior legal record; KEEP-vs-WIPE is a policy decision to surface, not silently wipe. Spec distinction: chat7_admin.txt lists request_re_verification (a SOFTER redo-verification-only action) as a moderator capability — do NOT conflate it with full RESTART, which wipes profile+quiz+identity too.",
+     "code_location": "src/lib/state-machine/transitions.ts:59",
+     "severity": "medium",
+     "kind": "missing_action",
+     "fix_hint": "Add POST /api/admin/users/[id]/restart-onboarding, superadmin-only (unban/route.ts:16-17 pattern), with confirmation + reason + expected_updated_at guard. Back it with a dedicated admin_restart_onboarding(p_user_id, p_admin_id, p_wipe_consents boolean) PL/pgSQL RPC in a single transaction that: DELETEs verification_cases (cascades case_events/case_notes — mind the append-only trigger, 20260627100100:52), user_identity, user_documents, user_profiles, profile_photos, quiz_answers, quiz_results (optionally consents per p_wipe_consents); UPDATEs users SET onboarding_step='language', verification_status='not_started', profile_completion='not_started', quiz_completion='not_started', lifecycle_state='onboarding', sanction_level='none', paused_at/blocked_at/blocked_reason=null, keeping telegram_id and (decide) phone_verified; and INSERTs a user_state_transitions row (mirror erase_user's manual insert, 20260620920000:89-93) since it bypasses the transition helper. Do NOT write any *_blacklist tombstone. Best-effort storage cleanup for photo/doc buckets afterward (account/route.ts:95-99). adminAudit({action:'restart_onboarding', entity:'user', ...}) per guard.ts:40. Guard against restarting a 'blocked'/'pending_ban' user (return 409) so it can't be used to launder a ban."
+    },
+    {
+     "gap_id": "OA-3",
+     "title": "Client detail page has no user-level action UI surface — button placement is itself missing",
+     "detail": "Even the EXISTING user-level operator actions (ban/unban/unblock-verification) have NO UI: grep across src/ found zero client-side callers of /api/admin/users/[id]/ban|unban|unblock-verification (only case blocking-reject is wired, via DecisionPanel.tsx:57). ModerationTab.tsx (the natural home) is entirely read-only — it lists verification_cases and reports with no action buttons (src/app/admin/clients/[id]/ModerationTab.tsx, whole file). ClientHero.tsx renders only status pills + copy buttons, no actions. ClientTabs.tsx has tabs [identity, profile, photos, activity, moderation] with no danger-zone. So 'where the DELETE / RESTART buttons go' has no existing surface to attach to and must be built. Spec confirms these are legitimate superadmin single-account actions when confirmed+audited: chat7_admin.txt forbids only BULK delete (line 2617 'нельзя массово ... удалить аккаунты') and forbids LOWER roles from 'удалять аккаунт' (line 9058, Support cannot delete), has a 'Удалённые' user-status filter (line 2537), and section 2.2 requires audit-logging of 'удаление данных' (line 9864). There is NO explicit single-user 'delete account' or 'restart onboarding' action defined anywhere in chat7 — they are spec-CONSISTENT but not spec-SPECIFIED.",
+     "code_location": "src/app/admin/clients/[id]/ModerationTab.tsx:36",
+     "severity": "medium",
+     "kind": "missing_action",
+     "fix_hint": "Convert ModerationTab.tsx into (or add below it) a client-component 'Danger zone' section, or add the actions to ClientHero, following the DecisionPanel.tsx pattern: 'use client' + Button (@/components/admin-ops/Button) + Dialog (@/components/admin-ops/Dialog) for confirmation, fetch POST to the new endpoints, router.refresh() on success, inline error display (DecisionPanel.tsx:1-90). Gate the buttons' visibility on session.role==='superadmin' (page.tsx already has session.role available, passed to OpsShell at page.tsx:68). Require typed confirmation for DELETE (irreversible) mirroring the blocking-reject confirm dialog (DecisionPanel.tsx:283 '⛔ ... необратимо'). While here, also wire the already-existing ban/unban/unblock-verification endpoints into this same danger-zone, since they are currently API-only and unreachable from the UI."
+    }
+   ]
+  },
+  {
+   "area": "design_consistency",
+   "gaps": [
+    {
+     "gap_id": "D0",
+     "title": "How the two systems differ + options A (align shared primitives) vs B (adopt editorial) — decision, not a defect",
+     "detail": "The admin was intentionally built as a separate operator tool and IS visually coherent within itself; a full re-skin is a DECISION, not an assumed fix. Concrete differences across four axes:\n\nPALETTE — Admin: warm off-white surfaces (--admin-bg #fafaf8 / surface #ffffff / surface-2 #f4f3ef, globals.css:127-129) with a deep slate-blue accent (--admin-accent #2d4a5c, globals.css:138; admin-tokens.ts:17) used for primary buttons, active nav, tab underlines, stepper. Mini-app editorial: paper off-white (--color-v2-paper #faf6f1, globals.css:33) but its PRIMARY CTA is near-black ink #0a0908 on paper (v2/Button.tsx:41-43, --color-v2-ink-100 globals.css:36), NOT an accent color. The nominal v2 accent is amethyst #4a2c5a (globals.css:43) but it is barely used as a primary surface; coral #e2526b is V1 legacy still live only in WelcomeBranded.tsx (globals.css:8, WelcomeBranded.tsx:167). Net contrast: admin = slate-blue-on-warm-neutral; mini-app = near-black-ink-on-paper. (The brief's 'coral accent' is V1 legacy, not the current editorial primary.)\n\nTYPE — Admin: Inter sans everywhere, 13px base, no serif by design; JetBrains Mono for PINFL/passport (globals.css:147-149,161). Mini-app: editorial serif headlines are the hero visual (--font-v2-display Druk/Kazimir, Headline.tsx:38, globals.css:99-109) over Inter body; larger scale (44/32/24px, Headline.tsx:19-24) vs admin's 11-15px. NOTE both systems name webfonts that are never actually loaded (see D6).\n\nDENSITY — Admin: compact, table-driven, 36px rows (globals.css:151), 28-32px buttons (Button.tsx:53), tight 8-12px cell padding (ClientsTable.tsx). Mini-app: 'one object per screen', max-width 420px, generous 24-32px padding, centered (MiniAppShell.tsx:44-51), 16px full-width buttons (v2/Button.tsx:30-32).\n\nCOMPONENTS — the two systems DUPLICATE rather than SHARE primitives: two separate Button implementations (admin-ops/Button.tsx vs v2/Button.tsx) with different variants/sizes; two token delivery mechanisms — admin uses a TS object (ADMIN.* from admin-tokens.ts, consumed as inline JS) while v2 uses CSS custom properties (var(--color-v2-*)). There is no shared primitive layer.\n\nOPTIONS:\n(A) Keep the ops-tool identity (Linear/Salesforce vibe, per the 2026-06-27 design decision at globals.css:119-125) but polish: fix the token/inconsistency items D1-D6 below, and reconcile the two parallel token systems (unify delivery so admin-tokens.ts mirrors CSS vars rather than diverging). Lower effort, preserves intentional separation.\n(B) Adopt the editorial look in admin (serif headlines, paper palette, amethyst/ink accent, low density). High effort, works against the deliberate operator-tool ergonomics (dense tables want sans + tight rows), and would fight the existing 'no serifs in data tables' principle (globals.css:124). Recommend NOT doing B wholesale; if any editorial borrowing is wanted, limit it to the login/dashboard chrome, not data screens.\n\nThis entry is the palette/type/density/component comparison and the A/B enumeration; it is a decision to raise with the founder, not a bug.",
+     "code_location": "src/app/globals.css:119-171",
+     "severity": "low",
+     "kind": "design"
+    },
+    {
+     "gap_id": "D1",
+     "title": "Editorial serif leaks into the admin logo — cross-DNA bleed against the 'no serifs' ops decision",
+     "detail": "OpsSidebar renders the 'Baxtlilar Ops' wordmark with fontFamily: 'var(--font-v2-display)' — the mini-app's editorial display serif (Druk/Kazimir/Georgia) — inside a tool whose design decision explicitly states 'никаких серифов' / no serifs (globals.css:124). This is the single clearest place where the two design DNAs collide: an editorial serif logo sitting atop an otherwise all-Inter operator sidebar. It also couples the admin bundle to a v2 token. If the ops identity is kept (option A), this should be Inter (or a deliberately-chosen ops wordmark font), not the editorial serif.",
+     "code_location": "src/components/admin-ops/OpsSidebar.tsx:94",
+     "severity": "medium",
+     "kind": "design"
+    },
+    {
+     "gap_id": "D2",
+     "title": "Border-radii are hardcoded and inconsistent; the --admin-radius tokens are never consumed",
+     "detail": "globals.css:155-156 defines --admin-radius:6px and --admin-radius-lg:8px, and admin-tokens.ts is meant to mirror the token system, but NO component reads them — every radius is a raw literal. Values are inconsistent even for the same class of surface: cards/tables/dialogs/drawers use 8 (ClientsTable.tsx:43, Dialog.tsx:59, PhotosTable.tsx:47, DecisionPanel.tsx:120), buttons/search/topbar use 6 (Button.tsx:66, SearchBar.tsx:48, OpsTopBar.tsx:32), pills/inputs/textareas use 4 (StatusPill.tsx:39, ReasonPicker.tsx:24,51, DecisionPanel.tsx:350), and the login card uses 10 (login/page.tsx:65) — a one-off that matches nothing else. The 10px login card next to 8px dialogs reads as unfinished. Fix: route all radii through --admin-radius/--admin-radius-lg (add a card token if 8 is intended) and drop the 10px outlier.",
+     "code_location": "src/app/admin/login/page.tsx:65",
+     "severity": "medium",
+     "kind": "design"
+    },
+    {
+     "gap_id": "D3",
+     "title": "Density modes are advertised in tokens/comment but not implemented — no consumer, no data-density switch",
+     "detail": "globals.css:151-153 defines three row-height tokens (--admin-row-h 36px, --admin-row-h-cosy 28px, --admin-row-h-comfortable 44px) and the block comment at globals.css:123 sells 'density modes' as a feature of the ops tool. Grep shows zero consumers: no component reads any --admin-row-h token, tables hardcode padding (ClientsTable.tsx:66,97 etc.), and there is no data-density attribute or density toggle anywhere. This is a half-built feature — either wire the density switch (OpsShell could set data-density and tables read the row-h var) or remove the unused tokens and the 'density modes' claim from the comment so the token file reflects reality.",
+     "code_location": "src/app/globals.css:151-153",
+     "severity": "low",
+     "kind": "design"
+    },
+    {
+     "gap_id": "D4",
+     "title": "Dead admin tokens: borderStrong and the .pinfl/.passport-num/.mono utility classes are never used",
+     "detail": "--admin-border-strong (#c9c5bb, globals.css:130; borderStrong in admin-tokens.ts:10) is defined but never referenced — all borders use the lighter --admin-border. The mono utility classes .pinfl/.passport-num/.mono (globals.css:165-171) are also unused: components instead inline fontFamily: ADMIN.fontMono directly (CaseHeader.tsx:48, ClientsTable.tsx:109,138, DecisionPanel.tsx:148). This is drift between the declared token/utility surface and actual usage; prune the dead tokens/classes or adopt them, so the system is a source of truth rather than aspirational.",
+     "code_location": "src/app/globals.css:165-171",
+     "severity": "low",
+     "kind": "design"
+    },
+    {
+     "gap_id": "D5",
+     "title": "Admin body paints a third neutral (Tailwind slate) that neither token system uses — latent but inconsistent",
+     "detail": "The admin root layout body is bg-slate-100 text-slate-800 (cool Tailwind slate), which is a THIRD neutral palette distinct from both the admin token bg (--admin-bg #fafaf8 warm off-white) and v2 paper (#faf6f1). In practice this is mostly LATENT: OpsShell sets data-ops='true' which repaints to --admin-bg (globals.css:158), and the login page paints ADMIN.bg over its <main> (login/page.tsx:52), so the slate only shows during cold paint / on any admin surface not wrapped by those. Still, it's a stray cool-gray that contradicts the warm-neutral ops palette and should be set to --admin-bg (or the admin token) at the body level to avoid a cold flash and keep one source of truth.",
+     "code_location": "src/app/admin/layout.tsx:14",
+     "severity": "low",
+     "kind": "design"
+    },
+    {
+     "gap_id": "D6",
+     "title": "Named webfonts are not loaded in either system — tokens promise fonts that fall back to system/serif defaults",
+     "detail": "Neither design system actually loads the fonts its tokens name. Admin: app/admin/layout.tsx loads no font and sets no font className, so --admin-font-sans 'Inter' and --admin-font-mono 'JetBrains Mono' (globals.css:147-149) fall back to system sans / -apple-system and Menlo. Mini-app: the root at app/[locale]/layout.tsx:11-12 loads Geist + Geist_Mono via next/font (as --font-geist-sans/--font-geist-mono), but the v2 tokens reference 'Inter' (--font-v2-body) and 'JetBrains Mono' (--font-v2-mono, globals.css:57-60) — which are never loaded, so v2 body/mono also fall back rather than rendering the named fonts. Most consequential: the editorial DISPLAY serif (Druk Cyrillic / Kazimir), the concept's hero visual, is marked 'будет лицензировано' / to-be-licensed (globals.css:53-55) and has no @font-face — so every v2 headline currently renders in Georgia/Times, not the intended serif. Effect on this comparison: the type contrast the brief describes is partly aspirational today; both admin and mini-app render in fallback faces. Decide per-system: either load the named fonts (next/font or @font-face) or update the tokens to the fonts actually shipped (e.g. Geist for the mini-app).",
+     "code_location": "src/app/globals.css:53-60",
+     "severity": "low",
+     "kind": "design"
+    }
+   ]
+  },
+  {
+   "area": "spec_coverage",
+   "gaps": [
+    {
+     "gap_id": "SG-01-rbac-roles",
+     "title": "RBAC reduced to 2 hardcoded roles vs spec's role matrix (Identity/Photo/Profile/Safety/Support/Finance/Analyst + custom)",
+     "detail": "not_yet_built. Spec Screen 21 (l.15009+) and the RBAC section (l.1789) require a StaffRole/Permission matrix with distinct roles: Super Admin, Admin, Moderator, Photo Moderator, Identity Manager, Support, Safety Manager, Finance, Analyst, International/Individual Manager (spec cites 18 roles, systemic + custom + read-only). Built system has ONLY two roles hardcoded at the DB check constraint: role in ('superadmin','moderator') (admin_users, 20260531000000_init_schema.sql:221) and mirrored in the type union (src/lib/admin/session.ts:10, src/lib/admin/guard.ts:11). All gating is a binary superOnly flag (src/components/admin-ops/OpsSidebar.tsx:38-51) or session.role !== 'superadmin' checks (e.g. src/app/admin/reports/page.tsx:65, decision route:22). There is no per-permission model, no separate document-view / download / sensitive-access permissions the spec repeatedly mandates (Screen 5 l.4408 'view_identity_document', 'download_identity_document'; Screen 10 l.7293 'open_chat_for_complaint_review'). Operationally this means the platform cannot restrict, e.g., a Photo Moderator from seeing passport PII, or a Support agent from acting on complaints — the spec's core 'minimally necessary privilege' promise (l.136, l.15037) is unenforceable with 2 roles.",
+     "code_location": "supabase/migrations/20260531000000_init_schema.sql:221",
+     "severity": "high",
+     "kind": "spec_gap",
+     "fix_hint": "Introduce staff_roles + permissions tables and a role-permission matrix; replace the 2-value role check with a permission-based guard. Minimum operational subset: Identity Manager, Photo Moderator, Safety Manager, Support, Finance, Analyst, Admin, Super Admin. Gate document view/download and complaint-chat access behind discrete permissions with requires_reason + audit."
+    },
+    {
+     "gap_id": "SG-02-staff-management",
+     "title": "No Staff & Roles management screen (add/invite/change-role/block staff, invitations, last-activity)",
+     "detail": "not_yet_built. Spec Screen 21 (l.15009-16005) requires a full staff-management module: list all admins with status/role/department/last_activity/has_2fa, add/invite staff (invite_staff_member), resend invitation, change_role (requires reason+comment+confirmation+audit; extra confirmation for Super Admin), change_department, grant/revoke sensitive access, block/unblock staff with session termination, reset password, require 2FA, staff audit log, export. None of this exists: there is no /admin/staff or /admin/employees page (src/app/admin/* contains only analytics, audit, cases, clients, login, photos, queue, reports, users, verifications) and no staff API routes (src/app/api/admin/* has no staff/roles endpoints). admin_users has no status, department, last_activity, or invitation columns (20260531000000_init_schema.sql:218-224). Admins today can only be created by direct DB insert. Operationally: no way to onboard/offboard a moderator, revoke a departed employee's access, or audit who has sensitive access.",
+     "code_location": "supabase/migrations/20260531000000_init_schema.sql:218",
+     "severity": "high",
+     "kind": "spec_gap",
+     "fix_hint": "Build /admin/staff screen + StaffMember/StaffInvitation entities and CRUD API; add status (active/inactive/blocked/invited), last_activity_at, department, invite flow, and session-termination on block. Enforce change-role guardrails (reason/comment/confirm/audit) per spec l.15900."
+    },
+    {
+     "gap_id": "SG-03-2fa",
+     "title": "No 2FA / SSO for staff — password-only login",
+     "detail": "not_yet_built. Spec repeatedly mandates 2FA for staff: Screen 22 security KPI 'есть ли сотрудники без 2FA' (l.16xxx), Screen 21 filter has_2fa + requires_2fa on invite and sensitive-access (l.15900+ conditions require_2fa:true), enterprise-checklist l.1812 '2FA / SSO для сотрудников', l.2024, audit action admin_staff_2fa_requested. Built login is single-factor password only: src/app/api/admin/login/route.ts verifies password (line 35) then immediately setAdminSession (line 61) with no second factor. admin_users has no 2fa_secret / totp columns (20260531000000_init_schema.sql:218-224). Session is an 8h HMAC cookie (src/lib/admin/session.ts:8) with no step-up. Operationally: a leaked admin password fully compromises the moderation console, including passport PII and ban powers.",
+     "code_location": "src/app/api/admin/login/route.ts:61",
+     "severity": "high",
+     "kind": "spec_gap",
+     "fix_hint": "Add TOTP 2FA: store per-admin secret, enforce a verify step between password check and setAdminSession, and expose a 'без 2FA' security indicator. Make 2FA mandatory for roles with sensitive access."
+    },
+    {
+     "gap_id": "SG-04-sla-dashboard",
+     "title": "Dashboard has no SLA / queue-capacity / 'Требуют внимания' work table",
+     "detail": "not_yet_built (partial infra only). Spec Screen 1 (l.2107-2445) requires the dashboard to surface SLA breaches and queue load: KPIs incl. critical_complaints, moderation_queues with current/capacity, trust_status (verified share, average_moderation_time, matching_enabled), a gender_balance imbalance signal, and a 'Требуют внимания' table with per-case created_at/assigned_at/due_at/priority/sla_status/responsible_employee, with overdue rows visually flagged (l.2278, l.2433). Built dashboard (src/app/admin/page.tsx:59-103) shows only flat counts (pending review, photos, open reports, population, demographics) as StatCards — no SLA, no due_at, no priority, no capacity, no 'requires attention' queue, no average moderation time. SLA infra is minimal: only a 7-day stale-case reclaim RPC exists (supabase/migrations/20260630010000_verification_case_sla.sql:12) invoked from cron; there is no per-case due_at/priority column or SLA status computed anywhere. Operationally the team cannot see which cases/complaints are overdue — the spec's stated purpose 'не проспать пожар' (l.2278) is unmet.",
+     "code_location": "src/app/admin/page.tsx:59",
+     "severity": "high",
+     "kind": "spec_gap",
+     "fix_hint": "Add due_at + priority + assigned_at to verification_cases and reports; compute sla_status; build a 'Требуют внимания' table on the dashboard with overdue highlighting and queue current/capacity gauges; surface average_moderation_time and verified-share trust KPIs."
+    },
+    {
+     "gap_id": "SG-05-complaint-handling",
+     "title": "Complaint handling missing spec actions: no assignment, priority, evidence, related-chat, restriction, escalate-to-legal, notes; no complaint detail card",
+     "detail": "broken/incomplete vs spec. Spec Screen 9-10 (l.6284, l.6926-7360) require a complaint detail card with participants, description, evidence list (safety_only), related_chat (permission+reason gated), priority/category, assigned_to, and 8 actions: assign_moderator, send_to_safety, request_clarification, apply_restriction, block_user, close_complaint, escalate_to_legal, add_moderator_note (l.7293). Built reports handling is a flat superadmin-only list (src/app/admin/reports/page.tsx) with an inline ReportActions component exposing only 3 status transitions — in_progress/action_taken/not_confirmed (src/components/admin/report-actions.tsx:12-15); the decision route (src/app/api/admin/reports/[id]/decision/route.ts:10) allows in_progress/action_taken/not_confirmed/escalated/closed status only — no assignment, no evidence viewing, no related-chat access, no restriction application, no legal escalation, no moderator notes. The reports table itself lacks priority, assigned_to, category, and evidence columns (20260531000000_init_schema.sql:241-251). There is no per-complaint detail route (/admin/reports/[id] does not exist). Operationally the safety team cannot triage by priority, assign owners, review evidence, or escalate.",
+     "code_location": "src/app/api/admin/reports/[id]/decision/route.ts:10",
+     "severity": "high",
+     "kind": "spec_gap",
+     "fix_hint": "Add priority/category/assigned_to/evidence to reports; build /admin/reports/[id] detail card; implement assign, request-clarification, apply-restriction, escalate-to-legal, add-note actions with permission+reason+audit; gate evidence and related-chat behind Safety permissions."
+    },
+    {
+     "gap_id": "SG-06-blocks-restrictions",
+     "title": "No Blocks & Restrictions screen; ban/unban API exists but is not wired into any UI",
+     "detail": "broken. Spec Screen 11 (l.7441) requires a Blocks-and-restrictions module (apply/lift restrictions and bans, limits, with reasons and audit). In the built app the F-119 two-person ban dispatcher exists server-side (src/lib/admin/guard.ts:135 dispatchBanAction; routes src/app/api/admin/users/[id]/ban/route.ts and /unban) but NO admin UI calls it: a grep for ban/unban fetch across src/app and src/components finds only unblock-verification wired. The old UserActions ban button was removed and /admin/users now just redirects to /admin/clients (src/app/admin/users/page.tsx:11-16, with the comment 'полноценный F-119-бан в карточке клиента = Sprint 3'). ClientHero has no ban/restrict action (only a copy button, src/app/admin/clients/[id]/ClientHero.tsx:140) and ModerationTab is read-only. There is no general 'restriction/limit' concept beyond permanent verification blocking-reject. Operationally, outside the verification blocking-reject path, an admin cannot ban or restrict an existing active user from the console at all.",
+     "code_location": "src/app/admin/users/page.tsx:11",
+     "severity": "critical",
+     "kind": "spec_gap",
+     "fix_hint": "Wire the existing F-119 ban dispatcher into the client card (propose/confirm/cancel UI for superadmin) and add a restrictions concept (temporary limits) with a Blocks screen listing active bans/restrictions, reasons, and audit."
+    },
+    {
+     "gap_id": "SG-07-profile-content-moderation",
+     "title": "No profile-content moderation queue/flow (Screen 6/7): profile text is not gated by admin approval before publish",
+     "detail": "not_yet_built. Spec Screen 6 'Анкеты на модерации' (l.4553) and Screen 7 'Проверка анкеты' (l.5056) require a profile-content moderation queue with statuses (new/on-review/needs-changes/approved/rejected) so a profile does NOT enter Matching automatically ('Анкета не должна попадать в Matching автоматически', l.4571); Settings Screen 22 has a mandatory 'Модерация новых анкет — Требовать модерацию перед публикацией' toggle (l.16xxx). Built app has only identity verification (case studio) — there is NO profile-text moderation queue and no admin action to approve/reject/needs-changes profile content. ProfileTab (src/app/admin/clients/[id]/ProfileTab.tsx) is strictly read-only (no Button/onClick/fetch/approve/reject; only displays status/published_at at line 42,80). The sidebar has no 'Анкеты' section (src/components/admin-ops/OpsShell/OpsSidebar.tsx GROUPS). Operationally, the 'проверенные анкеты' promise for profile CONTENT (bio, goals, sensitive blocks) is not enforced by the admin — only identity is.",
+     "code_location": "src/app/admin/clients/[id]/ProfileTab.tsx:80",
+     "severity": "high",
+     "kind": "spec_gap",
+     "fix_hint": "Add a profile_moderation status/queue; build a /admin/profiles review screen (or a moderation action in ProfileTab) with approve/needs-changes/reject and reason templates; gate profile publish→Matching on approval per Settings toggle."
+    },
+    {
+     "gap_id": "SG-08-facematch-no-similarity",
+     "title": "Face-match step is a manual 3-checkbox attestation only — no similarity score / comparison field required by spec",
+     "detail": "deviation (partial). Spec Screen 5 (l.4408) specifies a face_comparison payload with document_photo_url, selfie_photo_url, similarity_score (e.g. 98), result (high_similarity) and manual_review_required flag, plus a profile_comparison object comparing each document field against the profile value with match/mismatch status and overall_status. Built FaceMatchStep (src/components/admin-ops/case/FaceMatchStep.tsx) shows selfie + passport side-by-side with three manual checkboxes (face matches, liveness, age plausible) and no similarity score, no automated/assisted comparison, and no field-by-field document-vs-profile comparison table. This is a reasonable MVP substitution (manual attestation replaces automated scoring) but it is a documented deviation: there is no similarity_score stored/logged and no structured profile-comparison, so the spec's decision-support and later audit ('запуск сравнения фото') cannot be reconstructed.",
+     "code_location": "src/components/admin-ops/case/FaceMatchStep.tsx:17",
+     "severity": "medium",
+     "kind": "spec_gap",
+     "fix_hint": "Acceptable as MVP if intentional. To close: persist the moderator's face-match attestation (the 3 booleans) into case audit, and add a document-vs-profile field comparison view. If automated face-match is desired later, capture similarity_score + manual_review_required."
+    },
+    {
+     "gap_id": "SG-09-audit-coverage",
+     "title": "Audit log lacks sensitive-view events (document/selfie/PII viewed) that spec mandates; log is not immutable-verified",
+     "detail": "partial. Spec Screen 5 (l.4408) and Screen 10 (l.7293) require logging of read/view actions on sensitive data: identity_detailed_card_opened, identity_document_viewed (sensitive_data:true), selfie viewed, risk-factors viewed, complaint_detail_opened, evidence_opened, related_chat_opened — each with reason. Built adminAudit (src/lib/admin/guard.ts:39) is only called on WRITE actions (login, ban_*, verification decisions, photo/report decisions). Viewing a passport in the case studio or a client's Identity/PII tab records NO audit entry (loadCase/loadClient sign URLs with no audit write; src/lib/admin/load-case.ts, load-client.ts). The out-of-queue scope-violation path IS logged (guard.ts recordScopeViolation) but legitimate in-scope PII views are not. Also the built log table (admin_audit_log) is a plain insert table with no hash-chain/immutability guarantee. Operationally, forensics cannot answer 'who viewed this user's passport' for in-scope accesses — a compliance gap the spec explicitly calls out (Legal, l.7360).",
+     "code_location": "src/lib/admin/load-case.ts:35",
+     "severity": "medium",
+     "kind": "spec_gap",
+     "fix_hint": "Emit audit events on sensitive-data views (document/selfie/PII-tab open) with reason capture; consider a reason prompt before revealing PII. Optionally add append-only/hash-chained audit for tamper-evidence."
+    },
+    {
+     "gap_id": "SG-10-clients-search-masking-reason",
+     "title": "Clients directory shows full PII to superadmin without masking/reason gate spec requires",
+     "detail": "deviation. Spec Screen 2 (l.2446, l.2948) mandates that phone/Telegram/documents must be masked in list/directory views and revealed only with RBAC + reason + audit ('маскирование + RBAC + audit log'). Built clients directory is superadmin-only (OpsSidebar.tsx:44 superOnly), and the client card (src/app/admin/clients/[id]/page.tsx) gates moderators via checkInQueueOrSuperPage — but for a superadmin the full IdentityTab (ПИНФЛ, passport series/number, address; src/lib/admin/load-client.ts:70-107) and phone/Telegram render unmasked with no reason prompt and no view-audit. The reveal is coarse-grained (whole role) rather than the spec's per-field masking + reason + audit. This is defensible for a small superadmin set but deviates from the spec's data-minimization requirement and pairs with SG-09 (no view audit).",
+     "code_location": "src/app/admin/clients/[id]/IdentityTab.tsx:1",
+     "severity": "low",
+     "kind": "spec_gap",
+     "fix_hint": "Mask phone/Telegram/passport by default in list and card; require an explicit 'reveal' with reason that writes an audit entry, per Screen 2/5. Tie reveal to a discrete permission rather than the whole superadmin role."
+    },
+    {
+     "gap_id": "SG-11-ops-modules-missing",
+     "title": "Operational modules entirely absent: Tariffs/Payments, Family, Individual, International, Matching status, Interests/Chats, Compatibility test, Notifications, System Settings",
+     "detail": "not_yet_built. Spec defines 22 screens; the built admin implements ~ screens 1-11 partially (dashboard, verification/case studio, photos, reports list, clients directory/card, analytics, audit). Entirely missing with no page or API: Screen 12 Тарифы и платежи (l.8090), Screen 13 Family Add-on (l.8760), Screen 14 is Журнал (built), Screen 15 Matching status (l.10104), Screen 16 Интересы и чаты (l.10828), Screen 17 Individual подбор (l.11563), Screen 18 Международные пользователи (l.12320), Screen 19 Тест совместимости (l.13172), Screen 20 Уведомления (l.13956), Screen 22 Настройки системы (l.16006). Confirmed by grep: no international/family/individual/tariff/subscription/payment pages under src/app/admin. The dashboard even lacks the international-checks queue the spec calls a distinct queue (l.2245). These are large operational surfaces (e.g. International requires separate manual-review queue per l.2246; Settings holds the mandatory 'модерация новых анкет' and registration-mode toggles). Whether all are in-scope for MVP is a product call, but they are spec-required and currently unbuilt.",
+     "code_location": "src/components/admin-ops/OpsSidebar.tsx:28",
+     "severity": "medium",
+     "kind": "spec_gap",
+     "fix_hint": "Prioritize by operational need. Near-term: System Settings (registration mode + profile-moderation toggle), International review queue, and Notifications. Tariffs/Family/Individual/Matching-status can follow as those product features ship."
+    }
+   ]
+  }
+ ]
+}
