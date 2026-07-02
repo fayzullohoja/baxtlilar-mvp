@@ -99,23 +99,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "bad_start_param" }, { status: 401 });
   }
 
-  // H3 verdict-fix (single-use): claim_start_token returns true только если
-  // jti ранее не использован. Replay одного и того же токена в TTL=10мин
-  // отвергаем (защита от XSS-кражи token из window.location и многократного
-  // обмена на cookie).
-  const { data: claimed, error: claimErr } = await sb.rpc("claim_start_token", {
-    p_jti: v.jti,
-    p_user_id: row.id,
-    p_telegram_id: tgId,
-  });
-  if (claimErr) {
-    console.error("[bootstrap] claim_start_token RPC failed:", claimErr.message);
-    return NextResponse.json({ ok: false, error: "db" }, { status: 500 });
-  }
-  if (!claimed) {
-    return NextResponse.json({ ok: false, error: "token_replay" }, { status: 401 });
-  }
-
   // Гейт: пользователь должен быть ПОСЛЕ бот-flow.
   if (BOT_OR_LEGACY_STEPS.has(row.onboarding_step)) {
     return NextResponse.json({ ok: false, error: "register_required" }, { status: 403 });
@@ -127,6 +110,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // user мог пройти. (round-2 completeness flag.)
   if (row.lifecycle_state === "blocked" || row.lifecycle_state === "deleted") {
     return NextResponse.json({ ok: false, error: "account_blocked" }, { status: 403 });
+  }
+
+  // AUTH-2: single-use claim СЖИГАЕМ последним — только когда сессия реально
+  // будет выдана. Раньше claim шёл до gate'ов register_required/account_blocked,
+  // и валидный токен блокированного/mid-bot юзера сгорал на первой попытке →
+  // легитимный ретрай получал token_replay вместо правильной ошибки, а
+  // правильная ошибка становилась недостижимой (нужен ре-deeplink из бота).
+  // Signature-проверка (verifyStartToken) остаётся ранней; stateful claim — тут.
+  const { data: claimed, error: claimErr } = await sb.rpc("claim_start_token", {
+    p_jti: v.jti,
+    p_user_id: row.id,
+    p_telegram_id: tgId,
+  });
+  if (claimErr) {
+    console.error("[bootstrap] claim_start_token RPC failed:", claimErr.message);
+    return NextResponse.json({ ok: false, error: "db" }, { status: 500 });
+  }
+  if (!claimed) {
+    return NextResponse.json({ ok: false, error: "token_replay" }, { status: 401 });
   }
 
   // Тонкий метаобновлятор tg-полей (имя/username могло смениться).

@@ -19,6 +19,19 @@ export default async function Page({
   const c = await loadCase(id);
   if (!c) notFound();
 
+  // ADMIN-1: кейс-студия раскрывает паспорт/селфи (signed URLs). Модератор
+  // вправе открыть ТОЛЬКО свой кейс (assignee=me) или неназначенный (чтобы
+  // взять в работу). Чужой назначенный кейс → notFound. Superadmin — всегда.
+  // Без этого любой модератор читал документы любого юзера по прямой ссылке
+  // /admin/cases/<id>, минуя scope-модель очереди.
+  if (
+    session.role !== "superadmin" &&
+    c.assignee_id &&
+    c.assignee_id !== session.adminId
+  ) {
+    notFound();
+  }
+
   const [{ data: admin }, reasonTemplates] = await Promise.all([
     supabaseAdmin()
       .from("admin_users")
