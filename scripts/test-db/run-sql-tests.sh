@@ -46,7 +46,12 @@ for f in $(ls "$REPO"/supabase/migrations/*.sql | sort); do
     || { echo "  ✗ migration failed: $(basename "$f")"; psql "$DB" -v ON_ERROR_STOP=1 -qf "$f" 2>&1 | grep -i error | head -3; exit 1; }
 done
 
-if [ "$#" -gt 0 ]; then TESTS=("$@"); else mapfile -t TESTS < <(ls "$REPO"/supabase/tests/*.test.sql 2>/dev/null | sort); fi
+if [ "$#" -gt 0 ]; then
+  TESTS=("$@")
+else
+  TESTS=()
+  for t in "$REPO"/supabase/tests/*.test.sql; do [ -e "$t" ] && TESTS+=("$t"); done
+fi
 
 FAIL=0
 echo "▸ run ${#TESTS[@]} test(s)"

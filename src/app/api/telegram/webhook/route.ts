@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { env } from "@/lib/env";
+import { safeEqual } from "@/lib/crypto/safe-equal";
 import { handleUpdate, type TgUpdate } from "@/lib/telegram/bot/handlers";
 
 export const runtime = "nodejs";
@@ -18,7 +19,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // позволял fail-open при missing env — round-2 completeness flagged.
   const expected = env().TELEGRAM_WEBHOOK_SECRET;
   const got = req.headers.get("x-telegram-bot-api-secret-token");
-  if (got !== expected) {
+  // SEC-5: constant-time — plain !== утекает секрет по таймингу.
+  if (!safeEqual(got ?? "", expected)) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { env } from "@/lib/env";
+import { safeEqual } from "@/lib/crypto/safe-equal";
 import { processOutboxBatch } from "@/lib/v2/tg-outbox-worker";
 
 export const runtime = "nodejs";
@@ -28,7 +29,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   const provided = req.headers.get("x-cron-secret");
-  if (provided !== cronSecret) {
+  // SEC-5: constant-time — plain !== утекает секрет по таймингу.
+  if (!safeEqual(provided ?? "", cronSecret)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
