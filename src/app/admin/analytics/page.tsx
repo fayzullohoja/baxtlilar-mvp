@@ -22,6 +22,37 @@ type Demographics = {
   reg_30d: number;
 };
 
+type StageCount = { n: number; m: number; f: number };
+
+type FunnelData = {
+  funnel: {
+    signup: StageCount;
+    verified: StageCount;
+    published: StageCount;
+    first_mutual: StageCount;
+    chat_unlocked: StageCount;
+  };
+  empty_feed: {
+    eligible: number;
+    empty: number;
+    by_gender: { m: { eligible: number; empty: number }; f: { eligible: number; empty: number } };
+    by_city: { city: string; eligible: number; empty: number }[];
+  };
+  rates: {
+    onboarding: { total: number; past_onboarding: number };
+    verification: { submitted: number; approved: number };
+  };
+  north_star: number;
+};
+
+const FUNNEL_STAGES: { key: keyof FunnelData["funnel"]; label: string }[] = [
+  { key: "signup", label: "Регистрация" },
+  { key: "verified", label: "Верифицированы" },
+  { key: "published", label: "Анкета опубликована" },
+  { key: "first_mutual", label: "Первый взаимный интерес" },
+  { key: "chat_unlocked", label: "Чат открыт" },
+];
+
 function pct(part: number, whole: number): string {
   if (whole <= 0) return "0%";
   return Math.round((part / whole) * 100) + "%";
@@ -117,7 +148,7 @@ function Section({
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: number }) {
+function MiniStat({ label, value }: { label: string; value: number | string }) {
   return (
     <div style={cardStyle}>
       <div
@@ -144,9 +175,12 @@ export default async function AnalyticsPage() {
     .maybeSingle();
 
   // unwrapOne бросает на сбое БД; genuine «нет данных» (null) ниже даёт «Нет данных».
-  const d = unwrapOne(
-    await supabaseAdmin().rpc("get_admin_demographics"),
-  ) as Demographics | null;
+  const [demoRes, funnelRes] = await Promise.all([
+    supabaseAdmin().rpc("get_admin_demographics"),
+    supabaseAdmin().rpc("get_admin_funnel"),
+  ]);
+  const d = unwrapOne(demoRes) as Demographics | null;
+  const f = unwrapOne(funnelRes) as FunnelData | null;
 
   if (!d) {
     return (
@@ -191,6 +225,139 @@ export default async function AnalyticsPage() {
         <MiniStat label="Новых за 7 дней" value={d.reg_7d} />
         <MiniStat label="Сегодня" value={d.reg_today} />
       </div>
+
+      {/* FUNNEL-2..4: North Star + воронка + пустой фид (get_admin_funnel) */}
+      {f && (
+        <>
+          <div
+            style={{
+              marginTop: 24,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: 16,
+            }}
+          >
+            <MiniStat
+              label="Северная звезда — взаимные пары с начатым чатом"
+              value={f.north_star}
+            />
+            <MiniStat
+              label="Завершают онбординг"
+              value={pct(f.rates.onboarding.past_onboarding, f.rates.onboarding.total)}
+            />
+            <MiniStat
+              label="Верификация одобрена"
+              value={pct(f.rates.verification.approved, f.rates.verification.submitted)}
+            />
+            <MiniStat
+              label="Пустой фид (строгий подбор)"
+              value={pct(f.empty_feed.empty, f.empty_feed.eligible)}
+            />
+          </div>
+
+          <div
+            style={{
+              marginTop: 24,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: 24,
+            }}
+          >
+            <Section title="Воронка">
+              {FUNNEL_STAGES.map((s, i) => {
+                const cur = f.funnel[s.key];
+                const base = f.funnel.signup.n;
+                const prev = i > 0 ? f.funnel[FUNNEL_STAGES[i - 1].key].n : cur.n;
+                const w =
+                  cur.n === 0 || base === 0
+                    ? 0
+                    : Math.max(2, Math.round((cur.n / base) * 100));
+                return (
+                  <div key={s.key} style={{ marginBottom: 12 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        fontSize: 13,
+                        marginBottom: 4,
+                      }}
+                    >
+                      <span style={{ color: ADMIN.ink700 }}>{s.label}</span>
+                      <span style={{ color: ADMIN.ink500, fontFamily: ADMIN.fontMono }}>
+                        {cur.n}{" "}
+                        <span style={{ fontSize: 11 }}>
+                          (♂{cur.m} / ♀{cur.f})
+                        </span>
+                        {i > 0 && (
+                          <span style={{ marginLeft: 8, color: ADMIN.ink900 }}>
+                            {pct(cur.n, prev)}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        height: 10,
+                        borderRadius: 999,
+                        background: ADMIN.surface2,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{ width: `${w}%`, height: "100%", background: ADMIN.accent }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+              <p style={{ marginTop: 12, fontSize: 12, color: ADMIN.ink500 }}>
+                Процент — конверсия из предыдущего шага. Пока чат создаётся
+                синхронно при взаимности, «Первый взаимный интерес» и «Чат
+                открыт» совпадают. «Завершают онбординг» — прокси: событие
+                «открыл приложение» не трекается.
+              </p>
+            </Section>
+
+            <Section title="Пустой фид по городам (строгий подбор)">
+              {f.empty_feed.by_city.length === 0 ? (
+                noData()
+              ) : (
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${ADMIN.border}` }}>
+                      <th style={th}>Город</th>
+                      <th style={th}>В подборе</th>
+                      <th style={th}>Пустой фид</th>
+                      <th style={th}>%</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {f.empty_feed.by_city.map((c) => (
+                      <tr
+                        key={c.city}
+                        style={{ borderBottom: `1px solid ${ADMIN.border}` }}
+                      >
+                        <td style={td}>{cityLabel(c.city, "ru")}</td>
+                        <td style={tdNum}>{c.eligible}</td>
+                        <td style={tdNum}>{c.empty}</td>
+                        <td style={{ ...tdNum, color: ADMIN.ink900, fontWeight: 500 }}>
+                          {pct(c.empty, c.eligible)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              <p style={{ marginTop: 12, fontSize: 12, color: ADMIN.ink500 }}>
+                Доля активных опубликованных анкет, которым строгий подбор
+                (уровень 0, без расширения возраста) не находит ни одного
+                кандидата. Высокий % в городе = дефицит противоположного пола
+                в нужных возрастах.
+              </p>
+            </Section>
+          </div>
+        </>
+      )}
 
       <div
         style={{

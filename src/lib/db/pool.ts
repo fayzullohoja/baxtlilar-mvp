@@ -7,15 +7,17 @@ import { configurePgTypes } from "./pg-types";
 // (*.railway.internal) SSL не нужен; для внешних хостов включаем по PGSSL=require.
 let _pool: Pool | null = null;
 
-// F-115: серверные ограничения, чтобы кривой запрос или забытая транзакция
-// не съели весь пул:
-//  - statement_timeout=10s — Postgres сам прибивает медленный запрос
-//    (расследовать в pg_stat_activity по application_name);
-//  - idle_in_transaction_session_timeout=60s — забытая открытая транзакция
-//    освобождает соединение через минуту;
-//  - application_name — корреляция в pg_stat_activity / логе DBA.
-const PG_OPTIONS =
-  "-c statement_timeout=10000 -c idle_in_transaction_session_timeout=60000 -c application_name=baxtlilar-web";
+// F-115 → DB-1: серверные ограничения (statement_timeout=10s,
+// idle_in_transaction_session_timeout=60s, application_name) заданы на РОЛИ
+// приложения миграцией 20260703020000_db1_role_gucs.sql, а не через
+// connection-options: PgBouncer transaction-mode startup options не пропускает,
+// а role-GUC работают одинаково с пулером и без.
+//
+// Топология подключений (DB-1):
+//  - DATABASE_URL — рабочий путь; после ввода PgBouncer указывает на пулер
+//    (transaction-mode, :6543), см. docs/pgbouncer-railway.md;
+//  - DATABASE_DIRECT_URL — прямой Postgres (:5432) для миграций и будущего
+//    LISTEN/NOTIFY-листенера чата (DB-3): LISTEN в transaction-mode не живёт.
 
 export function pool(): Pool {
   if (!_pool) {
@@ -24,10 +26,9 @@ export function pool(): Pool {
     _pool = new Pool({
       connectionString: env().DATABASE_URL,
       ssl: useSsl ? { rejectUnauthorized: false } : undefined,
-      max: Number(process.env.PG_POOL_MAX ?? 10),
+      max: Number(process.env.PG_POOL_MAX ?? 15),
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 10_000,
-      options: PG_OPTIONS,
     });
     // F-115: без on('error') Node.js КРАШИТСЯ при transient TCP RST на idle
     // клиенте. Логируем и продолжаем — pg сам удалит клиента из пула.

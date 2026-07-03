@@ -2,6 +2,12 @@ import createMiddleware from "next-intl/middleware";
 import { NextRequest, NextResponse } from "next/server";
 import { routing } from "@/i18n/routing";
 import { isAllowedOrigin } from "@/lib/http/origin-check";
+import { checkRateLimit } from "@/lib/http/rate-limit";
+import { trustedIp } from "@/lib/http/ip";
+
+// SEC-3b (частично): 12MB полезной нагрузки (лимит storage.ts) + запас на
+// multipart-обвязку. Роуты дальше сами проверяют реальный буфер.
+const MAX_BODY_BYTES = 13 * 1024 * 1024;
 
 const intl = createMiddleware(routing);
 
@@ -45,6 +51,26 @@ const SESSION_COOKIE = "bx_session";
 export default function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const method = req.method.toUpperCase();
+
+  // 0) SEC-3a: глобальный rate-limit + body-size cap — до любой другой работы.
+  //    In-memory валиден: один Railway-инстанс, `next start` = один процесс.
+  if (pathname.startsWith("/api/") && MUTATION_METHODS.has(method)) {
+    const len = Number(req.headers.get("content-length") ?? 0);
+    if (Number.isFinite(len) && len > MAX_BODY_BYTES) {
+      return NextResponse.json({ ok: false, error: "payload_too_large" }, { status: 413 });
+    }
+  }
+  const rate = checkRateLimit({
+    pathname,
+    ip: trustedIp(req),
+    sessionValue: req.cookies.get(SESSION_COOKIE)?.value ?? null,
+  });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { ok: false, error: "rate_limited" },
+      { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } },
+    );
+  }
 
   // 1) CSRF-гард на /api/* и /admin/* для мутирующих методов.
   //    F-010: bx_session под TG WebView требует SameSite=None+Secure, поэтому

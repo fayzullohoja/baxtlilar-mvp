@@ -10,6 +10,13 @@ import { sendMessage, answerCallbackQuery } from "../bot-api";
 import type { InlineKeyboardMarkup, ReplyKeyboardMarkup } from "../bot-api";
 import { M, pick, type Lang } from "./messages";
 import { LEGAL_VERSION } from "@/content/legal";
+import { TokenBucketLimiter } from "@/lib/http/rate-limit";
+
+// SEC-3a: per-user кулдаун на /start — каждый /start = sendMessage + запросы к
+// БД, циклом его дёргать нельзя. Burst 3 (легитимные double-tap), дальше 1 в
+// 20с. In-memory (один инстанс); лишние /start молча игнорируем — ответ на
+// флуд сам был бы усилителем.
+const startCooldown = new TokenBucketLimiter({ capacity: 3, refillPerSec: 0.05 });
 
 /**
  * V3 (2026-06-30, product feedback): legal-документы шлём как HTML
@@ -571,6 +578,7 @@ export async function handleUpdate(update: TgUpdate): Promise<void> {
   if (update.message) {
     const text = update.message.text?.trim() ?? "";
     if (text.startsWith("/start")) {
+      if (!startCooldown.take(`tg:${update.message.chat.id}`)) return;
       await handleStart(update.message);
       return;
     }

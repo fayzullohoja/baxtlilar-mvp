@@ -84,7 +84,9 @@ export async function getMatchOfTheDay(viewerId: string): Promise<MatchOfTheDay 
   ]);
   if (!viewerProfile || !candidateProfile) return null;
 
-  const story = generateMatchStory(viewerProfile, candidateProfile);
+  // MATCH-3: relax-уровень кандидата прокидывается в story — если возрастной
+  // диапазон был расширен, история честно об этом говорит.
+  const story = generateMatchStory(viewerProfile, candidateProfile, top.relaxLevel);
 
   return {
     candidate: { user_id: top.user_id, profile: candidateProfile },

@@ -128,8 +128,21 @@ function reasonsFor(viewer: ProfileForMatch, cand: ProfileForMatch): string[] {
 // Cautions (friction)
 // =============================================================================
 
-function cautionsFor(viewer: ProfileForMatch, cand: ProfileForMatch): string[] {
+function cautionsFor(
+  viewer: ProfileForMatch,
+  cand: ProfileForMatch,
+  relaxLevel: number,
+): string[] {
   const out: string[] = [];
+
+  // MATCH-3 — honest note: если кандидат показан с relax-уровня, говорим об
+  // этом прямо (в начале — slice(0,2) не должен его вытеснить). Generic-caution
+  // про возраст ниже при этом не добавляем — это был бы дубль той же мысли.
+  if (relaxLevel > 0) {
+    out.push(
+      "Мы немного расширили возрастной диапазон поиска, чтобы показать Вам этого человека.",
+    );
+  }
 
   // Конфликт по детям
   if (viewer.future_children_plan && cand.future_children_plan) {
@@ -161,7 +174,7 @@ function cautionsFor(viewer: ProfileForMatch, cand: ProfileForMatch): string[] {
   }
 
   // Возраст вне взаимных диапазонов
-  if (viewer.birth_date && cand.birth_date) {
+  if (relaxLevel === 0 && viewer.birth_date && cand.birth_date) {
     const viewerAge = ageFromDate(viewer.birth_date);
     const candAge = ageFromDate(cand.birth_date);
     const viewerInCandRange = ageInRange(viewerAge, cand.partner_age_min, cand.partner_age_max);
@@ -208,10 +221,11 @@ function adviceFor(viewer: ProfileForMatch, cand: ProfileForMatch): string | nul
 export function generateMatchStory(
   viewer: ProfileForMatch,
   cand: ProfileForMatch,
+  relaxLevel = 0,
 ): MatchStory {
   return {
     reasons: reasonsFor(viewer, cand),
-    cautions: cautionsFor(viewer, cand),
+    cautions: cautionsFor(viewer, cand, relaxLevel),
     advice: adviceFor(viewer, cand),
   };
 }

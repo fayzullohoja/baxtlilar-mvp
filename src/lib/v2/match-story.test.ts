@@ -184,3 +184,50 @@ describe("generateMatchStory — advice", () => {
     expect(story.advice).toMatch(/традиции/i);
   });
 });
+
+// MATCH-3 — honest story при relax-уровнях: не утверждаем возрастное
+// совпадение, честно говорим что расширили диапазон.
+describe("generateMatchStory — relaxLevel honesty", () => {
+  it("relaxLevel=1 → caution про расширенный возрастной диапазон", () => {
+    const v = profile({ partner_age_min: 25, partner_age_max: 25, birth_date: "1996-01-01" });
+    const c = profile({ birth_date: "1991-01-01" }); // ~35 — вне строгого окна
+    const story = generateMatchStory(v, c, 1);
+    expect(story.cautions.some((x) => /расширили возрастной/i.test(x))).toBe(true);
+  });
+
+  it("relax-note вытесняет generic «возраст слегка вне диапазона» (не дублируем)", () => {
+    const v = profile({ partner_age_min: 25, partner_age_max: 25, birth_date: "1996-01-01" });
+    const c = profile({ birth_date: "1991-01-01" });
+    const story = generateMatchStory(v, c, 2);
+    expect(story.cautions.filter((x) => /возраст/i.test(x))).toHaveLength(1);
+    expect(story.cautions.some((x) => /слегка вне диапазона/i.test(x))).toBe(false);
+  });
+
+  it("relax-note не теряется из-за slice(0,2) при других cautions", () => {
+    const v = profile({
+      future_children_plan: "yes_soon",
+      city: "tashkent",
+      geo_preference: "my_city",
+      partner_age_min: 25,
+      partner_age_max: 25,
+      birth_date: "1996-01-01",
+    });
+    const c = profile({
+      future_children_plan: "no",
+      city: "samarkand",
+      geo_preference: "my_city",
+      birth_date: "1991-01-01",
+    });
+    const story = generateMatchStory(v, c, 1);
+    expect(story.cautions.some((x) => /расширили возрастной/i.test(x))).toBe(true);
+    expect(story.cautions.length).toBeLessThanOrEqual(2);
+  });
+
+  it("relaxLevel=0 (и по умолчанию) → поведение прежнее, без relax-note", () => {
+    const v = profile({ partner_age_min: 25, partner_age_max: 40 });
+    const c = profile();
+    expect(generateMatchStory(v, c, 0)).toEqual(generateMatchStory(v, c));
+    const all = [...generateMatchStory(v, c).cautions, ...generateMatchStory(v, c).reasons];
+    expect(all.some((x) => /расширили возрастной/i.test(x))).toBe(false);
+  });
+});

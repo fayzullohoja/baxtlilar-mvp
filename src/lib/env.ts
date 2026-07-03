@@ -3,7 +3,11 @@ import { z } from "zod";
 
 const Env = z.object({
   // Postgres (Railway). Внутренняя сеть Railway — без SSL; внешние хосты — PGSSL=require.
+  // После ввода PgBouncer (DB-1) сюда идёт pooled-URL (:6543, transaction-mode).
   DATABASE_URL: z.string().min(1),
+  // Прямой Postgres (:5432) в обход пулера — для миграций и LISTEN/NOTIFY
+  // (DB-3). До деплоя PgBouncer совпадает с DATABASE_URL и может не задаваться.
+  DATABASE_DIRECT_URL: z.string().min(1).optional(),
   // Каталог объектного хранилища (Railway Volume в проде, локально — ./.storage).
   STORAGE_DIR: z.string().default(".storage"),
   SESSION_SECRET: z.string().min(32),
