@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
@@ -42,4 +43,14 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+// OBS-1/9 — Sentry-обёртка активна всегда (создаёт tunnel-rewrite /monitoring),
+// но без SENTRY_DSN рантайм не инициализируется, а без SENTRY_AUTH_TOKEN не
+// загружаются sourcemaps — деплой без секретов работает как раньше.
+export default withSentryConfig(withNextIntl(nextConfig), {
+  silent: true,
+  telemetry: false,
+  tunnelRoute: "/monitoring",
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+});

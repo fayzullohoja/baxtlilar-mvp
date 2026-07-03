@@ -11,7 +11,14 @@ export type Candidate = {
   city: string;
   photoUrl: string | null;
   score: number;
+  /** 0 = strict; 1 = возраст зрителя ±5; 2 = + сняты candidate-side prefs. */
+  relaxLevel: number;
 };
+
+// MATCH-2 — degradation ladder: на малом пуле строгие взаимные возрастные
+// диапазоны дают пустой фид навсегда. Вместо этого пробуем уровни релаксации
+// (см. миграцию 20260703000000): расширение честно доносится в match story.
+const MAX_RELAX_LEVEL = 2;
 
 /** Лента рекомендаций: жёсткие фильтры (SQL) + скоринг/сортировка (JS). */
 export async function getRecommendations(viewerId: string, limit = 20): Promise<Candidate[]> {
@@ -34,13 +41,21 @@ export async function getRecommendations(viewerId: string, limit = 20): Promise<
     vector: (vq?.vector as Record<string, number>) ?? {},
   };
 
-  const { data: rows, error } = await sb.rpc("get_recommendations", {
-    p_viewer: viewerId,
-    p_limit: 100,
-  });
-  if (error || !rows) return [];
-
-  const list = rows as Record<string, unknown>[];
+  let list: Record<string, unknown>[] = [];
+  for (let level = 0; level <= MAX_RELAX_LEVEL; level++) {
+    const { data: rows, error } = await sb.rpc("get_recommendations", {
+      p_viewer: viewerId,
+      p_limit: 100,
+      p_relax_level: level,
+    });
+    // Ошибка RPC — системный сбой, а не «пусто»: не молотим оставшиеся уровни.
+    if (error || !rows) return [];
+    if ((rows as unknown[]).length) {
+      list = rows as Record<string, unknown>[];
+      break;
+    }
+  }
+  if (!list.length) return [];
   const urls = await signedPhotoUrls(list.map((r) => r.main_photo_path as string | null));
 
   const scored: Candidate[] = list.map((r) => {
@@ -58,6 +73,7 @@ export async function getRecommendations(viewerId: string, limit = 20): Promise<
       city: cand.city,
       photoUrl: path ? (urls[path] ?? null) : null,
       score: scoreCandidate(viewer, cand),
+      relaxLevel: (r.relax_level as number) ?? 0,
     };
   });
 
