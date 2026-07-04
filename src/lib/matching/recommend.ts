@@ -48,10 +48,13 @@ export async function getRecommendations(viewerId: string, limit = 20): Promise<
       p_limit: 100,
       p_relax_level: level,
     });
-    // Ошибка RPC — системный сбой, а не «пусто»: не молотим оставшиеся уровни.
-    if (error || !rows) return [];
-    if ((rows as unknown[]).length) {
-      list = rows as Record<string, unknown>[];
+    // DB-6: ошибка RPC (таймаут/сбой БД) — это НЕ «пустой фид». Бросаем, чтобы
+    // caller (match-of-the-day → /main) показал «попробуйте позже», а не
+    // genuine-empty «алгоритм ищет». Молча вернуть [] = скрыть инцидент.
+    if (error) throw new Error(`get_recommendations failed: ${error.message ?? "unknown"}`);
+    const arr = (rows as Record<string, unknown>[] | null) ?? [];
+    if (arr.length) {
+      list = arr;
       break;
     }
   }

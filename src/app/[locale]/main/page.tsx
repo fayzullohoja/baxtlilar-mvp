@@ -78,7 +78,28 @@ export default async function MainPage({ params }: { params: Promise<{ locale: s
   }
 
   // Verified — match of the day.
-  const match = await getMatchOfTheDay(user.id);
+  // DB-6: сбой БД в подборе НЕ равен «пусто». getMatchOfTheDay бросает при
+  // ошибке RPC — показываем «попробуйте позже» (retry), а не genuine-empty
+  // «алгоритм ищет», чтобы не выдавать инцидент за отсутствие кандидатов.
+  let match: Awaited<ReturnType<typeof getMatchOfTheDay>>;
+  try {
+    match = await getMatchOfTheDay(user.id);
+  } catch {
+    return (
+      <>
+        <MiniAppShell eyebrow="Сегодня · подбор" align="top" footer={null}>
+          <Headline size="lg" as="h1">
+            Не удалось загрузить подбор.
+          </Headline>
+          <Lead>
+            Временная техническая заминка на нашей стороне. Обновите страницу
+            через минуту — Ваши данные в порядке.
+          </Lead>
+        </MiniAppShell>
+        <BottomNav active="feed" unread={unread} />
+      </>
+    );
+  }
 
   if (!match) {
     return (
