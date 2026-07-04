@@ -3,6 +3,7 @@ import { loadUserForStep } from "@/lib/onboarding/guard-api";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
+import { verifiedGenderMatches } from "@/lib/onboarding/verified-gender";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,6 +38,21 @@ export async function POST(): Promise<NextResponse> {
     p.partner_age_max;
   if (!complete)
     return NextResponse.json({ ok: false, error: "profile_incomplete" }, { status: 400 });
+
+  // C6: анкетный пол должен совпадать с верифицированным паспортным
+  // (user_identity.gender, введён модератором при approve). Без этого
+  // верифицированный юзер мог бы выйти в матчинг под противоположным полом —
+  // обход взаимного пола / catfishing. Берём активную (не superseded) identity;
+  // если её нет (нештатно для approved) — verifiedGenderMatches вернёт true и
+  // публикацию не блокируем.
+  const { data: idRow } = await sb
+    .from("user_identity")
+    .select("gender")
+    .eq("user_id", user.id)
+    .is("superseded_at", null)
+    .maybeSingle();
+  if (!verifiedGenderMatches(p.gender as string, idRow?.gender as string | null | undefined))
+    return NextResponse.json({ ok: false, error: "gender_mismatch" }, { status: 409 });
 
   // нужно ≥1 НЕ отклонённого фото (approved/under_review), иначе анкета останется без видимого фото
   const { count, error: cntErr } = await sb
