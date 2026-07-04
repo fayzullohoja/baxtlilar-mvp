@@ -23,9 +23,22 @@ export function V2PublishButton() {
         method: "POST",
         headers: { "content-type": "application/json" },
       });
-      const data = (await res.json().catch(() => ({}))) as { ok: boolean; next?: string };
+      const data = (await res.json().catch(() => ({}))) as {
+        ok: boolean;
+        next?: string;
+        error?: string;
+      };
       if (data.ok && data.next) {
         router.replace(data.next);
+        return;
+      }
+      // C6: пол в анкете не совпал с паспортом — это не «поправьте анкету»,
+      // менять пол пользователь не может, нужен оператор.
+      if (data.error === "gender_mismatch") {
+        setErr(
+          "Пол в анкете не совпадает с данными паспорта. Напишите в поддержку " +
+            "@baxtlilar_support — оператор поможет.",
+        );
         return;
       }
       setErr("Не получилось опубликовать. Проверьте анкету и попробуйте ещё раз.");
