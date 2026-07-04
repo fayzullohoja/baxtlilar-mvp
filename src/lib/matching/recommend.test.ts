@@ -99,10 +99,9 @@ describe("getRecommendations — degradation ladder", () => {
     expect(out).toEqual([]);
   });
 
-  it("ошибка RPC → [] сразу, БЕЗ каскада на следующие уровни", async () => {
+  it("ошибка RPC → throws (DB-6: сбой БД ≠ пустой фид), без каскада на уровни", async () => {
     const rpc = mockSb({ 0: { data: null, error: { message: "boom" } } });
-    const out = await getRecommendations("viewer-1", 5);
+    await expect(getRecommendations("viewer-1", 5)).rejects.toThrow(/get_recommendations/i);
     expect(rpc).toHaveBeenCalledTimes(1);
-    expect(out).toEqual([]);
   });
 });

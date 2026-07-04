@@ -41,7 +41,9 @@ function isPublicApi(pathname: string): boolean {
     pathname.startsWith("/api/telegram/webhook") ||
     pathname.startsWith("/api/admin/login") ||
     pathname.startsWith("/api/admin/logout") ||
-    pathname.startsWith("/api/storage/o/")
+    pathname.startsWith("/api/storage/o/") ||
+    // OBS-4: секрет-защищённые ops-метрики (внешний монитор без bx_session).
+    pathname === "/api/metrics"
   );
 }
 

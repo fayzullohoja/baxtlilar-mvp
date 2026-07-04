@@ -91,6 +91,23 @@ begin
     n_users, n_prof, n_photos, n_quiz, n_chats, n_unread, maxfeed;
 end \$\$;"
 
+echo "▸ DB-8 EXPLAIN: sargable birth_date range использует user_profiles_reco_idx"
+# Узкий возрастной диапазон → индекс однозначно выгоднее seq scan. Доказывает,
+# что DB-5 сделал возрастной фильтр sargable (до DB-5 age()-предикат этого не мог).
+LO=$(psql "$DB" -tAc "select (current_date - make_interval(years => 31) + interval '1 day')::date")
+HI=$(psql "$DB" -tAc "select (current_date - make_interval(years => 29))::date")
+PLAN=$(psql "$DB" -tAc "explain (format text) select user_id from user_profiles where gender='f' and looking_for_gender='m' and status='published' and birth_date between '$LO' and '$HI'")
+echo "$PLAN" | sed 's/^/    /'
+if echo "$PLAN" | grep -qi "Seq Scan on user_profiles"; then
+  echo "  ✗ Seq Scan на user_profiles — индекс не работает"; exit 1; fi
+if ! echo "$PLAN" | grep -qi "user_profiles_reco_idx"; then
+  echo "  ✗ user_profiles_reco_idx не использован"; exit 1; fi
+echo "  ✓ reco_idx используется на sargable-диапазоне"
+
+echo "▸ DB-8 EXPLAIN: get_recommendations mid-age viewer (план + время)"
+VID=$(psql "$DB" -tAc "select id from users where telegram_id = 800000000 + (${N}/2)")
+psql "$DB" -tAc "explain (analyze, timing off, summary on, format text) select * from get_recommendations('$VID'::uuid, 20, 0)" | sed 's/^/    /' | tail -6
+
 echo "▸ seed run #2 (идемпотентность)"
 BEFORE=$(psql "$DB" -tAc "select (select count(*) from users) || '/' || (select count(*) from user_profiles) || '/' || (select count(*) from profile_photos) || '/' || (select count(*) from chats) || '/' || (select count(*) from chat_messages) || '/' || (select count(*) from match_requests) || '/' || (select count(*) from match_views) || '/' || (select count(*) from blocks)")
 node "$REPO/scripts/seed-10k.mjs" --url "$DB" --n "$N" >/dev/null
