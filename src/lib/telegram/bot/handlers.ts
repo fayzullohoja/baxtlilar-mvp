@@ -245,30 +245,33 @@ function bioConsentKeyboard(lang: Lang): InlineKeyboardMarkup {
 
 async function recordConsent(
   userId: string,
+  telegramId: number,
   types: string[],
   text: string,
   lang: Lang,
 ): Promise<void> {
   const sb = supabaseAdmin();
   const sha = crypto.createHash("sha256").update(text + "::" + LEGAL_VERSION).digest("hex");
-  const rows = types.map((t) => ({
-    user_id: userId,
-    consent_type: t,
-    consent_version: LEGAL_VERSION,
-    ip: "tg-webhook",
-    user_agent: "telegram-bot",
-    language: lang,
-    consent_text_sha256: sha,
-  }));
-  // H12 verdict-fix: idempotent upsert. UNIQUE(user_id, consent_type,
-  // consent_version) даёт дедуп даже при retry/двойном callback'е TG.
-  // ignoreDuplicates: true → 23505 не бросается, тихо пропускается.
-  const { error } = await sb
-    .from("consents")
-    .upsert(rows, {
-      onConflict: "user_id,consent_type,consent_version",
-      ignoreDuplicates: true,
-    });
+  // LC-1: категории ПД — грубый хук для юриста. Биометрия — спец-категория
+  // (ст. 24 закона РУз «О ПД»); остальное — общие ПД под зонтичным согласием.
+  // Точный список категорий и нужны ли гранулярные согласия — решение юриста
+  // (docs/lawyer-brief-2026-07-04.md).
+  const categories = types.includes("biometric") ? ["biometric"] : ["general_pd"];
+  // LC-1: единая точка записи — record_consent RPC (insert-or-REACTIVATE).
+  // Идемпотентен на retry/двойной callback (H12) и снимает withdrawn при
+  // свежем согласии той же версии (иначе «отзыв залипает»).
+  const { error } = await sb.rpc("record_consent", {
+    p_user_id: userId,
+    p_telegram_id: telegramId,
+    p_types: types,
+    p_version: LEGAL_VERSION,
+    p_language: lang,
+    p_sha: sha,
+    p_source: "tg_bot",
+    p_categories: categories,
+    p_ip: "tg-webhook",
+    p_user_agent: "telegram-bot",
+  });
   if (error) {
     console.error("[bot] consent insert failed:", error.message);
     throw error;
@@ -405,6 +408,7 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
       // terms+privacy+offer+rules (биометрия будет отдельным согласием на шаге 4).
       await recordConsent(
         user.id,
+        user.telegram_id,
         ["terms", "privacy", "offer", "pd", "rules"],
         pick(M.pd_consent_ask, user.language),
         user.language,
@@ -437,6 +441,7 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
       }
       await recordConsent(
         user.id,
+        user.telegram_id,
         ["biometric"],
         pick(M.bio_consent_ask, user.language),
         user.language,
