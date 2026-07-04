@@ -17,6 +17,9 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // SEC-2c: двухшаговый вход — 'password' → (если enrolled) 'totp'.
+  const [stage, setStage] = useState<"password" | "totp">("password");
+  const [code, setCode] = useState("");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +31,10 @@ export default function AdminLoginPage() {
       body: JSON.stringify({ login, password }),
     });
     const data = await res.json().catch(() => ({ ok: false }));
-    if (data.ok) {
+    if (data.ok && data.totp_required) {
+      setStage("totp");
+      setBusy(false);
+    } else if (data.ok) {
       router.push("/admin");
       router.refresh();
     } else {
@@ -36,6 +42,31 @@ export default function AdminLoginPage() {
         data.error === "throttled"
           ? "Слишком много попыток. Подождите 15 минут."
           : "Неверный логин или пароль.",
+      );
+      setBusy(false);
+    }
+  }
+
+  async function submitCode(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/admin/login/totp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    const data = await res.json().catch(() => ({ ok: false }));
+    if (data.ok) {
+      router.push("/admin");
+      router.refresh();
+    } else {
+      setError(
+        data.error === "throttled"
+          ? "Слишком много попыток. Подождите."
+          : data.error === "no_pending"
+            ? "Сессия входа истекла. Начните заново."
+            : "Неверный код. Попробуйте ещё раз.",
       );
       setBusy(false);
     }
@@ -55,7 +86,7 @@ export default function AdminLoginPage() {
       }}
     >
       <form
-        onSubmit={submit}
+        onSubmit={stage === "password" ? submit : submitCode}
         style={{
           width: "100%",
           maxWidth: 380,
@@ -79,36 +110,61 @@ export default function AdminLoginPage() {
             Baxtlilar · Админ-панель
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 500, margin: 0 }}>
-            Вход для модерации
+            {stage === "password" ? "Вход для модерации" : "Код подтверждения"}
           </h1>
+          {stage === "totp" ? (
+            <p style={{ fontSize: 13, color: ADMIN.ink500, margin: "8px 0 0" }}>
+              Введите 6-значный код из приложения-аутентификатора.
+            </p>
+          ) : null}
         </div>
 
-        <div style={{ marginBottom: 18 }}>
-          <label htmlFor="login" style={labelStyle}>
-            Логин
-          </label>
-          <input
-            id="login"
-            value={login}
-            onChange={(e) => setLogin(e.target.value)}
-            autoComplete="username"
-            style={inputStyle}
-          />
-        </div>
+        {stage === "password" ? (
+          <>
+            <div style={{ marginBottom: 18 }}>
+              <label htmlFor="login" style={labelStyle}>
+                Логин
+              </label>
+              <input
+                id="login"
+                value={login}
+                onChange={(e) => setLogin(e.target.value)}
+                autoComplete="username"
+                style={inputStyle}
+              />
+            </div>
 
-        <div style={{ marginBottom: 24 }}>
-          <label htmlFor="password" style={labelStyle}>
-            Пароль
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            style={inputStyle}
-          />
-        </div>
+            <div style={{ marginBottom: 24 }}>
+              <label htmlFor="password" style={labelStyle}>
+                Пароль
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                style={inputStyle}
+              />
+            </div>
+          </>
+        ) : (
+          <div style={{ marginBottom: 24 }}>
+            <label htmlFor="code" style={labelStyle}>
+              Код
+            </label>
+            <input
+              id="code"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              autoFocus
+              placeholder="000000"
+              style={{ ...inputStyle, letterSpacing: "0.3em", fontSize: 18 }}
+            />
+          </div>
+        )}
 
         {error ? (
           <div
@@ -129,7 +185,10 @@ export default function AdminLoginPage() {
         <Button
           type="submit"
           variant="primary"
-          disabled={busy || !login || !password}
+          disabled={
+            busy ||
+            (stage === "password" ? !login || !password : code.length !== 6)
+          }
           style={{
             width: "100%",
             height: 40,
@@ -137,7 +196,7 @@ export default function AdminLoginPage() {
             fontSize: 14,
           }}
         >
-          {busy ? "Вход…" : "Войти"}
+          {busy ? "Проверяем…" : stage === "password" ? "Войти" : "Подтвердить"}
         </Button>
       </form>
     </main>

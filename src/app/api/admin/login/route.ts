@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { verifyPassword } from "@/lib/admin/password";
-import { setAdminSession, type AdminRole } from "@/lib/admin/session";
+import { setAdminSession, setPendingTotp, type AdminRole } from "@/lib/admin/session";
 import { isLoginThrottled, recordLoginAttempt } from "@/lib/admin/throttle";
 import { adminAudit } from "@/lib/admin/guard";
 import { trustedIp } from "@/lib/http/ip";
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const { data: admin } = await supabaseAdmin()
     .from("admin_users")
-    .select("id, role, password_hash")
+    .select("id, role, password_hash, totp_secret")
     .eq("login", login)
     .maybeSingle();
 
@@ -39,6 +39,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "invalid" }, { status: 401 });
   }
   await recordLoginAttempt(ip, true);
+
+  // SEC-2c: если у аккаунта включён TOTP — пароль недостаточен. Выдаём
+  // короткоживущую pending-cookie (не даёт доступа) и просим код. Enforcement
+  // self-safe: срабатывает ТОЛЬКО для enrolled (totp_secret != null), поэтому
+  // нет глобального флипа и self-lockout'а.
+  if (admin!.totp_secret) {
+    await setPendingTotp({ adminId: admin!.id as string, role: admin!.role as AdminRole });
+    return NextResponse.json({ ok: true, totp_required: true });
+  }
 
   // Bug #10 (2026-06-30, loop pass 2): recordLoginAttempt пишет в rate-limit
   // таблицу, но не в admin_audit_log. Compliance/forensics требует mirror в
