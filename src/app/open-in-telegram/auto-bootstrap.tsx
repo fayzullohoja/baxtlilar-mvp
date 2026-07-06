@@ -78,85 +78,82 @@ export function AutoBootstrap() {
     };
   }, []);
 
-  // Нужна регистрация в боте → сообщение поверх фолбэка (кнопка на бота ниже).
-  if (diag.kind === "register_required") {
-    return (
-      <TopNote
-        ru="Сначала пройдите регистрацию в боте."
-        uz="Avval botda roʻyxatdan oʻting."
-      />
-    );
-  }
+  // Как только решили показать лендинг (любое не-loading состояние) — включаем
+  // на <body> флаг, по которому стартует stagger-вход контента. Синхронно с
+  // растворением лоадера ниже → контент «поднимается», а не резко появляется.
+  useEffect(() => {
+    if (diag.kind !== "loading") document.body.setAttribute("data-tg-landing", "1");
+  }, [diag.kind]);
 
-  // Bootstrap failure: чаще всего token single-use уже claimed или TTL 10 мин
-  // истёк. Понятная инструкция — вернуться в бот и /start.
-  if (diag.kind === "bootstrap_error") {
-    const expiredToken =
-      diag.error === "bad_start_param" || diag.error === "missing_start_param";
-    return (
-      <TopNote
-        ru={
-          expiredToken
-            ? "Ссылка устарела. Вернитесь в бот и отправьте /start заново."
-            : "Не удалось войти. Вернитесь в бот и попробуйте снова."
-        }
-        uz={
-          expiredToken
-            ? "Havola muddati oʻtdi. Botga qaytib /start yuboring."
-            : "Kirish amalga oshmadi. Botga qaytib qayta urinib koʻring."
-        }
-      />
-    );
-  }
+  const showLoader = diag.kind === "loading";
+  const expiredToken =
+    diag.kind === "bootstrap_error" &&
+    (diag.error === "bad_start_param" || diag.error === "missing_start_param");
 
-  // fetch_error (сеть отвалилась).
-  if (diag.kind === "fetch_error") {
-    return <TopNote ru="Нет связи. Проверьте интернет." uz="Aloqa yoʻq. Internetni tekshiring." />;
-  }
-
-  // initData так и не появился (обычный браузер) — рендерим null, показывается
-  // серверный фолбэк-лендинг с кнопкой на бота.
-  if (diag.kind === "no_initdata_timeout") return null;
-
-  // Loading — сдержанный editorial-лоадер поверх фолбэка (serif-знак + пульсирующий
-  // аметистовый штрих). Респектит prefers-reduced-motion.
   return (
-    <div
-      className="absolute inset-0 z-50 flex flex-col items-center justify-center"
-      style={{ background: "var(--color-v2-paper)" }}
-    >
+    <>
+      {/* Editorial-лоадер: при уходе плавно растворяется (0.55s), открывая уже
+          «поднявшийся» лендинг — вместо резкого pop. Пульс штриха под serif-знаком
+          респектит prefers-reduced-motion. */}
       <div
+        aria-hidden={!showLoader}
+        className="absolute inset-0 z-50 flex flex-col items-center justify-center"
         style={{
-          fontFamily: "var(--font-v2-display)",
-          fontSize: 30,
-          letterSpacing: "-0.02em",
-          color: "var(--color-v2-ink-100)",
+          background: "var(--color-v2-paper)",
+          opacity: showLoader ? 1 : 0,
+          pointerEvents: showLoader ? "auto" : "none",
+          transition: "opacity 0.55s ease",
         }}
       >
-        Baxtlilar
+        <div
+          style={{
+            fontFamily: "var(--font-v2-display)",
+            fontSize: 30,
+            letterSpacing: "-0.02em",
+            color: "var(--color-v2-ink-100)",
+          }}
+        >
+          Baxtlilar
+        </div>
+        <div
+          className="motion-safe:animate-pulse"
+          style={{ width: 40, height: 2, marginTop: 16, background: "var(--color-v2-accent)" }}
+        />
+        <p
+          className="uppercase"
+          style={{
+            marginTop: 16,
+            fontFamily: "var(--font-v2-mono)",
+            fontSize: 11,
+            letterSpacing: "0.18em",
+            color: "var(--color-v2-ink-400)",
+          }}
+        >
+          Загрузка · Yuklanmoqda
+        </p>
       </div>
-      <div
-        className="motion-safe:animate-pulse"
-        style={{
-          width: 40,
-          height: 2,
-          marginTop: 16,
-          background: "var(--color-v2-accent)",
-        }}
-      />
-      <p
-        className="uppercase"
-        style={{
-          marginTop: 16,
-          fontFamily: "var(--font-v2-mono)",
-          fontSize: 11,
-          letterSpacing: "0.18em",
-          color: "var(--color-v2-ink-400)",
-        }}
-      >
-        Загрузка · Yuklanmoqda
-      </p>
-    </div>
+
+      {diag.kind === "register_required" && (
+        <TopNote ru="Сначала пройдите регистрацию в боте." uz="Avval botda roʻyxatdan oʻting." />
+      )}
+      {diag.kind === "bootstrap_error" && (
+        <TopNote
+          ru={
+            expiredToken
+              ? "Ссылка устарела. Вернитесь в бот и отправьте /start заново."
+              : "Не удалось войти. Вернитесь в бот и попробуйте снова."
+          }
+          uz={
+            expiredToken
+              ? "Havola muddati oʻtdi. Botga qaytib /start yuboring."
+              : "Kirish amalga oshmadi. Botga qaytib qayta urinib koʻring."
+          }
+        />
+      )}
+      {diag.kind === "fetch_error" && (
+        <TopNote ru="Нет связи. Проверьте интернет." uz="Aloqa yoʻq. Internetni tekshiring." />
+      )}
+    </>
   );
 }
 
