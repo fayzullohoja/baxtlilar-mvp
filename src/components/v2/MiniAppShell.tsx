@@ -31,7 +31,7 @@ export function MiniAppShell({
   return (
     <div
       data-v2="true"
-      className="min-h-screen flex flex-col"
+      className="min-h-screen flex flex-col v2-screen-in"
       style={{
         background: "var(--color-v2-paper)",
         color: "var(--color-v2-ink-100)",
@@ -51,10 +51,14 @@ export function MiniAppShell({
       >
         {eyebrow ? (
           <div
-            className="mb-6 text-[11px] uppercase tracking-[0.12em]"
+            className="mb-6"
             style={{
-              color: "var(--color-v2-ink-400)",
-              fontFamily: "var(--font-v2-mono)",
+              fontSize: "12px",
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: "0.14em",
+              color: "var(--color-v2-accent)",
+              fontFamily: "var(--font-v2-body)",
             }}
           >
             {eyebrow}

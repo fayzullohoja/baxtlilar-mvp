@@ -20,7 +20,8 @@ import {
  * брендированную страницу с логотипом, языковым переключателем, иконками
  * фич и крупным CTA. Дизайн от учредителя (2026-06-29 тест-проход).
  *
- * V1 brand tokens: baxt-coral / baxt-pink-bg / baxt-navy.
+ * V4 «Живой Baxtlilar» (Baxtlilar.dc.html): hero-градиент на весь экран,
+ * кремовый serif-заголовок, белая карточка фич, кремовый CTA.
  */
 export function WelcomeBranded({ locale }: { locale: string }) {
   const router = useRouter();
@@ -49,15 +50,17 @@ export function WelcomeBranded({ locale }: { locale: string }) {
 
   return (
     <div
+      data-v2="true"
+      className="v2-screen-in"
       style={{
         minHeight: "100vh",
-        background: "var(--color-baxt-pink-bg)",
+        background: "var(--v2-grad-hero)",
         position: "relative",
         overflow: "hidden",
         padding: "0 24px 32px",
       }}
     >
-      {/* Decorative pink hearts in background */}
+      {/* Decorative cream hearts in background */}
       <DecorativeHearts />
 
       {/* Language switcher */}
@@ -81,12 +84,9 @@ export function WelcomeBranded({ locale }: { locale: string }) {
       <h1
         style={{
           textAlign: "center",
-          fontSize: "32px",
-          fontWeight: 700,
-          color: "var(--color-baxt-navy)",
+          fontSize: "34px",
+          color: "#FFF7F0",
           margin: "8px 0 12px",
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
           letterSpacing: "-0.02em",
           position: "relative",
           zIndex: 1,
@@ -99,10 +99,10 @@ export function WelcomeBranded({ locale }: { locale: string }) {
         style={{
           textAlign: "center",
           fontSize: "14px",
-          color: "var(--color-baxt-navy)",
+          color: "#FFF7F0",
           margin: "0 0 6px",
           padding: "0 8px",
-          fontWeight: 500,
+          fontWeight: 600,
           lineHeight: 1.45,
           position: "relative",
           zIndex: 1,
@@ -115,7 +115,7 @@ export function WelcomeBranded({ locale }: { locale: string }) {
         style={{
           textAlign: "center",
           fontSize: "13px",
-          color: "var(--color-baxt-muted)",
+          color: "rgba(255, 247, 240, 0.85)",
           margin: "10px 0 28px",
           padding: "0 16px",
           lineHeight: 1.5,
@@ -128,12 +128,13 @@ export function WelcomeBranded({ locale }: { locale: string }) {
 
       {/* Features list */}
       <div
+        className="v2-rise"
         style={{
-          background: "white",
-          borderRadius: "16px",
+          background: "#fff",
+          borderRadius: "var(--v2-radius-card)",
           padding: "8px 0",
           marginBottom: "20px",
-          boxShadow: "0 2px 12px rgba(31, 58, 95, 0.06)",
+          boxShadow: "var(--v2-shadow-card-lg)",
           position: "relative",
           zIndex: 1,
         }}
@@ -142,18 +143,21 @@ export function WelcomeBranded({ locale }: { locale: string }) {
           icon={<IconShieldCheck size={22} stroke={2} />}
           title={t('feature_verified_title')}
           subtitle={t('feature_verified_subtitle')}
+          tone="teal"
         />
         <Divider />
         <FeatureRow
           icon={<IconLock size={22} stroke={2} />}
           title={t('feature_privacy_title')}
           subtitle={t('feature_privacy_subtitle')}
+          tone="teal"
         />
         <Divider />
         <FeatureRow
           icon={<IconUsers size={22} stroke={2} />}
           title={t('feature_respect_title')}
           subtitle={t('feature_respect_subtitle')}
+          tone="amber"
         />
       </div>
 
@@ -164,18 +168,19 @@ export function WelcomeBranded({ locale }: { locale: string }) {
         style={{
           width: "100%",
           height: "56px",
-          background: "var(--color-baxt-coral)",
-          color: "white",
+          background: "#FFF7F0",
+          color: "var(--color-v2-accent)",
           border: 0,
-          borderRadius: "999px",
+          borderRadius: "var(--v2-radius-lg)",
           fontSize: "16px",
-          fontWeight: 600,
+          fontWeight: 800,
+          letterSpacing: "-0.01em",
           cursor: busy ? "wait" : "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           gap: "8px",
-          boxShadow: "0 4px 14px rgba(226, 82, 107, 0.35)",
+          boxShadow: "0 10px 24px rgba(42, 26, 46, 0.28)",
           marginBottom: "20px",
           position: "relative",
           zIndex: 1,
@@ -186,11 +191,11 @@ export function WelcomeBranded({ locale }: { locale: string }) {
         {!busy ? <IconChevronRight size={20} stroke={2.5} /> : null}
       </button>
 
-      {/* Bottom safety note */}
+      {/* Bottom safety note — teal privacy plate */}
       <div
         style={{
-          background: "white",
-          borderRadius: "12px",
+          background: "var(--color-v2-chip-teal)",
+          borderRadius: "14px",
           padding: "14px 16px",
           display: "flex",
           alignItems: "flex-start",
@@ -203,14 +208,14 @@ export function WelcomeBranded({ locale }: { locale: string }) {
         <IconShieldLock
           size={20}
           stroke={2}
-          style={{ color: "var(--color-baxt-coral)", flexShrink: 0, marginTop: 1 }}
+          style={{ color: "var(--color-v2-teal)", flexShrink: 0, marginTop: 1 }}
         />
         <div>
           <div
             style={{
               fontSize: "13px",
-              fontWeight: 600,
-              color: "var(--color-baxt-navy)",
+              fontWeight: 700,
+              color: "var(--color-v2-chip-teal-ink)",
               marginBottom: "3px",
             }}
           >
@@ -218,8 +223,10 @@ export function WelcomeBranded({ locale }: { locale: string }) {
           </div>
           <div
             style={{
-              fontSize: "11px",
-              color: "var(--color-baxt-muted)",
+              fontSize: "11.5px",
+              fontWeight: 600,
+              color: "var(--color-v2-chip-teal-ink)",
+              opacity: 0.85,
               lineHeight: 1.45,
             }}
           >
@@ -233,7 +240,7 @@ export function WelcomeBranded({ locale }: { locale: string }) {
         style={{
           textAlign: "center",
           fontSize: "11px",
-          color: "var(--color-baxt-muted)",
+          color: "rgba(255, 247, 240, 0.8)",
           padding: "8px",
           display: "flex",
           alignItems: "center",
@@ -252,11 +259,11 @@ export function WelcomeBranded({ locale }: { locale: string }) {
           style={{
             marginTop: 12,
             padding: "10px 14px",
-            background: "rgba(180, 50, 50, 0.08)",
-            border: "1px solid rgba(180, 50, 50, 0.3)",
-            borderRadius: 8,
+            background: "#FBE7E4",
+            borderLeft: "3px solid var(--color-v2-danger)",
+            borderRadius: 12,
             fontSize: 12,
-            color: "var(--color-baxt-coral-dk)",
+            color: "#9A4B46",
             textAlign: "center",
             position: "relative",
             zIndex: 1,
@@ -280,21 +287,21 @@ function Logo() {
         width: 88,
         height: 88,
         borderRadius: "50%",
-        background: "var(--color-baxt-coral)",
+        background: "var(--v2-grad-brand)",
+        border: "3px solid rgba(255, 247, 240, 0.65)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
-        boxShadow: "0 6px 20px rgba(226, 82, 107, 0.35)",
+        boxShadow: "0 10px 26px rgba(42, 26, 46, 0.3)",
       }}
     >
       <span
         style={{
           fontSize: "44px",
           fontWeight: 800,
-          color: "white",
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          color: "#FFF7F0",
+          fontFamily: "var(--font-v2-display)",
           lineHeight: 1,
         }}
       >
@@ -309,14 +316,14 @@ function Logo() {
           width: 26,
           height: 26,
           borderRadius: "50%",
-          background: "white",
+          background: "#FFF7F0",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          boxShadow: "0 2px 6px rgba(31, 58, 95, 0.15)",
+          boxShadow: "0 2px 6px rgba(42, 26, 46, 0.25)",
         }}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--color-baxt-coral)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--color-v2-accent)">
           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
         </svg>
       </div>
@@ -337,10 +344,10 @@ function LanguageSwitcher({ current }: { current: string }) {
         right: 24,
         display: "flex",
         gap: "4px",
-        background: "white",
+        background: "#FFF7F0",
         padding: "4px",
         borderRadius: "999px",
-        boxShadow: "0 2px 8px rgba(31, 58, 95, 0.08)",
+        boxShadow: "0 2px 8px rgba(42, 26, 46, 0.18)",
         zIndex: 2,
       }}
     >
@@ -353,11 +360,11 @@ function LanguageSwitcher({ current }: { current: string }) {
             padding: "6px 12px",
             borderRadius: "999px",
             fontSize: "11px",
-            fontWeight: 600,
+            fontWeight: 700,
             background:
-              current === l.code ? "var(--color-baxt-coral)" : "transparent",
+              current === l.code ? "var(--color-v2-accent)" : "transparent",
             color:
-              current === l.code ? "white" : "var(--color-baxt-muted)",
+              current === l.code ? "#FFF7F0" : "var(--color-v2-ink-400)",
             textDecoration: "none",
             letterSpacing: "0.04em",
             transition: "all 0.15s ease",
@@ -374,11 +381,19 @@ function FeatureRow({
   icon,
   title,
   subtitle,
+  tone = "teal",
 }: {
   icon: React.ReactNode;
   title: string;
   subtitle: string;
+  tone?: "teal" | "amber";
 }) {
+  const tileBg =
+    tone === "amber" ? "var(--color-v2-chip-amber)" : "var(--color-v2-chip-teal)";
+  const tileInk =
+    tone === "amber"
+      ? "var(--color-v2-chip-amber-ink)"
+      : "var(--color-v2-chip-teal-ink)";
   return (
     <div
       style={{
@@ -392,9 +407,9 @@ function FeatureRow({
         style={{
           width: 44,
           height: 44,
-          borderRadius: "12px",
-          background: "var(--color-baxt-coral-bg)",
-          color: "var(--color-baxt-coral)",
+          borderRadius: "var(--v2-radius-md)",
+          background: tileBg,
+          color: tileInk,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -407,8 +422,8 @@ function FeatureRow({
         <div
           style={{
             fontSize: "14px",
-            fontWeight: 600,
-            color: "var(--color-baxt-navy)",
+            fontWeight: 700,
+            color: "var(--color-v2-ink-100)",
             marginBottom: "3px",
             lineHeight: 1.3,
           }}
@@ -418,7 +433,7 @@ function FeatureRow({
         <div
           style={{
             fontSize: "11px",
-            color: "var(--color-baxt-muted)",
+            color: "var(--color-v2-ink-400)",
             lineHeight: 1.4,
           }}
         >
@@ -436,8 +451,7 @@ function Divider() {
         marginLeft: "76px",
         marginRight: "18px",
         height: 1,
-        background: "var(--color-baxt-border)",
-        opacity: 0.4,
+        background: "var(--color-v2-border)",
       }}
     />
   );
@@ -480,7 +494,7 @@ function DeoHeart({
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="var(--color-baxt-coral)"
+      fill="#FFF7F0"
       style={style}
     >
       <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />

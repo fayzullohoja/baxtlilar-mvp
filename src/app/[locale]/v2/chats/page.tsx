@@ -52,6 +52,7 @@ export default async function V2ChatsPage({
     <>
       <AutoRefresh />
       <MiniAppShell eyebrow={t("title")} align="top" footer={null}>
+        <div className="v2-screen-in">
         {rows.length === 0 ? (
           <div style={{ marginTop: "60px" }}>
             <Headline size="md" as="h1">
@@ -70,7 +71,10 @@ export default async function V2ChatsPage({
               {t("activeDescription")}
             </Lead>
 
-            <ul style={{ listStyle: "none", padding: 0, marginTop: "32px" }}>
+            <ul
+              className="v2-rise"
+              style={{ listStyle: "none", padding: 0, marginTop: "32px" }}
+            >
               {rows.map((r) => {
                 const name = firstWord(r.name);
                 const initial = name[0] ?? "?";
@@ -79,15 +83,18 @@ export default async function V2ChatsPage({
                   <li
                     key={r.chatId}
                     style={{
-                      borderTop: "1px solid var(--color-v2-ink-500)",
+                      marginBottom: "10px",
                     }}
                   >
                     <Link
                       href={`/v2/chats/${r.chatId}`}
                       style={{
                         display: "flex",
-                        gap: "16px",
-                        padding: "20px 0",
+                        gap: "14px",
+                        padding: "14px 16px",
+                        background: "#fff",
+                        borderRadius: "var(--v2-radius-lg)",
+                        boxShadow: "var(--v2-shadow-card)",
                         textDecoration: "none",
                         alignItems: "center",
                         color: "inherit",
@@ -98,13 +105,13 @@ export default async function V2ChatsPage({
                           width: "44px",
                           height: "44px",
                           borderRadius: "50%",
-                          background: "transparent",
-                          border: "1px solid var(--color-v2-ink-300)",
+                          background: "var(--v2-grad-brand)",
                           display: "grid",
                           placeItems: "center",
-                          fontFamily: "var(--font-v2-display)",
+                          fontFamily: "var(--font-v2-body)",
+                          fontWeight: 800,
                           fontSize: "16px",
-                          color: "var(--color-v2-ink-200)",
+                          color: "#FFF7F0",
                           flexShrink: 0,
                         }}
                       >
@@ -124,7 +131,7 @@ export default async function V2ChatsPage({
                             style={{
                               fontSize: "16px",
                               color: "var(--color-v2-ink-100)",
-                              fontWeight: hasUnread ? 600 : 500,
+                              fontWeight: hasUnread ? 800 : 600,
                               overflow: "hidden",
                               textOverflow: "ellipsis",
                               whiteSpace: "nowrap",
@@ -152,10 +159,10 @@ export default async function V2ChatsPage({
                           {hasUnread ? (
                             <span
                               style={{
-                                width: "6px",
-                                height: "6px",
+                                width: "7px",
+                                height: "7px",
                                 borderRadius: "50%",
-                                background: "var(--color-v2-ink-100)",
+                                background: "var(--color-v2-accent)",
                                 flexShrink: 0,
                               }}
                             />
@@ -184,6 +191,7 @@ export default async function V2ChatsPage({
             </ul>
           </>
         )}
+        </div>
       </MiniAppShell>
       <BottomNav active="chats" unread={totalUnread} />
     </>

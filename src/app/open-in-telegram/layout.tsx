@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Manrope, Piazzolla } from "next/font/google";
 import Script from "next/script";
 import "../globals.css";
 
@@ -8,8 +8,16 @@ import "../globals.css";
 // (сырой текст). Даём сегменту root-layout с <html>/<body> + таблицей стилей +
 // шрифтами (паттерн как в [locale]/layout.tsx и admin/layout.tsx).
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin", "cyrillic"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const manrope = Manrope({
+  variable: "--font-manrope",
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "600", "700", "800"],
+});
+const piazzolla = Piazzolla({
+  variable: "--font-piazzolla",
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "600", "700", "800"],
+});
 
 export const metadata: Metadata = {
   title: "Baxtlilar — откройте в Telegram",
@@ -23,7 +31,7 @@ export default function OpenInTelegramLayout({ children }: { children: React.Rea
       // TG WebApp SDK выставляет --tg-viewport-height на <html> после загрузки →
       // React видит рассинхрон атрибутов. Ожидаемо для внешнего скрипта, глушим.
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${manrope.variable} ${piazzolla.variable} h-full antialiased`}
     >
       <body data-v2="true" className="min-h-full bg-v2-paper text-v2-ink-100">
         {/* TG Desktop не инжектит window.Telegram.WebApp надёжно — грузим SDK

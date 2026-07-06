@@ -78,6 +78,7 @@ export default async function V2AnketaPreviewPage({
       <Lead>{t("preview_lead")}</Lead>
 
       <div
+        className="v2-rise"
         style={{
           marginTop: "32px",
           paddingTop: "24px",

@@ -50,7 +50,17 @@ export default async function V2SettingsPage({
   return (
     <>
       <MiniAppShell eyebrow={t('title')} align="top" footer={null}>
-        <div style={{ marginBottom: "32px" }}>
+        <div className="v2-screen-in">
+        <div
+          className="v2-rise"
+          style={{
+            marginBottom: "24px",
+            background: "#fff",
+            borderRadius: "var(--v2-radius-card)",
+            boxShadow: "var(--v2-shadow-card)",
+            padding: "22px 20px",
+          }}
+        >
           <Headline size="lg" as="h1">
             {name || t('profileFallback')}
             {age ? `, ${age}` : ""}
@@ -59,7 +69,7 @@ export default async function V2SettingsPage({
             style={{
               marginTop: "8px",
               fontSize: "14px",
-              color: "var(--color-v2-ink-400)",
+              color: "var(--color-v2-ink-300)",
               fontFamily: "var(--font-v2-body)",
             }}
           >
@@ -67,11 +77,14 @@ export default async function V2SettingsPage({
           </div>
           <div
             style={{
+              display: "inline-block",
               marginTop: "12px",
-              fontSize: "11px",
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              color: "var(--color-v2-ink-400)",
+              padding: "5px 12px",
+              fontSize: "12px",
+              fontWeight: 700,
+              background: "var(--color-v2-chip)",
+              color: "var(--color-v2-chip-ink)",
+              borderRadius: "999px",
               fontFamily: "var(--font-v2-body)",
             }}
           >
@@ -85,7 +98,7 @@ export default async function V2SettingsPage({
           style={{
             marginTop: "60px",
             paddingTop: "24px",
-            borderTop: "1px solid var(--color-v2-ink-500)",
+            borderTop: "1px solid var(--color-v2-border)",
             fontSize: "12px",
             color: "var(--color-v2-ink-400)",
             fontFamily: "var(--font-v2-body)",
@@ -95,6 +108,7 @@ export default async function V2SettingsPage({
           {t('versionInfo')}
         </div>
         <div style={{ height: "80px" }} />
+        </div>
       </MiniAppShell>
       <BottomNav active="profile" unread={unread} />
     </>

@@ -25,19 +25,25 @@ type Props = {
 function Section({
   title,
   items,
+  marker = "check",
 }: {
   title: string;
   items: string[];
+  /** check — гранатовый кружок с ✓; note — янтарный кружок с ! («На заметку») */
+  marker?: "check" | "note";
 }) {
   if (!items.length) return null;
+  const markerBg =
+    marker === "note" ? "var(--v2-grad-amber)" : "var(--v2-grad-primary)";
   return (
-    <div style={{ marginTop: "28px" }}>
+    <div style={{ marginTop: "24px" }}>
       <div
         style={{
-          fontSize: "11px",
+          fontSize: "12px",
+          fontWeight: 800,
           textTransform: "uppercase",
-          letterSpacing: "0.12em",
-          color: "var(--color-v2-ink-400)",
+          letterSpacing: "0.14em",
+          color: "var(--color-v2-accent)",
           marginBottom: "10px",
           fontFamily: "var(--font-v2-body)",
         }}
@@ -54,20 +60,29 @@ function Section({
               lineHeight: "1.55",
               color: "var(--color-v2-ink-200)",
               marginBottom: "10px",
-              paddingLeft: "16px",
+              paddingLeft: "26px",
               position: "relative",
             }}
           >
             <span
+              aria-hidden
               style={{
                 position: "absolute",
                 left: 0,
-                top: "10px",
-                width: "6px",
-                height: "1px",
-                background: "var(--color-v2-ink-300)",
+                top: "3px",
+                width: "17px",
+                height: "17px",
+                borderRadius: "999px",
+                background: markerBg,
+                color: "#ffffff",
+                fontSize: "10px",
+                fontWeight: 800,
+                lineHeight: "17px",
+                textAlign: "center",
               }}
-            />
+            >
+              {marker === "note" ? "!" : "✓"}
+            </span>
             {item}
           </li>
         ))}
@@ -82,21 +97,24 @@ export function MatchStoryCard({ story, candidateName }: Props) {
 
   return (
     <section
+      className="v2-rise"
       style={{
-        background: "var(--color-v2-paper)",
-        border: "1px solid var(--color-v2-ink-500)",
-        borderRadius: "var(--v2-radius-lg)",
-        padding: "32px 24px",
-        marginTop: "24px",
+        background: "linear-gradient(160deg, #FFF7F0, #FBEDE4)",
+        border: "1px solid #F3D7CB",
+        borderRadius: "var(--v2-radius-card)",
+        boxShadow: "var(--v2-shadow-card)",
+        padding: "26px 20px 24px",
+        marginTop: "16px",
       }}
     >
       <div
         style={{
-          fontSize: "11px",
+          fontSize: "12px",
+          fontWeight: 800,
           textTransform: "uppercase",
-          letterSpacing: "0.12em",
-          color: "var(--color-v2-ink-400)",
-          marginBottom: "12px",
+          letterSpacing: "0.14em",
+          color: "var(--color-v2-accent)",
+          marginBottom: "10px",
           fontFamily: "var(--font-v2-body)",
         }}
       >
@@ -106,24 +124,26 @@ export function MatchStoryCard({ story, candidateName }: Props) {
         Почему мы предлагаем {candidateName}.
       </Headline>
 
-      <Section title="Что у Вас общего" items={story.reasons} />
-      <Section title="На что обратить внимание" items={story.cautions} />
+      <Section title="Что у Вас общего" items={story.reasons} marker="check" />
+      <Section title="На что обратить внимание" items={story.cautions} marker="note" />
 
       {story.advice ? (
         <div
           style={{
-            marginTop: "28px",
-            paddingTop: "20px",
-            borderTop: "1px solid var(--color-v2-ink-500)",
+            marginTop: "24px",
+            background: "var(--color-v2-chip-teal)",
+            borderRadius: "14px",
+            padding: "14px 16px",
           }}
         >
           <div
             style={{
-              fontSize: "11px",
+              fontSize: "12px",
+              fontWeight: 800,
               textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              color: "var(--color-v2-ink-400)",
-              marginBottom: "10px",
+              letterSpacing: "0.14em",
+              color: "var(--color-v2-chip-teal-ink)",
+              marginBottom: "8px",
               fontFamily: "var(--font-v2-body)",
             }}
           >
@@ -132,9 +152,10 @@ export function MatchStoryCard({ story, candidateName }: Props) {
           <p
             style={{
               fontFamily: "var(--font-v2-body)",
-              fontSize: "15px",
+              fontSize: "14.5px",
+              fontWeight: 600,
               lineHeight: "1.55",
-              color: "var(--color-v2-ink-200)",
+              color: "var(--color-v2-chip-teal-ink)",
               margin: 0,
               fontStyle: "italic",
             }}

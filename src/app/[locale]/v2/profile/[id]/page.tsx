@@ -106,9 +106,11 @@ export default async function V2ProfileDetailPage({
     return (
       <>
         <MiniAppShell eyebrow={t('title')} align="top" footer={null}>
-          <RevealedProfile profile={data} locale={locale} />
-          <ProfileSafetyActions targetId={id} targetFirstName={firstName} />
-          <div style={{ height: "80px" }} />
+          <div className="v2-screen-in">
+            <RevealedProfile profile={data} locale={locale} />
+            <ProfileSafetyActions targetId={id} targetFirstName={firstName} />
+            <div style={{ height: "80px" }} />
+          </div>
         </MiniAppShell>
         <BottomNav active="feed" unread={unread} />
       </>
@@ -139,9 +141,11 @@ export default async function V2ProfileDetailPage({
   return (
     <>
       <MiniAppShell eyebrow={t('titlePreMutual')} align="top" footer={null}>
-        <ProgressiveProfile profile={progressiveData} locale={locale} />
-        <ProfileSafetyActions targetId={id} targetFirstName={firstName} />
-        <div style={{ height: "80px" }} />
+        <div className="v2-screen-in">
+          <ProgressiveProfile profile={progressiveData} locale={locale} />
+          <ProfileSafetyActions targetId={id} targetFirstName={firstName} />
+          <div style={{ height: "80px" }} />
+        </div>
       </MiniAppShell>
       <BottomNav active="feed" unread={unread} />
     </>

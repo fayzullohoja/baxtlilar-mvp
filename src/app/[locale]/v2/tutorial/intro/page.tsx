@@ -32,16 +32,18 @@ export default async function TutorialIntroPage({
       align="top"
       footer={<TutorialStep cta={t('next')} />}
     >
-      <StepDots total={4} current={1} />
-      <Headline size="lg" as="h1">
-        {t('intro.heading')}
-      </Headline>
-      <Lead>
-        {t('intro.body1')}
-      </Lead>
-      <Lead style={{ marginTop: "20px" }}>
-        {t('intro.body2')}
-      </Lead>
+      <div className="v2-screen-in">
+        <StepDots total={4} current={1} />
+        <Headline size="lg" as="h1">
+          {t('intro.heading')}
+        </Headline>
+        <Lead>
+          {t('intro.body1')}
+        </Lead>
+        <Lead style={{ marginTop: "20px" }}>
+          {t('intro.body2')}
+        </Lead>
+      </div>
     </MiniAppShell>
   );
 }

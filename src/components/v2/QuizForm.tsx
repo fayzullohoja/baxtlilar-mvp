@@ -9,8 +9,9 @@ import { QUESTIONS } from "@/lib/quiz/questions";
 /**
  * V2 Quiz (Blueprint §3.3 B7).
  *
- * 10 вопросов Big Five (O/C/E/A/ES). Шкала 1-5. Editorial-стиль:
- * вопросы как нумерованные параграфы, шкала — крупные кнопки в строку.
+ * 10 вопросов Big Five (O/C/E/A/ES). Шкала 1-5. Стиль «Живой Baxtlilar»:
+ * тёмный экран (--v2-grad-dark), вопросы — белые serif-параграфы, шкала —
+ * белые пилюли (выбранная — гранат), прогресс — amber-градиент.
  *
  * Не paginate (one-at-a-time): 10 вопросов помещаются в один скролл, и
  * пользователь может «вернуться и переспросить».
@@ -60,33 +61,61 @@ export function V2QuizForm({ locale }: { locale: string }) {
 
   return (
     <div>
-      <div
-        style={{
-          fontFamily: "var(--font-v2-body)",
-          fontSize: "12px",
-          color: "var(--color-v2-ink-400)",
-          marginBottom: "32px",
-        }}
-      >
-        {t('progress', { progress, total: QUESTIONS.length })}
+      <div style={{ marginBottom: "32px" }}>
+        <div
+          style={{
+            fontFamily: "var(--font-v2-body)",
+            fontSize: "12px",
+            fontWeight: 800,
+            textTransform: "uppercase",
+            letterSpacing: "0.14em",
+            color: "var(--color-v2-amber-2)",
+            marginBottom: "10px",
+          }}
+        >
+          {t('progress', { progress, total: QUESTIONS.length })}
+        </div>
+        <div
+          style={{
+            height: "7px",
+            borderRadius: "99px",
+            background: "rgba(255, 247, 240, 0.15)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              height: "100%",
+              width: `${(progress / QUESTIONS.length) * 100}%`,
+              borderRadius: "99px",
+              background: "var(--v2-grad-amber)",
+              transition: "width 0.3s ease",
+            }}
+          />
+        </div>
       </div>
 
       {QUESTIONS.map((q, i) => (
         <div key={q.id} style={{ marginBottom: "40px" }}>
           <p
             style={{
-              fontFamily: "var(--font-v2-body)",
-              fontSize: "17px",
-              lineHeight: "1.45",
-              color: "var(--color-v2-ink-100)",
+              fontFamily: "var(--font-v2-display)",
+              fontWeight: 800,
+              fontSize: "22px",
+              lineHeight: "1.3",
+              letterSpacing: "-0.01em",
+              color: "#FFF7F0",
               marginBottom: "16px",
             }}
           >
             <span
               style={{
-                fontFamily: "var(--font-v2-display)",
-                color: "var(--color-v2-ink-400)",
+                fontFamily: "var(--font-v2-body)",
+                fontWeight: 800,
+                fontSize: "13px",
+                color: "var(--color-v2-amber-2)",
                 marginRight: "8px",
+                verticalAlign: "middle",
               }}
             >
               {String(i + 1).padStart(2, "0")}
@@ -104,12 +133,16 @@ export function V2QuizForm({ locale }: { locale: string }) {
                   style={{
                     flex: 1,
                     padding: "12px 0",
-                    fontFamily: "var(--font-v2-display)",
+                    fontFamily: "var(--font-v2-body)",
+                    fontWeight: 800,
                     fontSize: "16px",
-                    color: selected ? "var(--color-v2-paper)" : "var(--color-v2-ink-200)",
-                    background: selected ? "var(--color-v2-ink-100)" : "transparent",
-                    border: `1px solid ${selected ? "var(--color-v2-ink-100)" : "var(--color-v2-ink-500)"}`,
+                    color: selected ? "#fff" : "var(--color-v2-ink-200)",
+                    background: selected ? "var(--color-v2-accent)" : "#fff",
+                    border: "none",
                     borderRadius: "var(--v2-radius-md)",
+                    boxShadow: selected
+                      ? "0 6px 16px rgba(193, 54, 47, 0.35)"
+                      : "0 2px 8px rgba(42, 26, 46, 0.12)",
                     cursor: "pointer",
                     transition: "all 0.12s ease",
                   }}
@@ -124,7 +157,8 @@ export function V2QuizForm({ locale }: { locale: string }) {
               display: "flex",
               justifyContent: "space-between",
               fontSize: "11px",
-              color: "var(--color-v2-ink-400)",
+              fontWeight: 600,
+              color: "rgba(255, 247, 240, 0.6)",
               fontFamily: "var(--font-v2-body)",
               marginTop: "6px",
             }}
@@ -139,11 +173,12 @@ export function V2QuizForm({ locale }: { locale: string }) {
         <div
           style={{
             padding: "10px 14px",
-            background: "rgba(180, 50, 50, 0.08)",
-            border: "1px solid rgba(180, 50, 50, 0.3)",
-            borderRadius: "var(--v2-radius-md)",
+            background: "#FBE7E4",
+            borderLeft: "3px solid var(--color-v2-danger)",
+            borderRadius: "12px",
             fontSize: "13px",
-            color: "var(--color-v2-ink-200)",
+            fontWeight: 600,
+            color: "#9A4B46",
             fontFamily: "var(--font-v2-body)",
             marginBottom: "16px",
           }}

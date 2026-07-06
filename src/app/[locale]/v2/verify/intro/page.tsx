@@ -30,76 +30,122 @@ export default async function V2VerificationIntroPage({
       align="top"
       footer={<VerificationIntroCta />}
     >
-      <Headline size="lg" as="h1">
-        {t('headline')}
-      </Headline>
-      <Lead>
-        {t('intro_description')}
-      </Lead>
+      <div className="v2-screen-in">
+        <Headline size="lg" as="h1">
+          {t('headline')}
+        </Headline>
+        <Lead>
+          {t('intro_description')}
+        </Lead>
 
-      <div
-        style={{
-          marginTop: "32px",
-          paddingTop: "24px",
-          borderTop: "1px solid var(--color-v2-ink-500)",
-        }}
-      >
-        <Step n={1} title={t('step_1_title')} body={t('step_1_body')} />
-        <Step n={2} title={t('step_2_title')} body={t('step_2_body')} />
-        <Step n={3} title={t('step_3_title')} body={t('step_3_body')} />
-      </div>
+        <div style={{ marginTop: "28px" }}>
+          <Step n={1} title={t('step_1_title')} body={t('step_1_body')} tone="amber" />
+          <Step n={2} title={t('step_2_title')} body={t('step_2_body')} tone="teal" />
+          <Step n={3} title={t('step_3_title')} body={t('step_3_body')} tone="neutral" />
+        </div>
 
-      <div
-        style={{
-          marginTop: "32px",
-          paddingTop: "20px",
-          borderTop: "1px solid var(--color-v2-ink-500)",
-          fontSize: "12px",
-          color: "var(--color-v2-ink-400)",
-          fontFamily: "var(--font-v2-body)",
-          lineHeight: "1.55",
-        }}
-      >
-        {t('privacy_footer')}
+        <div
+          style={{
+            marginTop: "24px",
+            padding: "12px 14px",
+            background: "var(--color-v2-chip-teal)",
+            borderRadius: "14px",
+            fontSize: "12.5px",
+            fontWeight: 600,
+            color: "var(--color-v2-chip-teal-ink)",
+            fontFamily: "var(--font-v2-body)",
+            lineHeight: "1.55",
+          }}
+        >
+          {t('privacy_footer')}
+        </div>
       </div>
     </MiniAppShell>
   );
 }
 
-function Step({ n, title, body }: { n: number; title: string; body: string }) {
+const STEP_TONES = {
+  amber: {
+    bg: "var(--color-v2-chip-amber)",
+    ink: "var(--color-v2-chip-amber-ink)",
+  },
+  teal: {
+    bg: "var(--color-v2-chip-teal)",
+    ink: "var(--color-v2-chip-teal-ink)",
+  },
+  neutral: {
+    bg: "var(--color-v2-chip)",
+    ink: "var(--color-v2-chip-ink)",
+  },
+} as const;
+
+function Step({
+  n,
+  title,
+  body,
+  tone = "neutral",
+}: {
+  n: number;
+  title: string;
+  body: string;
+  tone?: keyof typeof STEP_TONES;
+}) {
+  const c = STEP_TONES[tone];
   return (
-    <div style={{ marginBottom: "24px" }}>
+    <div
+      className="v2-rise"
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "14px",
+        background: "#fff",
+        borderRadius: "var(--v2-radius-card)",
+        boxShadow: "var(--v2-shadow-card)",
+        padding: "16px",
+        marginBottom: "12px",
+      }}
+    >
       <div
         style={{
+          width: 42,
+          height: 42,
+          flexShrink: 0,
+          borderRadius: "var(--v2-radius-md)",
+          background: c.bg,
+          color: c.ink,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           fontFamily: "var(--font-v2-display)",
-          fontSize: "13px",
-          letterSpacing: "0.1em",
-          color: "var(--color-v2-ink-400)",
-          marginBottom: "4px",
+          fontWeight: 800,
+          fontSize: "18px",
         }}
       >
-        {String(n).padStart(2, "0")}
+        {n}
       </div>
-      <div
-        style={{
-          fontFamily: "var(--font-v2-body)",
-          fontSize: "17px",
-          fontWeight: 500,
-          color: "var(--color-v2-ink-100)",
-          marginBottom: "4px",
-        }}
-      >
-        {title}
-      </div>
-      <div
-        style={{
-          fontFamily: "var(--font-v2-body)",
-          fontSize: "14px",
-          lineHeight: "1.5",
-          color: "var(--color-v2-ink-300)",
-        }}
-      >
-        {body}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontFamily: "var(--font-v2-body)",
+            fontSize: "16px",
+            fontWeight: 700,
+            color: "var(--color-v2-ink-100)",
+            marginBottom: "4px",
+            lineHeight: 1.3,
+          }}
+        >
+          {title}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-v2-body)",
+            fontSize: "14px",
+            lineHeight: "1.5",
+            color: "var(--color-v2-ink-300)",
+          }}
+        >
+          {body}
+        </div>
       </div>
     </div>
   );

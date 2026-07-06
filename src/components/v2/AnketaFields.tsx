@@ -5,12 +5,12 @@ import { CITY_GROUPS } from "@/lib/profile/cities";
 import type { Opt } from "@/lib/profile/options";
 
 /**
- * V2 Anketa Fields — editorial-style form primitives.
+ * V2 Anketa Fields — form primitives.
  *
- * Visual DNA:
- *   - Без border-box. Только underline под label + content.
- *   - Без яркого фокусного outline — серый underline становится ink-100.
- *   - Минимум контейнеров: label сверху, input — отдельная строка.
+ * V3 Visual DNA (Baxtlilar.dc.html):
+ *   - Инпуты — белые боксы с hairline-бортом (#F0DDD0), radius 14.
+ *   - Label — 13px / 700 / сливовый secondary (#5A4A5E), sentence case.
+ *   - Пилюли выбора — заливка гранатовым при выборе; чипы — градиент.
  */
 
 // =============================================================================
@@ -29,29 +29,24 @@ export function Field({
   children: ReactNode;
 }) {
   // Bug #34 (loop pass 10): a11y — связь label↔input через htmlFor/id.
-  // Раньше label был "блочно-абсолютной" подписью без semantic привязки —
-  // screen reader не озвучивал поле при фокусе.
   const id = useId();
   return (
-    <div style={{ marginBottom: "32px" }}>
+    <div style={{ marginBottom: "22px" }}>
       <label
         htmlFor={id}
         style={{
           display: "block",
-          fontSize: "11px",
-          textTransform: "uppercase",
-          letterSpacing: "0.12em",
-          color: "var(--color-v2-ink-400)",
+          fontSize: "13px",
+          fontWeight: 700,
+          color: "var(--color-v2-ink-300)",
           fontFamily: "var(--font-v2-body)",
-          marginBottom: "10px",
+          marginBottom: "7px",
         }}
       >
         {label}
-        {required ? <span style={{ color: "var(--color-v2-ink-300)", marginLeft: "4px" }}>*</span> : null}
+        {required ? <span style={{ color: "var(--color-v2-accent)", marginLeft: "4px" }}>*</span> : null}
       </label>
-      {/* Wrap children в div с id чтобы native screen reader увидел label→control.
-          children сами — pure input/select/radio/chips — id на wrapper достаточно
-          для general announcement при focus в native browser semantics. */}
+      {/* Wrap children в div с id чтобы native screen reader увидел label→control. */}
       <div id={id}>{children}</div>
       {hint ? (
         <div
@@ -76,15 +71,15 @@ export function Field({
 
 const inputBaseStyle: React.CSSProperties = {
   width: "100%",
-  padding: "10px 0 12px",
+  boxSizing: "border-box",
+  padding: "14px 16px",
   fontFamily: "var(--font-v2-body)",
-  fontSize: "17px",
+  fontSize: "15px",
   lineHeight: "1.4",
   color: "var(--color-v2-ink-100)",
-  background: "transparent",
-  border: "none",
-  borderBottom: "1px solid var(--color-v2-ink-500)",
-  borderRadius: 0,
+  background: "#ffffff",
+  border: "1.5px solid var(--color-v2-ink-500)",
+  borderRadius: "var(--v2-radius-md)",
   outline: "none",
 };
 
@@ -135,16 +130,16 @@ export function TextArea({
       placeholder={placeholder}
       style={{
         ...inputBaseStyle,
-        padding: "10px 0 12px",
         resize: "vertical",
-        minHeight: "84px",
+        minHeight: "96px",
+        lineHeight: "1.5",
       }}
     />
   );
 }
 
 // =============================================================================
-// Select (radio-style для коротких списков, native select для длинных)
+// Select (radio-пилюли для коротких списков, native select для длинных)
 // =============================================================================
 
 export function Select({
@@ -164,7 +159,7 @@ export function Select({
 
   if (useRadio) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "4px" }}>
         {options.map((opt) => {
           const label = locale === "uz" ? opt.uz : opt.ru;
           const selected = value === opt.value;
@@ -175,16 +170,17 @@ export function Select({
               onClick={() => onChange(opt.value)}
               style={{
                 width: "100%",
-                padding: "14px 16px",
+                padding: "13px 16px",
                 textAlign: "left",
                 fontFamily: "var(--font-v2-body)",
-                fontSize: "15px",
-                color: selected ? "var(--color-v2-paper)" : "var(--color-v2-ink-100)",
-                background: selected ? "var(--color-v2-ink-100)" : "transparent",
-                border: `1px solid ${selected ? "var(--color-v2-ink-100)" : "var(--color-v2-ink-500)"}`,
+                fontSize: "14px",
+                fontWeight: 700,
+                color: selected ? "#ffffff" : "var(--color-v2-ink-300)",
+                background: selected ? "var(--color-v2-accent)" : "#ffffff",
+                border: `1.5px solid ${selected ? "var(--color-v2-accent)" : "var(--color-v2-ink-500)"}`,
                 borderRadius: "var(--v2-radius-md)",
                 cursor: "pointer",
-                transition: "all 0.12s ease",
+                transition: "all 0.15s ease",
               }}
             >
               {label}
@@ -203,10 +199,10 @@ export function Select({
         ...inputBaseStyle,
         appearance: "none",
         backgroundImage:
-          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23656468' d='M1 1l5 5 5-5'/%3E%3C/svg%3E\")",
+          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238a7a8e' d='M1 1l5 5 5-5'/%3E%3C/svg%3E\")",
         backgroundRepeat: "no-repeat",
-        backgroundPosition: "right 0 center",
-        paddingRight: "20px",
+        backgroundPosition: "right 16px center",
+        paddingRight: "40px",
       }}
     >
       <option value="" disabled>
@@ -243,7 +239,7 @@ export function Chips({
       style={{
         display: "flex",
         flexWrap: "wrap",
-        gap: "8px",
+        gap: "9px",
         marginTop: "8px",
       }}
     >
@@ -258,16 +254,17 @@ export function Chips({
             onClick={() => !atMax && onToggle(opt.value)}
             disabled={atMax}
             style={{
-              padding: "8px 14px",
+              padding: "10px 16px",
               fontFamily: "var(--font-v2-body)",
-              fontSize: "13px",
-              color: isSelected ? "var(--color-v2-paper)" : "var(--color-v2-ink-200)",
-              background: isSelected ? "var(--color-v2-ink-100)" : "transparent",
-              border: `1px solid ${isSelected ? "var(--color-v2-ink-100)" : "var(--color-v2-ink-500)"}`,
+              fontSize: "13.5px",
+              fontWeight: 600,
+              color: isSelected ? "#ffffff" : "var(--color-v2-chip-ink)",
+              background: isSelected ? "var(--v2-grad-primary)" : "var(--color-v2-chip)",
+              border: `1.5px solid ${isSelected ? "transparent" : "var(--color-v2-ink-500)"}`,
               borderRadius: "999px",
               cursor: atMax ? "not-allowed" : "pointer",
-              opacity: atMax ? 0.3 : 1,
-              transition: "all 0.12s ease",
+              opacity: atMax ? 0.35 : 1,
+              transition: "all 0.15s ease",
             }}
           >
             {label}
@@ -301,10 +298,10 @@ export function CitySelect({
         ...inputBaseStyle,
         appearance: "none",
         backgroundImage:
-          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23656468' d='M1 1l5 5 5-5'/%3E%3C/svg%3E\")",
+          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238a7a8e' d='M1 1l5 5 5-5'/%3E%3C/svg%3E\")",
         backgroundRepeat: "no-repeat",
-        backgroundPosition: "right 0 center",
-        paddingRight: "20px",
+        backgroundPosition: "right 16px center",
+        paddingRight: "40px",
       }}
     >
       <option value="" disabled>
@@ -361,12 +358,13 @@ export function NumberScale({
                 padding: "12px 0",
                 fontFamily: "var(--font-v2-display)",
                 fontSize: "18px",
-                color: selected ? "var(--color-v2-paper)" : "var(--color-v2-ink-200)",
-                background: selected ? "var(--color-v2-ink-100)" : "transparent",
-                border: `1px solid ${selected ? "var(--color-v2-ink-100)" : "var(--color-v2-ink-500)"}`,
+                fontWeight: 800,
+                color: selected ? "#ffffff" : "var(--color-v2-ink-300)",
+                background: selected ? "var(--color-v2-accent)" : "#ffffff",
+                border: `1.5px solid ${selected ? "var(--color-v2-accent)" : "var(--color-v2-ink-500)"}`,
                 borderRadius: "var(--v2-radius-md)",
                 cursor: "pointer",
-                transition: "all 0.12s ease",
+                transition: "all 0.15s ease",
               }}
             >
               {n}

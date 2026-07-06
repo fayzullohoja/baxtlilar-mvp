@@ -29,46 +29,107 @@
  *   - Verified is the floor, not the badge
  * ============================================================================ */
 @theme {
-  /* --- Цвет: тёплый off-white фон + глубокий ink + один аметистовый акцент --- */
-  --color-v2-paper: #faf6f1; /* основной фон — бумажный off-white */
-  --color-v2-paper-2: #f4efe8; /* secondary surface */
-  --color-v2-paper-3: #ece7df; /* tertiary surface */
-  --color-v2-ink-100: #0a0908; /* near-black для headlines */
-  --color-v2-ink-200: #1a1614; /* body text */
-  --color-v2-ink-300: #4a4541; /* secondary text */
-  --color-v2-ink-400: #807a75; /* tertiary text / muted */
-  --color-v2-border: #e0d9cf;
+  /* ==========================================================================
+   * V3 Visual DNA — «Живой Baxtlilar» (2026-07-07, источник: Baxtlilar.dc.html
+   * handoff из Claude Design). Тёплая карамель + глубокий сливовый ink +
+   * гранатово-янтарные градиенты + бирюза доверия. Serif Piazzolla 800 для
+   * заголовков, Manrope для UI. Имена токенов сохранены — консюмеры не трогаем.
+   * ========================================================================== */
 
-  /* Аметистовый accent — единственный цвет для CTA / лайков / state */
-  --color-v2-accent: #4a2c5a;
-  --color-v2-accent-soft: rgba(74, 44, 90, 0.08);
-  --color-v2-accent-hover: #5d3a73;
+  /* --- Поверхности: карамельная бумага --- */
+  --color-v2-paper: #fff7f0; /* основной фон — тёплый кремовый */
+  --color-v2-paper-2: #fbede4; /* secondary surface / chip bg */
+  --color-v2-paper-3: #f7e3d6; /* tertiary surface */
+  --color-v2-ink-100: #2a1a2e; /* глубокий сливовый — headlines */
+  --color-v2-ink-200: #4a3a4e; /* body text */
+  --color-v2-ink-300: #5a4a5e; /* secondary text / labels */
+  --color-v2-ink-400: #8a7a8e; /* muted */
+  --color-v2-ink-500: #f0ddd0; /* hairline борта инпутов/пилюль */
+  --color-v2-border: #f3e3d8;
 
-  /* Семантические цвета (использовать СКРОМНО — только для критичных состояний) */
-  --color-v2-success: #2a6f4a;
-  --color-v2-warning: #c7541e;
-  --color-v2-danger: #b8362a;
+  /* Гранатовый accent — CTA / выбранное / эмоция */
+  --color-v2-accent: #c1362f;
+  --color-v2-accent-soft: rgba(193, 54, 47, 0.08);
+  --color-v2-accent-hover: #d64550;
 
-  /* --- Типография: кириллический serif для headlines + sans для UI --- */
-  /* Headlines: Druk Cyrillic / Kazimir Cyrillic (будет лицензировано),
-     fallback на качественные default serif. */
-  --font-v2-display: "Druk Cyrillic Text", "Kazimir Cyrillic", "PT Serif Pro",
-    Georgia, "Times New Roman", serif;
-  --font-v2-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    "Helvetica Neue", Arial, sans-serif;
+  /* Янтарь — тепло/премиум; бирюза — доверие/верификация */
+  --color-v2-amber: #e9a23b;
+  --color-v2-amber-2: #f2b84b;
+  --color-v2-teal: #159aa0;
+  --color-v2-teal-2: #1fb6b0;
+
+  /* Чипы и информационные плашки */
+  --color-v2-chip: #fbede4; /* нейтральный чип */
+  --color-v2-chip-ink: #5a4a5e;
+  --color-v2-chip-teal: #eaf7f6; /* приватность/траст */
+  --color-v2-chip-teal-ink: #0d6b6f;
+  --color-v2-chip-amber: #fdf0db; /* подсказки/премиум */
+  --color-v2-chip-amber-ink: #9a6b1e;
+
+  /* Disabled */
+  --color-v2-disabled-bg: #eadfd5;
+  --color-v2-disabled-ink: #bbaaa8;
+
+  /* Семантические цвета */
+  --color-v2-success: #159aa0;
+  --color-v2-warning: #e9a23b;
+  --color-v2-danger: #b5322b;
+
+  /* --- Типография: Piazzolla (serif, 800 для headlines) + Manrope (UI) --- */
+  --font-v2-display: var(--font-piazzolla), "PT Serif Pro", Georgia,
+    "Times New Roman", serif;
+  --font-v2-body: var(--font-manrope), -apple-system, BlinkMacSystemFont,
+    "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-v2-mono: "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas,
     "Courier New", monospace;
 
-  /* --- Размеры и spacing — щедрый whitespace, низкая плотность --- */
+  /* --- Размеры и spacing — мягкие большие радиусы --- */
   --v2-space-unit: 4px; /* 4px grid */
-  --v2-radius-sm: 4px;
-  --v2-radius-md: 8px;
-  --v2-radius-lg: 16px;
-  --v2-radius-card: 24px; /* prompt-cards и hero */
+  --v2-radius-sm: 8px;
+  --v2-radius-md: 14px; /* инпуты, пилюли */
+  --v2-radius-lg: 18px; /* кнопки, карточки-элементы */
+  --v2-radius-card: 22px; /* карточки/hero */
 
   /* --- Размеры экрана --- */
   --v2-max-width: 420px; /* mini-app в TG WebView обычно ~420px */
   --v2-screen-padding: 24px;
+}
+
+/* Не-@theme переменные (градиенты/тени) — tailwind-классы им не нужны */
+:root {
+  --v2-grad-primary: linear-gradient(90deg, #c1362f, #d64550);
+  --v2-grad-brand: linear-gradient(135deg, #c1362f, #e9a23b);
+  --v2-grad-teal: linear-gradient(90deg, #159aa0, #1fb6b0);
+  --v2-grad-amber: linear-gradient(90deg, #e9a23b, #f2b84b);
+  --v2-grad-header: linear-gradient(165deg, #fbede4, #fff7f0);
+  --v2-grad-dark: linear-gradient(180deg, #2a1a2e, #5a2036);
+  --v2-grad-hero: linear-gradient(135deg, #c1362f 0%, #d64550 55%, #e9a23b 100%);
+  --v2-shadow-card: 0 8px 20px rgba(42, 26, 46, 0.05);
+  --v2-shadow-card-lg: 0 10px 26px rgba(42, 26, 46, 0.06);
+  --v2-shadow-hero: 0 20px 46px rgba(193, 54, 47, 0.13);
+  --v2-shadow-cta: 0 10px 24px rgba(193, 54, 47, 0.28);
+  --v2-shadow-cta-teal: 0 10px 24px rgba(21, 154, 160, 0.3);
+}
+
+/* Живые анимации экрана (из DC-дизайна) + reduced-motion guard */
+@keyframes bxScreenIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes bxRise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes bxPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.12); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.v2-screen-in { animation: bxScreenIn 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+.v2-rise { animation: bxRise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.v2-pop { animation: bxPop 0.5s both; }
+@media (prefers-reduced-motion: reduce) {
+  .v2-screen-in, .v2-rise, .v2-pop { animation: none; }
 }
 
 /* ============================================================================
@@ -105,6 +166,7 @@ body {
 .v2-root .v2-display {
   font-family: var(--font-v2-display);
   font-feature-settings: "ss01";
+  font-weight: 800; /* Piazzolla 800 — фирменный вес заголовков DC */
   letter-spacing: -0.02em;
 }
 

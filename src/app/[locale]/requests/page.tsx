@@ -20,13 +20,15 @@ function RequestTab({ k, label, isOut }: { k: string; label: string; isOut: bool
       style={{
         flex: 1,
         textAlign: "center",
-        padding: "8px 0",
+        padding: "9px 0",
         fontSize: "14px",
         borderRadius: 999,
         textDecoration: "none",
-        fontWeight: active ? 600 : 500,
-        background: active ? "var(--color-v2-ink-100)" : "transparent",
-        color: active ? "var(--color-v2-paper)" : "var(--color-v2-ink-400)",
+        fontWeight: active ? 800 : 600,
+        background: active ? "var(--color-v2-accent)" : "transparent",
+        color: active ? "#FFF7F0" : "var(--color-v2-ink-300)",
+        boxShadow: active ? "0 4px 12px rgba(193, 54, 47, 0.22)" : "none",
+        transition: "background-color 0.15s ease, color 0.15s ease",
       }}
     >
       {label}
@@ -100,9 +102,10 @@ export default async function RequestsPage({
             padding: 4,
             marginTop: 20,
             marginBottom: 24,
-            background: "var(--color-v2-paper-2)",
-            border: "1px solid var(--color-v2-border)",
+            background: "#ffffff",
+            border: "1.5px solid var(--color-v2-ink-500)",
             borderRadius: 999,
+            boxShadow: "var(--v2-shadow-card)",
           }}
         >
           <RequestTab k="incoming" label={t("incoming")} isOut={isOut} />
@@ -121,16 +124,17 @@ export default async function RequestsPage({
             {t("empty")}
           </div>
         ) : (
-          <ul style={{ display: "flex", flexDirection: "column", gap: 8, listStyle: "none", padding: 0, margin: 0 }}>
+          <ul className="v2-rise" style={{ display: "flex", flexDirection: "column", gap: 10, listStyle: "none", padding: 0, margin: 0 }}>
             {reqs.map((r) => {
               const m = minis[(isOut ? r.receiver_id : r.sender_id) as string];
               return (
                 <li
                   key={r.id as string}
                   style={{
-                    background: "var(--color-v2-paper-2)",
+                    background: "#ffffff",
                     border: "1px solid var(--color-v2-border)",
-                    borderRadius: "var(--v2-radius-lg)",
+                    borderRadius: "var(--v2-radius-card)",
+                    boxShadow: "var(--v2-shadow-card)",
                     padding: 14,
                     display: "flex",
                     alignItems: "center",
@@ -156,19 +160,34 @@ export default async function RequestsPage({
                         flexShrink: 0,
                         borderRadius: 999,
                         overflow: "hidden",
-                        background: "var(--color-v2-paper-3)",
+                        background: "var(--v2-grad-brand)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
                     >
                       {m?.photoUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={m.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      ) : null}
+                      ) : (
+                        <span
+                          aria-hidden
+                          style={{
+                            color: "#FFF7F0",
+                            fontFamily: "var(--font-v2-display)",
+                            fontWeight: 800,
+                            fontSize: 20,
+                          }}
+                        >
+                          {(m?.name ?? "").slice(0, 1)}
+                        </span>
+                      )}
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <div
                         style={{
                           fontSize: 15,
-                          fontWeight: 500,
+                          fontWeight: 700,
                           color: "var(--color-v2-ink-100)",
                           whiteSpace: "nowrap",
                           overflow: "hidden",

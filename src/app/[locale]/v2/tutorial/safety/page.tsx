@@ -33,19 +33,21 @@ export default async function TutorialSafetyPage({
       align="top"
       footer={<TutorialStep cta={t('complete')} showSkip={false} />}
     >
-      <StepDots total={4} current={4} />
-      <Headline size="lg" as="h1">
-        {t('safety.heading')}
-      </Headline>
-      <Lead>
-        {t('safety.body1')}
-      </Lead>
-      <Lead style={{ marginTop: "20px" }}>
-        {t('safety.body2')}
-      </Lead>
-      <Lead style={{ marginTop: "20px" }}>
-        {t('safety.body3')}
-      </Lead>
+      <div className="v2-screen-in">
+        <StepDots total={4} current={4} />
+        <Headline size="lg" as="h1">
+          {t('safety.heading')}
+        </Headline>
+        <Lead>
+          {t('safety.body1')}
+        </Lead>
+        <Lead style={{ marginTop: "20px" }}>
+          {t('safety.body2')}
+        </Lead>
+        <Lead style={{ marginTop: "20px" }}>
+          {t('safety.body3')}
+        </Lead>
+      </div>
     </MiniAppShell>
   );
 }

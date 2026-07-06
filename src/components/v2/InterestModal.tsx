@@ -85,7 +85,7 @@ export function InterestModal({ candidateId, candidateFirstName, onClose }: Prop
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(10, 9, 8, 0.6)",
+        background: "rgba(42, 26, 46, 0.55)",
         display: "flex",
         alignItems: "flex-end",
         justifyContent: "center",
@@ -97,12 +97,14 @@ export function InterestModal({ candidateId, candidateFirstName, onClose }: Prop
       }}
     >
       <div
+        className="v2-rise"
         style={{
-          background: "var(--color-v2-paper)",
+          background: "#ffffff",
           width: "100%",
           maxWidth: "var(--v2-max-width)",
-          borderTopLeftRadius: "var(--v2-radius-lg)",
-          borderTopRightRadius: "var(--v2-radius-lg)",
+          borderTopLeftRadius: "var(--v2-radius-card)",
+          borderTopRightRadius: "var(--v2-radius-card)",
+          boxShadow: "var(--v2-shadow-card-lg)",
           padding: "32px 24px 24px",
           maxHeight: "92vh",
           overflowY: "auto",
@@ -124,10 +126,11 @@ export function InterestModal({ candidateId, candidateFirstName, onClose }: Prop
           <>
             <div
               style={{
-                fontSize: "11px",
+                fontSize: "12px",
+                fontWeight: 800,
                 textTransform: "uppercase",
-                letterSpacing: "0.12em",
-                color: "var(--color-v2-ink-400)",
+                letterSpacing: "0.14em",
+                color: "var(--color-v2-accent)",
                 marginBottom: "12px",
               }}
             >
@@ -144,6 +147,7 @@ export function InterestModal({ candidateId, candidateFirstName, onClose }: Prop
                 style={{
                   display: "block",
                   fontSize: "13px",
+                  fontWeight: 700,
                   color: "var(--color-v2-ink-300)",
                   marginBottom: "8px",
                 }}
@@ -158,13 +162,14 @@ export function InterestModal({ candidateId, candidateFirstName, onClose }: Prop
                 rows={4}
                 style={{
                   width: "100%",
-                  padding: "12px 14px",
+                  boxSizing: "border-box",
+                  padding: "13px 15px",
                   fontFamily: "var(--font-v2-body)",
                   fontSize: "15px",
                   lineHeight: "1.5",
                   color: "var(--color-v2-ink-100)",
-                  background: "transparent",
-                  border: "1px solid var(--color-v2-ink-500)",
+                  background: "#ffffff",
+                  border: "1.5px solid var(--color-v2-ink-500)",
                   borderRadius: "var(--v2-radius-md)",
                   resize: "vertical",
                   outline: "none",
@@ -187,11 +192,12 @@ export function InterestModal({ candidateId, candidateFirstName, onClose }: Prop
                 style={{
                   marginTop: "12px",
                   padding: "12px 14px",
-                  background: "rgba(180, 50, 50, 0.08)",
-                  border: "1px solid rgba(180, 50, 50, 0.3)",
-                  borderRadius: "var(--v2-radius-md)",
+                  background: "#FBE7E4",
+                  borderLeft: "3px solid var(--color-v2-danger)",
+                  borderRadius: "12px",
                   fontSize: "13px",
-                  color: "var(--color-v2-ink-200)",
+                  fontWeight: 600,
+                  color: "#9A4B46",
                   lineHeight: "1.5",
                 }}
               >
@@ -199,7 +205,7 @@ export function InterestModal({ candidateId, candidateFirstName, onClose }: Prop
               </div>
             ) : null}
 
-            <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div style={{ marginTop: "24px", display: "flex", flexDirection: "column", gap: "10px" }}>
               <Button
                 variant="primary"
                 onClick={submit}

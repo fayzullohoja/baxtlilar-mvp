@@ -76,20 +76,20 @@ function personalityTraits(vector: Record<string, number>): string[] {
   return out.slice(0, 3);
 }
 
-function chip(label: string, key: string | number) {
+function chip(label: string, key: string | number, teal = false) {
   return (
     <span
       key={key}
       style={{
         display: "inline-block",
-        padding: "6px 12px",
+        padding: "7px 13px",
         marginRight: "6px",
         marginBottom: "6px",
-        background: "transparent",
-        border: "1px solid var(--color-v2-ink-500)",
+        background: teal ? "var(--color-v2-chip-teal)" : "var(--color-v2-chip)",
         borderRadius: "999px",
         fontSize: "13px",
-        color: "var(--color-v2-ink-200)",
+        fontWeight: 600,
+        color: teal ? "var(--color-v2-chip-teal-ink)" : "var(--color-v2-chip-ink)",
         fontFamily: "var(--font-v2-body)",
       }}
     >
@@ -98,124 +98,167 @@ function chip(label: string, key: string | number) {
   );
 }
 
+/** Eyebrow-подзаголовок секции внутри hero-карточки. */
+const sectionLabelStyle: React.CSSProperties = {
+  fontSize: "12px",
+  fontWeight: 800,
+  textTransform: "uppercase",
+  letterSpacing: "0.14em",
+  color: "var(--color-v2-accent)",
+  marginBottom: "10px",
+  fontFamily: "var(--font-v2-body)",
+};
+
 export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
   const t = useTranslations("Profile");
   const name = profile.first_name;
   const traits = personalityTraits(profile.vector);
-  const valueLabels = profile.top_life_values.map((v: string) =>
-    labelOf(LIFE_VALUES_V3, v, locale),
-  );
+  const values = profile.top_life_values.map((v: string) => ({
+    key: v,
+    label: labelOf(LIFE_VALUES_V3, v, locale),
+  }));
 
   return (
-    <article style={{ padding: "8px 0" }}>
-      {/* Имя */}
-      <Headline size="lg" as="h2">
-        {name}
-      </Headline>
-
-      {/* Locality + spheres */}
+    <article
+      className="v2-rise"
+      style={{
+        background: "#ffffff",
+        borderRadius: "var(--v2-radius-card)",
+        boxShadow: "var(--v2-shadow-hero)",
+        overflow: "hidden",
+      }}
+    >
+      {/* Hero-шапка: гранатово-янтарный градиент, белое Piazzolla-имя */}
       <div
         style={{
-          marginTop: "12px",
-          fontSize: "14px",
-          color: "var(--color-v2-ink-400)",
-          fontFamily: "var(--font-v2-body)",
+          background: "var(--v2-grad-hero)",
+          padding: "24px 20px 22px",
         }}
       >
-        {profile.city ? <span>{profile.city}</span> : null}
-        {profile.education && profile.education !== "na" ? (
-          <span> · {labelOf(EDUCATION, profile.education, locale)}</span>
-        ) : null}
-        {profile.religion && profile.religion !== "na" ? (
-          <span> · {labelOf(RELIGION, profile.religion, locale)}</span>
-        ) : null}
+        {/* Бейдж «Проверена» — белая пилюля + teal ✓ */}
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            background: "#ffffff",
+            borderRadius: "999px",
+            padding: "4px 11px 4px 5px",
+            fontSize: "12px",
+            fontWeight: 700,
+            color: "var(--color-v2-ink-200)",
+            fontFamily: "var(--font-v2-body)",
+            marginBottom: "14px",
+            boxShadow: "0 2px 8px rgba(42, 26, 46, 0.12)",
+          }}
+        >
+          <span
+            aria-hidden
+            style={{
+              width: "15px",
+              height: "15px",
+              borderRadius: "999px",
+              background: "var(--color-v2-teal)",
+              color: "#ffffff",
+              fontSize: "9px",
+              lineHeight: "15px",
+              textAlign: "center",
+              flexShrink: 0,
+            }}
+          >
+            ✓
+          </span>
+          Проверена
+        </div>
+
+        {/* Имя */}
+        <Headline size="lg" as="h2" style={{ color: "#FFF7F0" }}>
+          {name}
+        </Headline>
+
+        {/* Locality + spheres */}
+        <div
+          style={{
+            marginTop: "10px",
+            fontSize: "14px",
+            fontWeight: 600,
+            color: "rgba(255, 247, 240, 0.88)",
+            fontFamily: "var(--font-v2-body)",
+          }}
+        >
+          {profile.city ? <span>{profile.city}</span> : null}
+          {profile.education && profile.education !== "na" ? (
+            <span> · {labelOf(EDUCATION, profile.education, locale)}</span>
+          ) : null}
+          {profile.religion && profile.religion !== "na" ? (
+            <span> · {labelOf(RELIGION, profile.religion, locale)}</span>
+          ) : null}
+        </div>
       </div>
 
-      {/* Личностные черты */}
-      {traits.length > 0 ? (
-        <div style={{ marginTop: "28px" }}>
-          <div
-            style={{
-              fontSize: "11px",
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              color: "var(--color-v2-ink-400)",
-              marginBottom: "10px",
-            }}
-          >
-            {t('personalityLabel')}
+      <div style={{ padding: "22px 20px 20px" }}>
+        {/* Личностные черты */}
+        {traits.length > 0 ? (
+          <div>
+            <div style={sectionLabelStyle}>{t('personalityLabel')}</div>
+            <Lead style={{ marginTop: 0 }}>
+              {name} —{" "}
+              {traits.map((t, i) => (
+                <span key={i}>
+                  {t}
+                  {i < traits.length - 1 ? "; " : "."}
+                </span>
+              ))}
+            </Lead>
           </div>
-          <Lead style={{ marginTop: 0 }}>
-            {name} —{" "}
-            {traits.map((t, i) => (
-              <span key={i}>
-                {t}
-                {i < traits.length - 1 ? "; " : "."}
-              </span>
-            ))}
-          </Lead>
-        </div>
-      ) : null}
+        ) : null}
 
-      {/* Что важно — values */}
-      {valueLabels.length > 0 ? (
-        <div style={{ marginTop: "28px" }}>
-          <div
-            style={{
-              fontSize: "11px",
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              color: "var(--color-v2-ink-400)",
-              marginBottom: "10px",
-            }}
-          >
-            {t('valuesLabel')}
+        {/* Что важно — values (вера → teal-чип) */}
+        {values.length > 0 ? (
+          <div style={{ marginTop: traits.length > 0 ? "24px" : 0 }}>
+            <div style={sectionLabelStyle}>{t('valuesLabel')}</div>
+            <div>{values.map((v, i) => chip(v.label, i, v.key === "faith"))}</div>
           </div>
-          <div>{valueLabels.map((l: string, i: number) => chip(l, i))}</div>
-        </div>
-      ) : null}
+        ) : null}
 
-      {/* Bio — раскрывает голос */}
-      {profile.bio ? (
-        <div style={{ marginTop: "28px" }}>
-          <div
-            style={{
-              fontSize: "11px",
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              color: "var(--color-v2-ink-400)",
-              marginBottom: "10px",
-            }}
-          >
-            {t('bioLabel')}
+        {/* Bio — раскрывает голос */}
+        {profile.bio ? (
+          <div style={{ marginTop: "24px" }}>
+            <div style={sectionLabelStyle}>{t('bioLabel')}</div>
+            <p
+              style={{
+                fontFamily: "var(--font-v2-body)",
+                fontSize: "16px",
+                lineHeight: "1.55",
+                color: "var(--color-v2-ink-200)",
+                whiteSpace: "pre-wrap",
+              }}
+            >
+              {profile.bio}
+            </p>
           </div>
-          <p
-            style={{
-              fontFamily: "var(--font-v2-body)",
-              fontSize: "16px",
-              lineHeight: "1.55",
-              color: "var(--color-v2-ink-200)",
-              whiteSpace: "pre-wrap",
-            }}
-          >
-            {profile.bio}
-          </p>
-        </div>
-      ) : null}
+        ) : null}
 
-      {/* Footnote про скрытое */}
-      <div
-        style={{
-          marginTop: "32px",
-          paddingTop: "16px",
-          borderTop: "1px solid var(--color-v2-ink-500)",
-          fontSize: "12px",
-          color: "var(--color-v2-ink-400)",
-          fontFamily: "var(--font-v2-body)",
-          lineHeight: "1.55",
-        }}
-      >
-        {t('privacyFooter')}
+        {/* Footnote про скрытое — teal-плашка приватности */}
+        <div
+          style={{
+            marginTop: "26px",
+            display: "flex",
+            alignItems: "flex-start",
+            gap: "8px",
+            background: "var(--color-v2-chip-teal)",
+            color: "var(--color-v2-chip-teal-ink)",
+            borderRadius: "14px",
+            padding: "12px 14px",
+            fontSize: "12.5px",
+            fontWeight: 600,
+            fontFamily: "var(--font-v2-body)",
+            lineHeight: "1.55",
+          }}
+        >
+          <span aria-hidden style={{ flexShrink: 0 }}>🔒</span>
+          <span>{t('privacyFooter')}</span>
+        </div>
       </div>
     </article>
   );

@@ -76,10 +76,12 @@ export function V2AttributionForm() {
                 textAlign: "left",
                 fontFamily: "var(--font-v2-body)",
                 fontSize: "15px",
-                color: isSelected ? "var(--color-v2-paper)" : "var(--color-v2-ink-100)",
-                background: isSelected ? "var(--color-v2-ink-100)" : "transparent",
-                border: `1px solid ${isSelected ? "var(--color-v2-ink-100)" : "var(--color-v2-ink-500)"}`,
+                fontWeight: isSelected ? 700 : 500,
+                color: isSelected ? "#fff" : "var(--color-v2-ink-200)",
+                background: isSelected ? "var(--color-v2-accent)" : "#fff",
+                border: `1px solid ${isSelected ? "var(--color-v2-accent)" : "var(--color-v2-ink-500)"}`,
                 borderRadius: "var(--v2-radius-md)",
+                boxShadow: isSelected ? "var(--v2-shadow-cta)" : "none",
                 cursor: "pointer",
                 transition: "all 0.12s ease",
               }}
@@ -94,11 +96,11 @@ export function V2AttributionForm() {
         <div
           style={{
             padding: "10px 14px",
-            background: "rgba(180, 50, 50, 0.08)",
-            border: "1px solid rgba(180, 50, 50, 0.3)",
-            borderRadius: "var(--v2-radius-md)",
+            background: "#FBE7E4",
+            borderLeft: "3px solid var(--color-v2-danger)",
+            borderRadius: "12px",
             fontSize: "13px",
-            color: "var(--color-v2-ink-200)",
+            color: "#9A4B46",
             fontFamily: "var(--font-v2-body)",
             marginBottom: "16px",
           }}

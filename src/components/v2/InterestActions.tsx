@@ -50,11 +50,17 @@ export function InterestActions({ candidateId, candidateFirstName }: Props) {
   if (limitHit) {
     return (
       <p
+        className="v2-rise"
         style={{
-          fontSize: "14px",
-          lineHeight: 1.5,
+          fontSize: "13.5px",
+          fontWeight: 600,
+          lineHeight: 1.55,
           textAlign: "center",
-          color: "var(--color-v2-ink-300)",
+          background: "var(--color-v2-ink-100)",
+          color: "#FFF7F0",
+          borderRadius: "14px",
+          padding: "14px 18px",
+          margin: 0,
           fontFamily: "var(--font-v2-body)",
         }}
       >
@@ -66,7 +72,7 @@ export function InterestActions({ candidateId, candidateFirstName }: Props) {
 
   return (
     <>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2.5">
         <Button
           variant="primary"
           onClick={() => setModalOpen(true)}
@@ -75,7 +81,7 @@ export function InterestActions({ candidateId, candidateFirstName }: Props) {
           Отправить интерес
         </Button>
         <Button
-          variant="ghost"
+          variant="secondary"
           onClick={skip}
           disabled={skipping}
         >

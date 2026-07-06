@@ -85,20 +85,51 @@ export function UploadField({
       <button
         type="button"
         onClick={pick}
+        className="v2-rise"
         style={{
           width: "100%",
-          padding: "48px 24px",
-          background: "transparent",
-          border: "1px dashed var(--color-v2-ink-500)",
-          borderRadius: "var(--v2-radius-lg)",
+          padding: "36px 24px",
+          background: "#fff",
+          border: "1.5px dashed #E0A9A3",
+          borderRadius: "20px",
+          boxShadow: "var(--v2-shadow-card)",
           fontFamily: "var(--font-v2-body)",
           fontSize: "15px",
+          fontWeight: 600,
           color: "var(--color-v2-ink-300)",
           cursor: "pointer",
           textAlign: "center",
           lineHeight: "1.5",
         }}
       >
+        <span
+          aria-hidden="true"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "54px",
+            height: "54px",
+            margin: "0 auto 14px",
+            borderRadius: "999px",
+            background:
+              "linear-gradient(135deg, var(--color-v2-paper-2), #F7D9D0)",
+          }}
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="var(--color-v2-accent)"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M4 8.5h3.2l1.8-2.7h6l1.8 2.7H20a0.5 0.5 0 0 1 .5.5v9.5a0.5 0.5 0 0 1-.5.5H4a0.5 0.5 0 0 1-.5-.5V9a0.5 0.5 0 0 1 .5-.5Z" />
+            <circle cx="12" cy="13.5" r="3.2" />
+          </svg>
+        </span>
         {file ? (
           <span style={{ color: "var(--color-v2-ink-200)" }}>
             <strong>{file.name}</strong>
@@ -129,11 +160,12 @@ export function UploadField({
           style={{
             marginTop: "16px",
             padding: "12px 14px",
-            background: "rgba(180, 50, 50, 0.08)",
-            border: "1px solid rgba(180, 50, 50, 0.3)",
-            borderRadius: "var(--v2-radius-md)",
+            background: "#FBE7E4",
+            borderLeft: "3px solid var(--color-v2-danger)",
+            borderRadius: "12px",
             fontSize: "14px",
-            color: "var(--color-v2-ink-200)",
+            fontWeight: 600,
+            color: "#9A4B46",
             fontFamily: "var(--font-v2-body)",
             lineHeight: "1.5",
           }}

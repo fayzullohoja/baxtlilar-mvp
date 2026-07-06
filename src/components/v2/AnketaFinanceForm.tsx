@@ -160,9 +160,13 @@ export function V2AnketaFinanceForm({ locale }: { locale: string }) {
       <p
         style={{
           margin: "4px 0 20px",
-          fontSize: "12px",
+          padding: "10px 14px",
+          fontSize: "12.5px",
+          fontWeight: 600,
           lineHeight: 1.5,
-          color: "var(--color-v2-ink-400)",
+          background: "var(--color-v2-chip-teal)",
+          color: "var(--color-v2-chip-teal-ink)",
+          borderRadius: "14px",
           fontFamily: "var(--font-v2-body)",
         }}
       >
@@ -173,11 +177,11 @@ export function V2AnketaFinanceForm({ locale }: { locale: string }) {
         <div
           style={{
             padding: "10px 14px",
-            background: "rgba(180, 50, 50, 0.08)",
-            border: "1px solid rgba(180, 50, 50, 0.3)",
-            borderRadius: "var(--v2-radius-md)",
+            background: "#FBE7E4",
+            borderLeft: "3px solid var(--color-v2-danger)",
+            borderRadius: "12px",
             fontSize: "13px",
-            color: "var(--color-v2-ink-200)",
+            color: "#9A4B46",
             fontFamily: "var(--font-v2-body)",
             marginBottom: "16px",
           }}

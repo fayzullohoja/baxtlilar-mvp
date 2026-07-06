@@ -23,16 +23,18 @@ export default async function V2AttributionPage({
 
   return (
     <MiniAppShell eyebrow="Почти всё" align="top">
-      <Headline size="lg" as="h1">
-        Откуда узнал про&nbsp;нас?
-      </Headline>
-      <Lead>
-        Помогает нам понять что работает. Можно пропустить — не влияет на
-        твою анкету.
-      </Lead>
+      <div className="v2-screen-in">
+        <Headline size="lg" as="h1">
+          Откуда узнал про&nbsp;нас?
+        </Headline>
+        <Lead>
+          Помогает нам понять что работает. Можно пропустить — не влияет на
+          твою анкету.
+        </Lead>
 
-      <div style={{ marginTop: "32px" }}>
-        <V2AttributionForm />
+        <div style={{ marginTop: "32px" }}>
+          <V2AttributionForm />
+        </div>
       </div>
     </MiniAppShell>
   );

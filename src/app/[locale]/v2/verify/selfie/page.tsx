@@ -31,6 +31,7 @@ export default async function V2SelfiePage({
 
   return (
     <MiniAppShell eyebrow={t('eyebrow')} align="top">
+      <div className="v2-screen-in">
       <Headline size="lg" as="h1">
         {t('title')}
       </Headline>
@@ -39,7 +40,7 @@ export default async function V2SelfiePage({
       </Lead>
 
       {/* Visual hint */}
-      <div style={{ marginTop: "28px" }}>
+      <div className="v2-rise" style={{ marginTop: "28px" }}>
         <SelfieVisualHint goodLabel={t('example_good')} badLabel={t('example_bad')} />
       </div>
 
@@ -61,15 +62,18 @@ export default async function V2SelfiePage({
       <div
         style={{
           marginTop: "28px",
-          paddingTop: "20px",
-          borderTop: "1px solid var(--color-v2-ink-500)",
-          fontSize: "12px",
-          color: "var(--color-v2-ink-400)",
+          padding: "12px 14px",
+          background: "var(--color-v2-chip-teal)",
+          borderRadius: "14px",
+          fontSize: "12.5px",
+          fontWeight: 600,
+          color: "var(--color-v2-chip-teal-ink)",
           fontFamily: "var(--font-v2-body)",
           lineHeight: "1.55",
         }}
       >
         {t('footer_note')}
+      </div>
       </div>
     </MiniAppShell>
   );
@@ -99,14 +103,17 @@ function ExampleCard({
   label: string;
 }) {
   const isGood = variant === "good";
-  const accent = isGood ? "#2a6f4a" : "#b8362a";
-  const accentBg = isGood ? "rgba(42, 111, 74, 0.06)" : "rgba(184, 54, 42, 0.06)";
+  const accent = isGood ? "#0d6b6f" : "#B5322B";
+  const accentBg = isGood ? "#EAF7F6" : "#FBE7E4";
+  const accentBorder = isGood
+    ? "rgba(21, 154, 160, 0.25)"
+    : "rgba(181, 50, 43, 0.25)";
 
   return (
     <div
       style={{
         background: accentBg,
-        border: `1px solid ${accent}33`,
+        border: `1px solid ${accentBorder}`,
         borderRadius: "var(--v2-radius-md)",
         padding: "12px 10px 10px",
         textAlign: "center",
@@ -126,7 +133,7 @@ function ExampleCard({
         style={{
           marginTop: 6,
           fontSize: "11px",
-          fontWeight: 600,
+          fontWeight: 700,
           color: accent,
           letterSpacing: "0.02em",
         }}
@@ -146,17 +153,17 @@ function GoodFaceSvg() {
         cy="32"
         rx="18"
         ry="22"
-        stroke="#2a6f4a"
+        stroke="var(--color-v2-teal)"
         strokeWidth="1.6"
         fill="white"
       />
       {/* Eyes */}
-      <circle cx="24" cy="30" r="1.6" fill="#2a6f4a" />
-      <circle cx="38" cy="30" r="1.6" fill="#2a6f4a" />
+      <circle cx="24" cy="30" r="1.6" fill="var(--color-v2-teal)" />
+      <circle cx="38" cy="30" r="1.6" fill="var(--color-v2-teal)" />
       {/* Smile */}
       <path
         d="M24 39 Q31 44 38 39"
-        stroke="#2a6f4a"
+        stroke="var(--color-v2-teal)"
         strokeWidth="1.4"
         fill="none"
         strokeLinecap="round"
@@ -164,12 +171,12 @@ function GoodFaceSvg() {
       {/* Shoulders */}
       <path
         d="M12 76 Q31 58 50 76"
-        stroke="#2a6f4a"
+        stroke="var(--color-v2-teal)"
         strokeWidth="1.6"
         fill="none"
       />
       {/* Checkmark badge */}
-      <circle cx="50" cy="22" r="8" fill="#2a6f4a" />
+      <circle cx="50" cy="22" r="8" fill="var(--color-v2-teal)" />
       <path
         d="M46 22 L49 25 L54 19"
         stroke="white"
@@ -191,7 +198,7 @@ function BadFaceSvg() {
         cy="32"
         rx="18"
         ry="22"
-        stroke="#b8362a"
+        stroke="var(--color-v2-danger)"
         strokeWidth="1.6"
         fill="white"
       />
@@ -201,20 +208,20 @@ function BadFaceSvg() {
         y="26"
         width="34"
         height="8"
-        fill="#b8362a"
+        fill="var(--color-v2-danger)"
         rx="2"
       />
       {/* Mouth covered */}
-      <rect x="20" y="38" width="22" height="6" fill="#b8362a" opacity="0.4" />
+      <rect x="20" y="38" width="22" height="6" fill="var(--color-v2-danger)" opacity="0.4" />
       {/* Shoulders */}
       <path
         d="M12 76 Q31 58 50 76"
-        stroke="#b8362a"
+        stroke="var(--color-v2-danger)"
         strokeWidth="1.6"
         fill="none"
       />
       {/* X badge */}
-      <circle cx="50" cy="22" r="8" fill="#b8362a" />
+      <circle cx="50" cy="22" r="8" fill="var(--color-v2-danger)" />
       <path
         d="M46 18 L54 26 M54 18 L46 26"
         stroke="white"
@@ -230,10 +237,11 @@ function Requirements({ title, items }: { title: string; items: string[] }) {
     <div>
       <div
         style={{
-          fontSize: "11px",
+          fontSize: "12px",
+          fontWeight: 800,
           textTransform: "uppercase",
-          letterSpacing: "0.12em",
-          color: "var(--color-v2-ink-400)",
+          letterSpacing: "0.14em",
+          color: "var(--color-v2-accent)",
           marginBottom: "10px",
           fontFamily: "var(--font-v2-body)",
         }}

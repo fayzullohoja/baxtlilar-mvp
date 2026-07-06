@@ -33,19 +33,21 @@ export default async function TutorialChatPage({
       align="top"
       footer={<TutorialStep cta={t("next")} />}
     >
-      <StepDots total={4} current={3} />
-      <Headline size="lg" as="h1">
-        {t("chat.heading")}
-      </Headline>
-      <Lead>
-        {t("chat.body1")}
-      </Lead>
-      <Lead style={{ marginTop: "20px" }}>
-        {t("chat.body2")}
-      </Lead>
-      <Lead style={{ marginTop: "20px" }}>
-        {t("chat.body3")}
-      </Lead>
+      <div className="v2-screen-in">
+        <StepDots total={4} current={3} />
+        <Headline size="lg" as="h1">
+          {t("chat.heading")}
+        </Headline>
+        <Lead>
+          {t("chat.body1")}
+        </Lead>
+        <Lead style={{ marginTop: "20px" }}>
+          {t("chat.body2")}
+        </Lead>
+        <Lead style={{ marginTop: "20px" }}>
+          {t("chat.body3")}
+        </Lead>
+      </div>
     </MiniAppShell>
   );
 }

@@ -17,8 +17,8 @@ type Props = {
 };
 
 const SIZE: Record<Size, { fontSize: string; lineHeight: string }> = {
-  xl: { fontSize: "44px", lineHeight: "1.05" },
-  lg: { fontSize: "32px", lineHeight: "1.1" },
+  xl: { fontSize: "34px", lineHeight: "1.08" },
+  lg: { fontSize: "30px", lineHeight: "1.12" },
   md: { fontSize: "24px", lineHeight: "1.2" },
   sm: { fontSize: "18px", lineHeight: "1.3" },
 };
@@ -36,7 +36,7 @@ export function Headline({
       className={className}
       style={{
         fontFamily: "var(--font-v2-display)",
-        fontWeight: 500,
+        fontWeight: 800,
         letterSpacing: "-0.02em",
         color: "var(--color-v2-ink-100)",
         ...dims,
@@ -48,7 +48,7 @@ export function Headline({
   );
 }
 
-/** Subtitle / body lead — sans, normal weight, ink-300. */
+/** Subtitle / body lead — sans, normal weight, ink-200. */
 export function Lead({
   children,
   className = "",
@@ -65,7 +65,7 @@ export function Lead({
         fontFamily: "var(--font-v2-body)",
         fontSize: "16px",
         lineHeight: "1.55",
-        color: "var(--color-v2-ink-300)",
+        color: "var(--color-v2-ink-200)",
         marginTop: "12px",
         ...(style ?? {}),
       }}

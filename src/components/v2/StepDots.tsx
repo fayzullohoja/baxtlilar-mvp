@@ -1,8 +1,8 @@
 /**
  * V2 StepDots — минималистичный прогресс-индикатор для tutorial-тура.
  *
- * Editorial DNA: точки, не bar. Активная — заполнена ink, пройденные — outline,
- * будущие — приглушённые ink-500. Никаких процентов.
+ * «Живой Baxtlilar»: точки, не bar. Активная — гранатово-янтарный градиент,
+ * пройденные — гранатовый акцент, будущие — hairline ink-500. Никаких процентов.
  */
 
 type Props = {
@@ -21,13 +21,13 @@ export function StepDots({ total, current }: Props) {
           <div
             key={i}
             style={{
-              width: isActive ? "24px" : "6px",
-              height: "6px",
-              borderRadius: "3px",
+              width: isActive ? "24px" : "7px",
+              height: "7px",
+              borderRadius: "99px",
               background: isActive
-                ? "var(--color-v2-ink-100)"
+                ? "linear-gradient(90deg, #C1362F, #E9A23B)"
                 : isPast
-                  ? "var(--color-v2-ink-300)"
+                  ? "var(--color-v2-accent)"
                   : "var(--color-v2-ink-500)",
               transition: "all 0.2s ease",
             }}

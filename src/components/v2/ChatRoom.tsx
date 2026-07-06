@@ -9,14 +9,13 @@ import { useTranslations } from 'next-intl';
  * Логика идентична V1 (SSE + polling fallback, optimistic send, read
  * receipts, typing indicator). Только стили editorial.
  *
- * Bubble стили:
- *   - Мои: ink-100 фон, paper текст
- *   - Их: paper фон, ink-500 border, ink-100 текст
+ * Bubble стили («Живой Baxtlilar»):
+ *   - Мои: гранатовый градиент, светлый текст, radius 18/18/5/18
+ *   - Их: белый пузырь с лёгкой тенью, radius 18/18/18/5
+ *   - Лента: paper-2 фон
  *   - Время: 10px, ink-400 (мои светлее)
- *   - ✓ / ✓✓: subtle в ink-300
  *
- * Composer: underline textarea editorial-style, send-button label
- * (без иконки самолёта).
+ * Composer: белый box-textarea, send-button — градиентный primary.
  */
 
 export type Msg = {
@@ -283,7 +282,7 @@ export function V2ChatRoom({
         flex: 1,
         minHeight: 0,
         fontFamily: "var(--font-v2-body)",
-        background: "var(--color-v2-paper)",
+        background: "var(--color-v2-paper-2)",
       }}
     >
       <div
@@ -297,15 +296,17 @@ export function V2ChatRoom({
       >
         {empty ? (
           <div
+            className="v2-rise"
             style={{
               maxWidth: "320px",
               margin: "16px auto 24px",
-              padding: "16px 18px",
-              border: "1px solid var(--color-v2-ink-500)",
-              borderRadius: "var(--v2-radius-md)",
-              fontSize: "13px",
+              padding: "14px 16px",
+              background: "var(--color-v2-chip-teal)",
+              borderRadius: "14px",
+              fontSize: "12.5px",
+              fontWeight: 600,
               lineHeight: "1.55",
-              color: "var(--color-v2-ink-300)",
+              color: "var(--color-v2-chip-teal-ink)",
               textAlign: "center",
             }}
           >
@@ -338,10 +339,10 @@ export function V2ChatRoom({
           <div style={{ display: "flex", justifyContent: "flex-start", marginTop: "8px" }}>
             <div
               style={{
-                background: "transparent",
-                border: "1px solid var(--color-v2-ink-500)",
+                background: "#fff",
                 color: "var(--color-v2-ink-400)",
-                borderRadius: "var(--v2-radius-md)",
+                borderRadius: "18px 18px 18px 5px",
+                boxShadow: "0 2px 8px rgba(42, 26, 46, 0.06)",
                 padding: "8px 14px",
                 fontSize: "13px",
                 fontStyle: "italic",
@@ -357,7 +358,7 @@ export function V2ChatRoom({
       <div
         style={{
           flexShrink: 0,
-          borderTop: "1px solid var(--color-v2-ink-500)",
+          borderTop: "1px solid var(--color-v2-border)",
           padding: "12px 20px max(12px, env(safe-area-inset-bottom)) 20px",
           background: "var(--color-v2-paper)",
         }}
@@ -367,11 +368,12 @@ export function V2ChatRoom({
             style={{
               padding: "8px 12px",
               marginBottom: "8px",
-              background: "rgba(180, 50, 50, 0.08)",
-              border: "1px solid rgba(180, 50, 50, 0.3)",
-              borderRadius: "var(--v2-radius-md)",
+              background: "#FBE7E4",
+              borderLeft: "3px solid var(--color-v2-danger)",
+              borderRadius: "12px",
               fontSize: "12px",
-              color: "var(--color-v2-ink-200)",
+              fontWeight: 600,
+              color: "#9A4B46",
               lineHeight: "1.5",
             }}
           >
@@ -395,8 +397,8 @@ export function V2ChatRoom({
               fontSize: "15px",
               lineHeight: "1.4",
               color: "var(--color-v2-ink-100)",
-              background: "transparent",
-              border: "1px solid var(--color-v2-ink-500)",
+              background: "#fff",
+              border: "1.5px solid var(--color-v2-border)",
               borderRadius: "var(--v2-radius-md)",
               outline: "none",
             }}
@@ -406,17 +408,21 @@ export function V2ChatRoom({
             onClick={send}
             disabled={busy || !text.trim()}
             style={{
-              padding: "10px 16px",
+              padding: "11px 18px",
               fontFamily: "var(--font-v2-body)",
               fontSize: "14px",
-              fontWeight: 500,
-              color: "var(--color-v2-paper)",
-              background: "var(--color-v2-ink-100)",
+              fontWeight: 800,
+              color: busy || !text.trim() ? "var(--color-v2-disabled-ink)" : "#FFF7F0",
+              background:
+                busy || !text.trim()
+                  ? "var(--color-v2-disabled-bg)"
+                  : "var(--v2-grad-primary)",
               border: "none",
-              borderRadius: "var(--v2-radius-md)",
+              borderRadius: "var(--v2-radius-lg)",
+              boxShadow: busy || !text.trim() ? "none" : "var(--v2-shadow-cta)",
               cursor: busy || !text.trim() ? "not-allowed" : "pointer",
-              opacity: busy || !text.trim() ? 0.4 : 1,
               flexShrink: 0,
+              transition: "box-shadow 0.15s ease, background-color 0.15s ease",
             }}
           >
             {t('send')}
@@ -450,12 +456,13 @@ function Bubble({
           padding: "10px 14px",
           fontSize: "15px",
           lineHeight: "1.45",
-          background: mine ? "var(--color-v2-ink-100)" : "transparent",
-          color: mine ? "var(--color-v2-paper)" : "var(--color-v2-ink-100)",
-          border: mine ? "none" : "1px solid var(--color-v2-ink-500)",
-          borderRadius: "var(--v2-radius-md)",
-          borderBottomRightRadius: mine ? "4px" : "var(--v2-radius-md)",
-          borderBottomLeftRadius: !mine ? "4px" : "var(--v2-radius-md)",
+          background: mine ? "var(--v2-grad-primary)" : "#fff",
+          color: mine ? "#FFF7F0" : "var(--color-v2-ink-100)",
+          border: "none",
+          borderRadius: mine ? "18px 18px 5px 18px" : "18px 18px 18px 5px",
+          boxShadow: mine
+            ? "0 4px 12px rgba(193, 54, 47, 0.18)"
+            : "0 2px 8px rgba(42, 26, 46, 0.06)",
           opacity: pending ? 0.5 : 1,
           wordBreak: "break-word",
         }}
@@ -472,7 +479,7 @@ function Meta({ mine, children }: { mine: boolean; children: React.ReactNode }) 
       style={{
         fontSize: "10px",
         marginLeft: "8px",
-        color: mine ? "rgba(250, 246, 241, 0.7)" : "var(--color-v2-ink-400)",
+        color: mine ? "rgba(255, 247, 240, 0.75)" : "var(--color-v2-ink-400)",
         verticalAlign: "bottom",
       }}
     >

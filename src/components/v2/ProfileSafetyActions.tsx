@@ -50,7 +50,12 @@ export function ProfileSafetyActions({ targetId, targetFirstName }: Props) {
         <Button onClick={() => setReportOpen(true)} variant="ghost" disabled={pending || done !== null}>
           {done === "reported" ? t("reportSentLabel") : t("reportButton")}
         </Button>
-        <Button onClick={() => setBlockOpen(true)} variant="ghost" disabled={pending || done !== null}>
+        <Button
+          onClick={() => setBlockOpen(true)}
+          variant="ghost"
+          disabled={pending || done !== null}
+          style={{ color: "var(--color-v2-danger)" }}
+        >
           {done === "blocked" ? t("blockedLabel") : t("blockButton")}
         </Button>
       </div>
@@ -141,7 +146,7 @@ function ReportModal({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(10, 9, 8, 0.6)",
+        background: "rgba(42, 26, 46, 0.55)",
         display: "flex",
         alignItems: "flex-end",
         justifyContent: "center",
@@ -153,12 +158,14 @@ function ReportModal({
       }}
     >
       <div
+        className="v2-rise"
         style={{
-          background: "var(--color-v2-paper)",
+          background: "#fff",
           width: "100%",
           maxWidth: "var(--v2-max-width)",
-          borderTopLeftRadius: "var(--v2-radius-lg)",
-          borderTopRightRadius: "var(--v2-radius-lg)",
+          borderTopLeftRadius: "var(--v2-radius-card)",
+          borderTopRightRadius: "var(--v2-radius-card)",
+          boxShadow: "var(--v2-shadow-card-lg)",
           padding: "32px 24px 24px",
           maxHeight: "92vh",
           overflowY: "auto",
@@ -166,10 +173,11 @@ function ReportModal({
       >
         <div
           style={{
-            fontSize: "11px",
+            fontSize: "12px",
+            fontWeight: 800,
             textTransform: "uppercase",
-            letterSpacing: "0.12em",
-            color: "var(--color-v2-ink-400)",
+            letterSpacing: "0.14em",
+            color: "var(--color-v2-accent)",
             marginBottom: "12px",
           }}
         >
@@ -178,6 +186,7 @@ function ReportModal({
         <div
           style={{
             fontFamily: "var(--font-v2-display)",
+            fontWeight: 800,
             fontSize: "22px",
             lineHeight: "1.2",
             color: "var(--color-v2-ink-100)",
@@ -202,9 +211,10 @@ function ReportModal({
                   textAlign: "left",
                   fontFamily: "var(--font-v2-body)",
                   fontSize: "14px",
-                  color: selected ? "var(--color-v2-paper)" : "var(--color-v2-ink-100)",
-                  background: selected ? "var(--color-v2-ink-100)" : "transparent",
-                  border: `1px solid ${selected ? "var(--color-v2-ink-100)" : "var(--color-v2-ink-500)"}`,
+                  fontWeight: 600,
+                  color: selected ? "#fff" : "var(--color-v2-ink-200)",
+                  background: selected ? "var(--color-v2-accent)" : "#fff",
+                  border: `1.5px solid ${selected ? "var(--color-v2-accent)" : "var(--color-v2-border)"}`,
                   borderRadius: "var(--v2-radius-md)",
                   cursor: "pointer",
                   transition: "all 0.12s ease",
@@ -227,8 +237,8 @@ function ReportModal({
             fontFamily: "var(--font-v2-body)",
             fontSize: "14px",
             color: "var(--color-v2-ink-100)",
-            background: "transparent",
-            border: "1px solid var(--color-v2-ink-500)",
+            background: "#fff",
+            border: "1.5px solid var(--color-v2-border)",
             borderRadius: "var(--v2-radius-md)",
             resize: "vertical",
             outline: "none",
@@ -240,11 +250,12 @@ function ReportModal({
           <div
             style={{
               padding: "10px 14px",
-              background: "rgba(180, 50, 50, 0.08)",
-              border: "1px solid rgba(180, 50, 50, 0.3)",
-              borderRadius: "var(--v2-radius-md)",
+              background: "#FBE7E4",
+              borderLeft: "3px solid var(--color-v2-danger)",
+              borderRadius: "12px",
               fontSize: "13px",
-              color: "var(--color-v2-ink-200)",
+              fontWeight: 600,
+              color: "#9A4B46",
               marginBottom: "12px",
             }}
           >
@@ -287,7 +298,7 @@ function BlockConfirm({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(10, 9, 8, 0.6)",
+        background: "rgba(42, 26, 46, 0.55)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -299,11 +310,13 @@ function BlockConfirm({
       }}
     >
       <div
+        className="v2-rise"
         style={{
-          background: "var(--color-v2-paper)",
+          background: "#fff",
           width: "100%",
           maxWidth: "var(--v2-max-width)",
-          borderRadius: "var(--v2-radius-lg)",
+          borderRadius: "var(--v2-radius-card)",
+          boxShadow: "var(--v2-shadow-card-lg)",
           padding: "32px 24px",
           fontFamily: "var(--font-v2-body)",
         }}
@@ -311,6 +324,7 @@ function BlockConfirm({
         <div
           style={{
             fontFamily: "var(--font-v2-display)",
+            fontWeight: 800,
             fontSize: "22px",
             lineHeight: "1.2",
             color: "var(--color-v2-ink-100)",

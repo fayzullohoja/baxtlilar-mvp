@@ -90,10 +90,12 @@ export function VerificationPlashka({ status, submittedAt }: Props) {
   return (
     <div
       data-v2="true"
+      className="v2-rise"
       style={{
-        background: "var(--color-v2-paper)",
-        border: "1px solid var(--color-v2-ink-500)",
-        borderRadius: "var(--v2-radius-lg)",
+        background: "#fff",
+        border: "1px solid var(--color-v2-border)",
+        borderRadius: "var(--v2-radius-card)",
+        boxShadow: "var(--v2-shadow-card)",
         padding: "32px 24px",
         margin: "24px var(--v2-screen-padding)",
         maxWidth: "var(--v2-max-width)",
@@ -104,15 +106,26 @@ export function VerificationPlashka({ status, submittedAt }: Props) {
     >
       <div
         style={{
-          fontSize: "11px",
+          fontSize: "12px",
+          fontWeight: 800,
           textTransform: "uppercase",
-          letterSpacing: "0.12em",
-          color: "var(--color-v2-ink-400)",
+          letterSpacing: "0.14em",
+          color: "var(--color-v2-accent)",
           marginBottom: "16px",
         }}
       >
         {c.eyebrow}
-        {ago ? <span style={{ marginLeft: "12px" }}>· {ago}</span> : null}
+        {ago ? (
+          <span
+            style={{
+              marginLeft: "12px",
+              color: "var(--color-v2-ink-400)",
+              fontWeight: 700,
+            }}
+          >
+            · {ago}
+          </span>
+        ) : null}
       </div>
       <Headline size="md" as="h2">
         {c.title}
@@ -121,7 +134,7 @@ export function VerificationPlashka({ status, submittedAt }: Props) {
         style={{
           fontSize: "15px",
           lineHeight: "1.55",
-          color: "var(--color-v2-ink-300)",
+          color: "var(--color-v2-ink-200)",
           marginTop: "16px",
         }}
       >

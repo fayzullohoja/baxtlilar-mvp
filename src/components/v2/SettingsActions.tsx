@@ -57,13 +57,21 @@ export function V2SettingsActions({ paused }: { paused: boolean }) {
   return (
     <>
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        <div>
+        <div
+          className="v2-rise"
+          style={{
+            background: "#fff",
+            borderRadius: "16px",
+            boxShadow: "var(--v2-shadow-card)",
+            padding: "18px 16px",
+          }}
+        >
           <Button onClick={pauseToggle} variant="secondary" disabled={busy}>
             {paused ? t('actions_resume') : t('actions_pause')}
           </Button>
           <p
             style={{
-              marginTop: "8px",
+              marginTop: "10px",
               fontSize: "12px",
               color: "var(--color-v2-ink-400)",
               fontFamily: "var(--font-v2-body)",
@@ -77,18 +85,26 @@ export function V2SettingsActions({ paused }: { paused: boolean }) {
         </div>
 
         <div
+          className="v2-rise"
           style={{
-            marginTop: "32px",
-            paddingTop: "24px",
-            borderTop: "1px solid var(--color-v2-ink-500)",
+            marginTop: "16px",
+            background: "#fff",
+            borderRadius: "16px",
+            boxShadow: "var(--v2-shadow-card)",
+            padding: "18px 16px",
           }}
         >
-          <Button onClick={() => setDelConfirmOpen(true)} variant="ghost" disabled={busy}>
+          <Button
+            onClick={() => setDelConfirmOpen(true)}
+            variant="ghost"
+            disabled={busy}
+            style={{ color: "var(--color-v2-danger)" }}
+          >
             {t('actions_delete')}
           </Button>
           <p
             style={{
-              marginTop: "8px",
+              marginTop: "10px",
               fontSize: "12px",
               color: "var(--color-v2-ink-400)",
               fontFamily: "var(--font-v2-body)",
@@ -142,7 +158,7 @@ function DeleteConfirm({
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(10, 9, 8, 0.6)",
+        background: "rgba(42, 26, 46, 0.55)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -155,11 +171,13 @@ function DeleteConfirm({
       }}
     >
       <div
+        className="v2-rise"
         style={{
-          background: "var(--color-v2-paper)",
+          background: "#fff",
           width: "100%",
           maxWidth: "var(--v2-max-width)",
-          borderRadius: "var(--v2-radius-lg)",
+          borderRadius: "var(--v2-radius-card)",
+          boxShadow: "var(--v2-shadow-card-lg)",
           padding: "32px 24px",
         }}
       >
@@ -167,6 +185,7 @@ function DeleteConfirm({
           id="delete-confirm-title"
           style={{
             fontFamily: "var(--font-v2-display)",
+            fontWeight: 800,
             fontSize: "22px",
             lineHeight: "1.2",
             color: "var(--color-v2-ink-100)",
@@ -203,7 +222,7 @@ function DeleteConfirm({
               marginTop: "4px",
               width: "16px",
               height: "16px",
-              accentColor: "var(--color-v2-ink-100)",
+              accentColor: "var(--color-v2-accent)",
             }}
           />
           <span

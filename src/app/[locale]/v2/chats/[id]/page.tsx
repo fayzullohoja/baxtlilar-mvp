@@ -78,6 +78,7 @@ export default async function V2ChatThreadPage({
 
   return (
     <main
+      className="v2-screen-in"
       style={{
         height: "100dvh",
         display: "flex",
@@ -93,11 +94,11 @@ export default async function V2ChatThreadPage({
         style={{
           flexShrink: 0,
           padding: "14px 20px",
-          borderBottom: "1px solid var(--color-v2-ink-500)",
+          borderBottom: "1px solid var(--color-v2-border)",
           display: "flex",
           alignItems: "center",
           gap: "12px",
-          background: "var(--color-v2-paper)",
+          background: "var(--v2-grad-header)",
         }}
       >
         <Link
@@ -133,12 +134,13 @@ export default async function V2ChatThreadPage({
               width: "36px",
               height: "36px",
               borderRadius: "50%",
-              border: "1px solid var(--color-v2-ink-300)",
+              background: "var(--v2-grad-brand)",
               display: "grid",
               placeItems: "center",
-              fontFamily: "var(--font-v2-display)",
+              fontFamily: "var(--font-v2-body)",
+              fontWeight: 800,
               fontSize: "14px",
-              color: "var(--color-v2-ink-200)",
+              color: "#FFF7F0",
               flexShrink: 0,
             }}
           >
@@ -148,7 +150,7 @@ export default async function V2ChatThreadPage({
             <div
               style={{
                 fontSize: "15px",
-                fontWeight: 500,
+                fontWeight: 700,
                 color: "var(--color-v2-ink-100)",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -181,6 +183,7 @@ async function GhostChat() {
   const t = await getTranslations('Chat');
   return (
     <main
+      className="v2-screen-in"
       style={{
         height: "100dvh",
         display: "flex",
@@ -195,10 +198,11 @@ async function GhostChat() {
         style={{
           flexShrink: 0,
           padding: "14px 20px",
-          borderBottom: "1px solid var(--color-v2-ink-500)",
+          borderBottom: "1px solid var(--color-v2-border)",
           display: "flex",
           alignItems: "center",
           gap: "12px",
+          background: "var(--v2-grad-header)",
         }}
       >
         <Link
@@ -273,10 +277,10 @@ async function ChatHeaderMenu({
           top: "calc(100% + 8px)",
           width: "240px",
           padding: "16px",
-          background: "var(--color-v2-paper)",
-          border: "1px solid var(--color-v2-ink-500)",
-          borderRadius: "var(--v2-radius-md)",
-          boxShadow: "0 8px 24px rgba(10, 9, 8, 0.12)",
+          background: "#fff",
+          border: "1px solid var(--color-v2-border)",
+          borderRadius: "16px",
+          boxShadow: "var(--v2-shadow-card-lg)",
           zIndex: 10,
         }}
       >

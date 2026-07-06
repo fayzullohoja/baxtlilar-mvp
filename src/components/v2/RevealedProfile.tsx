@@ -55,14 +55,15 @@ function row(label: string, value: string | null) {
         justifyContent: "space-between",
         gap: "16px",
         padding: "12px 0",
-        borderBottom: "1px solid var(--color-v2-ink-600)",
+        borderBottom: "1px solid var(--color-v2-border)",
         fontFamily: "var(--font-v2-body)",
       }}
     >
-      <span style={{ fontSize: "13px", color: "var(--color-v2-ink-400)" }}>{label}</span>
+      <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--color-v2-ink-400)" }}>{label}</span>
       <span
         style={{
           fontSize: "14px",
+          fontWeight: 600,
           color: "var(--color-v2-ink-100)",
           textAlign: "right",
           flex: 1,
@@ -75,14 +76,28 @@ function row(label: string, value: string | null) {
   );
 }
 
+/** Eyebrow-подзаголовок секции. */
+const sectionLabelStyle: React.CSSProperties = {
+  fontSize: "12px",
+  fontWeight: 800,
+  textTransform: "uppercase",
+  letterSpacing: "0.14em",
+  color: "var(--color-v2-accent)",
+  marginBottom: "10px",
+  fontFamily: "var(--font-v2-body)",
+};
+
 export function RevealedProfile({ profile, locale = "ru" }: Props) {
   const t = useTranslations("Profile");
   const age = profile.birth_date ? ageFromDate(profile.birth_date) : null;
   const photos = profile.photo_urls;
-  const valueLabels = profile.top_life_values.map((v) => labelOf(LIFE_VALUES_V3, v, locale));
+  const values = profile.top_life_values.map((v) => ({
+    key: v,
+    label: labelOf(LIFE_VALUES_V3, v, locale),
+  }));
 
   return (
-    <article>
+    <article className="v2-rise">
       {/* Photo carousel (vertical stack для editorial feel) */}
       {photos.length > 0 ? (
         <div style={{ marginBottom: "32px" }}>
@@ -91,11 +106,11 @@ export function RevealedProfile({ profile, locale = "ru" }: Props) {
               key={i}
               style={{
                 aspectRatio: "4 / 5",
-                background: "var(--color-v2-ink-600)",
-                borderRadius: "var(--v2-radius-md)",
+                background: "var(--v2-grad-brand)",
+                borderRadius: "var(--v2-radius-lg)",
                 overflow: "hidden",
                 marginBottom: i < photos.length - 1 ? "8px" : 0,
-                border: "1px solid var(--color-v2-ink-500)",
+                boxShadow: "var(--v2-shadow-card)",
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -136,18 +151,7 @@ export function RevealedProfile({ profile, locale = "ru" }: Props) {
       {/* Bio */}
       {profile.bio ? (
         <div style={{ marginTop: "28px" }}>
-          <div
-            style={{
-              fontSize: "11px",
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              color: "var(--color-v2-ink-400)",
-              marginBottom: "10px",
-              fontFamily: "var(--font-v2-body)",
-            }}
-          >
-            {t("bioLabel")}
-          </div>
+          <div style={sectionLabelStyle}>{t("bioLabel")}</div>
           <p
             style={{
               fontFamily: "var(--font-v2-body)",
@@ -163,55 +167,38 @@ export function RevealedProfile({ profile, locale = "ru" }: Props) {
         </div>
       ) : null}
 
-      {/* Values chips */}
-      {valueLabels.length > 0 ? (
+      {/* Values chips (вера → teal-чип) */}
+      {values.length > 0 ? (
         <div style={{ marginTop: "28px" }}>
-          <div
-            style={{
-              fontSize: "11px",
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              color: "var(--color-v2-ink-400)",
-              marginBottom: "10px",
-              fontFamily: "var(--font-v2-body)",
-            }}
-          >
-            {t("lifeValuesLabel")}
-          </div>
+          <div style={sectionLabelStyle}>{t("lifeValuesLabel")}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-            {valueLabels.map((l, i) => (
-              <span
-                key={i}
-                style={{
-                  display: "inline-block",
-                  padding: "6px 12px",
-                  background: "transparent",
-                  border: "1px solid var(--color-v2-ink-500)",
-                  borderRadius: "999px",
-                  fontSize: "13px",
-                  color: "var(--color-v2-ink-200)",
-                  fontFamily: "var(--font-v2-body)",
-                }}
-              >
-                {l}
-              </span>
-            ))}
+            {values.map((v, i) => {
+              const teal = v.key === "faith";
+              return (
+                <span
+                  key={i}
+                  style={{
+                    display: "inline-block",
+                    padding: "7px 13px",
+                    background: teal ? "var(--color-v2-chip-teal)" : "var(--color-v2-chip)",
+                    borderRadius: "999px",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: teal ? "var(--color-v2-chip-teal-ink)" : "var(--color-v2-chip-ink)",
+                    fontFamily: "var(--font-v2-body)",
+                  }}
+                >
+                  {v.label}
+                </span>
+              );
+            })}
           </div>
         </div>
       ) : null}
 
       {/* Details rows */}
       <div style={{ marginTop: "32px" }}>
-        <div
-          style={{
-            fontSize: "11px",
-            textTransform: "uppercase",
-            letterSpacing: "0.12em",
-            color: "var(--color-v2-ink-400)",
-            marginBottom: "8px",
-            fontFamily: "var(--font-v2-body)",
-          }}
-        >
+        <div style={{ ...sectionLabelStyle, marginBottom: "8px" }}>
           {t("detailsLabel")}
         </div>
         {row(t("religionLabel"), profile.religion ? labelOf(RELIGION, profile.religion, locale) : null)}

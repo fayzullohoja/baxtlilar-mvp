@@ -112,7 +112,8 @@ export function V2AnketaPhotosForm() {
               border: "1px solid var(--color-v2-ink-500)",
               borderRadius: "var(--v2-radius-md)",
               overflow: "hidden",
-              background: "var(--color-v2-ink-600)",
+              background: "var(--color-v2-paper-3)",
+              boxShadow: "var(--v2-shadow-card)",
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -134,10 +135,11 @@ export function V2AnketaPhotosForm() {
                   left: "6px",
                   padding: "3px 8px",
                   fontSize: "10px",
+                  fontWeight: 700,
                   textTransform: "uppercase",
                   letterSpacing: "0.1em",
-                  background: "var(--color-v2-ink-100)",
-                  color: "var(--color-v2-paper)",
+                  background: "var(--v2-grad-primary)",
+                  color: "#FFF7F0",
                   fontFamily: "var(--font-v2-body)",
                   borderRadius: "999px",
                 }}
@@ -155,8 +157,8 @@ export function V2AnketaPhotosForm() {
                 width: "24px",
                 height: "24px",
                 borderRadius: "50%",
-                background: "rgba(10, 9, 8, 0.6)",
-                color: "var(--color-v2-paper)",
+                background: "rgba(42, 26, 46, 0.6)",
+                color: "#FFF7F0",
                 fontSize: "13px",
                 lineHeight: "1",
                 border: "none",
@@ -175,11 +177,12 @@ export function V2AnketaPhotosForm() {
             disabled={busy}
             style={{
               aspectRatio: "3 / 4",
-              border: "1px dashed var(--color-v2-ink-500)",
+              border: "1.5px dashed var(--color-v2-ink-500)",
               borderRadius: "var(--v2-radius-md)",
-              background: "transparent",
+              background: "#ffffff",
               fontFamily: "var(--font-v2-body)",
               fontSize: "13px",
+              fontWeight: 600,
               color: "var(--color-v2-ink-400)",
               cursor: "pointer",
             }}
@@ -217,11 +220,11 @@ export function V2AnketaPhotosForm() {
         <div
           style={{
             padding: "10px 14px",
-            background: "rgba(180, 50, 50, 0.08)",
-            border: "1px solid rgba(180, 50, 50, 0.3)",
-            borderRadius: "var(--v2-radius-md)",
+            background: "#FBE7E4",
+            borderLeft: "3px solid var(--color-v2-danger)",
+            borderRadius: "12px",
             fontSize: "13px",
-            color: "var(--color-v2-ink-200)",
+            color: "#9A4B46",
             fontFamily: "var(--font-v2-body)",
             marginBottom: "16px",
           }}

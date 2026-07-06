@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Manrope, Piazzolla } from "next/font/google";
 import Script from "next/script";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
@@ -8,8 +8,19 @@ import { routing } from "@/i18n/routing";
 import { TelegramInit } from "@/components/telegram-init";
 import "../globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin", "cyrillic"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+// V3 Visual DNA (Baxtlilar.dc.html): Piazzolla — serif-заголовки, Manrope — UI.
+// Оба поддерживают кириллицу. CSS-переменные подхватываются в globals.css
+// (--font-v2-display / --font-v2-body).
+const manrope = Manrope({
+  variable: "--font-manrope",
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "600", "700", "800"],
+});
+const piazzolla = Piazzolla({
+  variable: "--font-piazzolla",
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "600", "700", "800"],
+});
 
 export const metadata: Metadata = {
   title: "Baxtlilar",
@@ -32,7 +43,7 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
 
   return (
-    <html lang={locale} className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang={locale} className={`${manrope.variable} ${piazzolla.variable} h-full antialiased`}>
       <head>
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="afterInteractive" />
       </head>
