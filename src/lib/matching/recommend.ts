@@ -29,7 +29,7 @@ export async function getRecommendations(viewerId: string, limit = 20): Promise<
   // Use `top_life_values` (the V3 replacement). RPC migration applied separately.
   const { data: vp } = await sb
     .from("user_profiles")
-    .select("city, top_life_values, birth_date")
+    .select("city, region, birth_region, top_life_values, birth_date")
     .eq("user_id", viewerId)
     .maybeSingle();
   const { data: vq } = await sb.from("quiz_results").select("vector").eq("user_id", viewerId).maybeSingle();
@@ -37,6 +37,8 @@ export async function getRecommendations(viewerId: string, limit = 20): Promise<
   const viewer: ScoreInput = {
     age: vp.birth_date ? ageFromDate(vp.birth_date as string) : 30,
     city: (vp.city as string) ?? "",
+    region: (vp.region as string | null) ?? null,
+    birthRegion: (vp.birth_region as string | null) ?? null,
     values: (vp.top_life_values as string[]) ?? [],
     vector: (vq?.vector as Record<string, number>) ?? {},
   };
@@ -65,6 +67,8 @@ export async function getRecommendations(viewerId: string, limit = 20): Promise<
     const cand: ScoreInput = {
       age: (r.age as number) ?? 30,
       city: (r.city as string) ?? "",
+      region: (r.region as string | null) ?? null,
+      birthRegion: (r.birth_region as string | null) ?? null,
       values: (r.vals as string[]) ?? [],
       vector: (r.vector as Record<string, number>) ?? {},
     };
@@ -73,7 +77,7 @@ export async function getRecommendations(viewerId: string, limit = 20): Promise<
       user_id: r.user_id as string,
       display_name: (r.display_name as string) ?? "",
       age: cand.age,
-      city: cand.city,
+      city: cand.city ?? "",
       photoUrl: path ? (urls[path] ?? null) : null,
       score: scoreCandidate(viewer, cand),
       relaxLevel: (r.relax_level as number) ?? 0,
