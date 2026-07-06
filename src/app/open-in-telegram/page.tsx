@@ -1,46 +1,126 @@
-import Script from "next/script";
 import { AutoBootstrap } from "./auto-bootstrap";
 
 export const dynamic = "force-dynamic";
 
 const BOT_USERNAME = process.env.BOT_USERNAME ?? "baxtlilar_uz_bot";
 
-// Универсальная точка входа для анонимного пользователя. Рендерится
-// server-side как "открой в Telegram" фолбэк. Если страница открыта внутри
-// Telegram WebView и initData есть, AutoBootstrap клиентом сам отправит на
-// /api/auth/bootstrap и перенаправит в приложение. Иначе пользователь видит
-// кнопку deep-link на бота. Mini-app в браузере НЕ открывается.
+// Точка входа для анонимного пользователя. Внутри TG WebView AutoBootstrap сам
+// авторизует и редиректит; в обычном браузере (mini-app там не открыть) —
+// показываем этот брендовый лендинг с deep-link на бота. V2 Editorial Premium:
+// тёплая бумага, serif-masthead, один аметистовый акцент, максимум сдержанности.
 export default function OpenInTelegramPage() {
   const botDeepLink = `https://t.me/${BOT_USERNAME}`;
   return (
-    <main className="min-h-screen flex items-center justify-center px-5 py-8 bg-baxt-bg">
-      {/* TG Desktop НЕ auto-инжектит window.Telegram.WebApp надёжно — нужен
-          явный script-tag. /open-in-telegram вне [locale]-layout где он уже
-          подгружается, поэтому добавляем сюда. beforeInteractive чтобы
-          AutoBootstrap.useEffect успел увидеть window.Telegram. */}
-      <Script
-        src="https://telegram.org/js/telegram-web-app.js"
-        strategy="beforeInteractive"
-      />
+    <main
+      className="relative flex min-h-screen flex-col items-center justify-center"
+      style={{
+        background: "var(--color-v2-paper)",
+        color: "var(--color-v2-ink-100)",
+        fontFamily: "var(--font-v2-body)",
+        padding: "40px 28px",
+      }}
+    >
       <AutoBootstrap />
-      <div className="w-full max-w-sm bg-baxt-card border border-baxt-border rounded-3xl shadow-sm p-8 text-center">
-        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-baxt-coral flex items-center justify-center text-white text-3xl font-bold shadow-[0_8px_24px_-8px_rgba(226,82,107,0.5)]">
-          B
+
+      <div style={{ width: "100%", maxWidth: 400 }}>
+        <div
+          className="uppercase"
+          style={{
+            fontFamily: "var(--font-v2-mono)",
+            fontSize: 11,
+            letterSpacing: "0.2em",
+            color: "var(--color-v2-ink-400)",
+            marginBottom: 24,
+          }}
+        >
+          Серьёзные знакомства
         </div>
-        <h1 className="text-2xl font-bold tracking-tight mb-3">Baxtlilar</h1>
-        <p className="text-base mb-2">Откройте приложение через Telegram</p>
-        <p className="text-base mb-6 text-baxt-muted">Ilovani Telegram orqali oching</p>
+
+        <h1
+          style={{
+            fontFamily: "var(--font-v2-display)",
+            fontSize: 54,
+            lineHeight: 1,
+            letterSpacing: "-0.02em",
+            fontWeight: 400,
+            margin: 0,
+            color: "var(--color-v2-ink-100)",
+          }}
+        >
+          Baxtlilar
+        </h1>
+
+        {/* Signature: одиночный аметистовый штрих-мачта под словесным знаком. */}
+        <div
+          aria-hidden
+          style={{
+            width: 56,
+            height: 2,
+            background: "var(--color-v2-accent)",
+            margin: "22px 0 24px",
+          }}
+        />
+
+        <p
+          style={{
+            fontFamily: "var(--font-v2-display)",
+            fontSize: 22,
+            lineHeight: 1.35,
+            fontWeight: 400,
+            color: "var(--color-v2-ink-300)",
+            margin: "0 0 40px",
+            maxWidth: 300,
+          }}
+        >
+          Здесь знакомятся, чтобы создать семью.
+        </p>
+
         <a
           href={botDeepLink}
-          className="block w-full bg-baxt-coral text-white font-semibold py-3 px-4 rounded-2xl shadow-sm hover:opacity-90 transition"
+          className="block transition-opacity active:opacity-90"
+          style={{
+            background: "var(--color-v2-accent)",
+            color: "var(--color-v2-paper)",
+            fontFamily: "var(--font-v2-body)",
+            fontSize: 16,
+            fontWeight: 600,
+            textAlign: "center",
+            padding: "17px 20px",
+            borderRadius: 14,
+            textDecoration: "none",
+            boxShadow: "0 12px 34px -14px rgba(74,44,90,0.6)",
+          }}
+        >
+          Открыть в Telegram
+        </a>
+
+        <p
+          style={{
+            fontSize: 13,
+            lineHeight: 1.55,
+            color: "var(--color-v2-ink-400)",
+            margin: "22px 0 0",
+          }}
+        >
+          Регистрация и согласие на обработку данных проходят в боте.
+          <br />
+          <span style={{ opacity: 0.85 }}>Roʻyxatdan oʻtish — Telegram botda.</span>
+        </p>
+
+        <a
+          href={botDeepLink}
+          style={{
+            display: "inline-block",
+            marginTop: 18,
+            fontFamily: "var(--font-v2-mono)",
+            fontSize: 13,
+            letterSpacing: "0.02em",
+            color: "var(--color-v2-accent)",
+            textDecoration: "none",
+          }}
         >
           @{BOT_USERNAME}
         </a>
-        <p className="text-[12px] text-baxt-muted mt-5 leading-snug">
-          Регистрация и согласие на обработку данных — в боте.
-          <br />
-          Roʻyxatdan oʻtish — botda.
-        </p>
       </div>
     </main>
   );

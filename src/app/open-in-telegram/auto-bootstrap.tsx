@@ -78,59 +78,125 @@ export function AutoBootstrap() {
     };
   }, []);
 
-  // Нужна регистрация в боте → понятное сообщение поверх фолбэка (у карточки
-  // ниже уже есть кнопка-deep-link на бота).
+  // Нужна регистрация в боте → сообщение поверх фолбэка (кнопка на бота ниже).
   if (diag.kind === "register_required") {
     return (
-      <div className="absolute inset-x-0 top-0 z-50 px-5 pt-6 text-center">
-        <p className="text-sm text-baxt-navy">Сначала пройдите регистрацию в боте.</p>
-        <p className="text-sm text-baxt-muted">Avval botda roʻyxatdan oʻting.</p>
-      </div>
+      <TopNote
+        ru="Сначала пройдите регистрацию в боте."
+        uz="Avval botda roʻyxatdan oʻting."
+      />
     );
   }
 
-  // Bootstrap failure: чаще всего bad_start_param — token single-use уже claimed
-  // OR TTL 10 мин истёк. Даём понятную инструкцию — вернуться в бот и /start.
+  // Bootstrap failure: чаще всего token single-use уже claimed или TTL 10 мин
+  // истёк. Понятная инструкция — вернуться в бот и /start.
   if (diag.kind === "bootstrap_error") {
     const expiredToken =
       diag.error === "bad_start_param" || diag.error === "missing_start_param";
     return (
-      <div className="absolute inset-x-0 top-0 z-50 px-5 pt-6 text-center">
-        <p className="text-sm font-medium text-baxt-navy">
-          {expiredToken
+      <TopNote
+        ru={
+          expiredToken
             ? "Ссылка устарела. Вернитесь в бот и отправьте /start заново."
-            : "Не удалось войти. Вернитесь в бот и попробуйте снова."}
-        </p>
-        <p className="mt-1 text-sm text-baxt-muted">
-          {expiredToken
+            : "Не удалось войти. Вернитесь в бот и попробуйте снова."
+        }
+        uz={
+          expiredToken
             ? "Havola muddati oʻtdi. Botga qaytib /start yuboring."
-            : "Kirish amalga oshmadi. Botga qaytib qayta urinib koʻring."}
-        </p>
-      </div>
+            : "Kirish amalga oshmadi. Botga qaytib qayta urinib koʻring."
+        }
+      />
     );
   }
 
-  // fetch_error (сеть отвалилась) — короткое сообщение поверх фолбэка.
+  // fetch_error (сеть отвалилась).
   if (diag.kind === "fetch_error") {
-    return (
-      <div className="absolute inset-x-0 top-0 z-50 px-5 pt-6 text-center">
-        <p className="text-sm font-medium text-baxt-navy">Нет связи. Проверьте интернет.</p>
-        <p className="mt-1 text-sm text-baxt-muted">Aloqa yoʻq. Internetni tekshiring.</p>
-      </div>
-    );
+    return <TopNote ru="Нет связи. Проверьте интернет." uz="Aloqa yoʻq. Internetni tekshiring." />;
   }
 
   // initData так и не появился (обычный браузер) — рендерим null, показывается
   // серверный фолбэк-лендинг с кнопкой на бота.
   if (diag.kind === "no_initdata_timeout") return null;
 
-  // Loading — брендовый лоадер поверх фолбэка.
+  // Loading — сдержанный editorial-лоадер поверх фолбэка (serif-знак + пульсирующий
+  // аметистовый штрих). Респектит prefers-reduced-motion.
   return (
-    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-baxt-bg">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-baxt-coral text-2xl font-bold text-white shadow-[0_8px_24px_-8px_rgba(226,82,107,0.5)] motion-safe:animate-pulse">
-        B
+    <div
+      className="absolute inset-0 z-50 flex flex-col items-center justify-center"
+      style={{ background: "var(--color-v2-paper)" }}
+    >
+      <div
+        style={{
+          fontFamily: "var(--font-v2-display)",
+          fontSize: 30,
+          letterSpacing: "-0.02em",
+          color: "var(--color-v2-ink-100)",
+        }}
+      >
+        Baxtlilar
       </div>
-      <p className="text-sm text-baxt-muted">Загрузка · Yuklanmoqda</p>
+      <div
+        className="motion-safe:animate-pulse"
+        style={{
+          width: 40,
+          height: 2,
+          marginTop: 16,
+          background: "var(--color-v2-accent)",
+        }}
+      />
+      <p
+        className="uppercase"
+        style={{
+          marginTop: 16,
+          fontFamily: "var(--font-v2-mono)",
+          fontSize: 11,
+          letterSpacing: "0.18em",
+          color: "var(--color-v2-ink-400)",
+        }}
+      >
+        Загрузка · Yuklanmoqda
+      </p>
+    </div>
+  );
+}
+
+// Тонкая плашка-уведомление поверх лендинга (V2: бумага/инк, без резких цветов).
+function TopNote({ ru, uz }: { ru: string; uz: string }) {
+  return (
+    <div className="absolute inset-x-0 top-0 z-50 flex justify-center px-5 pt-5">
+      <div
+        style={{
+          maxWidth: 400,
+          width: "100%",
+          background: "var(--color-v2-paper-2)",
+          border: "1px solid var(--color-v2-border)",
+          borderRadius: 12,
+          padding: "12px 16px",
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            fontFamily: "var(--font-v2-body)",
+            fontSize: 14,
+            fontWeight: 500,
+            lineHeight: 1.4,
+            color: "var(--color-v2-ink-200)",
+          }}
+        >
+          {ru}
+        </p>
+        <p
+          style={{
+            margin: "3px 0 0",
+            fontSize: 13,
+            lineHeight: 1.4,
+            color: "var(--color-v2-ink-400)",
+          }}
+        >
+          {uz}
+        </p>
+      </div>
     </div>
   );
 }
