@@ -53,8 +53,9 @@ export const LIFE_VALUES: Opt[] = [
 export const EDUCATION: Opt[] = [
   { value: "secondary", ru: "Среднее", uz: "Oʻrta" },
   { value: "vocational", ru: "Среднее специальное", uz: "Oʻrta maxsus" },
-  { value: "higher", ru: "Высшее", uz: "Oliy" },
+  { value: "higher", ru: "Высшее / Бакалавр", uz: "Oliy / Bakalavr" },
   { value: "master", ru: "Магистр", uz: "Magistr" },
+  { value: "phd", ru: "PhD / учёная степень", uz: "PhD / ilmiy daraja" }, // V5 owner spec
   { value: "studying", ru: "Учусь сейчас", uz: "Hozir oʻqiyapman" },
   { value: "courses", ru: "Проф. курсы", uz: "Kasbiy kurslar" },
   { value: "na", ru: "Не хочу указывать", uz: "Koʻrsatmayman" },
@@ -89,6 +90,15 @@ export const CITIZENSHIP: Opt[] = [
   { value: "TJ", ru: "Таджикистан", uz: "Tojikiston" },
   { value: "TM", ru: "Туркменистан", uz: "Turkmaniston" },
   { value: "TR", ru: "Турция", uz: "Turkiya" },
+  // Anketa V5 (owner spec 2026-07-07): расширение списка стран.
+  { value: "US", ru: "США", uz: "AQSH" },
+  { value: "KR", ru: "Южная Корея", uz: "Janubiy Koreya" },
+  { value: "JP", ru: "Япония", uz: "Yaponiya" },
+  { value: "SA", ru: "Саудовская Аравия", uz: "Saudiya Arabistoni" },
+  { value: "AE", ru: "ОАЭ", uz: "BAA" },
+  { value: "QA", ru: "Катар", uz: "Qatar" },
+  { value: "ID", ru: "Индонезия", uz: "Indoneziya" },
+  { value: "MY", ru: "Малайзия", uz: "Malayziya" },
   { value: "OTHER", ru: "Другое", uz: "Boshqa" },
 ];
 
@@ -189,10 +199,21 @@ export const POST_MARRIAGE_LIVING: Opt[] = [
     ru: "Отдельно от родителей",
     uz: "Ota-onadan alohida",
   },
+  // Anketa V5 (owner spec 2026-07-07): +переходный вариант и «пока не ясно».
+  {
+    value: "temporary_then_separate",
+    ru: "Временно с родителями, потом отдельно",
+    uz: "Vaqtincha ota-ona bilan, keyin alohida",
+  },
   {
     value: "open_to_discuss",
-    ru: "Готов(а) обсуждать",
-    uz: "Muhokama qilishga tayyorman",
+    ru: "По договорённости",
+    uz: "Kelishuvga qarab",
+  },
+  {
+    value: "unsure",
+    ru: "Пока не ясно",
+    uz: "Hali aniq emas",
   },
 ];
 
