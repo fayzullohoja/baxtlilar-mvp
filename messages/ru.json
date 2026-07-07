@@ -362,6 +362,7 @@
     "finance_income_range_not_say": "Не хочу указывать",
     "finance_obligations_question": "Есть ли у Вас финансовые обязательства?",
     "finance_obligations_helper": "Например: кредиты, алименты, материальная помощь близким.",
+    "finance_housing_question": "Жилищная ситуация",
     "finance_obligations_none": "Нет обязательств",
     "finance_obligations_has": "Есть обязательства",
     "finance_obligations_not_say": "Предпочту не говорить",

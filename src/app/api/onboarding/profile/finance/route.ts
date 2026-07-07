@@ -58,6 +58,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ...(parsed.data.financial_obligations
       ? { financial_obligations: parsed.data.financial_obligations }
       : {}),
+    ...(parsed.data.housing_status
+      ? { housing_status: parsed.data.housing_status }
+      : {}),
   };
 
   const { error: saveErr } = await sb

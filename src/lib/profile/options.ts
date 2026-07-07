@@ -421,6 +421,15 @@ export const FINANCIAL_OBLIGATIONS: Opt[] = [
   { value: "na", ru: "Предпочту не говорить", uz: "Aytmaslikni afzal koʻraman" },
 ];
 
+/** Жильё (owner spec §9). Cold в extended.finance, hidden public (без стигмы «нет дома»). */
+export const HOUSING_STATUS: Opt[] = [
+  { value: "own", ru: "Своё жильё", uz: "Shaxsiy uy-joyim bor" },
+  { value: "rent", ru: "Аренда", uz: "Ijarada yashayman" },
+  { value: "with_parents", ru: "С родителями / родственниками", uz: "Ota-onam / qarindoshlarim bilan yashayman" },
+  { value: "none", ru: "Пока нет своего жилья", uz: "Hozircha shaxsiy uy-joyim yoʻq" },
+  { value: "na", ru: "Не хочу отвечать", uz: "Javob berishni xohlamayman" },
+];
+
 // ---------- Образ жизни и привычки (Чат-2 Экран 10) ----------
 
 /** Ритм / образ жизни. */
