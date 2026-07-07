@@ -26,3 +26,20 @@ alter table user_profiles
   check (family_role_model is null or family_role_model in (
     'traditional', 'woman_leads', 'equal_partnership'
   ));
+
+-- Готовность к браку (§12) и к переезду (§13) — новые опц. hot-колонки,
+-- собираются в шаге «Жизнь после брака» (profile_marriage). Мягкие сигналы.
+alter table user_profiles add column if not exists marriage_readiness text;
+alter table user_profiles add column if not exists relocation_readiness text;
+
+alter table user_profiles drop constraint if exists user_profiles_marriage_readiness_chk;
+alter table user_profiles add constraint user_profiles_marriage_readiness_chk
+  check (marriage_readiness is null or marriage_readiness in (
+    'within_3m', 'within_6m', 'within_1y', 'no_rush', 'unsure'
+  ));
+
+alter table user_profiles drop constraint if exists user_profiles_relocation_readiness_chk;
+alter table user_profiles add constraint user_profiles_relocation_readiness_chk
+  check (relocation_readiness is null or relocation_readiness in (
+    'ready', 'only_my_city', 'by_agreement', 'unsure'
+  ));

@@ -217,6 +217,23 @@ export const POST_MARRIAGE_LIVING: Opt[] = [
   },
 ];
 
+/** Готовность к браку по срокам (owner spec §12). Матчинг-сигнал совместимости темпа. */
+export const MARRIAGE_READINESS: Opt[] = [
+  { value: "within_3m", ru: "В течение 3 месяцев", uz: "3 oy ichida" },
+  { value: "within_6m", ru: "В течение 6 месяцев", uz: "6 oy ichida" },
+  { value: "within_1y", ru: "В течение года", uz: "1 yil ichida" },
+  { value: "no_rush", ru: "Не спешу — сначала познакомиться", uz: "Shoshilmayman, avval tanishmoqchiman" },
+  { value: "unsure", ru: "Пока не ясно", uz: "Hali aniq emas" },
+];
+
+/** Готовность к переезду (owner spec §13). ≠ geo_preference (где искать партнёра). */
+export const RELOCATION_READINESS: Opt[] = [
+  { value: "ready", ru: "Готов(а) переехать в другой город/страну", uz: "Boshqa shahar/mamlakatga koʻchishga tayyorman" },
+  { value: "only_my_city", ru: "Только в своём городе", uz: "Faqat oʻz shahrimda yashayman" },
+  { value: "by_agreement", ru: "По договорённости", uz: "Kelishuvga qarab" },
+  { value: "unsure", ru: "Пока не ясно", uz: "Hali aniq emas" },
+];
+
 // ============================================================================
 // Anketa V3 MVP (2026-06-29) — Sprint 1 enum-наборы для новых экранов
 // ============================================================================

@@ -44,6 +44,9 @@ import {
   ALCOHOL_LEVEL,
   DRUGS_USE,
   PARTNER_PREFERRED_COUNTRIES,
+  // V5 owner spec 2026-07-07:
+  MARRIAGE_READINESS,
+  RELOCATION_READINESS,
 } from "./options";
 
 const tuple = (a: string[]) => a as [string, ...string[]];
@@ -188,6 +191,11 @@ export const valuesSchema = z.object({
  *  для serious-marriage платформы. Required. */
 export const marriageSchema = z.object({
   post_marriage_living: z.enum(tuple(vals(POST_MARRIAGE_LIVING))),
+  // V5 owner spec §12/§13: секция «Жизнь после брака». Optional (anti-drop-off,
+  // мягкие матчинг-сигналы). marriage_readiness — темп; relocation_readiness —
+  // готовность переехать (≠ geo_preference «где искать»).
+  marriage_readiness: z.enum(tuple(vals(MARRIAGE_READINESS))).optional(),
+  relocation_readiness: z.enum(tuple(vals(RELOCATION_READINESS))).optional(),
 });
 
 // Пол партнёра НЕ спрашиваем — выводится автоматически как противоположный своему (см. looking-for route).
@@ -468,6 +476,8 @@ export const HOT_COLUMNS = new Set([
   "birth_city",
   "activity_field",
   "employment_format",
+  "marriage_readiness",
+  "relocation_readiness",
   "children_count",
   "youngest_child_age",
   "future_children_plan",

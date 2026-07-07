@@ -34,6 +34,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       {
         user_id: user.id,
         post_marriage_living: parsed.data.post_marriage_living,
+        marriage_readiness: parsed.data.marriage_readiness ?? null,
+        relocation_readiness: parsed.data.relocation_readiness ?? null,
       },
       { onConflict: "user_id" },
     );
