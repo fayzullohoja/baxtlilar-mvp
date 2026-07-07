@@ -278,12 +278,13 @@ export const LIFE_VALUES_V3: Opt[] = [
   { value: "independence", ru: "Самостоятельность", uz: "Mustaqillik" },
 ];
 
-/** Экран 7 — Модель распределения ролей в семье. Ключевой для matching. */
+/** Экран 7 — Модель распределения ролей в семье. Ключевой для matching.
+ * V5 (owner spec 2026-07-07): 3 варианта (муж/жена/равное), формулировки
+ * смягчены; `situational` («зависит от ситуации») убран. */
 export const FAMILY_ROLE_MODEL: Opt[] = [
-  { value: "traditional", ru: "Традиционная (мужчина — глава семьи)", uz: "Anʼanaviy (erkak — oila boshligʻi)" },
-  { value: "equal_partnership", ru: "Равное партнёрство", uz: "Teng hamkorlik" },
-  { value: "woman_leads", ru: "Женщина-лидер", uz: "Ayol yetakchi" },
-  { value: "situational", ru: "Зависит от ситуации", uz: "Vaziyatga qarab" },
+  { value: "traditional", ru: "Семья с лидерством мужчины", uz: "Erkak yetakchiligidagi oila" },
+  { value: "woman_leads", ru: "Семья с лидерством женщины", uz: "Ayol yetakchiligidagi oila" },
+  { value: "equal_partnership", ru: "Равное партнёрство", uz: "Oʻzaro teng sheriklik" },
 ];
 
 /** Экран 7 — Взгляд на работу жены после брака. */

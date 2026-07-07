@@ -16,3 +16,13 @@ alter table user_profiles
     'with_husband_family', 'with_wife_family', 'separate', 'separate_near',
     'open_to_discuss', 'temporary_then_separate', 'unsure'
   ));
+
+-- Модель семьи: 3 варианта (муж/жена/равное), убрано 'situational'.
+-- Прод-данных с 'situational' — 0 (проверено), поэтому CHECK можно сузить без бэкфилла.
+alter table user_profiles drop constraint if exists user_profiles_family_role_model_chk;
+
+alter table user_profiles
+  add constraint user_profiles_family_role_model_chk
+  check (family_role_model is null or family_role_model in (
+    'traditional', 'woman_leads', 'equal_partnership'
+  ));
