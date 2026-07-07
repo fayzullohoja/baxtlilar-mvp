@@ -1,18 +1,20 @@
 @import "tailwindcss";
 
 /* ============================================================================
- * V1 Brand tokens — кораллово-розовый, оставляем для совместимости с старыми
- * экранами пока идёт миграция на V2. После полного V2 sweep удалить.
+ * V1 Brand tokens — легаси-имена (baxt-*) для старых экранов (blocked, legal,
+ * rejected, error, onboarding-компоненты). Значения перекрашены в палитру
+ * «Живой Baxtlilar» (Baxtlilar.dc.html), чтобы легаси-экраны не выбивались
+ * из нового стиля. После полного V2 sweep удалить вместе с консюмерами.
  * ============================================================================ */
 @theme {
-  --color-baxt-coral: #e2526b;
-  --color-baxt-coral-dk: #c8364f;
-  --color-baxt-coral-bg: #fde7ec;
-  --color-baxt-pink-bg: #fff5f7;
-  --color-baxt-navy: #1f3a5f;
-  --color-baxt-border: #f3c7d0;
+  --color-baxt-coral: #c1362f; /* гранат — primary */
+  --color-baxt-coral-dk: #9e2b25; /* гранат тёмный — hover */
+  --color-baxt-coral-bg: #fbe7e4; /* мягкая красная плашка */
+  --color-baxt-pink-bg: #fff7f0; /* карамельный фон */
+  --color-baxt-navy: #2a1a2e; /* сливовый ink */
+  --color-baxt-border: #f0ddd0; /* тёплый hairline */
   --color-baxt-card: #ffffff;
-  --color-baxt-muted: #6b7280;
+  --color-baxt-muted: #8a7a8e; /* приглушённый лиловый */
 }
 
 /* ============================================================================
