@@ -47,6 +47,7 @@ import {
   // V5 owner spec 2026-07-07:
   MARRIAGE_READINESS,
   RELOCATION_READINESS,
+  HOUSING_STATUS,
 } from "./options";
 
 const tuple = (a: string[]) => a as [string, ...string[]];
@@ -320,6 +321,8 @@ export const financeSchema = z.object({
   financial_priorities: z.array(z.enum(tuple(vals(FINANCIAL_PRIORITIES)))).min(1).max(3),
   monthly_income_range: z.enum(tuple(vals(MONTHLY_INCOME_RANGE))).optional(),
   financial_obligations: z.enum(tuple(vals(FINANCIAL_OBLIGATIONS))).optional(),
+  // V5 owner spec §9: жильё. Optional, cold (extended.finance), hidden public.
+  housing_status: z.enum(tuple(vals(HOUSING_STATUS))).optional(),
 });
 
 /** V4 Экран 10 — Образ жизни и привычки. Hidden public.

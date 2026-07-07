@@ -11,6 +11,7 @@ import {
   FINANCIAL_PRIORITIES,
   MONTHLY_INCOME_RANGE,
   FINANCIAL_OBLIGATIONS,
+  HOUSING_STATUS,
 } from "@/lib/profile/options";
 
 /**
@@ -38,6 +39,7 @@ export function V2AnketaFinanceForm({ locale }: { locale: string }) {
   const [priorities, setPriorities] = useState<string[]>([]);
   const [incomeRange, setIncomeRange] = useState("");
   const [obligations, setObligations] = useState("");
+  const [housing, setHousing] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -62,6 +64,7 @@ export function V2AnketaFinanceForm({ locale }: { locale: string }) {
           financial_priorities: priorities,
           ...(incomeRange ? { monthly_income_range: incomeRange } : {}),
           ...(obligations ? { financial_obligations: obligations } : {}),
+          ...(housing ? { housing_status: housing } : {}),
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {
@@ -153,6 +156,15 @@ export function V2AnketaFinanceForm({ locale }: { locale: string }) {
           options={FINANCIAL_OBLIGATIONS}
           value={obligations}
           onChange={setObligations}
+          locale={locale}
+        />
+      </Field>
+
+      <Field label={t("finance_housing_question")} hint={t("optionalHint")}>
+        <Select
+          options={HOUSING_STATUS}
+          value={housing}
+          onChange={setHousing}
           locale={locale}
         />
       </Field>
