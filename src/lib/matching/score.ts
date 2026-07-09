@@ -54,8 +54,8 @@ export function scoreCandidate(viewer: ScoreInput, cand: ScoreInput): number {
     score += 10;
   }
 
-  // Общие ценности (до 3).
-  const shared = viewer.values.filter((v) => cand.values.includes(v)).length;
+  // Общие ценности (до 3). Дедуп viewer.values — дубликаты не должны раздувать счёт.
+  const shared = [...new Set(viewer.values)].filter((v) => cand.values.includes(v)).length;
   score += Math.min(shared, 3) * 10;
 
   // Личность (Big Five): веса FACTOR_WEIGHTS + confidence-blend к нейтрали.
