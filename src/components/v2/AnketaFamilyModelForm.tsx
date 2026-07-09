@@ -139,6 +139,12 @@ export function V2AnketaFamilyModelForm({
               gender,
               "uz",
             ),
+            tr: getGenderedOptionLabel(
+              "HOUSEHOLD_RESPONSIBILITY_MODEL",
+              opt.value,
+              gender,
+              "tr",
+            ),
           }))}
           value={householdModel}
           onChange={setHouseholdModel}

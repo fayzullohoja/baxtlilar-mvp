@@ -153,7 +153,11 @@ async function isPhoneBlacklisted(
 
 async function createInitial(tg: TgUser): Promise<DbUser | null> {
   const sb = supabaseAdmin();
-  const language: Lang = detectLang(tg); // временный язык, юзер уточнит на bot_language
+  // Временный seed-язык (юзер уточнит на bot_language). Клампим к ru/uz: 'tr'
+  // становится persistable только после миграции users.language CHECK += 'tr'
+  // (ENABLE-шаг). Иначе для tr-locale Telegram-клиента INSERT падал бы по
+  // constraint ещё на /start — юзер не смог бы даже зарегистрироваться.
+  const language: Lang = detectLang(tg) === "uz" ? "uz" : "ru";
   const { data, error } = await sb
     .from("users")
     .insert({

@@ -335,6 +335,7 @@ function LanguageSwitcher({ current }: { current: string }) {
   const langs = [
     { code: "ru", label: "RU" },
     { code: "uz", label: "UZ" },
+    { code: "tr", label: "TR" },
   ];
   return (
     <div
