@@ -34,11 +34,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
 
   // Читаем текущий extended, чтобы не затереть остальные секции.
-  const { data: existing } = await supabaseAdmin()
+  const { data: existing, error: readErr } = await supabaseAdmin()
     .from("user_profiles")
     .select("extended")
     .eq("user_id", user.id)
     .maybeSingle();
+  if (readErr)
+    return NextResponse.json({ ok: false, error: "read_failed" }, { status: 500 });
   const ext = (existing?.extended as Record<string, unknown>) ?? {};
   const lifestyle = (ext.lifestyle as Record<string, unknown>) ?? {};
 

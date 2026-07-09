@@ -41,11 +41,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Если есть cold-поля — мержим в extended.
   if (parsed.data.family_decision_model || parsed.data.household_responsibility_model) {
     // Сначала прочитаем текущий extended чтобы не затереть остальные секции.
-    const { data: existing } = await supabaseAdmin()
+    const { data: existing, error: readErr } = await supabaseAdmin()
       .from("user_profiles")
       .select("extended")
       .eq("user_id", user.id)
       .maybeSingle();
+    if (readErr)
+      return NextResponse.json({ ok: false, error: "read_failed" }, { status: 500 });
     const ext = (existing?.extended as Record<string, unknown>) ?? {};
     const family = (ext.family as Record<string, unknown>) ?? {};
     const newFamily = {

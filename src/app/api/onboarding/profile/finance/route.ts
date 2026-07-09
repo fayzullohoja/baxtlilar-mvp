@@ -37,11 +37,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   // Все 6 полей — cold → extended.finance. Читаем текущий extended, чтобы
   // не затереть другие секции (family, privacy, etc.).
-  const { data: existing } = await sb
+  const { data: existing, error: readErr } = await sb
     .from("user_profiles")
     .select("extended")
     .eq("user_id", user.id)
     .maybeSingle();
+  if (readErr)
+    return NextResponse.json({ ok: false, error: "read_failed" }, { status: 500 });
   const ext = (existing?.extended as Record<string, unknown>) ?? {};
   const prevFinance = (ext.finance as Record<string, unknown>) ?? {};
   const newFinance = {

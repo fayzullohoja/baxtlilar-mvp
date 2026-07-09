@@ -30,11 +30,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   // Cold сегодня пуст (все поля basic — hot). Оставлено на будущее.
   if (Object.keys(cold).length > 0) {
-    const { data: existing } = await supabaseAdmin()
+    const { data: existing, error: readErr } = await supabaseAdmin()
       .from("user_profiles")
       .select("extended")
       .eq("user_id", user.id)
       .maybeSingle();
+    if (readErr)
+      return NextResponse.json({ ok: false, error: "read_failed" }, { status: 500 });
     const ext = (existing?.extended as Record<string, unknown>) ?? {};
     hotUpdate.extended = { ...ext, ...cold };
   }
