@@ -14,6 +14,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { Link, redirect } from "@/i18n/navigation";
 import { requireActiveUser } from "@/lib/auth/active-guard";
+import { deriveRole, hasPermission } from "@/lib/v2/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getMiniProfiles } from "@/lib/profile/mini";
 import { areBlocked } from "@/lib/safety/blocks";
@@ -35,6 +36,13 @@ export default async function V2ChatThreadPage({
   setRequestLocale(locale);
   const t = await getTranslations('Chat');
   const user = await requireActiveUser(locale, { allowPaused: true });
+  // CHAT-1 (page-render path): гейтим open_chat как API-роуты stream/messages.
+  // requireActiveUser проверяет только lifecycle; де-верифицированный юзер
+  // (lifecycle=active, verification_status=needs_changes/rejected → роль
+  // shadow/rejected без open_chat) иначе читал бы историю сообщений на рендере.
+  if (!hasPermission(deriveRole(user.lifecycle_state, user.verification_status), "open_chat")) {
+    redirect({ href: "/v2/chats", locale });
+  }
   const sb = supabaseAdmin();
 
   const { data: chat } = await sb
