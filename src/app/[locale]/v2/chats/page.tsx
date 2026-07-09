@@ -7,8 +7,9 @@
  */
 
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
+import { Link, redirect } from "@/i18n/navigation";
 import { requireActiveUser } from "@/lib/auth/active-guard";
+import { deriveRole, hasPermission } from "@/lib/v2/permissions";
 import { getChatList } from "@/lib/chat/list";
 import { BottomNav } from "@/components/bottom-nav";
 import { AutoRefresh } from "@/components/auto-refresh";
@@ -44,6 +45,12 @@ export default async function V2ChatsPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const user = await requireActiveUser(locale, { allowPaused: true });
+  // CHAT-1 (list page): тот же open_chat-гейт, что и на детали чата. Иначе
+  // де-верифицированный юзер (lifecycle=active, verification_status=needs_changes/
+  // rejected) видел список чатов с превью последних сообщений (утечка контента).
+  if (!hasPermission(deriveRole(user.lifecycle_state, user.verification_status), "open_chat")) {
+    redirect({ href: "/main", locale });
+  }
   const t = await getTranslations("Chats");
   const rows = await getChatList(user.id);
   const totalUnread = rows.reduce((s, r) => s + r.unread, 0);
