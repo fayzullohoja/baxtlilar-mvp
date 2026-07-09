@@ -147,7 +147,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // next-intl middleware показал mini-app на правильной локали с первого экрана.
   // Раньше UZ-юзер на bot'е попадал на /ru/v2/welcome (default locale) и
   // должен был ВРУЧНУЮ переключать через RU/UZ свитчер.
-  const lang = (row.language === "uz" || row.language === "ru") ? row.language : "ru";
+  const lang =
+    row.language === "uz" || row.language === "ru" || row.language === "tr"
+      ? row.language
+      : "ru";
   const res = NextResponse.json({
     ok: true,
     userId: row.id,

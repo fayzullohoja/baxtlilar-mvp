@@ -28,6 +28,7 @@ function keyPaths(obj: Record<string, unknown>, prefix = ""): string[] {
 describe("i18n message parity (ru ↔ uz)", () => {
   const ru = keyPaths(load("ru")).sort();
   const uz = keyPaths(load("uz")).sort();
+  const tr = keyPaths(load("tr")).sort();
 
   it("uz defines every key that ru has", () => {
     expect(ru.filter((k) => !uz.includes(k))).toEqual([]);
@@ -35,5 +36,13 @@ describe("i18n message parity (ru ↔ uz)", () => {
 
   it("ru defines every key that uz has", () => {
     expect(uz.filter((k) => !ru.includes(k))).toEqual([]);
+  });
+
+  it("tr defines every key that ru has", () => {
+    expect(ru.filter((k) => !tr.includes(k))).toEqual([]);
+  });
+
+  it("ru defines every key that tr has", () => {
+    expect(tr.filter((k) => !ru.includes(k))).toEqual([]);
   });
 });

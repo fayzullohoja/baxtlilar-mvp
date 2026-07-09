@@ -2,7 +2,7 @@
 
 import { useId, type ReactNode, type ChangeEventHandler } from "react";
 import { CITY_GROUPS } from "@/lib/profile/cities";
-import type { Opt } from "@/lib/profile/options";
+import { optLabel, type Opt } from "@/lib/profile/options";
 
 /**
  * V2 Anketa Fields — form primitives.
@@ -161,7 +161,7 @@ export function Select({
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "4px" }}>
         {options.map((opt) => {
-          const label = locale === "uz" ? opt.uz : opt.ru;
+          const label = optLabel(opt, locale);
           const selected = value === opt.value;
           return (
             <button
@@ -210,7 +210,7 @@ export function Select({
       </option>
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>
-          {locale === "uz" ? opt.uz : opt.ru}
+          {optLabel(opt, locale)}
         </option>
       ))}
     </select>
@@ -246,7 +246,7 @@ export function Chips({
       {options.map((opt) => {
         const isSelected = selected.includes(opt.value);
         const atMax = max !== undefined && selected.length >= max && !isSelected;
-        const label = locale === "uz" ? opt.uz : opt.ru;
+        const label = optLabel(opt, locale);
         return (
           <button
             key={opt.value}

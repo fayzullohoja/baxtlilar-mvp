@@ -70,6 +70,7 @@ export type TgUpdate = {
 function detectLang(tg?: TgUser): Lang {
   const lc = tg?.language_code?.toLowerCase() ?? "";
   if (lc.startsWith("uz")) return "uz";
+  if (lc.startsWith("tr")) return "tr";
   return "ru";
 }
 
@@ -205,6 +206,7 @@ function langKeyboard(): InlineKeyboardMarkup {
         { text: M.lang_ru, callback_data: "lang:ru" },
         { text: M.lang_uz, callback_data: "lang:uz" },
       ],
+      [{ text: M.lang_tr, callback_data: "lang:tr" }],
     ],
   };
 }
@@ -377,7 +379,7 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
 
   try {
     if (ns === "lang" && user.onboarding_step === "bot_language") {
-      const lang: Lang = val === "uz" ? "uz" : "ru";
+      const lang: Lang = val === "uz" ? "uz" : val === "tr" ? "tr" : "ru";
       const sb = supabaseAdmin();
       const { error } = await sb.from("users").update({ language: lang }).eq("id", user.id);
       if (error) throw new Error(error.message);

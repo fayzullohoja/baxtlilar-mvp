@@ -23,9 +23,9 @@ import {
 
 export type Gender = "m" | "f";
 
-type Locale = "ru" | "uz";
+type Locale = "ru" | "uz" | "tr";
 
-type PerGenderLabel = { ru: string; uz: string };
+type PerGenderLabel = { ru: string; uz: string; tr?: string };
 type OverrideEntry = { m?: PerGenderLabel; f?: PerGenderLabel };
 
 /**
@@ -76,7 +76,7 @@ export function getGenderedOptionLabel(
 ): string {
   if (gender === "m" || gender === "f") {
     const override = GENDERED_OVERRIDES[constName]?.[value]?.[gender];
-    if (override) return override[locale];
+    if (override) return override[locale] ?? override.ru;
   }
   const opts = CONST_REGISTRY[constName];
   if (opts) return labelOf(opts, value, locale);
@@ -90,7 +90,7 @@ export function getGenderedOptionLabel(
  * фолбэчить на next-intl. Ключи и переопределения будут добавлены сюда по мере
  * необходимости, без изменений в форме.
  */
-const GENDERED_QUESTION_OVERRIDES: Record<string, Record<Gender, { ru: string; uz: string }>> = {
+const GENDERED_QUESTION_OVERRIDES: Record<string, Record<Gender, { ru: string; uz: string; tr?: string }>> = {
   // "partnerWorkLabel": {
   //   m: { ru: "Работа жены", uz: "Xotinning ishi" },
   //   f: { ru: "Работа мужа", uz: "Erning ishi" },
@@ -110,7 +110,7 @@ export function getGenderedQuestion(
 ): string {
   if (gender === "m" || gender === "f") {
     const override = GENDERED_QUESTION_OVERRIDES[key]?.[gender];
-    if (override) return override[locale];
+    if (override) return override[locale] ?? override.ru;
   }
   return "";
 }
