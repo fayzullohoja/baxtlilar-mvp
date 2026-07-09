@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/admin/guard";
+import { requireAdmin, adminAudit } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { OpsShell } from "@/components/admin-ops/OpsShell";
 import { loadCase } from "@/lib/admin/load-case";
@@ -31,6 +31,17 @@ export default async function Page({
   ) {
     notFound();
   }
+
+  // SG-09 / KVKK: логируем ГРАНТИРОВАННЫЙ просмотр чувствительных данных
+  // (паспорт/селфи/телефон). Раньше аудит писался только на write-действиях —
+  // read-путь паспортов не оставлял следа для forensic-расследования.
+  await adminAudit({
+    adminId: session.adminId,
+    action: "case_view",
+    entity: "verification_case",
+    entityId: id,
+    newValue: { user_id: c.user.id },
+  });
 
   const [{ data: admin }, reasonTemplates] = await Promise.all([
     supabaseAdmin()

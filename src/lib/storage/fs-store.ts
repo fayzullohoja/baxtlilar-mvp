@@ -49,6 +49,10 @@ const MIME: Record<string, string> = {
   ".jpeg": "image/jpeg",
   ".png": "image/png",
   ".webp": "image/webp",
+  // HEIC/HEIF принимаются на загрузке (accept + extForType) — раздаём с
+  // корректным типом, а не application/octet-stream (иначе браузер скачивает).
+  ".heic": "image/heic",
+  ".heif": "image/heif",
 };
 export function mimeForPath(p: string): string {
   return MIME[path.extname(p).toLowerCase()] ?? "application/octet-stream";
