@@ -308,7 +308,7 @@ export const FAMILY_ROLE_MODEL: Opt[] = [
 export const WIFE_WORK_VIEW: Opt[] = [
   { value: "welcome", ru: "Приветствую — пусть работает", uz: "Mamnuniyat bilan — ishlasin" },
   { value: "ok_if_needed", ru: "Допустимо, если нужно", uz: "Kerak boʻlsa, mumkin" },
-  { value: "prefer_not", ru: "Предпочитаю, чтобы не работала", uz: "Ishlamasligini afzal koʻraman" },
+  { value: "prefer_not", ru: "Предпочитаю, чтобы не работал(а)", uz: "Ishlamasligini afzal koʻraman" },
   { value: "against", ru: "Категорически против", uz: "Qatʼiy qarshi" },
   { value: "discuss", ru: "Готов(а) обсуждать", uz: "Muhokama qilishga tayyorman" },
 ];

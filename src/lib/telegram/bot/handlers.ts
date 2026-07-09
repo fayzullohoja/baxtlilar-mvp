@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import { env } from "@/lib/env";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { normalizeInternationalPhone, PhoneError } from "@/lib/phone";
-import { transition, tryTransition } from "@/lib/state-machine/transitions";
+import { tryTransition } from "@/lib/state-machine/transitions";
 import { hashPhone } from "@/lib/identity/hashing";
 import { signStartToken } from "../start-token";
 import { sendMessage, answerCallbackQuery } from "../bot-api";
@@ -334,6 +334,10 @@ async function handleStart(msg: TgMessage): Promise<void> {
   if (!tg) return;
   if (tg.is_bot) return;
   const chatId = msg.chat.id;
+  // SEC-3a: кулдаун на /start — throttle ДО любых DB-запросов (findByTg).
+  // Внутри handleStart (а не в handleUpdate), чтобы null-user callback-путь
+  // (handleCallback → handleStart) тоже был ограничен, не только /start-текст.
+  if (!startCooldown.take(`tg:${chatId}`)) return;
   let user = await findByTg(tg.id);
   if (!user) {
     user = await createInitial(tg);
@@ -451,7 +455,7 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
       // verification_intro — это сломалось вместе с моим hard-cutover state-machine
       // фиксом (ALLOWED_TRANSITIONS.bot_consent_biometric теперь = ["welcome_mission"]).
       // verification_status пишем сразу: phone_verified (раз есть phone_number).
-      await transition(
+      const rBio = await tryTransition(
         user.id,
         {
           onboarding_step: "welcome_mission",
@@ -460,6 +464,10 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
         "bot:bio_accepted",
         { kind: "user", id: user.id },
       );
+      if (!rBio.ok) {
+        await answerCallbackQuery(cb.id, "Try /start again");
+        return;
+      }
       await answerCallbackQuery(cb.id);
       await sendMessage(
         chatId,
@@ -583,7 +591,7 @@ export async function handleUpdate(update: TgUpdate): Promise<void> {
   if (update.message) {
     const text = update.message.text?.trim() ?? "";
     if (text.startsWith("/start")) {
-      if (!startCooldown.take(`tg:${update.message.chat.id}`)) return;
+      // rate-limit перенесён внутрь handleStart — покрывает и callback-путь.
       await handleStart(update.message);
       return;
     }
