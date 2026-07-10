@@ -67,21 +67,29 @@ export const M = {
   bio_consent_no: { ru: "❌ Отказаться", uz: "❌ Rad etish" },
 
   ready: {
-    ru: "Готово! Откройте приложение и загрузите паспорт + селфи для верификации.",
-    uz: "Tayyor! Ilovani och va pasport + selfi yuklab tasdiqlanishdan oʻt.",
+    ru:
+      "✅ Готово. Номер подтверждён.\n" +
+      "Откройте Baxtlilar Mini App, чтобы продолжить регистрацию: выбрать регион, способ проверки и создать анкету.",
+    uz:
+      "✅ Tayyor. Raqam tasdiqlandi.\n" +
+      "Roʻyxatni davom ettirish uchun Baxtlilar Mini App'ni oching: hududni tanlang, tekshiruv usulini tanlang va anketa yarating.",
   },
-  open_app: { ru: "🚀 Открыть Baxtlilar", uz: "🚀 Baxtlilar'ni ochish" },
+  open_app: { ru: "Открыть Baxtlilar", uz: "Baxtlilar'ni ochish" },
   // Текст постоянной menu-кнопки (без эмодзи — короче и стабильнее в TG UI).
   menu_button: { ru: "Открыть Baxtlilar", uz: "Baxtlilar'ni ochish" },
 
   already_active: {
-    ru: "Вы уже в Baxtlilar. Откройте приложение:",
-    uz: "Sen allaqachon Baxtlilar'dasan. Ilovani och:",
+    ru: "Вы уже в Baxtlilar. Откройте Mini App:",
+    uz: "Siz allaqachon Baxtlilar'dasiz. Mini App'ni oching:",
   },
 
   declined_pd: {
-    ru: "Без согласия не можем зарегистрировать. Если передумаете — /start.",
-    uz: "Rozilik boʻlmasa, roʻyxatdan oʻtkaza olmaymiz. Fikring oʻzgarsa — /start.",
+    ru:
+      "Без принятия условий мы не можем создать аккаунт и обработать данные для работы платформы.\n" +
+      "Вы можете вернуться к документам и продолжить позже — отправьте /start.",
+    uz:
+      "Shartlarni qabul qilmasangiz, hisob yarata olmaymiz va platforma ishlashi uchun maʼlumotlarni qayta ishlay olmaymiz.\n" +
+      "Hujjatlarga qaytib, keyinroq davom ettirishingiz mumkin — /start yuboring.",
   },
   declined_bio: {
     ru: "Без согласия на биометрию верификация невозможна. Если передумаете — /start.",
@@ -142,20 +150,20 @@ export const M = {
     uz: "Roʻyxatdan oʻtish tugallanmagan. Davom etish uchun /start yuboring.",
   },
   status_onboarding_app: {
-    ru: "Профиль заполняется. Откройте приложение, чтобы продолжить:",
-    uz: "Profil toʻldirilmoqda. Davom etish uchun ilovani oching:",
+    ru: "Профиль заполняется. Откройте Baxtlilar Mini App, чтобы продолжить:",
+    uz: "Profil toʻldirilmoqda. Davom etish uchun Baxtlilar Mini App'ni oching:",
   },
   status_needs_changes: {
-    ru: "Верификация требует доработки. Откройте приложение и следуйте подсказкам:",
-    uz: "Tasdiqlash uchun tuzatish kerak. Ilovani oching va koʻrsatmalarga amal qiling:",
+    ru: "Верификация требует доработки. Откройте Baxtlilar Mini App и следуйте подсказкам:",
+    uz: "Tasdiqlash uchun tuzatish kerak. Baxtlilar Mini App'ni oching va koʻrsatmalarga amal qiling:",
   },
   status_active: {
-    ru: "Ваша анкета активна. Откройте приложение:",
-    uz: "Anketangiz faol. Ilovani oching:",
+    ru: "Ваша анкета активна. Откройте Baxtlilar Mini App:",
+    uz: "Anketangiz faol. Baxtlilar Mini App'ni oching:",
   },
   status_paused: {
-    ru: "Ваша анкета на паузе. Откройте приложение, чтобы возобновить:",
-    uz: "Anketangiz pauzada. Davom ettirish uchun ilovani oching:",
+    ru: "Ваша анкета на паузе. Откройте Baxtlilar Mini App, чтобы возобновить:",
+    uz: "Anketangiz pauzada. Davom ettirish uchun Baxtlilar Mini App'ni oching:",
   },
   status_blocked: {
     ru: "Доступ ограничен модератором.",
