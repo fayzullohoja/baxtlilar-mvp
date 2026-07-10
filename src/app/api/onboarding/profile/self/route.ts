@@ -43,7 +43,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         bio: parsed.data.bio,
         education: parsed.data.education,
         activity_field: parsed.data.activity_field,
-        employment_format: parsed.data.employment_format,
+        employment_status: parsed.data.employment_status,
+        employment_format: parsed.data.employment_format ?? null,
       },
       { onConflict: "user_id" },
     );

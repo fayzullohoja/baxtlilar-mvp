@@ -21,6 +21,7 @@ import {
   // V3 MVP 2026-06-29:
   ACTIVITY_FIELDS,
   EMPLOYMENT_FORMAT,
+  EMPLOYMENT_STATUS,
   FUTURE_CHILDREN_PLAN,
   LIFE_VALUES_V3,
   FAMILY_ROLE_MODEL,
@@ -234,7 +235,10 @@ export const selfSchema = z.object({
     .refine((s) => !containsContact(s), { message: "bio_has_contacts" }),
   education: z.enum(tuple(vals(EDUCATION))),
   activity_field: z.enum(tuple(vals(ACTIVITY_FIELDS))),
-  employment_format: z.enum(tuple(vals(EMPLOYMENT_FORMAT))),
+  // Ревью оунера Экран 4: статус занятости — primary (required); формат работы —
+  // условный/опциональный (показывается при working/entrepreneur/freelancer).
+  employment_status: z.enum(tuple(vals(EMPLOYMENT_STATUS))),
+  employment_format: z.enum(tuple(vals(EMPLOYMENT_FORMAT))).optional().nullable(),
 });
 
 /** Экран 5 — Семья и дети (расширение familySchema). */
@@ -487,6 +491,7 @@ export const HOT_COLUMNS = new Set([
   "birth_city",
   "activity_field",
   "employment_format",
+  "employment_status",
   "marriage_readiness",
   "relocation_readiness",
   "children_count",

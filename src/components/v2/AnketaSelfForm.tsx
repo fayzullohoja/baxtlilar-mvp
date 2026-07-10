@@ -6,6 +6,8 @@ import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 import { Field, Select, TextArea } from "./AnketaFields";
 import {
+  EMPLOYMENT_STATUS,
+  EMPLOYMENT_WORKING_STATUSES,
   EDUCATION,
   ACTIVITY_FIELDS,
   EMPLOYMENT_FORMAT,
@@ -31,6 +33,7 @@ export function V2AnketaSelfForm({ locale }: { locale: string }) {
   const [bio, setBio] = useState("");
   const [education, setEducation] = useState("");
   const [activityField, setActivityField] = useState("");
+  const [employmentStatus, setEmploymentStatus] = useState("");
   const [employmentFormat, setEmploymentFormat] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -47,7 +50,8 @@ export function V2AnketaSelfForm({ locale }: { locale: string }) {
           bio,
           education,
           activity_field: activityField,
-          employment_format: employmentFormat,
+          employment_status: employmentStatus,
+          ...(showWorkFormat && employmentFormat ? { employment_format: employmentFormat } : {}),
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {
@@ -68,12 +72,15 @@ export function V2AnketaSelfForm({ locale }: { locale: string }) {
     }
   }
 
+  const showWorkFormat = (EMPLOYMENT_WORKING_STATUSES as readonly string[]).includes(
+    employmentStatus,
+  );
   const valid =
     bio.trim().length >= 30 &&
     bio.trim().length <= 1000 &&
     !!education &&
     !!activityField &&
-    !!employmentFormat;
+    !!employmentStatus;
 
   return (
     <div>
@@ -113,14 +120,25 @@ export function V2AnketaSelfForm({ locale }: { locale: string }) {
         />
       </Field>
 
-      <Field label={t('employmentFormatLabel')} required>
+      <Field label={t('employmentStatusLabel')} required>
         <Select
-          options={EMPLOYMENT_FORMAT}
-          value={employmentFormat}
-          onChange={setEmploymentFormat}
+          options={EMPLOYMENT_STATUS}
+          value={employmentStatus}
+          onChange={setEmploymentStatus}
           locale={locale}
         />
       </Field>
+
+      {showWorkFormat ? (
+        <Field label={t('employmentFormatLabel')} hint={t('optionalHint')}>
+          <Select
+            options={EMPLOYMENT_FORMAT}
+            value={employmentFormat}
+            onChange={setEmploymentFormat}
+            locale={locale}
+          />
+        </Field>
+      ) : null}
 
       {err ? (
         <div

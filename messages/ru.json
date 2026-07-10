@@ -308,7 +308,7 @@
     "educationLabel": "Образование",
     "activityFieldLabel": "Сфера деятельности",
     "activityFieldHint": "Не точное место работы — просто общее направление.",
-    "employmentFormatLabel": "Формат занятости",
+    "employmentFormatLabel": "Формат работы",
     "maritalStatusLabel": "Семейный статус",
     "hasChildrenLabel": "Есть ли дети",
     "childrenCountLabel": "Сколько детей",
@@ -433,7 +433,8 @@
     "partner_marital_pref_question": "Какое семейное положение партнёра приемлемо?",
     "partner_children_pref_question": "Как относитесь к тому, если у партнёра есть дети?",
     "partner_origin_region_pref_question": "Важен ли родной регион партнёра?",
-    "partner_age_narrow_warning": "Слишком узкий диапазон может уменьшить количество подходящих анкет."
+    "partner_age_narrow_warning": "Слишком узкий диапазон может уменьшить количество подходящих анкет.",
+    "employmentStatusLabel": "Текущий статус занятости"
   },
   "Quiz": {
     "intro_title": "10 вопросов о вас",

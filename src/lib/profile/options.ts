@@ -277,7 +277,18 @@ export const ACTIVITY_FIELDS: Opt[] = [
   { value: "other", ru: "Другое", uz: "Boshqa" },
 ];
 
-/** Экран 3 — Формат занятости. */
+/** Экран 4 — Текущий статус занятости (ревью оунера). Primary поле. */
+export const EMPLOYMENT_STATUS: Opt[] = [
+  { value: "working", ru: "Работаю", uz: "Ishlayman" },
+  { value: "entrepreneur", ru: "Предприниматель / свой бизнес", uz: "Tadbirkor / oʻz biznesim bor" },
+  { value: "freelancer", ru: "Фрилансер", uz: "Frilanser" },
+  { value: "student", ru: "Студент / студентка", uz: "Talaba" },
+  { value: "home_family", ru: "Занимаюсь домом / семьёй", uz: "Uy va oila bilan shugʻullanaman" },
+  { value: "not_working", ru: "Сейчас не работаю", uz: "Hozircha ishlamayman" },
+  { value: "na", ru: "Не хочу указывать", uz: "Koʻrsatishni xohlamayman" },
+];
+
+/** Экран 4 — Формат работы (условно: показывается при working/entrepreneur/freelancer). */
 export const EMPLOYMENT_FORMAT: Opt[] = [
   { value: "office", ru: "Офис", uz: "Ofis" },
   { value: "remote", ru: "Удалённо", uz: "Masofadan" },
@@ -285,6 +296,9 @@ export const EMPLOYMENT_FORMAT: Opt[] = [
   { value: "own_business", ru: "Свой бизнес", uz: "Oʻz biznesi" },
   { value: "not_working", ru: "Не работаю сейчас", uz: "Hozir ishlamayman" },
 ];
+
+/** Статусы, при которых показываем «Формат работы». */
+export const EMPLOYMENT_WORKING_STATUSES = ["working", "entrepreneur", "freelancer"] as const;
 
 /** Экран 5 — План по детям в будущем. Заменяет deprecated CHILDREN_PLAN. */
 export const FUTURE_CHILDREN_PLAN: Opt[] = [
