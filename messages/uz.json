@@ -108,8 +108,8 @@
     "rejected_blocking_subtitle": "Anketangizni tasdiqlay olmaymiz.",
     "rejected_blocking_body": "Afsuski, yuborilgan hujjatlar asosida anketangizni tasdiqlay olmaymiz. Agar bu xato deb hisoblasangiz — qoʻllab-quvvatlash xizmatiga yozing.",
     "rejected_blocking_cta": "Qoʻllab-quvvatlashga yozish",
-    "attr_title": "Bizni qayerdan bildingiz?",
-    "attr_subtitle": "Qaysi kanallar ishlayotganini tushunish va xizmatni yaxshilash uchun.",
+    "attr_title": "Baxtlilar haqida qayerdan bildingiz?",
+    "attr_subtitle": "Bu qaysi kanallar yaxshiroq ishlayotganini tushunishga yordam beradi. Javob ixtiyoriy va anketangizga taʼsir qilmaydi.",
     "attr_telegram": "Telegram",
     "attr_instagram": "Instagram",
     "attr_friends": "Doʻstlar va tanishlar",
@@ -435,10 +435,10 @@
     "partner_origin_region_pref_question": "Juftning kelib chiqish hududi siz uchun muhimmi?"
   },
   "Quiz": {
-    "intro_title": "Moslik soʻrovi",
-    "intro_text": "10 ta qisqa fikr — 1 dan 5 gacha baholang.",
-    "scale_min": "Men haqimda emas",
-    "scale_max": "Bu men haqimda",
+    "intro_title": "Siz haqingizda 10 ta savol",
+    "intro_text": "Big Five — muloqot uslubi, masʼuliyat, ochiqlik va odamlarga munosabatni tushunishga yordam beradigan shaxs modeli. Bu tashxis ham, baho ham emas — javoblar faqat moslik uchun ishlatiladi va anketada koʻrsatilmaydi.",
+    "scale_min": "Menga umuman mos emas",
+    "scale_max": "Menga juda mos",
     "submit": "Soʻrovni yakunlash",
     "err": "Iltimos, barcha savollarga javob bering",
     "progress": "Javob berildi: {progress} dan {total}",
@@ -652,29 +652,29 @@
     "intro": {
       "title": "1-tanishuv · 4 dan 1",
       "heading": "Baxtlilar qanday ishlaydi.",
-      "body1": "Bu Tinder emas. Bu yerda kamroq odam va har biriga koʻproq eʼtibor.",
-      "body2": "Biz kuniga 1 anketa koʻrsatamiz — algoritm sizning qadriyatlaringiz boʻyicha tanlaydi."
+      "body1": "Baxtlilar cheksiz lenta emas, balki qadriyatlaringiz, maqsadlaringiz va oilaviy kutuvlaringizga mos anketalarni koʻrsatadi.",
+      "body2": "MVP bosqichida kuniga cheklangan miqdorda anketa koʻrsatiladi — tanishuv tasodifiy emas, ongli boʻlishi uchun."
     },
     "swipe": {
       "title": "2-qiziqish · 4 dan 2",
       "heading": "Svaypsiz.",
-      "body1": "Svayp — bu lotereya. Bizda ongli qiziqish: oʻqib koʻrgandan keyin siz qaror qilasiz.",
-      "body2": "Qiziqishga shaxsiy xabar qoʻshish mumkin — suhbatdosh uni darhol koʻradi.",
-      "body3": "Qiziqish oʻzaro boʻlsa — chat ochiladi."
+      "body1": "Avval anketani oʻqiysiz, keyin qiziqish yuborish yoki oʻtkazib yuborishni tanlaysiz.",
+      "body2": "Qiziqishga qisqa shaxsiy xabar qoʻshish mumkin. Suhbatdosh uni darhol koʻradi.",
+      "body3": "Agar qiziqish oʻzaro boʻlsa — chat ochiladi."
     },
     "chat": {
       "title": "3-chatlar · 4 dan 3",
       "heading": "Faqat oʻzaro qiziqishdan keyin.",
-      "body1": "Chat faqat ikkala tomon qiziqish yuborganda ochiladi.",
-      "body2": "Massa-jonatishlarsiz va spamsiz. Faqat jonli muloqot.",
-      "body3": "Aloqani istalgan vaqtda toʻxtatish mumkin — tushuntirishsiz."
+      "body1": "Chat faqat ikkala tomon ham qiziqish bildirgandan keyin ochiladi.",
+      "body2": "Ommaviy xabarlar, spam va bosimsiz. Faqat jonli muloqot.",
+      "body3": "Muloqotni istalgan vaqtda yakunlash mumkin."
     },
     "safety": {
       "title": "4-xavfsizlik · 4 dan 4",
       "heading": "Bir nechta qoidalar.",
-      "body1": "Uchrashishdan oldin raqam va havola berma. Algoritm bunday xabarlarni filtrlaydi.",
-      "body2": "Kimdir yomon harakat qilsa — \"Shikoyat\" tugmasi. Moderator koʻradi.",
-      "body3": "Hisobni sozlamalardan oʻchirish mumkin — anketa va barcha fotolar qaytarib boʻlmaydi."
+      "body1": "Xavfsiz muloqotga tayyor boʻlmaguningizcha telefon raqami, Telegram, tashqi havolalar va shaxsiy maʼlumotlarni yubormang.",
+      "body2": "Kimdir hurmatsiz muomala qilsa — «Shikoyat qilish» tugmasini bosing. Moderator holatni tekshiradi.",
+      "body3": "Anketani sozlamalar orqali oʻchirish mumkin. Ommaviy anketa va suratlar tavsiyalardan olib tashlanadi."
     }
   },
   "AnketaPrivacy": {

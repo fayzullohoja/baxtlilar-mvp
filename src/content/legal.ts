@@ -371,8 +371,8 @@ export const LEGAL_DOCS: Record<"terms" | "privacy" | "offer" | "rules", LegalDo
       {
         heading: { ru: "2. Что запрещено", uz: "2. Nima taqiqlanadi" },
         body: {
-          ru: "Запрещены: оскорбления, домогательства, угрозы, спам и реклама, попытки получить или раскрыть контактные данные в публичных полях, выдача себя за другое лицо, фейковые анкеты, упоминание или просьбы об интимных встречах без серьёзных намерений.",
-          uz: "Taqiqlanadi: haqorat, taʼqib, tahdid, spam va reklama, ommaviy maydonlarda kontakt maʼlumotlarini olishga yoki oshkor qilishga urinish, boshqa shaxs sifatida koʻrsatish, soxta anketalar, jiddiy niyatsiz yaqinlik haqida soʻrash.",
+          ru: "Запрещены: оскорбления, домогательства, угрозы, спам и реклама, попытки получить или раскрыть контактные данные в публичных полях, выдача себя за другое лицо, фейковые анкеты, упоминание или просьбы об интимных встречах без серьёзных намерений, а также употребление, распространение или пропаганда запрещённых веществ и любое поведение, создающее угрозу безопасности других пользователей.",
+          uz: "Taqiqlanadi: haqorat, taʼqib, tahdid, spam va reklama, ommaviy maydonlarda kontakt maʼlumotlarini olishga yoki oshkor qilishga urinish, boshqa shaxs sifatida koʻrsatish, soxta anketalar, jiddiy niyatsiz yaqinlik haqida soʻrash, shuningdek, taqiqlangan moddalarni isteʼmol qilish, tarqatish yoki targʻib qilish va boshqa foydalanuvchilar xavfsizligiga tahdid soluvchi har qanday xatti-harakat.",
         },
       },
       {
