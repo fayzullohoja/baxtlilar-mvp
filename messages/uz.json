@@ -226,7 +226,7 @@
     "photos_main_badge": "Asosiy",
     "photos_delete_button": "Oʻchirish",
     "photos_add_button": "qoʻshish",
-    "photos_instructions": "Birinchisi — asosiy, uni koʻrib chiqishda koʻradi. Qolganlar oʻzaro qiziqishdan keyin ochiladi. Kamida bitta, koʻpi bilan uchta.",
+    "photos_instructions": "Portret majburiy — u tavsiyalarda koʻrinadi. Toʻliq boʻy va oilaviy foto ixtiyoriy; oilaviy faqat oʻzaro qiziqishdan keyin ochiladi.",
     "photos_err_max": "Maksimal 3 ta fotogafiya.",
     "photos_err_bad_type": "Faqat JPG, PNG, WebP yoki HEIC.",
     "photos_err_too_large": "Fayl juda katta.",
@@ -436,7 +436,16 @@
     "partner_age_narrow_warning": "Juda tor yosh oraligʻi mos anketalar sonini kamaytirishi mumkin.",
     "employmentStatusLabel": "Hozirgi bandlik holati",
     "preview_privacy_heading": "Anketa maxfiyligi",
-    "preview_privacy_body": "Anketangizni tavsiyalarda faqat tekshiruvdan oʻtgan Baxtlilar foydalanuvchilari koʻradi. Oʻzaro qiziqishgacha koʻrinadi: ism (familiyasiz), shahar, maʼlumot, qadriyatlar, xarakter va «oʻzim haqimda». Yashirin: foto, yosh va aniq tugʻilgan sana, familiya, din, telefon, Telegram, hujjatlar, selfi va geolokatsiya — ular faqat oʻzaro qiziqishdan keyin ochiladi."
+    "preview_privacy_body": "Anketangizni tavsiyalarda faqat tekshiruvdan oʻtgan Baxtlilar foydalanuvchilari koʻradi. Oʻzaro qiziqishgacha koʻrinadi: ism (familiyasiz), shahar, maʼlumot, qadriyatlar, xarakter va «oʻzim haqimda». Yashirin: foto, yosh va aniq tugʻilgan sana, familiya, din, telefon, Telegram, hujjatlar, selfi va geolokatsiya — ular faqat oʻzaro qiziqishdan keyin ochiladi.",
+    "photos_slot_portrait_label": "Portret",
+    "photos_slot_portrait_hint": "Yuzingiz aniq va filtrsiz. Bu foto tavsiyalarda koʻrinadi.",
+    "photos_slot_full_body_label": "Toʻliq boʻy",
+    "photos_slot_full_body_hint": "Ixtiyoriy. Yaxlit taassurot qoldirishga yordam beradi.",
+    "photos_slot_family_label": "Oilaviy",
+    "photos_slot_family_hint": "Ixtiyoriy. Faqat oʻzaro qiziqishdan keyin ochiladi.",
+    "photos_family_consent": "Oilaviy foto yuklab, undagi shaxslarning roziligini tasdiqlaysiz.",
+    "photos_err_type_exists": "Bu tur uchun foto allaqachon qoʻshilgan.",
+    "photos_err_need_portrait": "Davom etish uchun portret kerak."
   },
   "Quiz": {
     "intro_title": "Siz haqingizda 10 ta savol",

@@ -17,7 +17,7 @@ export async function DELETE(
 
   const { data: photo } = await sb
     .from("profile_photos")
-    .select("id, path, is_main")
+    .select("id, path")
     .eq("id", id)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -29,15 +29,11 @@ export async function DELETE(
   // убрано, а оно осталось и продолжает показываться.
   if (delErr) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
 
-  // если удалили главное — назначить главным самое раннее из оставшихся (фикс «застрял без main»)
-  if (photo.is_main) {
-    const { data: rest } = await sb
-      .from("profile_photos")
-      .select("id")
-      .eq("user_id", user.id)
-      .order("ord", { ascending: true })
-      .limit(1);
-    if (rest?.[0]) await sb.from("profile_photos").update({ is_main: true }).eq("id", rest[0].id);
-  }
+  // Экран 13: is_main ≡ portrait (upload-роут ставит is_main только для portrait).
+  // Промоушен «самого раннего оставшегося» в main здесь БОЛЬШЕ НЕ делаем — иначе
+  // (а) family могло бы стать main → CHECK profile_photos_family_not_main_chk (500),
+  // (б) full_body стало бы main, а повторная загрузка portrait дала бы второй is_main
+  //     → unique-index profile_photos_one_main (500). Портрет обязателен на photos-done,
+  // поэтому после удаления портрета пользователь загрузит новый — он и станет main.
   return NextResponse.json({ ok: true });
 }

@@ -6,34 +6,67 @@ import { useTranslations } from "next-intl";
 import { Button } from "./Button";
 
 /**
- * V2 Anketa Photos (Blueprint §3.3 B5).
+ * V2 Anketa Photos (Blueprint §3.3 B5 · ревью оунера Экран 13).
  *
- * Загружаем 1-3 фото. Первое всегда main. Editorial-сетка: квадратные
- * слоты с тонкой границей, без яркого badge — просто текст «Основная».
+ * Три типизированных слота:
+ *   • portrait  — обязателен, главное фото (видно ДО взаимного интереса)
+ *   • full_body — опционально, видно pre-mutual
+ *   • family    — опционально, ЧУВСТВИТЕЛЬНОЕ: показывается только post-mutual
+ *                 (исключено из get_recommendations, миграция 20260711020000).
+ *                 Требует подтверждения согласия изображённых лиц.
  *
- * API: /api/onboarding/profile/photo (POST upload), /api/onboarding/profile/photo/[id] (DELETE),
- * /api/onboarding/profile/photos-done (POST publish).
+ * API: /api/onboarding/profile/photo (POST upload, form-field photo_type),
+ * /api/onboarding/profile/photo/[id] (DELETE), /api/onboarding/profile/photos-done (POST).
  */
 
-type Photo = { id: string; url: string; is_main: boolean };
+type PhotoType = "portrait" | "full_body" | "family";
+const SLOTS: PhotoType[] = ["portrait", "full_body", "family"];
 
-export function V2AnketaPhotosForm() {
-  const t = useTranslations('Anketa');
+export type InitialPhoto = {
+  id: string;
+  url: string;
+  photo_type: string;
+  is_main: boolean;
+};
+
+type Photo = { id: string; url: string; photo_type: PhotoType; is_main: boolean };
+
+export function V2AnketaPhotosForm({ initial = [] }: { initial?: InitialPhoto[] }) {
+  const t = useTranslations("Anketa");
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [photos, setPhotos] = useState<Photo[]>([]);
+  // Тип слота, для которого открыт файловый диалог.
+  const pendingType = useRef<PhotoType>("portrait");
+  const [photos, setPhotos] = useState<Photo[]>(
+    initial
+      .filter((p) => SLOTS.includes(p.photo_type as PhotoType))
+      .map((p) => ({
+        id: p.id,
+        url: p.url,
+        photo_type: p.photo_type as PhotoType,
+        is_main: p.is_main,
+      })),
+  );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const ERR_COPY: Record<string, string> = {
-    max_photos: t('photos_err_max'),
-    bad_type: t('photos_err_bad_type'),
-    too_large: t('photos_err_too_large'),
-    photos_need_one: t('photos_err_need_one'),
-    failed: t('photos_err_failed'),
+    max_photos: t("photos_err_max"),
+    bad_type: t("photos_err_bad_type"),
+    type_exists: t("photos_err_type_exists"),
+    too_large: t("photos_err_too_large"),
+    photos_need_one: t("photos_err_need_portrait"),
+    no_photo: t("photos_err_need_portrait"),
+    failed: t("photos_err_failed"),
   };
 
+  const byType = (ty: PhotoType) => photos.find((p) => p.photo_type === ty);
+  const hasPortrait = !!byType("portrait");
 
+  function pick(ty: PhotoType) {
+    pendingType.current = ty;
+    inputRef.current?.click();
+  }
 
   async function add(file: File) {
     setBusy(true);
@@ -41,6 +74,7 @@ export function V2AnketaPhotosForm() {
     try {
       const fd = new FormData();
       fd.append("file", file);
+      fd.append("photo_type", pendingType.current);
       const res = await fetch("/api/onboarding/profile/photo", {
         method: "POST",
         body: fd,
@@ -69,6 +103,10 @@ export function V2AnketaPhotosForm() {
 
   async function done() {
     if (busy) return;
+    if (!hasPortrait) {
+      setErr("no_photo");
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -85,7 +123,7 @@ export function V2AnketaPhotosForm() {
         router.replace(data.next);
         return;
       }
-      setErr(data.error ?? "photos_need_one");
+      setErr(data.error ?? "no_photo");
     } catch {
       setErr("failed");
     } finally {
@@ -95,101 +133,144 @@ export function V2AnketaPhotosForm() {
 
   return (
     <div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: "8px",
-          marginBottom: "16px",
-        }}
-      >
-        {photos.map((p, i) => (
-          <div
-            key={p.id}
-            style={{
-              position: "relative",
-              aspectRatio: "3 / 4",
-              border: "1px solid var(--color-v2-ink-500)",
-              borderRadius: "var(--v2-radius-md)",
-              overflow: "hidden",
-              background: "var(--color-v2-paper-3)",
-              boxShadow: "var(--v2-shadow-card)",
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={p.url}
-              alt=""
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                display: "block",
-              }}
-            />
-            {i === 0 ? (
+      <div style={{ display: "grid", gap: "14px", marginBottom: "18px" }}>
+        {SLOTS.map((ty) => {
+          const photo = byType(ty);
+          const required = ty === "portrait";
+          return (
+            <div key={ty}>
               <div
                 style={{
-                  position: "absolute",
-                  top: "6px",
-                  left: "6px",
-                  padding: "3px 8px",
-                  fontSize: "10px",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  background: "var(--v2-grad-primary)",
-                  color: "#FFF7F0",
-                  fontFamily: "var(--font-v2-body)",
-                  borderRadius: "999px",
+                  display: "flex",
+                  alignItems: "baseline",
+                  justifyContent: "space-between",
+                  marginBottom: "6px",
                 }}
               >
-                {t('photos_main_badge')}
+                <span
+                  style={{
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "var(--color-v2-ink-200)",
+                    fontFamily: "var(--font-v2-body)",
+                  }}
+                >
+                  {t(`photos_slot_${ty}_label`)}
+                  {required ? (
+                    <span style={{ color: "var(--color-v2-danger)" }}> *</span>
+                  ) : (
+                    <span
+                      style={{
+                        color: "var(--color-v2-ink-400)",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {" "}
+                      · {t("optionalHint")}
+                    </span>
+                  )}
+                </span>
               </div>
-            ) : null}
-            <button
-              onClick={() => remove(p.id)}
-              type="button"
-              style={{
-                position: "absolute",
-                top: "6px",
-                right: "6px",
-                width: "24px",
-                height: "24px",
-                borderRadius: "50%",
-                background: "rgba(42, 26, 46, 0.6)",
-                color: "#FFF7F0",
-                fontSize: "13px",
-                lineHeight: "1",
-                border: "none",
-                cursor: "pointer",
-              }}
-              aria-label={t('photos_delete_button')}
-            >
-              ×
-            </button>
-          </div>
-        ))}
-        {photos.length < 3 ? (
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            disabled={busy}
-            style={{
-              aspectRatio: "3 / 4",
-              border: "1.5px dashed var(--color-v2-ink-500)",
-              borderRadius: "var(--v2-radius-md)",
-              background: "#ffffff",
-              fontFamily: "var(--font-v2-body)",
-              fontSize: "13px",
-              fontWeight: 600,
-              color: "var(--color-v2-ink-400)",
-              cursor: "pointer",
-            }}
-          >
-            + {t('photos_add_button')}
-          </button>
-        ) : null}
+
+              <div style={{ display: "flex", gap: "12px", alignItems: "stretch" }}>
+                {/* Слот-превью / кнопка загрузки */}
+                {photo ? (
+                  <div
+                    style={{
+                      position: "relative",
+                      width: "96px",
+                      flexShrink: 0,
+                      aspectRatio: "3 / 4",
+                      border: "1px solid var(--color-v2-ink-500)",
+                      borderRadius: "var(--v2-radius-md)",
+                      overflow: "hidden",
+                      background: "var(--color-v2-paper-3)",
+                      boxShadow: "var(--v2-shadow-card)",
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={photo.url}
+                      alt=""
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                    />
+                    <button
+                      onClick={() => remove(photo.id)}
+                      type="button"
+                      style={{
+                        position: "absolute",
+                        top: "6px",
+                        right: "6px",
+                        width: "24px",
+                        height: "24px",
+                        borderRadius: "50%",
+                        background: "rgba(42, 26, 46, 0.6)",
+                        color: "#FFF7F0",
+                        fontSize: "13px",
+                        lineHeight: "1",
+                        border: "none",
+                        cursor: "pointer",
+                      }}
+                      aria-label={t("photos_delete_button")}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => pick(ty)}
+                    disabled={busy}
+                    style={{
+                      width: "96px",
+                      flexShrink: 0,
+                      aspectRatio: "3 / 4",
+                      border: "1.5px dashed var(--color-v2-ink-500)",
+                      borderRadius: "var(--v2-radius-md)",
+                      background: "#ffffff",
+                      fontFamily: "var(--font-v2-body)",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "var(--color-v2-ink-400)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    + {t("photos_add_button")}
+                  </button>
+                )}
+
+                {/* Хинт под тип */}
+                <div
+                  style={{
+                    fontSize: "12px",
+                    lineHeight: "1.5",
+                    color: "var(--color-v2-ink-400)",
+                    fontFamily: "var(--font-v2-body)",
+                    alignSelf: "center",
+                  }}
+                >
+                  {t(`photos_slot_${ty}_hint`)}
+                  {ty === "family" ? (
+                    <div
+                      style={{
+                        marginTop: "6px",
+                        color: "var(--color-v2-chip-teal-ink)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {t("photos_family_consent")}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <input
@@ -213,7 +294,7 @@ export function V2AnketaPhotosForm() {
           marginBottom: "20px",
         }}
       >
-        {t('photos_instructions')}
+        {t("photos_instructions")}
       </div>
 
       {err ? (
@@ -233,8 +314,8 @@ export function V2AnketaPhotosForm() {
         </div>
       ) : null}
 
-      <Button onClick={done} disabled={busy || photos.length === 0} variant="primary">
-        {busy ? t('photos_loading') : t('photos_continue')}
+      <Button onClick={done} disabled={busy || !hasPortrait} variant="primary">
+        {busy ? t("photos_loading") : t("photos_continue")}
       </Button>
     </div>
   );

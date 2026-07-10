@@ -15,10 +15,14 @@ export async function getMiniProfiles(ids: string[]): Promise<Record<string, Min
     .from("user_profiles")
     .select("user_id, display_name, birth_date, city")
     .in("user_id", unique);
+  // Исключаем family: мини-карточка (thumbnail) может показываться ДО взаимного
+  // интереса (напр. входящий pending-запрос), а family-фото — только post-mutual.
+  // Полная галерея с family раскрывается через RevealedProfile (profile/[id]).
   const { data: photos } = await sb
     .from("profile_photos")
     .select("user_id, path, is_main, ord")
     .eq("status", "approved")
+    .neq("photo_type", "family")
     .in("user_id", unique)
     .order("is_main", { ascending: false })
     .order("ord", { ascending: true });

@@ -54,12 +54,15 @@ export async function POST(): Promise<NextResponse> {
   if (!verifiedGenderMatches(p.gender as string, idRow?.gender as string | null | undefined))
     return NextResponse.json({ ok: false, error: "gender_mismatch" }, { status: 409 });
 
-  // нужно ≥1 НЕ отклонённого фото (approved/under_review), иначе анкета останется без видимого фото
+  // нужно ≥1 НЕ отклонённого НЕ-family фото (approved/under_review): family видно
+  // только post-mutual и исключено из get_recommendations, поэтому без portrait/full_body
+  // анкета осталась бы без видимого в ленте фото.
   const { count, error: cntErr } = await sb
     .from("profile_photos")
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id)
-    .neq("status", "rejected");
+    .neq("status", "rejected")
+    .neq("photo_type", "family");
   // сбой БД (500) ≠ «реально нет фото» (400): не блокируем публикацию ложным no_photo
   if (cntErr) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
   if (!count) return NextResponse.json({ ok: false, error: "no_photo" }, { status: 400 });

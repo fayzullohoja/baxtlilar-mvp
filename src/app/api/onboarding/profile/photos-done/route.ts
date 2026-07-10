@@ -7,7 +7,9 @@ import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Завершение шага фото: нужно ≥1 фото → к предпросмотру. */
+/** Завершение шага фото: нужен портрет (Экран 13) → к предпросмотру.
+ *  Портрет обязателен: только он видно ДО взаимного интереса (family — post-mutual,
+ *  full_body опц.), поэтому без портрета анкета не показалась бы в ленте. */
 export async function POST(): Promise<NextResponse> {
   const { user, res } = await loadUserForStep("profile_photos");
   if (res) return res;
@@ -15,8 +17,9 @@ export async function POST(): Promise<NextResponse> {
   const { count, error } = await supabaseAdmin()
     .from("profile_photos")
     .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
-  // сбой БД (500) ≠ «реально нет фото» (400): иначе при ошибке БД пользователь видит
+    .eq("user_id", user.id)
+    .eq("photo_type", "portrait");
+  // сбой БД (500) ≠ «реально нет портрета» (400): иначе при ошибке БД пользователь видит
   // «нет фото» и застревает на шаге, хотя фото загружены.
   if (error) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
   if (!count) return NextResponse.json({ ok: false, error: "no_photo" }, { status: 400 });

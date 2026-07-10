@@ -571,6 +571,18 @@ export const PARTNER_ORIGIN_REGION_PREF: Opt[] = [
   { value: "open", ru: "Готов(а) рассмотреть разные варианты", uz: "Turli variantlarni koʻrib chiqishga tayyorman" },
 ];
 
+// ---------- Типы фото (Экран 13) ----------
+// portrait — главное, видно ДО взаимного интереса; full_body — видно pre-mutual;
+// family — чувствительное, только post-mutual (см. миграцию 20260711020000 +
+// gender-conditional privacy в get_recommendations). Порядок = порядок слотов в форме.
+export const PHOTO_TYPE: Opt[] = [
+  { value: "portrait", ru: "Портрет", uz: "Portret" },
+  { value: "full_body", ru: "В полный рост", uz: "Toʻliq boʻy" },
+  { value: "family", ru: "Семейное", uz: "Oilaviy" },
+];
+/** Типы, которые видны в ленте рекомендаций ДО взаимного интереса. */
+export const PHOTO_TYPES_PRE_MUTUAL = ["portrait", "full_body"] as const;
+
 // ---------- Районы УЗ (cascading per region) ----------
 // Реэкспорт из src/lib/profile/uz-districts.ts, где живут ~98 записей
 // по 6 крупнейшим регионам (Phase 1). Остальные регионы — freeform fallback.
