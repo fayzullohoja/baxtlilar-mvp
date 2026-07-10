@@ -27,7 +27,6 @@ import { useTranslations } from "next-intl";
 import { Headline, Lead } from "./Headline";
 import {
   EDUCATION,
-  RELIGION,
   LIFE_VALUES_V3,
   labelOf,
 } from "@/lib/profile/options";
@@ -190,9 +189,9 @@ export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
           {profile.education && profile.education !== "na" ? (
             <span> · {labelOf(EDUCATION, profile.education, locale)}</span>
           ) : null}
-          {profile.religion && profile.religion !== "na" ? (
-            <span> · {labelOf(RELIGION, profile.religion, locale)}</span>
-          ) : null}
+          {/* Вероисповедание НЕ показываем в публичной карточке (спец-категория ПД,
+              ревью оунера 2026-07-10) — религия остаётся matching-only. Ценность
+              «Вера» при этом видна через чипы top_life_values ниже. */}
         </div>
       </div>
 
