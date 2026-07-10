@@ -432,7 +432,8 @@
     "lifestyle_smoking_hint": "Bunga tamaki, elektron sigaret va veyp ham kiradi. Oʻtkazib yuborish mumkin.",
     "partner_marital_pref_question": "Juftning qaysi oilaviy holati siz uchun maqbul?",
     "partner_children_pref_question": "Juftingizning farzandi boʻlsa, bunga qanday qaraysiz?",
-    "partner_origin_region_pref_question": "Juftning kelib chiqish hududi siz uchun muhimmi?"
+    "partner_origin_region_pref_question": "Juftning kelib chiqish hududi siz uchun muhimmi?",
+    "partner_age_narrow_warning": "Juda tor yosh oraligʻi mos anketalar sonini kamaytirishi mumkin."
   },
   "Quiz": {
     "intro_title": "Siz haqingizda 10 ta savol",

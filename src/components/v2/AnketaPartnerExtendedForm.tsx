@@ -143,6 +143,22 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
             placeholder={t("partnerAgeTo")}
           />
         </div>
+        {ageMin !== "" &&
+        ageMax !== "" &&
+        Number(ageMax) >= Number(ageMin) &&
+        Number(ageMax) - Number(ageMin) < 3 ? (
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: "12.5px",
+              lineHeight: 1.45,
+              color: "var(--color-v2-ink-400)",
+              fontFamily: "var(--font-v2-body)",
+            }}
+          >
+            {t("partner_age_narrow_warning")}
+          </div>
+        ) : null}
       </Field>
 
       <Field
