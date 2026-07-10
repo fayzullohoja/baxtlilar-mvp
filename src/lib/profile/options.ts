@@ -378,17 +378,19 @@ export const DISTRICT_VISIBLE_DEFAULT = false;
 
 /** Стабильность источника дохода. */
 export const INCOME_SOURCE_STABILITY: Opt[] = [
-  { value: "stable", ru: "Стабильный доход", uz: "Barqaror daromad" },
-  { value: "unstable", ru: "Доход непостоянный", uz: "Daromad beqaror" },
-  { value: "none", ru: "Пока нет дохода", uz: "Hozircha daromad yoʻq" },
+  { value: "stable", ru: "Есть стабильный доход", uz: "Barqaror daromadim bor" },
+  { value: "unstable", ru: "Доход бывает непостоянным", uz: "Daromadim oʻzgaruvchan" },
+  { value: "none", ru: "Сейчас нет дохода", uz: "Hozircha daromadim yoʻq" },
+  { value: "na", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
 /** Управление финансами в семье (Чат-2 Экран 9 блок 3). */
 export const FAMILY_FINANCE_MANAGEMENT: Opt[] = [
   { value: "joint", ru: "Совместное планирование", uz: "Birgalikda rejalashtirish" },
-  { value: "mostly_man", ru: "В основном мужчина", uz: "Asosan erkak" },
-  { value: "mostly_woman", ru: "В основном женщина", uz: "Asosan ayol" },
+  { value: "mostly_man", ru: "В основном ответственность за мужчиной", uz: "Asosan masʼuliyat erkakda" },
+  { value: "mostly_woman", ru: "В основном ответственность за женщиной", uz: "Asosan masʼuliyat ayolda" },
   { value: "situational", ru: "Зависит от ситуации", uz: "Vaziyatga qarab" },
+  { value: "later", ru: "Предпочитаю обсудить позже", uz: "Keyinroq muhokama qilishni xohlayman" },
 ];
 
 /** Финансовые приоритеты (multi-select до 3). */
@@ -412,13 +414,15 @@ export const MONTHLY_INCOME_RANGE: Opt[] = [
   { value: "10_20m", ru: "10–20 млн сум", uz: "10–20 mln soʻm" },
   { value: "20_40m", ru: "20–40 млн сум", uz: "20–40 mln soʻm" },
   { value: "40m_plus", ru: "40 млн+ сум", uz: "40 mln+ soʻm" },
+  { value: "foreign", ru: "Доход в другой валюте / за рубежом", uz: "Daromad boshqa valyutada / chet elda" },
 ];
 
-/** Финансовые обязательства. Hidden public. */
+/** Финансовые обязательства (гранулярно: контролируемые/значительные). Hidden public. */
 export const FINANCIAL_OBLIGATIONS: Opt[] = [
-  { value: "none", ru: "Нет обязательств", uz: "Majburiyatlar yoʻq" },
-  { value: "has", ru: "Есть обязательства", uz: "Majburiyatlar bor" },
-  { value: "na", ru: "Предпочту не говорить", uz: "Aytmaslikni afzal koʻraman" },
+  { value: "none", ru: "Нет существенных обязательств", uz: "Muhim majburiyatlarim yoʻq" },
+  { value: "controlled", ru: "Есть обязательства, которые я контролирую", uz: "Nazoratimdagi majburiyatlarim bor" },
+  { value: "significant", ru: "Есть значительные обязательства", uz: "Katta majburiyatlarim bor" },
+  { value: "na", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
 /** Жильё (owner spec §9). Cold в extended.finance, hidden public (без стигмы «нет дома»). */
