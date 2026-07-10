@@ -165,19 +165,29 @@ export const RELIGION_PRACTICE: Opt[] = [
 /** Желание совпадения религии у партнёра. Optional поле. */
 export const RELIGION_PARTNER_MATCH: Opt[] = [
   {
-    value: "same_religion_same_practice",
-    ru: "Только моя религия + тот же уровень практики",
-    uz: "Faqat mening dinim + xuddi shu daraja amal",
+    value: "same_religion",
+    ru: "Важно: та же религия",
+    uz: "Muhim: bir xil din",
   },
   {
-    value: "same_religion",
-    ru: "Желательно моя религия",
-    uz: "Mening dinimda boʻlsa yaxshi",
+    value: "same_religion_same_practice",
+    ru: "Важно: та же религия и регулярная практика",
+    uz: "Muhim: bir xil din va muntazam diniy amal",
+  },
+  {
+    value: "close_values",
+    ru: "Важно, чтобы религиозные ценности были близки",
+    uz: "Diniy qadriyatlar yaqin boʻlishi muhim",
   },
   {
     value: "mutual_respect",
-    ru: "Главное — взаимоуважение",
-    uz: "Asosiysi — oʻzaro hurmat",
+    ru: "С уважением отношусь к разным религиозным взглядам",
+    uz: "Turli diniy qarashlarga hurmat bilan qarayman",
+  },
+  {
+    value: "not_decisive",
+    ru: "Для меня это не решающий критерий",
+    uz: "Bu men uchun hal qiluvchi mezon emas",
   },
 ];
 

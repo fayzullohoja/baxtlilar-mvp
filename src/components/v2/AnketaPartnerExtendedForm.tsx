@@ -97,8 +97,8 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
     (heightMin.trim() === "" && heightMax.trim() === "") ||
     (heightMin !== "" &&
       heightMax !== "" &&
-      Number(heightMin) >= 120 &&
-      Number(heightMax) <= 230 &&
+      Number(heightMin) >= 140 &&
+      Number(heightMax) <= 220 &&
       Number(heightMax) >= Number(heightMin));
   const qOk = qualities.length >= 1 && qualities.length <= 5;
   const countriesOk = countries.length <= 3;
