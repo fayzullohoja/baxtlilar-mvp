@@ -393,7 +393,7 @@ export const FAMILY_FINANCE_MANAGEMENT: Opt[] = [
 
 /** Финансовые приоритеты (multi-select до 3). */
 export const FINANCIAL_PRIORITIES: Opt[] = [
-  { value: "no_debt", ru: "Отсутствие долгов и кредитов", uz: "Qarz va kreditlarsiz hayot" },
+  { value: "no_debt", ru: "Ответственное отношение к долгам и кредитам", uz: "Qarz va kreditlarga masʼuliyatli yondashuv" },
   { value: "savings", ru: "Накопления и финансовая подушка", uz: "Jamgʻarma va moliyaviy yostiq" },
   { value: "investments", ru: "Инвестиции и рост капитала", uz: "Investitsiyalar va kapital oʻsishi" },
   { value: "budget_planning", ru: "Планирование бюджета", uz: "Byudjetni rejalashtirish" },
