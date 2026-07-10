@@ -212,26 +212,34 @@ export const POST_MARRIAGE_LIVING: Opt[] = [
   },
   {
     value: "unsure",
-    ru: "Пока не ясно",
-    uz: "Hali aniq emas",
+    ru: "Пока не решил(а)",
+    uz: "Hali qaror qilmaganman",
+  },
+  {
+    value: "na",
+    ru: "Предпочитаю не отвечать",
+    uz: "Javob berishni xohlamayman",
   },
 ];
 
-/** Готовность к браку по срокам (owner spec §12). Матчинг-сигнал совместимости темпа. */
+/** Когда рассматривает брак — сроки (ревью оунера Экран 11). Матчинг-сигнал темпа. */
 export const MARRIAGE_READINESS: Opt[] = [
-  { value: "within_3m", ru: "В течение 3 месяцев", uz: "3 oy ichida" },
-  { value: "within_6m", ru: "В течение 6 месяцев", uz: "6 oy ichida" },
-  { value: "within_1y", ru: "В течение года", uz: "1 yil ichida" },
-  { value: "no_rush", ru: "Не спешу — сначала познакомиться", uz: "Shoshilmayman, avval tanishmoqchiman" },
-  { value: "unsure", ru: "Пока не ясно", uz: "Hali aniq emas" },
+  { value: "within_6m", ru: "В ближайшие 6 месяцев", uz: "Yaqin 6 oy ichida" },
+  { value: "within_1y", ru: "В течение 1 года", uz: "1 yil ichida" },
+  { value: "within_2y", ru: "В течение 1–2 лет", uz: "1–2 yil ichida" },
+  { value: "when_right", ru: "Когда встречу подходящего человека", uz: "Mos insonni uchratganimda" },
+  { value: "not_ready", ru: "Пока не готов(а), хочу сначала познакомиться", uz: "Hozircha tayyor emasman, avval tanishishni xohlayman" },
+  { value: "na", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
-/** Готовность к переезду (owner spec §13). ≠ geo_preference (где искать партнёра). */
+/** Готовность к переезду (ревью оунера — город/страна раздельно). ≠ geo_preference. */
 export const RELOCATION_READINESS: Opt[] = [
-  { value: "ready", ru: "Готов(а) переехать в другой город/страну", uz: "Boshqa shahar/mamlakatga koʻchishga tayyorman" },
-  { value: "only_my_city", ru: "Только в своём городе", uz: "Faqat oʻz shahrimda yashayman" },
-  { value: "by_agreement", ru: "По договорённости", uz: "Kelishuvga qarab" },
+  { value: "city", ru: "Готов(а) переехать в другой город", uz: "Boshqa shaharga koʻchishga tayyorman" },
+  { value: "country", ru: "Готов(а) переехать в другую страну", uz: "Boshqa mamlakatga koʻchishga tayyorman" },
+  { value: "by_agreement", ru: "Готов(а) рассмотреть переезд по договорённости", uz: "Kelishuv asosida koʻchishni koʻrib chiqaman" },
+  { value: "only_my_city", ru: "Хочу остаться в своём городе", uz: "Oʻz shahrimda qolishni xohlayman" },
   { value: "unsure", ru: "Пока не ясно", uz: "Hali aniq emas" },
+  { value: "na", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
 // ============================================================================
