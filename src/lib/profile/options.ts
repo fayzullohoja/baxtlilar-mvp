@@ -523,8 +523,13 @@ export const DRUGS_USE: Opt[] = [
 
 // ---------- Кого ищу: страны партнёра (Чат-2: «не делать жёстким фильтром») ----------
 
-/** Multi-select из существующих CITIZENSHIP. Soft filter, max 3. */
-export const PARTNER_PREFERRED_COUNTRIES: Opt[] = CITIZENSHIP;
+/** Multi-select из CITIZENSHIP + «Не имеет значения» (ревью оунера). Soft filter, max 3.
+ *  «any» взаимоисключающий: при выборе сбрасывает остальные (логика в форме). */
+export const PARTNER_ANY_COUNTRY = "any";
+export const PARTNER_PREFERRED_COUNTRIES: Opt[] = [
+  { value: PARTNER_ANY_COUNTRY, ru: "Не имеет значения", uz: "Muhim emas" },
+  ...CITIZENSHIP,
+];
 
 // ---------- Районы УЗ (cascading per region) ----------
 // Реэкспорт из src/lib/profile/uz-districts.ts, где живут ~98 записей

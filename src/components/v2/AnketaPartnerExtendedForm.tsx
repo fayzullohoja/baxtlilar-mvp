@@ -9,6 +9,7 @@ import {
   PARTNER_QUALITIES,
   RELIGION_PARTNER_MATCH,
   PARTNER_PREFERRED_COUNTRIES,
+  PARTNER_ANY_COUNTRY,
 } from "@/lib/profile/options";
 
 /**
@@ -46,9 +47,12 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
   }
 
   function toggleCountry(v: string) {
-    setCountries((cur) =>
-      cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v],
-    );
+    setCountries((cur) => {
+      // «Не имеет значения» взаимоисключающий: сбрасывает остальные страны и наоборот.
+      if (v === PARTNER_ANY_COUNTRY) return cur.includes(v) ? [] : [PARTNER_ANY_COUNTRY];
+      if (cur.includes(v)) return cur.filter((x) => x !== v);
+      return [...cur.filter((x) => x !== PARTNER_ANY_COUNTRY), v];
+    });
   }
 
   async function submit() {
