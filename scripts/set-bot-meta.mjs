@@ -70,9 +70,43 @@ const DESC_UZ =
   "Tasdiqlangan anketalar, maxfiylik va hurmatli muloqot. " +
   "Tekshiruvdan oʻtish va anketa yaratish uchun Mini App'ni oching.";
 
-// Command menu — короткое.
-const COMMANDS_RU = [{ command: "start", description: "Начать или продолжить" }];
-const COMMANDS_UZ = [{ command: "start", description: "Boshlash yoki davom ettirish" }];
+// Command menu (спец оунера 2026-07-10). Порядок = порядок в UI Telegram.
+// Хендлеры: src/lib/telegram/bot/handlers.ts (handleUpdate switch).
+const COMMANDS_RU = [
+  { command: "start", description: "Начать / выбрать язык" },
+  { command: "app", description: "Открыть Mini App" },
+  { command: "status", description: "Статус профиля" },
+  { command: "support", description: "Поддержка" },
+  { command: "language", description: "Изменить язык" },
+  { command: "privacy", description: "Приватность и правила" },
+];
+const COMMANDS_UZ = [
+  { command: "start", description: "Boshlash / til tanlash" },
+  { command: "app", description: "Mini App'ni ochish" },
+  { command: "status", description: "Profil holati" },
+  { command: "support", description: "Yordam" },
+  { command: "language", description: "Tilni oʻzgartirish" },
+  { command: "privacy", description: "Maxfiylik va qoidalar" },
+];
+const COMMANDS_EN = [
+  { command: "start", description: "Start / choose language" },
+  { command: "app", description: "Open Mini App" },
+  { command: "status", description: "Profile status" },
+  { command: "support", description: "Support" },
+  { command: "language", description: "Change language" },
+  { command: "privacy", description: "Privacy & rules" },
+];
+// TR — ПОДГОТОВЛЕНО, но НЕ регистрируем (стоп-фактор «Держим TR»: без ревью
+// носителя + TR юр-PDF не катим). Строки бот-меню косметические (не тянут
+// миграцию users.language) — включить = раскомментировать call ниже при запуске TR.
+const COMMANDS_TR = [
+  { command: "start", description: "Başla / dil seç" },
+  { command: "app", description: "Mini App'i aç" },
+  { command: "status", description: "Profil durumu" },
+  { command: "support", description: "Destek" },
+  { command: "language", description: "Dili değiştir" },
+  { command: "privacy", description: "Gizlilik ve kurallar" },
+];
 
 console.log("Setting bot meta for", `bot${token.slice(0, 10)}...`);
 
@@ -84,9 +118,21 @@ await call("setMyShortDescription", { short_description: SHORT_UZ, language_code
 await call("setMyDescription", { description: DESC_RU });
 await call("setMyDescription", { description: DESC_UZ, language_code: "uz" });
 
-// 3) Commands menu
+// 3) Commands menu (RU default + UZ/EN overrides; TR держим)
 await call("setMyCommands", { commands: COMMANDS_RU });
 await call("setMyCommands", { commands: COMMANDS_UZ, language_code: "uz" });
+await call("setMyCommands", { commands: COMMANDS_EN, language_code: "en" });
+// TR — держим до запуска турецкой локали (native review + TR юр-PDF):
+// await call("setMyCommands", { commands: COMMANDS_TR, language_code: "tr" });
+void COMMANDS_TR;
+
+// 4) Menu button (кнопка «Открыть Baxtlilar» слева от поля ввода) — ЗАБЛОКИРОВАНО.
+// setChatMenuButton.web_app.url СТАТИЧЕН и не может нести per-user start-token,
+// а /api/auth/bootstrap требует start_param (TTL 10 мин, single-use) — initData-
+// only пути нет (H3 security-fix). Постоянная menu-кнопка открыла бы приложение
+// в неавторизованном состоянии. Требует app-side работы: initData-only re-auth
+// для вернувшихся юзеров ИЛИ перевыпускаемый долгоживущий токен. Пока — /app
+// шлёт свежую inline-кнопку. Не ставим сломанную кнопку.
 
 console.log("\nVerify:");
 const checks = [
@@ -96,6 +142,7 @@ const checks = [
   ["getMyDescription", { language_code: "uz" }],
   ["getMyCommands", {}],
   ["getMyCommands", { language_code: "uz" }],
+  ["getMyCommands", { language_code: "en" }],
 ];
 for (const [method, payload] of checks) {
   const res = await fetch(`${API}/${method}`, {

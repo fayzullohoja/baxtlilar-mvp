@@ -125,6 +125,79 @@ export const M = {
     ru: "Этот номер уже зарегистрирован в Baxtlilar.",
     uz: "Bu raqam Baxtlilar da allaqachon roʻyxatdan oʻtgan.",
   },
+
+  // === Команды бота (2026-07-10, спец оунера: /app /status /support /language /privacy) ===
+
+  // /app — открыть мини-аппу свежей inline-кнопкой (свежий start-token).
+  cmd_app_prompt: {
+    ru: "Открываю Baxtlilar. Нажмите кнопку ниже:",
+    uz: "Baxtlilar'ni ochyapman. Pastdagi tugmani bosing:",
+  },
+
+  // /status — статус профиля. Ответ зависит от lifecycle/onboarding_step.
+  status_onboarding_bot: {
+    ru: "Регистрация ещё не завершена. Отправьте /start, чтобы продолжить.",
+    uz: "Roʻyxatdan oʻtish tugallanmagan. Davom etish uchun /start yuboring.",
+  },
+  status_onboarding_app: {
+    ru: "Профиль заполняется. Откройте приложение, чтобы продолжить:",
+    uz: "Profil toʻldirilmoqda. Davom etish uchun ilovani oching:",
+  },
+  status_needs_changes: {
+    ru: "Верификация требует доработки. Откройте приложение и следуйте подсказкам:",
+    uz: "Tasdiqlash uchun tuzatish kerak. Ilovani oching va koʻrsatmalarga amal qiling:",
+  },
+  status_active: {
+    ru: "Ваша анкета активна. Откройте приложение:",
+    uz: "Anketangiz faol. Ilovani oching:",
+  },
+  status_paused: {
+    ru: "Ваша анкета на паузе. Откройте приложение, чтобы возобновить:",
+    uz: "Anketangiz pauzada. Davom ettirish uchun ilovani oching:",
+  },
+  status_blocked: {
+    ru: "Доступ ограничен модератором.",
+    uz: "Kirish moderator tomonidan cheklangan.",
+  },
+
+  // /support — канал поддержки. {url} = env().SUPPORT_URL; если не задан — fallback.
+  support_info: {
+    ru: "Поддержка Baxtlilar: {url}\nНапишите нам — поможем.",
+    uz: "Baxtlilar qoʻllab-quvvatlash: {url}\nBizga yozing — yordam beramiz.",
+  },
+  support_no_url: {
+    ru: "Служба поддержки скоро будет доступна. Спасибо за терпение.",
+    uz: "Qoʻllab-quvvatlash xizmati tez orada ishga tushadi. Sabringiz uchun rahmat.",
+  },
+
+  // /language — смена языка интерфейса (setlang:*, без транзиции онбординга).
+  language_ask: {
+    ru: "Выберите язык интерфейса:",
+    uz: "Interfeys tilini tanlang:",
+  },
+  // pick() по ВЫБРАННОМУ языку: ru-поле подтверждает на русском, uz — на узбекском.
+  language_changed: {
+    ru: "Готово. Язык переключён на русский.",
+    uz: "Tayyor. Til oʻzbekchaga oʻzgartirildi.",
+  },
+
+  // /privacy — приватность и правила (те же 4 PDF, но без consent-рамки).
+  privacy_info: {
+    ru:
+      "🔒 <b>Приватность и правила</b>\n\n" +
+      `• <a href="${APP_URL}/legal/privacy.pdf">Политика конфиденциальности</a>\n` +
+      `• <a href="${APP_URL}/legal/rules.pdf">Правила платформы</a>\n` +
+      `• <a href="${APP_URL}/legal/user-agreement.pdf">Пользовательское соглашение</a>\n` +
+      `• <a href="${APP_URL}/legal/pd-consent.pdf">Согласие на обработку персональных данных</a>\n\n` +
+      "Ваши данные не показываются другим пользователям без Вашего согласия.",
+    uz:
+      "🔒 <b>Maxfiylik va qoidalar</b>\n\n" +
+      `• <a href="${APP_URL}/legal/privacy.pdf">Maxfiylik siyosati</a>\n` +
+      `• <a href="${APP_URL}/legal/rules.pdf">Platforma qoidalari</a>\n` +
+      `• <a href="${APP_URL}/legal/user-agreement.pdf">Foydalanuvchi shartnomasi</a>\n` +
+      `• <a href="${APP_URL}/legal/pd-consent.pdf">Shaxsiy maʼlumotlarni qayta ishlashga rozilik</a>\n\n` +
+      "Maʼlumotlaringiz roziligingizsiz boshqa foydalanuvchilarga koʻrsatilmaydi.",
+  },
 } as const;
 
 export type Lang = "ru" | "uz";

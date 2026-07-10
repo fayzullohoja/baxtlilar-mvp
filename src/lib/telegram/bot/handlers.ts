@@ -81,7 +81,18 @@ type DbUser = {
   onboarding_step: string;
   phone_number: string | null;
   phone_verified: boolean;
+  verification_status: string | null;
 };
+
+// Шаги, на которых пользователь ещё ведётся ботом (мини-аппа недоступна —
+// bootstrap их гейтит). Используется /status и /app, чтобы не слать open-app
+// кнопку тому, кто не прошёл бот-flow.
+const BOT_STEPS = new Set<string>([
+  "bot_language",
+  "bot_contact",
+  "bot_consent_pd",
+  "bot_consent_biometric",
+]);
 
 async function findByTg(tgId: number): Promise<DbUser | null> {
   const sb = supabaseAdmin();
@@ -91,7 +102,9 @@ async function findByTg(tgId: number): Promise<DbUser | null> {
   // привязать тот же номер; здесь же — про телеграм.)
   const { data, error } = await sb
     .from("users")
-    .select("id, telegram_id, language, lifecycle_state, onboarding_step, phone_number, phone_verified")
+    .select(
+      "id, telegram_id, language, lifecycle_state, onboarding_step, phone_number, phone_verified, verification_status",
+    )
     .eq("telegram_id", tgId)
     .neq("lifecycle_state", "deleted")
     .maybeSingle();
@@ -163,7 +176,9 @@ async function createInitial(tg: TgUser): Promise<DbUser | null> {
       language,
       // дефолт onboarding_step — bot_language (см. миграцию 20260619100000)
     })
-    .select("id, telegram_id, language, lifecycle_state, onboarding_step, phone_number, phone_verified")
+    .select(
+      "id, telegram_id, language, lifecycle_state, onboarding_step, phone_number, phone_verified, verification_status",
+    )
     .single();
   if (error || !data) {
     // гонка по unique(telegram_id) — перечитываем
@@ -204,6 +219,20 @@ function langKeyboard(): InlineKeyboardMarkup {
       [
         { text: M.lang_ru, callback_data: "lang:ru" },
         { text: M.lang_uz, callback_data: "lang:uz" },
+      ],
+    ],
+  };
+}
+
+// /language: смена языка ПОСЛЕ онбординга. Отдельный namespace setlang:* —
+// онбординговый lang:* завязан на onboarding_step==="bot_language" и тянет
+// транзицию в оферту; здесь только меняем users.language, без транзиции.
+function langChangeKeyboard(): InlineKeyboardMarkup {
+  return {
+    inline_keyboard: [
+      [
+        { text: M.lang_ru, callback_data: "setlang:ru" },
+        { text: M.lang_uz, callback_data: "setlang:uz" },
       ],
     ],
   };
@@ -349,6 +378,118 @@ async function handleStart(msg: TgMessage): Promise<void> {
   await promptStep(chatId, user);
 }
 
+// =====================================================================
+//  Команды /app /status /support /language /privacy (спец оунера 2026-07-10)
+// =====================================================================
+
+// /app — открыть мини-аппу. Всегда шлём СВЕЖУЮ inline-кнопку (свежий
+// start-token, TTL 10 мин): постоянная menu-кнопка невозможна, т.к. её URL
+// статичен и не несёт токен, а bootstrap требует start_param.
+async function handleApp(msg: TgMessage): Promise<void> {
+  const tg = msg.from;
+  if (!tg || tg.is_bot) return;
+  const chatId = msg.chat.id;
+  const user = await findByTg(tg.id);
+  if (!user) {
+    await handleStart(msg);
+    return;
+  }
+  if (user.lifecycle_state === "blocked") {
+    await sendMessage(chatId, pick(M.blocked_by_moderator, user.language));
+    return;
+  }
+  if (BOT_STEPS.has(user.onboarding_step)) {
+    // ещё в бот-flow — мини-аппа недоступна, доводим текущий шаг.
+    await promptStep(chatId, user);
+    return;
+  }
+  await sendMessage(
+    chatId,
+    pick(M.cmd_app_prompt, user.language),
+    openAppButton(user.id, user.telegram_id, user.language),
+  );
+}
+
+// /status — статус профиля из lifecycle_state + onboarding_step (+ verification_status).
+async function handleStatus(msg: TgMessage): Promise<void> {
+  const tg = msg.from;
+  if (!tg || tg.is_bot) return;
+  const chatId = msg.chat.id;
+  const user = await findByTg(tg.id);
+  if (!user) {
+    await handleStart(msg);
+    return;
+  }
+  const lang = user.language;
+  if (user.lifecycle_state === "blocked") {
+    await sendMessage(chatId, pick(M.status_blocked, lang));
+    return;
+  }
+  if (user.lifecycle_state === "active") {
+    const needsWork =
+      user.verification_status === "needs_changes" || user.verification_status === "rejected";
+    await sendMessage(
+      chatId,
+      pick(needsWork ? M.status_needs_changes : M.status_active, lang),
+      openAppButton(user.id, user.telegram_id, lang),
+    );
+    return;
+  }
+  if (user.lifecycle_state === "paused") {
+    await sendMessage(
+      chatId,
+      pick(M.status_paused, lang),
+      openAppButton(user.id, user.telegram_id, lang),
+    );
+    return;
+  }
+  // onboarding
+  if (BOT_STEPS.has(user.onboarding_step)) {
+    await sendMessage(chatId, pick(M.status_onboarding_bot, lang));
+    return;
+  }
+  await sendMessage(
+    chatId,
+    pick(M.status_onboarding_app, lang),
+    openAppButton(user.id, user.telegram_id, lang),
+  );
+}
+
+// /support — канал поддержки (env().SUPPORT_URL). Работает и для незарег. юзера.
+async function handleSupport(msg: TgMessage): Promise<void> {
+  const tg = msg.from;
+  if (!tg || tg.is_bot) return;
+  const chatId = msg.chat.id;
+  const user = await findByTg(tg.id);
+  const lang: Lang = user?.language ?? detectLang(tg);
+  const url = env().SUPPORT_URL;
+  if (url) {
+    await sendMessage(chatId, pick(M.support_info, lang).replace("{url}", url));
+  } else {
+    await sendMessage(chatId, pick(M.support_no_url, lang));
+  }
+}
+
+// /language — сменить язык интерфейса (setlang:* callback).
+async function handleLanguageCmd(msg: TgMessage): Promise<void> {
+  const tg = msg.from;
+  if (!tg || tg.is_bot) return;
+  const chatId = msg.chat.id;
+  const user = await findByTg(tg.id);
+  const lang: Lang = user?.language ?? detectLang(tg);
+  await sendMessage(chatId, pick(M.language_ask, lang), langChangeKeyboard());
+}
+
+// /privacy — приватность и правила (4 PDF-ссылки, HTML).
+async function handlePrivacy(msg: TgMessage): Promise<void> {
+  const tg = msg.from;
+  if (!tg || tg.is_bot) return;
+  const chatId = msg.chat.id;
+  const user = await findByTg(tg.id);
+  const lang: Lang = user?.language ?? detectLang(tg);
+  await sendMessage(chatId, pick(M.privacy_info, lang), undefined, "HTML");
+}
+
 async function handleCallback(cb: TgCallbackQuery): Promise<void> {
   const tg = cb.from;
   const chatId = cb.message?.chat.id;
@@ -380,6 +521,17 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
   const [ns, val] = data.split(":");
 
   try {
+    // /language: смена языка в любой момент (не завязана на onboarding_step).
+    if (ns === "setlang") {
+      const lang: Lang = val === "uz" ? "uz" : "ru";
+      const sb = supabaseAdmin();
+      const { error } = await sb.from("users").update({ language: lang }).eq("id", user.id);
+      if (error) throw new Error(error.message);
+      await answerCallbackQuery(cb.id);
+      await sendMessage(chatId, pick(M.language_changed, lang));
+      return;
+    }
+
     if (ns === "lang" && user.onboarding_step === "bot_language") {
       const lang: Lang = val === "uz" ? "uz" : "ru";
       const sb = supabaseAdmin();
@@ -590,10 +742,32 @@ async function handleContact(msg: TgMessage): Promise<void> {
 export async function handleUpdate(update: TgUpdate): Promise<void> {
   if (update.message) {
     const text = update.message.text?.trim() ?? "";
-    if (text.startsWith("/start")) {
-      // rate-limit перенесён внутрь handleStart — покрывает и callback-путь.
-      await handleStart(update.message);
-      return;
+    if (text.startsWith("/")) {
+      // Точный разбор команды: первый токен, без @botname-суффикса.
+      // (startsWith("/start") ловил бы и "/startx" — не копируем этот паттерн.)
+      const cmd = text.split(/\s+/)[0].split("@")[0].toLowerCase();
+      switch (cmd) {
+        case "/start":
+          // rate-limit перенесён внутрь handleStart — покрывает и callback-путь.
+          await handleStart(update.message);
+          return;
+        case "/app":
+          await handleApp(update.message);
+          return;
+        case "/status":
+          await handleStatus(update.message);
+          return;
+        case "/support":
+          await handleSupport(update.message);
+          return;
+        case "/language":
+          await handleLanguageCmd(update.message);
+          return;
+        case "/privacy":
+          await handlePrivacy(update.message);
+          return;
+        // неизвестная команда → падаем в promptStep ниже (мягкий промпт шага)
+      }
     }
     if (update.message.contact) {
       await handleContact(update.message);
