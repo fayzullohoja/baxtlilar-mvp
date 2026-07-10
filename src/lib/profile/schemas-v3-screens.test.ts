@@ -17,6 +17,7 @@ describe("V3 selfSchema (Экран 3)", () => {
     bio: "Я спокойный человек, ценю семью и честность. Люблю готовить и путешествовать.",
     education: "higher",
     activity_field: "it_software",
+    employment_status: "working",
     employment_format: "remote",
   };
 
