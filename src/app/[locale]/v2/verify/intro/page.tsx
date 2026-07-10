@@ -11,6 +11,7 @@ import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { VerificationIntroCta } from "@/components/v2/VerificationIntroCta";
+import { BIOMETRIC_CONSENT_TEXT } from "@/content/biometric-consent";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,40 @@ export default async function V2VerificationIntroPage({
           }}
         >
           {t('privacy_footer')}
+        </div>
+
+        {/* Согласие на биометрию (перенесено из бота 2026-07-10). Текст =
+            @/content/biometric-consent (тот же, что записывается в consents).
+            CTA «Даю согласие и продолжаю» → POST записывает согласие. */}
+        <div
+          style={{
+            marginTop: "16px",
+            padding: "14px 16px",
+            background: "#fff",
+            border: "1px solid var(--color-v2-border)",
+            borderRadius: "14px",
+            fontFamily: "var(--font-v2-body)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "14px",
+              fontWeight: 700,
+              color: "var(--color-v2-ink-100)",
+              marginBottom: "6px",
+            }}
+          >
+            {t('consent_heading')}
+          </div>
+          <div
+            style={{
+              fontSize: "13px",
+              lineHeight: "1.55",
+              color: "var(--color-v2-ink-300)",
+            }}
+          >
+            {BIOMETRIC_CONSENT_TEXT[locale === "uz" ? "uz" : "ru"]}
+          </div>
         </div>
       </div>
     </MiniAppShell>

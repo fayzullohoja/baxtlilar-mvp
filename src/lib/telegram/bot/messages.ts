@@ -2,6 +2,8 @@
 // рендера, локали грузить незачем. Большинство сообщений двуязычные через "\n\n",
 // чтобы не заставлять выбирать язык на самом первом сообщении.
 
+import { BIOMETRIC_CONSENT_TEXT } from "@/content/biometric-consent";
+
 const APP_URL = process.env.APP_URL ?? "https://baxtlilar-mvp-production.up.railway.app";
 
 export const M = {
@@ -33,36 +35,40 @@ export const M = {
   pd_consent_ask: {
     ru:
       "📜 <b>Документы Baxtlilar</b>\n\n" +
-      "Перед согласием ознакомьтесь с условиями платформы:\n\n" +
-      `1. <a href="${APP_URL}/legal/user-agreement.pdf">Пользовательское соглашение (оферта)</a>\n` +
-      `2. <a href="${APP_URL}/legal/privacy.pdf">Политика конфиденциальности</a>\n` +
-      `3. <a href="${APP_URL}/legal/rules.pdf">Правила платформы</a>\n` +
+      "Перед продолжением ознакомьтесь с условиями платформы. Продолжая регистрацию, Вы подтверждаете, что:\n" +
+      "— Вам исполнилось 18 лет;\n" +
+      "— Вы понимаете, что Baxtlilar создан для серьёзных знакомств с целью создания семьи;\n" +
+      "— Вы принимаете документы платформы;\n" +
+      "— Вы даёте согласие на обработку персональных данных для регистрации, проверки, анкеты и работы сервиса.\n\n" +
+      "Документы:\n" +
+      `1. <a href="${APP_URL}/legal/user-agreement.pdf">Пользовательское соглашение</a>\n` +
+      `2. <a href="${APP_URL}/legal/rules.pdf">Правила платформы</a>\n` +
+      `3. <a href="${APP_URL}/legal/privacy.pdf">Политика конфиденциальности</a>\n` +
       `4. <a href="${APP_URL}/legal/pd-consent.pdf">Согласие на обработку персональных данных</a>\n\n` +
-      "После согласия попросим Ваш номер телефона. Биометрию для верификации " +
-      "запросим отдельно — это отдельное согласие на следующем шаге.",
+      "После принятия условий мы попросим Ваш номер телефона через Telegram.\n" +
+      "Согласие на селфи / биометрическую проверку запросим отдельно перед верификацией.",
     uz:
       "📜 <b>Baxtlilar hujjatlari</b>\n\n" +
-      "Rozilik berishdan oldin platforma shartlari bilan tanishib chiqing:\n\n" +
-      `1. <a href="${APP_URL}/legal/user-agreement.pdf">Foydalanuvchi shartnomasi (oferta)</a>\n` +
-      `2. <a href="${APP_URL}/legal/privacy.pdf">Maxfiylik siyosati</a>\n` +
-      `3. <a href="${APP_URL}/legal/rules.pdf">Platforma qoidalari</a>\n` +
+      "Davom etishdan oldin platforma shartlari bilan tanishib chiqing. Roʻyxatdan oʻtishni davom ettirar ekansiz, quyidagilarni tasdiqlaysiz:\n" +
+      "— Sizga 18 yosh toʻlgan;\n" +
+      "— Baxtlilar oila qurish maqsadida jiddiy tanishuvlar uchun yaratilganini tushunasiz;\n" +
+      "— platforma hujjatlarini qabul qilasiz;\n" +
+      "— roʻyxatdan oʻtish, tekshirish, anketa va xizmat ishlashi uchun shaxsiy maʼlumotlarni qayta ishlashga rozilik berasiz.\n\n" +
+      "Hujjatlar:\n" +
+      `1. <a href="${APP_URL}/legal/user-agreement.pdf">Foydalanuvchi shartnomasi</a>\n` +
+      `2. <a href="${APP_URL}/legal/rules.pdf">Platforma qoidalari</a>\n` +
+      `3. <a href="${APP_URL}/legal/privacy.pdf">Maxfiylik siyosati</a>\n` +
       `4. <a href="${APP_URL}/legal/pd-consent.pdf">Shaxsiy maʼlumotlarni qayta ishlashga rozilik</a>\n\n` +
-      "Rozilikdan keyin telefon raqamingizni soʻraymiz. Biometrik tasdiqlash " +
-      "alohida soʻraladi — bu keyingi qadamda alohida rozilik.",
+      "Shartlarni qabul qilganingizdan soʻng Telegram orqali telefon raqamingizni soʻraymiz.\n" +
+      "Selfi / biometrik tekshiruvga rozilik verifikatsiyadan oldin alohida soʻraladi.",
   },
   pd_consent_yes: { ru: "✅ Согласен", uz: "✅ Roziman" },
   pd_consent_no: { ru: "❌ Отказаться", uz: "❌ Rad etish" },
 
-  bio_consent_ask: {
-    ru:
-      "Отдельное согласие: обработка биометрических данных (фото паспорта + селфи) " +
-      "для проверки личности. Доступ — только модератор, хранение — зашифровано, " +
-      "удаление — по запросу.",
-    uz:
-      "Alohida rozilik: shaxsni tasdiqlash uchun biometrik maʼlumotlarni qayta ishlash " +
-      "(pasport surati + selfi). Faqat moderator koʻradi, shifrlangan saqlash, " +
-      "soʻrov bilan oʻchirish.",
-  },
+  // 2026-07-10: биометрия перенесена в mini-app. Этот текст остаётся ТОЛЬКО для
+  // legacy-юзеров, застрявших на bot_consent_biometric (bio:* handler ещё жив).
+  // Единый источник с app-версией → (text::LEGAL_VERSION) tuple consistent.
+  bio_consent_ask: BIOMETRIC_CONSENT_TEXT,
   bio_consent_yes: { ru: "✅ Согласен на биометрию", uz: "✅ Biometriyaga roziman" },
   bio_consent_no: { ru: "❌ Отказаться", uz: "❌ Rad etish" },
 

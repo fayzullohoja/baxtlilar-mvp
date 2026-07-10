@@ -84,7 +84,11 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   // отдельно биометрия. Источник: продакт-фидбэк учредителя.
   bot_language: ["bot_consent_pd"],
   bot_consent_pd: ["bot_contact"],
-  bot_contact: ["bot_consent_biometric"],
+  // 2026-07-10 (спец оунера): согласие на биометрию перенесено из бота в
+  // mini-app (экран верификации, перед документом/селфи). Новый путь: телефон
+  // → welcome_mission напрямую. bot_consent_biometric оставлен целью для
+  // юзеров, застрявших на нём до катовера (legacy bio:* handler ещё жив).
+  bot_contact: ["welcome_mission", "bot_consent_biometric"],
   // V3 Sprint 3 round 3 (2026-06-29): welcome теперь одностраничный
   // branded экран → verification_intro напрямую. welcome_safety и
   // welcome_rules остались как legacy fallback для застрявших юзеров.

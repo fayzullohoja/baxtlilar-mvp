@@ -738,11 +738,13 @@ async function handleContact(msg: TgMessage): Promise<void> {
     await sendMessage(chatId, pick(M.error_generic, user.language));
     return;
   }
-  // V2 ext 2026-06-28 round 2: после телефона → биометрия (а не оферта,
-  // оферту уже приняли до телефона).
+  // 2026-07-10 (спец оунера): согласие на биометрию больше НЕ спрашиваем в боте —
+  // оно собирается в mini-app на экране верификации, перед документом/селфи
+  // (см. src/lib/consent/biometric.ts). После телефона сразу → welcome_mission
+  // с verification_status='phone_verified' и открываем аппу.
   const r = await tryTransition(
     user.id,
-    { onboarding_step: "bot_consent_biometric" },
+    { onboarding_step: "welcome_mission", verification_status: "phone_verified" },
     "bot:phone_set",
     { kind: "user", id: user.id },
   );
@@ -752,8 +754,8 @@ async function handleContact(msg: TgMessage): Promise<void> {
   }
   await sendMessage(
     chatId,
-    pick(M.bio_consent_ask, user.language),
-    bioConsentKeyboard(user.language),
+    pick(M.ready, user.language),
+    openAppButton(user.id, user.telegram_id, user.language),
   );
 }
 

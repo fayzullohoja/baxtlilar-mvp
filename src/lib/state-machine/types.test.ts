@@ -41,9 +41,11 @@ describe("ALLOWED_TRANSITIONS", () => {
     // учредителя). Раньше было язык → телефон → оферта → биометрия.
     expect(ALLOWED_TRANSITIONS.bot_language).toEqual(["bot_consent_pd"]);
     expect(ALLOWED_TRANSITIONS.bot_consent_pd).toEqual(["bot_contact"]);
-    expect(ALLOWED_TRANSITIONS.bot_contact).toEqual(["bot_consent_biometric"]);
-    // V2 ext 2026-06-28: после биометрии идёт welcome серия (welcome_mission)
-    // hard-cutover (без legacy fallback на verification_intro).
+    // 2026-07-10 (спец оунера): биометрия перенесена из бота в mini-app.
+    // Телефон → welcome_mission напрямую; bot_consent_biometric оставлен целью
+    // для legacy-юзеров, застрявших на нём.
+    expect(ALLOWED_TRANSITIONS.bot_contact).toEqual(["welcome_mission", "bot_consent_biometric"]);
+    // bot_consent_biometric остаётся как legacy-путь для застрявших юзеров.
     expect(ALLOWED_TRANSITIONS.bot_consent_biometric).toEqual(["welcome_mission"]);
     // V3 Sprint 3 round 3: одностраничный welcome — все welcome_* шаги ведут
     // прямо в verification_intro.

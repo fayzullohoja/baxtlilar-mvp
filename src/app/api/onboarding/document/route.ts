@@ -4,15 +4,26 @@ import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { uploadDocumentImage } from "@/lib/uploads/storage";
 import { isDocumentBlacklisted } from "@/lib/uploads/blacklist";
+import { hasActiveBiometricConsent } from "@/lib/consent/biometric";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Загрузка паспорта: upload в приватный бакет, doc_upload → selfie_upload. */
+/** Загрузка документа: upload в приватный бакет, doc_upload → selfie_upload. */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const { user, res } = await loadUserForStep("doc_upload");
   if (res) return res;
+
+  // ENFORCE согласия на биометрию ДО приёма файла — фактическая точка обработки
+  // спец-категории ПД. Покрывает retry-пути (needs_changes/rejected → doc_upload),
+  // которые минуют verification_intro. Fail-closed (совет advisor).
+  if (!(await hasActiveBiometricConsent(user.id))) {
+    return NextResponse.json(
+      { ok: false, error: "biometric_consent_required", next: ONBOARDING_PATHS.verification_intro },
+      { status: 403 },
+    );
+  }
 
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");

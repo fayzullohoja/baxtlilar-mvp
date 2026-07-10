@@ -587,7 +587,9 @@
     "req_4": "Boshqa shaxslarning suratlarini yuklamang — bu platforma qoidalariga koʻra hisob faoliyati cheklanishiga olib kelishi mumkin",
     "cta": "Boshlash",
     "ctaPending": "Kuting…",
-    "ctaError": "Nimadir notoʻgʻri ketdi. Qaytadan urinib koʻring."
+    "ctaError": "Nimadir notoʻgʻri ketdi. Qaytadan urinib koʻring.",
+    "consent_heading": "Biometrik tekshiruvga rozilik",
+    "consent_cta": "Rozilik beraman va davom etaman"
   },
   "Bot": {
     "blocked_by_moderator": "Moderator tomonidan bloklangan.",

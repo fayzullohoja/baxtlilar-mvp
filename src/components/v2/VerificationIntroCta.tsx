@@ -54,7 +54,7 @@ export function VerificationIntroCta() {
         </div>
       ) : null}
       <Button onClick={onClick} disabled={pending} variant="primary">
-        {pending ? t("ctaPending") : t("cta")}
+        {pending ? t("ctaPending") : t("consent_cta")}
       </Button>
     </div>
   );

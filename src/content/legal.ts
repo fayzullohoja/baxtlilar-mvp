@@ -19,7 +19,13 @@ export type LegalDoc = {
 
 // Bump 2026-06-02 → 2026-06-19: добавили consent_type 'rules' (правила
 // сообщества), синхронизированный с бот-flow.
-export const LEGAL_VERSION = "2026-06-19";
+// Bump 2026-06-19 → 2026-07-10: переписаны consent-тексты бота (pd_consent_ask
+// перефразирован под спец оунера: 18+/семья/согласие + порядок документов;
+// биометрия перенесена в mini-app). Хэш согласия = sha256(text + '::' + LEGAL_VERSION),
+// поэтому смена текста consent требует нового version — иначе старые/новые
+// согласия неотличимы. Re-consent НЕ форсится (version нигде не сравнивается),
+// существующие согласия остаются валидны под 2026-06-19.
+export const LEGAL_VERSION = "2026-07-10";
 
 export const LEGAL_DOCS: Record<"terms" | "privacy" | "offer" | "rules", LegalDoc> = {
   terms: {

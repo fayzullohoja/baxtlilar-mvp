@@ -4,6 +4,7 @@ import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { uploadDocumentImage } from "@/lib/uploads/storage";
 import { isDocumentBlacklisted } from "@/lib/uploads/blacklist";
+import { hasActiveBiometricConsent } from "@/lib/consent/biometric";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
 
 export const runtime = "nodejs";
@@ -16,6 +17,14 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const { user, res } = await loadUserForStep("selfie_upload");
   if (res) return res;
+
+  // ENFORCE согласия на биометрию ДО приёма селфи (спец-категория ПД). Fail-closed.
+  if (!(await hasActiveBiometricConsent(user.id))) {
+    return NextResponse.json(
+      { ok: false, error: "biometric_consent_required", next: ONBOARDING_PATHS.verification_intro },
+      { status: 403 },
+    );
+  }
 
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");
