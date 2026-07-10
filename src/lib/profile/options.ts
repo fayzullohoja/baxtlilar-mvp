@@ -531,6 +531,32 @@ export const PARTNER_PREFERRED_COUNTRIES: Opt[] = [
   ...CITIZENSHIP,
 ];
 
+// ---------- Кого ищу: доп. ожидания (ревью оунера Экран 12). Cold в extended.partner ----------
+
+/** Приемлемое семейное положение партнёра (multi-select, optional). */
+export const PARTNER_MARITAL_PREF: Opt[] = [
+  { value: "never_married", ru: "Не был(а) в браке", uz: "Nikohda boʻlmagan" },
+  { value: "divorced", ru: "Разведён(а)", uz: "Ajrashgan" },
+  { value: "widowed", ru: "Вдовец / вдова", uz: "Beva" },
+  { value: "has_experience", ru: "Есть личный опыт, готов(а) обсудить", uz: "Shaxsiy tajribasi bor, muhokamaga tayyor" },
+  { value: "any", ru: "Не имеет значения", uz: "Muhim emas" },
+];
+
+/** Отношение к детям у партнёра (single, optional). */
+export const PARTNER_CHILDREN_PREF: Opt[] = [
+  { value: "ok", ru: "Приемлемо", uz: "Qabul qilaman" },
+  { value: "discuss", ru: "Готов(а) обсудить индивидуально", uz: "Alohida muhokamaga tayyorman" },
+  { value: "prefer_none", ru: "Предпочитаю партнёра без детей", uz: "Farzandsiz juftni afzal koʻraman" },
+  { value: "not_decisive", ru: "Для меня это не решающий критерий", uz: "Bu men uchun hal qiluvchi mezon emas" },
+];
+
+/** Важность родного региона партнёра (single, optional). */
+export const PARTNER_ORIGIN_REGION_PREF: Opt[] = [
+  { value: "same_as_mine", ru: "Желательно из моего родного региона", uz: "Mening kelib chiqish hududimdan boʻlsa yaxshi" },
+  { value: "any", ru: "Регион не имеет значения", uz: "Hudud muhim emas" },
+  { value: "open", ru: "Готов(а) рассмотреть разные варианты", uz: "Turli variantlarni koʻrib chiqishga tayyorman" },
+];
+
 // ---------- Районы УЗ (cascading per region) ----------
 // Реэкспорт из src/lib/profile/uz-districts.ts, где живут ~98 записей
 // по 6 крупнейшим регионам (Phase 1). Остальные регионы — freeform fallback.

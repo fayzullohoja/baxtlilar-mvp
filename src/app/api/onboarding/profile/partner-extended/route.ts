@@ -36,16 +36,36 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const sb = supabaseAdmin();
 
-  // Авто-вывод looking_for_gender (как в legacy looking-for).
+  // Авто-вывод looking_for_gender + читаем extended (не затираем чужие секции).
   const { data: prof } = await sb
     .from("user_profiles")
-    .select("gender")
+    .select("gender, extended")
     .eq("user_id", user.id)
     .maybeSingle();
   const ownGender = prof?.gender as string | undefined;
   if (ownGender !== "m" && ownGender !== "f")
     return NextResponse.json({ ok: false, error: "no_gender" }, { status: 409 });
   const looking_for_gender = ownGender === "m" ? "f" : "m";
+
+  // Ревью оунера Экран 12: доп. ожидания к партнёру — COLD, в extended.partner
+  // (тот же read-merge-write паттерн, что у lifestyle/finance — не hot-колонки).
+  const ext = (prof?.extended as Record<string, unknown>) ?? {};
+  const partnerSection = (ext.partner as Record<string, unknown>) ?? {};
+  const newExtended = {
+    ...ext,
+    partner: {
+      ...partnerSection,
+      ...(parsed.data.partner_marital_pref?.length
+        ? { partner_marital_pref: parsed.data.partner_marital_pref }
+        : {}),
+      ...(parsed.data.partner_children_pref
+        ? { partner_children_pref: parsed.data.partner_children_pref }
+        : {}),
+      ...(parsed.data.partner_origin_region_pref
+        ? { partner_origin_region_pref: parsed.data.partner_origin_region_pref }
+        : {}),
+    },
+  };
 
   const { error: saveErr } = await sb
     .from("user_profiles")
@@ -62,6 +82,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         looking_for_gender,
         // V2-compat: legacy geo_preference дефолт
         geo_preference: "my_city",
+        extended: newExtended,
       },
       { onConflict: "user_id" },
     );

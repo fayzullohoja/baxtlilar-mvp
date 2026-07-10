@@ -48,6 +48,10 @@ import {
   MARRIAGE_READINESS,
   RELOCATION_READINESS,
   HOUSING_STATUS,
+  // Ревью оунера 2026-07-10 Экран 12:
+  PARTNER_MARITAL_PREF,
+  PARTNER_CHILDREN_PREF,
+  PARTNER_ORIGIN_REGION_PREF,
 } from "./options";
 
 const tuple = (a: string[]) => a as [string, ...string[]];
@@ -282,8 +286,8 @@ export const partnerExtendedSchema = z
   .object({
     partner_age_min: z.coerce.number().int().min(18).max(100),
     partner_age_max: z.coerce.number().int().min(18).max(100),
-    partner_height_min: z.coerce.number().int().min(120).max(230).optional().nullable(),
-    partner_height_max: z.coerce.number().int().min(120).max(230).optional().nullable(),
+    partner_height_min: z.coerce.number().int().min(140).max(220).optional().nullable(),
+    partner_height_max: z.coerce.number().int().min(140).max(220).optional().nullable(),
     partner_top_qualities: z.array(z.enum(tuple(vals(PARTNER_QUALITIES)))).min(1).max(5),
     // V4 — религия партнёра. Это требование к партнёру, не к себе. Корректно
     // живёт в «Кого ищу», а не в «О себе».
@@ -295,6 +299,10 @@ export const partnerExtendedSchema = z
       .array(z.enum(tuple(vals(PARTNER_PREFERRED_COUNTRIES))))
       .max(3)
       .optional(),
+    // Ревью оунера Экран 12 — доп. ожидания. COLD → extended.partner (endpoint пишет вручную).
+    partner_marital_pref: z.array(z.enum(tuple(vals(PARTNER_MARITAL_PREF)))).max(5).optional(),
+    partner_children_pref: z.enum(tuple(vals(PARTNER_CHILDREN_PREF))).optional(),
+    partner_origin_region_pref: z.enum(tuple(vals(PARTNER_ORIGIN_REGION_PREF))).optional(),
   })
   .refine((d) => d.partner_age_max >= d.partner_age_min, { message: "age_range_invalid" })
   .refine(

@@ -5,6 +5,7 @@ import {
   basicSchema,
   valuesSchema,
   lookingForSchema,
+  partnerExtendedSchema,
 } from "./schemas";
 
 describe("ageFromDate", () => {
@@ -123,4 +124,32 @@ describe("lookingForSchema", () => {
     expect(lookingForSchema.safeParse({ ...base, partner_age_min: 35 }).success).toBe(false));
   it("<18 → ошибка", () =>
     expect(lookingForSchema.safeParse({ ...base, partner_age_min: 16 }).success).toBe(false));
+});
+
+describe("partnerExtendedSchema — доп. ожидания (ревью оунера Экран 12)", () => {
+  const base = {
+    partner_age_min: 22,
+    partner_age_max: 30,
+    partner_top_qualities: ["kindness"],
+  };
+  it("принимает новые cold-поля (marital multi / children / region)", () => {
+    const r = partnerExtendedSchema.safeParse({
+      ...base,
+      partner_marital_pref: ["never_married", "divorced"],
+      partner_children_pref: "discuss",
+      partner_origin_region_pref: "any",
+    });
+    expect(r.success).toBe(true);
+  });
+  it("новые поля опциональны (без них — ок)", () =>
+    expect(partnerExtendedSchema.safeParse(base).success).toBe(true));
+  it("невалидное значение children → ошибка", () =>
+    expect(
+      partnerExtendedSchema.safeParse({ ...base, partner_children_pref: "bogus" }).success,
+    ).toBe(false));
+  it("рост 140–220: 130 отклоняется", () =>
+    expect(
+      partnerExtendedSchema.safeParse({ ...base, partner_height_min: 130, partner_height_max: 200 })
+        .success,
+    ).toBe(false));
 });

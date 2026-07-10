@@ -429,7 +429,10 @@
     "partnerAgeTo": "gacha",
     "basic_district_freeform_placeholder": "Tuman nomi",
     "spokenLanguagesHint": "1 dan 6 gacha til tanlashingiz mumkin. Tanlangan: {count}/6",
-    "lifestyle_smoking_hint": "Bunga tamaki, elektron sigaret va veyp ham kiradi. Oʻtkazib yuborish mumkin."
+    "lifestyle_smoking_hint": "Bunga tamaki, elektron sigaret va veyp ham kiradi. Oʻtkazib yuborish mumkin.",
+    "partner_marital_pref_question": "Juftning qaysi oilaviy holati siz uchun maqbul?",
+    "partner_children_pref_question": "Juftingizning farzandi boʻlsa, bunga qanday qaraysiz?",
+    "partner_origin_region_pref_question": "Juftning kelib chiqish hududi siz uchun muhimmi?"
   },
   "Quiz": {
     "intro_title": "Moslik soʻrovi",

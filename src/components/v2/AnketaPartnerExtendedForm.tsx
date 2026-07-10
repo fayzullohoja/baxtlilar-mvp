@@ -10,6 +10,9 @@ import {
   RELIGION_PARTNER_MATCH,
   PARTNER_PREFERRED_COUNTRIES,
   PARTNER_ANY_COUNTRY,
+  PARTNER_MARITAL_PREF,
+  PARTNER_CHILDREN_PREF,
+  PARTNER_ORIGIN_REGION_PREF,
 } from "@/lib/profile/options";
 
 /**
@@ -37,6 +40,9 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
   const [qualities, setQualities] = useState<string[]>([]);
   const [religionMatch, setReligionMatch] = useState("");
   const [countries, setCountries] = useState<string[]>([]);
+  const [maritalPref, setMaritalPref] = useState<string[]>([]);
+  const [childrenPref, setChildrenPref] = useState("");
+  const [regionPref, setRegionPref] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -44,6 +50,15 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
     setQualities((cur) =>
       cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v],
     );
+  }
+
+  function toggleMarital(v: string) {
+    // «Не имеет значения» (any) взаимоисключающий.
+    setMaritalPref((cur) => {
+      if (v === "any") return cur.includes(v) ? [] : ["any"];
+      if (cur.includes(v)) return cur.filter((x) => x !== v);
+      return [...cur.filter((x) => x !== "any"), v];
+    });
   }
 
   function toggleCountry(v: string) {
@@ -69,6 +84,9 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
       if (heightMax.trim() !== "") body.partner_height_max = Number(heightMax);
       if (religionMatch !== "") body.partner_religion_match = religionMatch;
       if (countries.length > 0) body.partner_preferred_countries = countries;
+      if (maritalPref.length > 0) body.partner_marital_pref = maritalPref;
+      if (childrenPref !== "") body.partner_children_pref = childrenPref;
+      if (regionPref !== "") body.partner_origin_region_pref = regionPref;
 
       const res = await fetch("/api/onboarding/profile/partner-extended", {
         method: "POST",
@@ -183,6 +201,34 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
           selected={countries}
           onToggle={toggleCountry}
           max={3}
+          locale={locale}
+        />
+      </Field>
+
+      <Field label={t("partner_marital_pref_question")} hint={t("optionalHint")}>
+        <Chips
+          options={PARTNER_MARITAL_PREF}
+          selected={maritalPref}
+          onToggle={toggleMarital}
+          max={5}
+          locale={locale}
+        />
+      </Field>
+
+      <Field label={t("partner_children_pref_question")} hint={t("optionalHint")}>
+        <Select
+          options={PARTNER_CHILDREN_PREF}
+          value={childrenPref}
+          onChange={setChildrenPref}
+          locale={locale}
+        />
+      </Field>
+
+      <Field label={t("partner_origin_region_pref_question")} hint={t("optionalHint")}>
+        <Select
+          options={PARTNER_ORIGIN_REGION_PREF}
+          value={regionPref}
+          onChange={setRegionPref}
           locale={locale}
         />
       </Field>
