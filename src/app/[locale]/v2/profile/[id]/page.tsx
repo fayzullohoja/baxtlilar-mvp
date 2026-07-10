@@ -132,7 +132,7 @@ export default async function V2ProfileDetailPage({
     display_name: (p!.display_name as string) ?? "",
     city: (p!.city as string) ?? null,
     education: (p!.education as string) ?? null,
-    religion: (p!.religion as string) ?? null,
+    // religion НЕ передаём: matching-only (ревью оунера 2026-07-10), pre-mutual скрыта.
     top_life_values: (p!.top_life_values as string[]) ?? [],
     bio: (p!.bio as string) ?? null,
     vector: (q?.vector as Record<string, number>) ?? {},

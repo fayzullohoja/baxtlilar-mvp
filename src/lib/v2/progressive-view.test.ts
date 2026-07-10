@@ -26,15 +26,16 @@ test("first_name — только первое слово (фамилия скр
 test("payload содержит РОВНО разрешённые pre-mutual поля — ничего лишнего", () => {
   const view = toProgressiveView(full);
   expect(Object.keys(view).sort()).toEqual(
-    ["bio", "city", "education", "first_name", "religion", "top_life_values", "vector"].sort(),
+    ["bio", "city", "education", "first_name", "top_life_values", "vector"].sort(),
   );
 });
 
-test("не утекают чувствительные поля (точный DOB, статус, дети, предпочтения, фамилия)", () => {
+test("не утекают чувствительные поля (точный DOB, статус, дети, предпочтения, фамилия, религия)", () => {
   const view = toProgressiveView(full);
   const json = JSON.stringify(view);
   expect(json).not.toContain("1990-05-15"); // точная дата рождения
   expect(json).not.toContain("Hamroyev"); // фамилия
+  expect(json).not.toContain("islam"); // вероисповедание — matching-only, не в pre-mutual payload
   const leaked = view as unknown as Record<string, unknown>;
   expect(leaked.birth_date).toBeUndefined();
   expect(leaked.marital_status).toBeUndefined();
@@ -44,13 +45,14 @@ test("не утекают чувствительные поля (точный DO
   expect(leaked.partner_age_max).toBeUndefined();
   expect(leaked.geo_preference).toBeUndefined();
   expect(leaked.display_name).toBeUndefined();
+  // Религия УБРАНА из pre-mutual view (ревью оунера 2026-07-10 — спец-категория ПД).
+  expect(leaked.religion).toBeUndefined();
 });
 
-test("сохраняет разрешённые поля, включая религию (решение учредителя)", () => {
+test("сохраняет разрешённые поля (город, образование, ценности, bio, vector)", () => {
   const view = toProgressiveView(full);
   expect(view.city).toBe("Ташкент");
   expect(view.education).toBe("higher");
-  expect(view.religion).toBe("islam"); // founder: остаётся видимой pre-mutual
   expect(view.top_life_values).toEqual(["family", "respect"]);
   expect(view.bio).toBe("Люблю книги");
   expect(view.vector).toEqual({ O: 70 });

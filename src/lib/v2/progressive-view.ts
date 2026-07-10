@@ -9,29 +9,31 @@
  * их НЕ рендерит. Это утечка чувствительных ПД до взаимного интереса.
  *
  * toProgressiveView оставляет РОВНО то, что рендерится pre-mutual (см.
- * [[project-baxtlilar-v2-matching-model]] + решение учредителя 2026-06-25):
- * первое имя (без фамилии), город, образование, религия (founder: видима),
- * ценности, bio (sanitized), Big Five vector. Всё остальное раскрывается
- * post-mutual через RevealedProfile.
+ * [[project-baxtlilar-v2-matching-model]]): первое имя (без фамилии), город,
+ * образование, ценности, bio (sanitized), Big Five vector. Всё остальное
+ * раскрывается post-mutual через RevealedProfile.
+ *
+ * Религия: по ревью оунера 2026-07-10 стала matching-only (спец-категория ПД) и
+ * pre-mutual НЕ показывается (ProgressiveProfile её не рендерит). Поэтому religion
+ * УБРАНА из pre-mutual view type — иначе она сериализовалась бы в RSC/Flight-payload
+ * клиента (видна в Network) и противоречила бы privacy-обещанию «вероисповедание скрыто».
  */
 export type ProgressiveProfileView = {
   first_name: string;
   city: string | null;
   education: string | null;
-  religion: string | null;
   top_life_values: string[];
   bio: string | null;
   vector: Record<string, number>;
 };
 
 /** Только поля, реально нужные для pre-mutual-вида. Чувствительные поля
- *  (birth_date, marital_status, has_children, partner_age_*, geo_preference)
- *  сюда НЕ входят — страница их не передаёт, значит они не могут утечь. */
+ *  (birth_date, marital_status, has_children, partner_age_*, geo_preference,
+ *  religion) сюда НЕ входят — страница их не передаёт, значит они не могут утечь. */
 export type ProgressiveViewInput = {
   display_name: string | null;
   city: string | null;
   education: string | null;
-  religion: string | null;
   top_life_values: string[] | null;
   bio: string | null;
   vector: Record<string, number>;
@@ -47,7 +49,6 @@ export function toProgressiveView(p: ProgressiveViewInput): ProgressiveProfileVi
     first_name: firstWord(p.display_name ?? ""),
     city: p.city ?? null,
     education: p.education ?? null,
-    religion: p.religion ?? null,
     top_life_values: p.top_life_values ?? [],
     bio: p.bio ?? null,
     vector: p.vector ?? {},
