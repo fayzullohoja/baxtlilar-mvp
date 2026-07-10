@@ -434,7 +434,9 @@
     "partner_children_pref_question": "Juftingizning farzandi boʻlsa, bunga qanday qaraysiz?",
     "partner_origin_region_pref_question": "Juftning kelib chiqish hududi siz uchun muhimmi?",
     "partner_age_narrow_warning": "Juda tor yosh oraligʻi mos anketalar sonini kamaytirishi mumkin.",
-    "employmentStatusLabel": "Hozirgi bandlik holati"
+    "employmentStatusLabel": "Hozirgi bandlik holati",
+    "preview_privacy_heading": "Anketa maxfiyligi",
+    "preview_privacy_body": "Anketangizni tavsiyalarda faqat tekshiruvdan oʻtgan Baxtlilar foydalanuvchilari koʻradi. Oʻzaro qiziqishgacha koʻrinadi: ism (familiyasiz), shahar, maʼlumot, qadriyatlar, xarakter va «oʻzim haqimda». Yashirin: foto, yosh va aniq tugʻilgan sana, familiya, din, telefon, Telegram, hujjatlar, selfi va geolokatsiya — ular faqat oʻzaro qiziqishdan keyin ochiladi."
   },
   "Quiz": {
     "intro_title": "Siz haqingizda 10 ta savol",

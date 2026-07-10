@@ -100,6 +100,37 @@ export default async function V2AnketaPreviewPage({
         )}
       </div>
 
+      {/* Приватность анкеты — что видно / что скрыто (ревью оунера Экран 14). */}
+      <div
+        style={{
+          marginTop: "24px",
+          padding: "14px 16px",
+          background: "var(--color-v2-chip-teal)",
+          borderRadius: "14px",
+          fontFamily: "var(--font-v2-body)",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "13.5px",
+            fontWeight: 700,
+            color: "var(--color-v2-chip-teal-ink)",
+            marginBottom: "4px",
+          }}
+        >
+          {t("preview_privacy_heading")}
+        </div>
+        <div
+          style={{
+            fontSize: "12.5px",
+            lineHeight: 1.55,
+            color: "var(--color-v2-chip-teal-ink)",
+          }}
+        >
+          {t("preview_privacy_body")}
+        </div>
+      </div>
+
       {/* Spacer чтобы footer-CTA не накрывал контент */}
       <div style={{ height: "60px" }} />
     </MiniAppShell>
