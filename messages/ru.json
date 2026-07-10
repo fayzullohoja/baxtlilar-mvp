@@ -393,7 +393,7 @@
     "lifestyle_daily_routine_mid": "Средний режим",
     "lifestyle_daily_routine_late": "Поздний режим",
     "lifestyle_daily_routine_unstable": "Нестабильный режим",
-    "lifestyle_bad_habits_question": "Есть ли у Вас вредные привычки?",
+    "lifestyle_bad_habits_question": "Как Вы относитесь к курению?",
     "lifestyle_bad_habits_no": "Нет",
     "lifestyle_bad_habits_sometimes": "Иногда",
     "lifestyle_bad_habits_quit": "Бывало, но отказался / отказалась",
@@ -428,7 +428,8 @@
     "partnerAgeFrom": "от",
     "partnerAgeTo": "до",
     "basic_district_freeform_placeholder": "Название района",
-    "spokenLanguagesHint": "Выберите от 1 до 6 — Вы можете указать несколько. Выбрано: {count}/6"
+    "spokenLanguagesHint": "Выберите от 1 до 6 — Вы можете указать несколько. Выбрано: {count}/6",
+    "lifestyle_smoking_hint": "Сюда относится табак, электронные сигареты и вейп. Можно пропустить."
   },
   "Quiz": {
     "intro_title": "Опрос на совместимость",

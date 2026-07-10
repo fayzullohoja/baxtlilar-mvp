@@ -12,7 +12,6 @@ import {
   BAD_HABITS_LEVEL,
   NUTRITION_STYLE,
   ALCOHOL_LEVEL,
-  DRUGS_USE,
 } from "@/lib/profile/options";
 
 /**
@@ -43,7 +42,6 @@ export function V2AnketaLifestyleForm({ locale }: { locale: string }) {
   const [badHabits, setBadHabits] = useState("");
   const [nutrition, setNutrition] = useState("");
   const [alcohol, setAlcohol] = useState("");
-  const [drugs, setDrugs] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -68,7 +66,7 @@ export function V2AnketaLifestyleForm({ locale }: { locale: string }) {
           ...(badHabits ? { bad_habits_level: badHabits } : {}),
           ...(nutrition ? { nutrition_style: nutrition } : {}),
           ...(alcohol ? { alcohol_level: alcohol } : {}),
-          ...(drugs ? { drugs_use: drugs } : {}),
+          // drugs_use убран из анкеты (ревью оунера) — вопрос переносится в Правила.
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {
@@ -129,7 +127,7 @@ export function V2AnketaLifestyleForm({ locale }: { locale: string }) {
 
       <Field
         label={t("lifestyle_bad_habits_question")}
-        hint={t("canSkipHint")}
+        hint={t("lifestyle_smoking_hint")}
       >
         <Select
           options={BAD_HABITS_LEVEL}
@@ -163,17 +161,9 @@ export function V2AnketaLifestyleForm({ locale }: { locale: string }) {
         />
       </Field>
 
-      <Field
-        label={t("lifestyle_drugs_question")}
-        hint={t("canSkipHint")}
-      >
-        <Select
-          options={DRUGS_USE}
-          value={drugs}
-          onChange={setDrugs}
-          locale={locale}
-        />
-      </Field>
+      {/* Вопрос о запрещённых веществах убран из анкеты (ревью оунера): он
+          юридически чувствителен и почти никогда не заполняется честно —
+          переносится в Правила платформы + safety-модерацию. */}
 
       {err ? (
         <div

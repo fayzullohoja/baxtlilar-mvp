@@ -460,20 +460,22 @@ export const FREE_TIME_ACTIVITIES: Opt[] = [
   { value: "other", ru: "Другое", uz: "Boshqa" },
 ];
 
-/** Режим дня. */
+/** Режим дня (по ревью оунера — рамка «во сколько ложусь», а не «подъём»). */
 export const DAILY_ROUTINE: Opt[] = [
-  { value: "early", ru: "Ранний подъём (до 22:30)", uz: "Erta turish (22:30 gacha)" },
-  { value: "middle", ru: "Средний режим (22:30–00:00)", uz: "Oʻrtacha (22:30–00:00)" },
-  { value: "late", ru: "Поздний (после 00:00)", uz: "Kech (00:00 dan keyin)" },
-  { value: "unstable", ru: "Нестабильный режим", uz: "Beqaror" },
+  { value: "early", ru: "Ранний режим — обычно ложусь до 22:30", uz: "Erta rejim — odatda 22:30 gacha uxlayman" },
+  { value: "middle", ru: "Средний режим — ложусь с 22:30 до 00:00", uz: "Oʻrtacha rejim — 22:30 dan 00:00 gacha uxlayman" },
+  { value: "late", ru: "Поздний режим — ложусь после 00:00", uz: "Kechki rejim — 00:00 dan keyin uxlayman" },
+  { value: "unstable", ru: "Нестабильный режим", uz: "Beqaror rejim" },
 ];
 
-/** Вредные привычки. Hidden public. */
+/** Курение (ранее «вредные привычки» — рефокус на курение по ревью оунера;
+ *  алкоголь отдельно, наркотики убраны из анкеты). Hidden public. */
 export const BAD_HABITS_LEVEL: Opt[] = [
-  { value: "no", ru: "Нет", uz: "Yoʻq" },
+  { value: "no", ru: "Не курю", uz: "Chekmayman" },
   { value: "sometimes", ru: "Иногда", uz: "Baʼzan" },
-  { value: "quit", ru: "Бывало, но отказался(ась)", uz: "Boʻlgan, lekin tashladim" },
-  { value: "yes", ru: "Есть", uz: "Bor" },
+  { value: "yes", ru: "Курю", uz: "Chekaman" },
+  { value: "quit", ru: "Бросил(а)", uz: "Tashlaganman" },
+  { value: "na", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
 /** Питание. */
@@ -482,6 +484,7 @@ export const NUTRITION_STYLE: Opt[] = [
   { value: "regular", ru: "Обычное питание", uz: "Oddiy ovqatlanish" },
   { value: "national", ru: "Предпочитаю национальную кухню", uz: "Milliy taomlarni yoqtiraman" },
   { value: "restricted", ru: "Есть ограничения", uz: "Cheklovlar bor" },
+  { value: "na", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
 /** Отношение к алкоголю. Hidden public. */
@@ -490,6 +493,7 @@ export const ALCOHOL_LEVEL: Opt[] = [
   { value: "rare", ru: "Редко, по особым случаям", uz: "Kamdan-kam, alohida holatlarda" },
   { value: "sometimes", ru: "Иногда", uz: "Baʼzan" },
   { value: "regular", ru: "Регулярно", uz: "Muntazam" },
+  { value: "na", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
 /** Наркотические вещества. Hidden public. Чувствительно. */

@@ -393,7 +393,7 @@
     "lifestyle_daily_routine_mid": "Oʻrtacha tartib",
     "lifestyle_daily_routine_late": "Kech tartib",
     "lifestyle_daily_routine_unstable": "Beqaror tartib",
-    "lifestyle_bad_habits_question": "Sizda zararli odatlar bormi?",
+    "lifestyle_bad_habits_question": "Chekishga munosabatingiz qanday?",
     "lifestyle_bad_habits_no": "Yoʻq",
     "lifestyle_bad_habits_sometimes": "Baʼzan",
     "lifestyle_bad_habits_quit": "Boʻlgan, lekin tark qildim",
@@ -428,7 +428,8 @@
     "partnerAgeFrom": "dan",
     "partnerAgeTo": "gacha",
     "basic_district_freeform_placeholder": "Tuman nomi",
-    "spokenLanguagesHint": "1 dan 6 gacha til tanlashingiz mumkin. Tanlangan: {count}/6"
+    "spokenLanguagesHint": "1 dan 6 gacha til tanlashingiz mumkin. Tanlangan: {count}/6",
+    "lifestyle_smoking_hint": "Bunga tamaki, elektron sigaret va veyp ham kiradi. Oʻtkazib yuborish mumkin."
   },
   "Quiz": {
     "intro_title": "Moslik soʻrovi",
