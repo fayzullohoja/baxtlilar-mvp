@@ -4,10 +4,15 @@ export type Answer = { question_id: string; value: number };
 export type Vector = { O: number; C: number; E: number; A: number; ES: number; answered: number };
 
 const FACTOR_OF: Record<string, Factor> = Object.fromEntries(QUESTIONS.map((q) => [q.id, q.factor]));
+const REVERSE_OF: Record<string, boolean> = Object.fromEntries(QUESTIONS.map((q) => [q.id, q.reverse]));
 
 /**
  * Вектор совместимости из ответов (1–5). По каждому фактору — среднее,
  * нормализованное в 0–100: (avg-1)/4*100. Факторы без ответов = 50 (нейтрально).
+ *
+ * reverse-вопросы (ревью оунера 2026-07-10) инвертируются перед усреднением:
+ * 1↔5, 2↔4, 3=3 (значение = 6 - value). «Высокий фактор» = согласие с прямым и
+ * несогласие с обратным утверждением — семантика вектора остаётся консистентной.
  */
 export function computeVector(answers: Answer[]): Vector {
   const buckets: Record<Factor, number[]> = { O: [], C: [], E: [], A: [], ES: [] };
@@ -16,7 +21,8 @@ export function computeVector(answers: Answer[]): Vector {
     const f = FACTOR_OF[a.question_id];
     if (!f) continue;
     if (a.value < 1 || a.value > 5) continue;
-    buckets[f].push(a.value);
+    const v = REVERSE_OF[a.question_id] ? 6 - a.value : a.value;
+    buckets[f].push(v);
     answered++;
   }
   const norm = (arr: number[]) =>
