@@ -6,7 +6,7 @@ import { normalizeInternationalPhone, PhoneError } from "@/lib/phone";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { hashPhone } from "@/lib/identity/hashing";
 import { signStartToken } from "../start-token";
-import { sendMessage, answerCallbackQuery } from "../bot-api";
+import { sendMessage, answerCallbackQuery, setChatMenuButton } from "../bot-api";
 import type { InlineKeyboardMarkup, ReplyKeyboardMarkup } from "../bot-api";
 import { M, pick, type Lang } from "./messages";
 import { LEGAL_VERSION } from "@/content/legal";
@@ -213,6 +213,24 @@ function openAppButton(uid: string, telegramId: number, lang: Lang): InlineKeybo
   };
 }
 
+// Корень аппы БЕЗ токена — для постоянной menu-кнопки. Живая bx_session cookie
+// (30 дней) авторизует сразу; cookie-miss → штатный лендинг /open-in-telegram.
+// НЕ несёт start-token (H3 не трогаем) — вход только по уже выданной сессии.
+function appRootUrl(): string {
+  const appUrl = env().APP_URL ?? "https://baxtlilar-mvp-production.up.railway.app";
+  return `${appUrl.replace(/\/$/, "")}/`;
+}
+
+// Ставит/локализует menu-кнопку для конкретного чата. Best-effort: ошибку
+// bot-api глотает и логирует, поток онбординга не рвём.
+async function syncMenuButton(chatId: number, lang: Lang): Promise<void> {
+  await setChatMenuButton(chatId, {
+    type: "web_app",
+    text: pick(M.menu_button, lang),
+    web_app: { url: appRootUrl() },
+  });
+}
+
 function langKeyboard(): InlineKeyboardMarkup {
   return {
     inline_keyboard: [
@@ -375,6 +393,8 @@ async function handleStart(msg: TgMessage): Promise<void> {
     await sendMessage(chatId, pick(M.error_generic, "ru"));
     return;
   }
+  // Постоянная menu-кнопка на языке юзера (best-effort).
+  await syncMenuButton(chatId, user.language);
   await promptStep(chatId, user);
 }
 
@@ -527,6 +547,7 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
       const sb = supabaseAdmin();
       const { error } = await sb.from("users").update({ language: lang }).eq("id", user.id);
       if (error) throw new Error(error.message);
+      await syncMenuButton(chatId, lang);
       await answerCallbackQuery(cb.id);
       await sendMessage(chatId, pick(M.language_changed, lang));
       return;
@@ -548,6 +569,7 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
         await answerCallbackQuery(cb.id, "Try /start again");
         return;
       }
+      await syncMenuButton(chatId, lang);
       await answerCallbackQuery(cb.id);
       // V2 ext 2026-06-28: после языка → 4 PDF + сообщение оферты.
       await sendLegalDocsAndConsentPrompt(chatId, lang);

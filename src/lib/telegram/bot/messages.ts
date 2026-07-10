@@ -71,6 +71,8 @@ export const M = {
     uz: "Tayyor! Ilovani och va pasport + selfi yuklab tasdiqlanishdan oʻt.",
   },
   open_app: { ru: "🚀 Открыть Baxtlilar", uz: "🚀 Baxtlilar'ni ochish" },
+  // Текст постоянной menu-кнопки (без эмодзи — короче и стабильнее в TG UI).
+  menu_button: { ru: "Открыть Baxtlilar", uz: "Baxtlilar'ni ochish" },
 
   already_active: {
     ru: "Вы уже в Baxtlilar. Откройте приложение:",

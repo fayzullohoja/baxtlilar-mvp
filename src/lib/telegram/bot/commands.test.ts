@@ -5,12 +5,17 @@ import { M } from "./messages";
 
 // Захватываем исходящие сообщения бота.
 const sent: Array<{ chatId: number; text: string; markup?: unknown; parseMode?: string }> = [];
+const menuBtns: Array<{ chatId: number; button: { type: string; text?: string; web_app?: { url: string } } }> = [];
 vi.mock("../bot-api", () => ({
   sendMessage: vi.fn((chatId: number, text: string, markup?: unknown, parseMode?: string) => {
     sent.push({ chatId, text, markup, parseMode });
     return Promise.resolve(true);
   }),
   answerCallbackQuery: vi.fn(() => Promise.resolve(true)),
+  setChatMenuButton: vi.fn((chatId: number, button: { type: string; text?: string; web_app?: { url: string } }) => {
+    menuBtns.push({ chatId, button });
+    return Promise.resolve(true);
+  }),
 }));
 
 vi.mock("@/lib/env", () => ({
@@ -75,8 +80,37 @@ function callbackData(markup: unknown): string[] {
 describe("bot commands (owner spec 2026-07-10)", () => {
   beforeEach(() => {
     sent.length = 0;
+    menuBtns.length = 0;
     currentUser = { ...ACTIVE };
     updateSpy.mockClear();
+  });
+
+  it("/start: ставит локализованную menu-кнопку на корень аппы", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await handleUpdate(msg("/start") as any);
+    expect(menuBtns).toHaveLength(1);
+    expect(menuBtns[0].button.type).toBe("web_app");
+    expect(menuBtns[0].button.text).toBe(M.menu_button.ru);
+    expect(menuBtns[0].button.web_app?.url.endsWith("/")).toBe(true);
+    // корень БЕЗ токена (H3 не трогаем)
+    expect(menuBtns[0].button.web_app?.url).not.toContain("token=");
+  });
+
+  it("setlang: меняет язык, переставляет menu-кнопку на новый язык", async () => {
+    const cbUpdate = {
+      update_id: 2,
+      callback_query: {
+        id: "cb1",
+        from: { id: 42, is_bot: false, language_code: "ru" },
+        message: { message_id: 5, chat: { id: 42 } },
+        data: "setlang:uz",
+      },
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await handleUpdate(cbUpdate as any);
+    expect(updateSpy).toHaveBeenCalled();
+    expect(sent[0].text).toBe(M.language_changed.uz);
+    expect(menuBtns.at(-1)?.button.text).toBe(M.menu_button.uz);
   });
 
   it("/app: активному шлёт свежую inline web_app-кнопку", async () => {

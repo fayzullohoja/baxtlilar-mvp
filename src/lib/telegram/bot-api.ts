@@ -67,6 +67,19 @@ export function sendMessage(
   return call("sendMessage", payload);
 }
 
+// Menu-кнопка (слева от поля ввода). setChatMenuButton не поддерживает
+// language_code → локализуем per-chat: ставим на /start и при смене языка.
+// web_app.url ведёт на корень аппы (без токена): живая 30-дневная bx_session
+// cookie авторизует сразу; cookie-miss → штатный лендинг /open-in-telegram.
+export type MenuButton =
+  | { type: "web_app"; text: string; web_app: { url: string } }
+  | { type: "default" }
+  | { type: "commands" };
+
+export function setChatMenuButton(chatId: number, menuButton: MenuButton): Promise<boolean> {
+  return call("setChatMenuButton", { chat_id: chatId, menu_button: menuButton });
+}
+
 export function answerCallbackQuery(callbackQueryId: string, text?: string): Promise<boolean> {
   const payload: Record<string, unknown> = { callback_query_id: callbackQueryId };
   if (text) payload.text = text;

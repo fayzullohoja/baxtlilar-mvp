@@ -126,13 +126,16 @@ await call("setMyCommands", { commands: COMMANDS_EN, language_code: "en" });
 // await call("setMyCommands", { commands: COMMANDS_TR, language_code: "tr" });
 void COMMANDS_TR;
 
-// 4) Menu button (кнопка «Открыть Baxtlilar» слева от поля ввода) — ЗАБЛОКИРОВАНО.
-// setChatMenuButton.web_app.url СТАТИЧЕН и не может нести per-user start-token,
-// а /api/auth/bootstrap требует start_param (TTL 10 мин, single-use) — initData-
-// only пути нет (H3 security-fix). Постоянная menu-кнопка открыла бы приложение
-// в неавторизованном состоянии. Требует app-side работы: initData-only re-auth
-// для вернувшихся юзеров ИЛИ перевыпускаемый долгоживущий токен. Пока — /app
-// шлёт свежую inline-кнопку. Не ставим сломанную кнопку.
+// 4) Menu button — глобальный дефолт (RU). Per-chat локализация (UZ/EN) ставится
+// ботом на /start и при смене языка (setChatMenuButton не поддерживает language_code).
+// web_app.url = КОРЕНЬ аппы без токена: живая 30-дневная bx_session cookie
+// авторизует сразу; cookie-miss → штатный лендинг /open-in-telegram. H3
+// (обязательный start_param в /api/auth/bootstrap) НЕ трогаем — вход по уже
+// выданной сессии, не по initData.
+const appUrl = (process.env.APP_URL ?? "https://baxtlilar-mvp-production.up.railway.app").replace(/\/$/, "");
+await call("setChatMenuButton", {
+  menu_button: { type: "web_app", text: "Открыть Baxtlilar", web_app: { url: `${appUrl}/` } },
+});
 
 console.log("\nVerify:");
 const checks = [
@@ -143,6 +146,7 @@ const checks = [
   ["getMyCommands", {}],
   ["getMyCommands", { language_code: "uz" }],
   ["getMyCommands", { language_code: "en" }],
+  ["getChatMenuButton", {}],
 ];
 for (const [method, payload] of checks) {
   const res = await fetch(`${API}/${method}`, {
