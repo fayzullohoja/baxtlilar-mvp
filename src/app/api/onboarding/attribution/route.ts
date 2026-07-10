@@ -18,6 +18,7 @@ const ALLOWED_SOURCES = new Set<string>([
   "search",
   "media",
   "event",
+  "influencer",
   "other",
 ]);
 
