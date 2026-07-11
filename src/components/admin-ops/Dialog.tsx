@@ -2,6 +2,7 @@
 
 import { useEffect, type ReactNode } from "react";
 import { ADMIN } from "@/lib/admin/admin-tokens";
+import { useFocusTrap } from "@/lib/admin/use-focus-trap";
 
 export type DialogProps = {
   open: boolean;
@@ -20,6 +21,8 @@ export function Dialog({
   actions,
   width = 480,
 }: DialogProps) {
+  const trapRef = useFocusTrap<HTMLDivElement>(open);
+
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -51,6 +54,8 @@ export function Dialog({
       }}
     >
       <div
+        ref={trapRef}
+        tabIndex={-1}
         style={{
           width: `${width}px`,
           maxWidth: "100%",
@@ -60,6 +65,7 @@ export function Dialog({
           boxShadow: "0 12px 32px rgba(15,23,30,0.18)",
           display: "flex",
           flexDirection: "column",
+          outline: "none",
         }}
       >
         <div
