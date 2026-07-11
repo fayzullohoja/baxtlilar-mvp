@@ -53,6 +53,7 @@ import {
   PARTNER_MARITAL_PREF,
   PARTNER_CHILDREN_PREF,
   PARTNER_ORIGIN_REGION_PREF,
+  PARTNER_HARD_CRITERIA,
 } from "./options";
 
 const tuple = (a: string[]) => a as [string, ...string[]];
@@ -307,6 +308,9 @@ export const partnerExtendedSchema = z
     partner_marital_pref: z.array(z.enum(tuple(vals(PARTNER_MARITAL_PREF)))).max(5).optional(),
     partner_children_pref: z.enum(tuple(vals(PARTNER_CHILDREN_PREF))).optional(),
     partner_origin_region_pref: z.enum(tuple(vals(PARTNER_ORIGIN_REGION_PREF))).optional(),
+    // hard/soft-переключатель: какие критерии принципиальны (не обсуждаются). COLD,
+    // информационное (не энфорсится в matching). Пусто = все гибкие.
+    partner_hard_criteria: z.array(z.enum(tuple(vals(PARTNER_HARD_CRITERIA)))).max(6).optional(),
   })
   .refine((d) => d.partner_age_max >= d.partner_age_min, { message: "age_range_invalid" })
   .refine(

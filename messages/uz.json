@@ -445,7 +445,9 @@
     "photos_slot_family_hint": "Ixtiyoriy. Faqat oʻzaro qiziqishdan keyin ochiladi.",
     "photos_family_consent": "Oilaviy foto yuklab, undagi shaxslarning roziligini tasdiqlaysiz.",
     "photos_err_type_exists": "Bu tur uchun foto allaqachon qoʻshilgan.",
-    "photos_err_need_portrait": "Davom etish uchun portret kerak."
+    "photos_err_need_portrait": "Davom etish uchun portret kerak.",
+    "partner_hard_criteria_question": "Siz uchun nima muhim (murosasiz)?",
+    "partner_hard_criteria_hint": "Siz uchun muhokama qilinmaydigan mezonlarni belgilang. Qolganini moslashuvchan deb hisoblaymiz. Hech narsa tanlamasangiz ham boʻladi."
   },
   "Quiz": {
     "intro_title": "Siz haqingizda 10 ta savol",

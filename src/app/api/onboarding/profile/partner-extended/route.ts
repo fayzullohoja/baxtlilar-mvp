@@ -64,6 +64,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       ...(parsed.data.partner_origin_region_pref
         ? { partner_origin_region_pref: parsed.data.partner_origin_region_pref }
         : {}),
+      ...(parsed.data.partner_hard_criteria?.length
+        ? { partner_hard_criteria: parsed.data.partner_hard_criteria }
+        : {}),
     },
   };
 

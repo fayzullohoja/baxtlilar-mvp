@@ -13,6 +13,7 @@ import {
   PARTNER_MARITAL_PREF,
   PARTNER_CHILDREN_PREF,
   PARTNER_ORIGIN_REGION_PREF,
+  PARTNER_HARD_CRITERIA,
 } from "@/lib/profile/options";
 
 /**
@@ -43,6 +44,7 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
   const [maritalPref, setMaritalPref] = useState<string[]>([]);
   const [childrenPref, setChildrenPref] = useState("");
   const [regionPref, setRegionPref] = useState("");
+  const [hardCriteria, setHardCriteria] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -59,6 +61,12 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
       if (cur.includes(v)) return cur.filter((x) => x !== v);
       return [...cur.filter((x) => x !== "any"), v];
     });
+  }
+
+  function toggleHard(v: string) {
+    setHardCriteria((cur) =>
+      cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v],
+    );
   }
 
   function toggleCountry(v: string) {
@@ -87,6 +95,7 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
       if (maritalPref.length > 0) body.partner_marital_pref = maritalPref;
       if (childrenPref !== "") body.partner_children_pref = childrenPref;
       if (regionPref !== "") body.partner_origin_region_pref = regionPref;
+      if (hardCriteria.length > 0) body.partner_hard_criteria = hardCriteria;
 
       const res = await fetch("/api/onboarding/profile/partner-extended", {
         method: "POST",
@@ -245,6 +254,19 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
           options={PARTNER_ORIGIN_REGION_PREF}
           value={regionPref}
           onChange={setRegionPref}
+          locale={locale}
+        />
+      </Field>
+
+      <Field
+        label={t("partner_hard_criteria_question")}
+        hint={t("partner_hard_criteria_hint")}
+      >
+        <Chips
+          options={PARTNER_HARD_CRITERIA}
+          selected={hardCriteria}
+          onToggle={toggleHard}
+          max={6}
           locale={locale}
         />
       </Field>
