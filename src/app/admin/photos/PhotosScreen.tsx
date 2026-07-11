@@ -26,14 +26,27 @@ export function PhotosScreen({
   const router = useRouter();
   const [selected, setSelected] = useState<PhotoCase | null>(null);
   const [drawerMode, setDrawerMode] = useState<"view" | "reject">("view");
+  // PH-5: id фото с approve «в полёте» → защита от двойного клика (иначе два
+  // POST'а на одно фото). Кнопки строки disabled, пока решение не применилось.
+  const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
 
   async function quickApprove(p: PhotoCase) {
-    await fetch(`/api/admin/photos/${p.photo_id}/decision`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "approve" }),
-    });
-    router.refresh();
+    if (busyIds.has(p.photo_id)) return;
+    setBusyIds((prev) => new Set(prev).add(p.photo_id));
+    try {
+      await fetch(`/api/admin/photos/${p.photo_id}/decision`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "approve" }),
+      });
+      router.refresh();
+    } finally {
+      setBusyIds((prev) => {
+        const n = new Set(prev);
+        n.delete(p.photo_id);
+        return n;
+      });
+    }
   }
 
   return (
@@ -60,6 +73,7 @@ export function PhotosScreen({
 
       <PhotosTable
         rows={rows}
+        busyIds={busyIds}
         onOpen={(p) => {
           setDrawerMode("view");
           setSelected(p);
