@@ -134,41 +134,44 @@ export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
           padding: "24px 20px 22px",
         }}
       >
-        {/* Бейдж «Проверена» — белая пилюля + teal ✓ */}
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            background: "#ffffff",
-            borderRadius: "999px",
-            padding: "4px 11px 4px 5px",
-            fontSize: "12px",
-            fontWeight: 700,
-            color: "var(--color-v2-ink-200)",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "14px",
-            boxShadow: "0 2px 8px rgba(42, 26, 46, 0.12)",
-          }}
-        >
-          <span
-            aria-hidden
+        {/* Бейдж «Проверен» — только для approved-профилей (ревью оунера).
+            Раньше показывался всегда (hardcode) — вводил в заблуждение. */}
+        {profile.is_verified ? (
+          <div
             style={{
-              width: "15px",
-              height: "15px",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              background: "#ffffff",
               borderRadius: "999px",
-              background: "var(--color-v2-teal)",
-              color: "#ffffff",
-              fontSize: "9px",
-              lineHeight: "15px",
-              textAlign: "center",
-              flexShrink: 0,
+              padding: "4px 11px 4px 5px",
+              fontSize: "12px",
+              fontWeight: 700,
+              color: "var(--color-v2-ink-200)",
+              fontFamily: "var(--font-v2-body)",
+              marginBottom: "14px",
+              boxShadow: "0 2px 8px rgba(42, 26, 46, 0.12)",
             }}
           >
-            ✓
-          </span>
-          Проверена
-        </div>
+            <span
+              aria-hidden
+              style={{
+                width: "15px",
+                height: "15px",
+                borderRadius: "999px",
+                background: "var(--color-v2-teal)",
+                color: "#ffffff",
+                fontSize: "9px",
+                lineHeight: "15px",
+                textAlign: "center",
+                flexShrink: 0,
+              }}
+            >
+              ✓
+            </span>
+            {t("verifiedBadge")}
+          </div>
+        ) : null}
 
         {/* Имя */}
         <Headline size="lg" as="h2" style={{ color: "#FFF7F0" }}>

@@ -458,7 +458,14 @@
     "otherLanguagePlaceholder": "Tilni kiriting",
     "weightHiddenHint": "Ixtiyoriy, korsatmasangiz ham boladi",
     "weightAddButton": "Vaznni korsatish",
-    "childrenLivingLabel": "Bolalar hozir kim bilan yashaydi?"
+    "childrenLivingLabel": "Bolalar hozir kim bilan yashaydi?",
+    "publish_label_pending": "Tekshiruvga yuborish",
+    "publish_label_approved": "Eʼlon qilish",
+    "publish_button_pending": "Yuborilyapti…",
+    "publish_button_approved": "Eʼlon qilinyapti…",
+    "error_gender_mismatch": "Anketadagi jins pasport maʼlumotlariga mos kelmaydi. @baxtlilar_support qoʻllab-quvvatlash xizmatiga yozing — operator yordam beradi.",
+    "error_publish_failed": "Eʼlon qilib boʻlmadi. Anketani tekshirib, qayta urinib koʻring.",
+    "error_publish_generic": "Nimadir xato ketdi. Qayta urinib koʻring."
   },
   "Quiz": {
     "intro_title": "Siz haqingizda 10 ta savol",
@@ -648,7 +655,8 @@
     "privacyFooter": "Oʻzaro qiziqishdan keyin koʻproq maʼlumot ochiladi",
     "lifeValuesLabel": "Hayot qadriyatlari",
     "detailsLabel": "Batafsil",
-    "profileFootnote": "Profil anketa kabi yangilanadi"
+    "profileFootnote": "Profil anketa kabi yangilanadi",
+    "verifiedBadge": "Tasdiqlangan"
   },
   "Tutorial": {
     "intro.title": "Tanishish · 1 dan 4",

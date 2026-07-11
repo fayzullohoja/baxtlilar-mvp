@@ -4,6 +4,7 @@ import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
 import { verifiedGenderMatches } from "@/lib/onboarding/verified-gender";
+import { MARITAL_STATUS_NEEDS_REVIEW } from "@/lib/profile/options";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ export async function POST(): Promise<NextResponse> {
 
   const { data: p } = await sb
     .from("user_profiles")
-    .select("display_name, gender, birth_date, country_of_residence, region, bio, religion, top_life_values, partner_age_min, partner_age_max")
+    .select("display_name, gender, birth_date, country_of_residence, region, bio, religion, top_life_values, partner_age_min, partner_age_max, marital_status")
     .eq("user_id", user.id)
     .maybeSingle();
   // V3 (2026-06-30, Bug #5): region обязателен только для UZ-резидентов
@@ -67,11 +68,22 @@ export async function POST(): Promise<NextResponse> {
   if (cntErr) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
   if (!count) return NextResponse.json({ ok: false, error: "no_photo" }, { status: 400 });
 
+  // F4 (ревью оунера): «чувствительное» семейное положение (в разводе / в браке,
+  // но раздельно) поднимаем на операторское контент-ревью. Флаг не гейтит
+  // видимость — анкета публикуется обычным образом, просто попадает в дашборд.
+  const needsMaritalReview = (
+    MARITAL_STATUS_NEEDS_REVIEW as readonly string[]
+  ).includes(p.marital_status as string);
+
   // Публикация — намеренное действие пользователя: если update не прошёл, нельзя
   // отвечать «ok» и уводить на опрос — анкета осталась бы неопубликованной (невидимой).
   const { error: pubErr } = await sb
     .from("user_profiles")
-    .update({ status: "published", published_at: new Date().toISOString() })
+    .update({
+      status: "published",
+      published_at: new Date().toISOString(),
+      needs_marital_review: needsMaritalReview,
+    })
     .eq("user_id", user.id);
   if (pubErr) return NextResponse.json({ ok: false, error: "publish_failed" }, { status: 500 });
 

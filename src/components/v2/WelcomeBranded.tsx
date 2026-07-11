@@ -10,7 +10,6 @@ import {
   IconUsers,
   IconChevronRight,
   IconShieldLock,
-  IconHeartHandshake,
 } from "@tabler/icons-react";
 
 /**
@@ -235,24 +234,8 @@ export function WelcomeBranded({ locale }: { locale: string }) {
         </div>
       </div>
 
-      {/* Footer note */}
-      <div
-        style={{
-          textAlign: "center",
-          fontSize: "11px",
-          color: "rgba(255, 247, 240, 0.8)",
-          padding: "8px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "6px",
-          position: "relative",
-          zIndex: 1,
-        }}
-      >
-        <IconHeartHandshake size={14} stroke={2} />
-        {t('rules_footer')}
-      </div>
+      {/* Footer note удалён (ревью оунера): к welcome-экрану юзер приходит уже
+          ПОСЛЕ принятия оферты/согласий в боте — «rules_footer» был избыточен. */}
 
       {err ? (
         <div

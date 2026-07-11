@@ -72,7 +72,7 @@ export default async function V2AnketaPreviewPage({
     <MiniAppShell
       eyebrow={t("preview_eyebrow")}
       align="top"
-      footer={<V2PublishButton />}
+      footer={<V2PublishButton verificationStatus={user.verification_status} />}
     >
       <Headline size="lg" as="h1">{t("preview_headline")}</Headline>
       <Lead>{t("preview_lead")}</Lead>
@@ -86,7 +86,13 @@ export default async function V2AnketaPreviewPage({
         }}
       >
         {profile ? (
-          <ProgressiveProfile profile={toProgressiveView(profile)} locale={locale} />
+          <ProgressiveProfile
+            profile={toProgressiveView({
+              ...profile,
+              verification_status: user.verification_status,
+            })}
+            locale={locale}
+          />
         ) : (
           <p
             style={{

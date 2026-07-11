@@ -25,6 +25,9 @@ export type ProgressiveProfileView = {
   top_life_values: string[];
   bio: string | null;
   vector: Record<string, number>;
+  // Ревью оунера: бейдж «Проверен» показываем ТОЛЬКО для approved-профилей.
+  // verification_status не ПД (уже гейтит выдачу на сервере) → безопасно в pre-mutual.
+  is_verified: boolean;
 };
 
 /** Только поля, реально нужные для pre-mutual-вида. Чувствительные поля
@@ -37,6 +40,8 @@ export type ProgressiveViewInput = {
   top_life_values: string[] | null;
   bio: string | null;
   vector: Record<string, number>;
+  // Опционально: если loader не передал — is_verified=false (бейдж не покажем).
+  verification_status?: string | null;
 };
 
 /** Первое слово — фамилия скрыта pre-mutual. */
@@ -52,5 +57,6 @@ export function toProgressiveView(p: ProgressiveViewInput): ProgressiveProfileVi
     top_life_values: p.top_life_values ?? [],
     bio: p.bio ?? null,
     vector: p.vector ?? {},
+    is_verified: p.verification_status === "approved",
   };
 }

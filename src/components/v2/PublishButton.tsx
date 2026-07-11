@@ -2,17 +2,28 @@
 
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "./Button";
 
 /**
  * V2 Publish — финальное действие на /v2/anketa/preview.
  * POST /api/onboarding/profile/publish → transition в quiz.
+ *
+ * Ревью оунера: пока верификация НЕ approved, кнопка честно говорит «Отправить
+ * на проверку» (анкета видима в подборе только после подтверждения личности),
+ * и «Опубликовать» — когда уже approved. Все строки локализованы (ru/uz/tr).
  */
 
-export function V2PublishButton() {
+export function V2PublishButton({
+  verificationStatus,
+}: {
+  verificationStatus?: string;
+}) {
   const router = useRouter();
+  const t = useTranslations("Anketa");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const isApproved = verificationStatus === "approved";
 
   async function publish() {
     if (busy) return;
@@ -35,15 +46,12 @@ export function V2PublishButton() {
       // C6: пол в анкете не совпал с паспортом — это не «поправьте анкету»,
       // менять пол пользователь не может, нужен оператор.
       if (data.error === "gender_mismatch") {
-        setErr(
-          "Пол в анкете не совпадает с данными паспорта. Напишите в поддержку " +
-            "@baxtlilar_support — оператор поможет.",
-        );
+        setErr(t("error_gender_mismatch"));
         return;
       }
-      setErr("Не получилось опубликовать. Проверьте анкету и попробуйте ещё раз.");
+      setErr(t("error_publish_failed"));
     } catch {
-      setErr("Что-то пошло не так. Попробуйте ещё раз.");
+      setErr(t("error_publish_generic"));
     } finally {
       setBusy(false);
     }
@@ -69,7 +77,13 @@ export function V2PublishButton() {
         </div>
       ) : null}
       <Button onClick={publish} disabled={busy} variant="primary">
-        {busy ? "Публикую…" : "Опубликовать"}
+        {busy
+          ? isApproved
+            ? t("publish_button_approved")
+            : t("publish_button_pending")
+          : isApproved
+            ? t("publish_label_approved")
+            : t("publish_label_pending")}
       </Button>
     </div>
   );

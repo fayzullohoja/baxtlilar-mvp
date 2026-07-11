@@ -143,8 +143,16 @@ export default async function MainPage({ params }: { params: Promise<{ locale: s
         }
       >
         {/* APP-1: только узкая pre-mutual проекция уходит в клиент (без точного
-            DOB / статуса / детей / предпочтений). */}
-        <ProgressiveProfile profile={toProgressiveView(match.candidate.profile)} locale={locale} />
+            DOB / статуса / детей / предпочтений). Кандидаты в подборе всегда
+            approved (is_matchable гейтит verification_status='approved') → бейдж
+            «Проверен» показываем. */}
+        <ProgressiveProfile
+          profile={toProgressiveView({
+            ...match.candidate.profile,
+            verification_status: "approved",
+          })}
+          locale={locale}
+        />
         <MatchStoryCard story={match.story} candidateName={candidateFirstName} />
         {/* Spacer чтобы footer-actions не накрывали bottom часть карточки */}
         <div style={{ height: "80px" }} />

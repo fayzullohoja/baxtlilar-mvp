@@ -53,7 +53,7 @@ export default async function V2ProfileDetailPage({
   const sb = supabaseAdmin();
   const { data: u } = await sb
     .from("users")
-    .select("id, lifecycle_state")
+    .select("id, lifecycle_state, verification_status")
     .eq("id", id)
     .maybeSingle();
   const { data: p } = await sb
@@ -136,6 +136,7 @@ export default async function V2ProfileDetailPage({
     top_life_values: (p!.top_life_values as string[]) ?? [],
     bio: (p!.bio as string) ?? null,
     vector: (q?.vector as Record<string, number>) ?? {},
+    verification_status: (u!.verification_status as string) ?? null,
   });
 
   return (

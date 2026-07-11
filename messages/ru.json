@@ -458,7 +458,14 @@
     "otherLanguagePlaceholder": "Укажите язык",
     "weightHiddenHint": "Необязательно, можно не указывать",
     "weightAddButton": "Указать вес",
-    "childrenLivingLabel": "С кем сейчас живут дети?"
+    "childrenLivingLabel": "С кем сейчас живут дети?",
+    "publish_label_pending": "Отправить на проверку",
+    "publish_label_approved": "Опубликовать",
+    "publish_button_pending": "Отправляю…",
+    "publish_button_approved": "Публикую…",
+    "error_gender_mismatch": "Пол в анкете не совпадает с данными паспорта. Напишите в поддержку @baxtlilar_support — оператор поможет.",
+    "error_publish_failed": "Не получилось опубликовать. Проверьте анкету и попробуйте ещё раз.",
+    "error_publish_generic": "Что-то пошло не так. Попробуйте ещё раз."
   },
   "Quiz": {
     "intro_title": "10 вопросов о вас",
@@ -648,7 +655,8 @@
     "privacyFooter": "После взаимного интереса откроется больше деталей",
     "lifeValuesLabel": "Ценности в жизни",
     "detailsLabel": "Подробнее",
-    "profileFootnote": "Профиль обновляется как анкета"
+    "profileFootnote": "Профиль обновляется как анкета",
+    "verifiedBadge": "Проверен"
   },
   "Tutorial": {
     "intro.title": "Знакомство · 1 из 4",

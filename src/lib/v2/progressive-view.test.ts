@@ -26,8 +26,20 @@ test("first_name — только первое слово (фамилия скр
 test("payload содержит РОВНО разрешённые pre-mutual поля — ничего лишнего", () => {
   const view = toProgressiveView(full);
   expect(Object.keys(view).sort()).toEqual(
-    ["bio", "city", "education", "first_name", "top_life_values", "vector"].sort(),
+    ["bio", "city", "education", "first_name", "is_verified", "top_life_values", "vector"].sort(),
   );
+});
+
+test("is_verified — derived boolean; сырой verification_status НЕ утекает", () => {
+  const approved = toProgressiveView({ ...full, verification_status: "approved" });
+  expect(approved.is_verified).toBe(true);
+  const pending = toProgressiveView({ ...full, verification_status: "pending_review" });
+  expect(pending.is_verified).toBe(false);
+  // Не передали статус → бейджа нет (safe default).
+  expect(toProgressiveView(full).is_verified).toBe(false);
+  // В payload уходит только производный boolean, а не строка статуса.
+  const leaked = approved as unknown as Record<string, unknown>;
+  expect(leaked.verification_status).toBeUndefined();
 });
 
 test("не утекают чувствительные поля (точный DOB, статус, дети, предпочтения, фамилия, религия)", () => {

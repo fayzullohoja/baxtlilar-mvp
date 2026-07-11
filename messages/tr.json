@@ -458,7 +458,14 @@
     "otherLanguagePlaceholder": "Dili belirtin",
     "weightHiddenHint": "İsteğe bağlı, belirtmeyebilirsiniz",
     "weightAddButton": "Kilo ekle",
-    "childrenLivingLabel": "Çocuklar şu anda kiminle yaşıyor?"
+    "childrenLivingLabel": "Çocuklar şu anda kiminle yaşıyor?",
+    "publish_label_pending": "İncelemeye gönder",
+    "publish_label_approved": "Yayınla",
+    "publish_button_pending": "Gönderiliyor…",
+    "publish_button_approved": "Yayımlanıyor…",
+    "error_gender_mismatch": "Anketteki cinsiyet pasaport bilgileriyle eşleşmiyor. @baxtlilar_support destek hattına yazın — operatör yardımcı olacaktır.",
+    "error_publish_failed": "Yayımlanamadı. Anketi kontrol edip tekrar deneyin.",
+    "error_publish_generic": "Bir şeyler ters gitti. Lütfen tekrar deneyin."
   },
   "Quiz": {
     "intro_title": "Uyum anketi",
@@ -648,7 +655,8 @@
     "privacyFooter": "Karşılıklı ilgiden sonra daha fazla ayrıntı açılacak",
     "lifeValuesLabel": "Hayattaki değerler",
     "detailsLabel": "Ayrıntılar",
-    "profileFootnote": "Profil, anket olarak güncellenir"
+    "profileFootnote": "Profil, anket olarak güncellenir",
+    "verifiedBadge": "Doğrulanmış"
   },
   "Tutorial": {
     "intro.title": "Tanışma · 4'ten 1",
