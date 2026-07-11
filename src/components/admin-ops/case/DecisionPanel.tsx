@@ -6,6 +6,7 @@ import { Button } from "@/components/admin-ops/Button";
 import { Dialog } from "@/components/admin-ops/Dialog";
 import { ReasonPicker } from "@/components/admin-ops/ReasonPicker";
 import type { PassportPayload } from "@/lib/admin/passport-validation";
+import type { FaceMatchResult } from "@/components/admin-ops/case/FaceMatchStep";
 
 type DecisionMode =
   | null
@@ -24,6 +25,7 @@ export function DecisionPanel({
   caseId,
   userId,
   payload,
+  faceMatch,
   expectedUpdatedAt,
   reasonTemplates,
   onBack,
@@ -31,6 +33,7 @@ export function DecisionPanel({
   caseId: string;
   userId: string;
   payload: PassportPayload;
+  faceMatch: FaceMatchResult | null;
   expectedUpdatedAt: string;
   reasonTemplates: { code: string; text: string }[];
   onBack: () => void;
@@ -82,6 +85,7 @@ export function DecisionPanel({
     };
     if (action === "approve") {
       body.payload = payload;
+      body.face_match = faceMatch; // QZ-5: аудит ручной сверки лица
     } else {
       body.reason_code = reasonCode;
       body.reason_text = reasonText;

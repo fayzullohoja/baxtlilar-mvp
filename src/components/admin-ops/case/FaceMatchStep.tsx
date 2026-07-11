@@ -3,6 +3,14 @@ import { useState } from "react";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 import { Button } from "@/components/admin-ops/Button";
 
+// QZ-5/SG-08: результат ручной сверки лица — персистится в case_events как
+// аудит-доказательство «сверка проводилась» (KVKK/спор). Раньше испарялся.
+export type FaceMatchResult = {
+  face_selfie_matches: boolean;
+  liveness_ok: boolean;
+  age_matches: boolean;
+};
+
 export function FaceMatchStep({
   selfieUrl,
   passportUrl,
@@ -12,7 +20,7 @@ export function FaceMatchStep({
   selfieUrl: string | null;
   passportUrl: string | null;
   onBack: () => void;
-  onConfirm: () => void;
+  onConfirm: (result: FaceMatchResult) => void;
 }) {
   const [c1, setC1] = useState(false);
   const [c2, setC2] = useState(false);
@@ -60,7 +68,13 @@ export function FaceMatchStep({
         }}
       >
         <Button onClick={onBack}>← Назад</Button>
-        <Button variant="primary" disabled={!all} onClick={onConfirm}>
+        <Button
+          variant="primary"
+          disabled={!all}
+          onClick={() =>
+            onConfirm({ face_selfie_matches: c1, liveness_ok: c2, age_matches: c3 })
+          }
+        >
           → Решение
         </Button>
       </div>

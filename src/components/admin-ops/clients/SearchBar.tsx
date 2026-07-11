@@ -16,8 +16,10 @@ export function SearchBar({
       onResults(null);
       return;
     }
-    setBusy(true);
+    // setBusy внутри async-колбэка таймаута (а не синхронно в эффекте) — не
+    // триггерит каскадный ре-рендер (set-state-in-effect).
     const t = setTimeout(async () => {
+      setBusy(true);
       try {
         const r = await fetch(
           `/api/admin/clients/search?q=${encodeURIComponent(q)}`,
