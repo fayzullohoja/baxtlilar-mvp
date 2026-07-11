@@ -237,6 +237,7 @@ function langKeyboard(): InlineKeyboardMarkup {
       [
         { text: M.lang_ru, callback_data: "lang:ru" },
         { text: M.lang_uz, callback_data: "lang:uz" },
+        { text: M.lang_tr, callback_data: "lang:tr" },
       ],
     ],
   };
@@ -251,6 +252,7 @@ function langChangeKeyboard(): InlineKeyboardMarkup {
       [
         { text: M.lang_ru, callback_data: "setlang:ru" },
         { text: M.lang_uz, callback_data: "setlang:uz" },
+        { text: M.lang_tr, callback_data: "setlang:tr" },
       ],
     ],
   };
@@ -543,7 +545,7 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
   try {
     // /language: смена языка в любой момент (не завязана на onboarding_step).
     if (ns === "setlang") {
-      const lang: Lang = val === "uz" ? "uz" : "ru";
+      const lang: Lang = val === "uz" || val === "tr" ? val : "ru";
       const sb = supabaseAdmin();
       const { error } = await sb.from("users").update({ language: lang }).eq("id", user.id);
       if (error) throw new Error(error.message);
@@ -554,7 +556,7 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
     }
 
     if (ns === "lang" && user.onboarding_step === "bot_language") {
-      const lang: Lang = val === "uz" ? "uz" : "ru";
+      const lang: Lang = val === "uz" || val === "tr" ? val : "ru";
       const sb = supabaseAdmin();
       const { error } = await sb.from("users").update({ language: lang }).eq("id", user.id);
       if (error) throw new Error(error.message);

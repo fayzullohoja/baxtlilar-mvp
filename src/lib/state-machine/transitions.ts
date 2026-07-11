@@ -17,7 +17,7 @@ export type UserStatePatch = Partial<{
   quiz_completion: QuizCompletion;
   phone_verified: boolean;
   phone_number: string;
-  language: "ru" | "uz";
+  language: "ru" | "uz" | "tr";
   blocked_at: string | null;
   blocked_reason: string | null;
 }>;

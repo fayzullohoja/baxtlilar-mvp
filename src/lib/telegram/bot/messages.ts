@@ -12,9 +12,12 @@ export const M = {
     "Baxtlilar — bu jiddiy va himoyalangan tanishuv ilovasi.\n\n" +
     "Привет! 👋\n" +
     "Baxtlilar — приложение для серьёзных, защищённых знакомств.\n\n" +
-    "Tilni tanlang / Выберите язык:",
+    "Merhaba! 👋\n" +
+    "Baxtlilar — ciddi ve güvenli bir tanışma uygulamasıdır.\n\n" +
+    "Tilni tanlang / Выберите язык / Dil seçin:",
   lang_ru: "🇷🇺 Русский",
   lang_uz: "🇺🇿 Oʻzbekcha",
+  lang_tr: "🇹🇷 Türkçe",
 
   contact_ask: {
     ru:
@@ -25,11 +28,18 @@ export const M = {
       "Roʻyxatdan oʻtish uchun telefon raqamingni ulash.\n" +
       "Pastdagi tugmani bos — Telegram raqamni avtomatik yuboradi.\n\n" +
       "Biz SMS yubormaymiz: raqam allaqachon Telegram tomonidan tasdiqlangan.",
+    tr:
+      "Kayıt olmak için telefon numaranızı paylaşın.\nAşağıdaki düğmeye basın — Telegram numarayı otomatik olarak gönderir.\n\nSMS GÖNDERMİYORUZ: numara Telegram tarafından zaten doğrulanmıştır.",
   },
-  contact_button: { ru: "📱 Поделиться номером", uz: "📱 Raqamni ulashish" },
+  contact_button: { ru: "📱 Поделиться номером", uz: "📱 Raqamni ulashish",
+    tr:
+      "📱 Numarayı paylaş",
+  },
   contact_not_yours: {
     ru: "Это чужой номер. Поделитесь СВОИМ через кнопку.",
     uz: "Bu boshqa odamning raqami. Tugma orqali OʻZ raqamingni ulash.",
+    tr:
+      "Bu başka birinin numarası. Düğme aracılığıyla KENDİ numaranızı paylaşın.",
   },
 
   pd_consent_ask: {
@@ -61,16 +71,30 @@ export const M = {
       `4. <a href="${APP_URL}/legal/pd-consent.pdf">Shaxsiy maʼlumotlarni qayta ishlashga rozilik</a>\n\n` +
       "Shartlarni qabul qilganingizdan soʻng Telegram orqali telefon raqamingizni soʻraymiz.\n" +
       "Selfi / biometrik tekshiruvga rozilik verifikatsiyadan oldin alohida soʻraladi.",
+    tr:
+      "📜 <b>Baxtlilar belgeleri</b>\n\nDevam etmeden önce platform koşullarını inceleyin. Kayda devam ederek şunları onaylamış olursunuz:\n— 18 yaşını doldurduğunuzu;\n— Baxtlilar'ın aile kurmak amacıyla ciddi tanışmalar için oluşturulduğunu anladığınızı;\n— Platform belgelerini kabul ettiğinizi;\n— Kayıt, doğrulama, anket ve hizmetin işleyişi için kişisel verilerinizin işlenmesine rıza gösterdiğinizi.\n\nBelgeler:\n1. <a href=\"https://baxtlilar-mvp-production.up.railway.app/legal/user-agreement.pdf\">Kullanıcı Sözleşmesi</a>\n2. <a href=\"https://baxtlilar-mvp-production.up.railway.app/legal/rules.pdf\">Platform Kuralları</a>\n3. <a href=\"https://baxtlilar-mvp-production.up.railway.app/legal/privacy.pdf\">Gizlilik Politikası</a>\n4. <a href=\"https://baxtlilar-mvp-production.up.railway.app/legal/pd-consent.pdf\">Kişisel Verilerin İşlenmesine Rıza</a>\n\nKoşulları kabul ettikten sonra Telegram aracılığıyla telefon numaranızı isteyeceğiz.\nSelfie / biyometrik doğrulama için rızayı, doğrulamadan önce ayrıca isteyeceğiz.",
   },
-  pd_consent_yes: { ru: "✅ Согласен", uz: "✅ Roziman" },
-  pd_consent_no: { ru: "❌ Отказаться", uz: "❌ Rad etish" },
+  pd_consent_yes: { ru: "✅ Согласен", uz: "✅ Roziman",
+    tr:
+      "✅ Kabul ediyorum",
+  },
+  pd_consent_no: { ru: "❌ Отказаться", uz: "❌ Rad etish",
+    tr:
+      "❌ Reddet",
+  },
 
   // 2026-07-10: биометрия перенесена в mini-app. Этот текст остаётся ТОЛЬКО для
   // legacy-юзеров, застрявших на bot_consent_biometric (bio:* handler ещё жив).
   // Единый источник с app-версией → (text::LEGAL_VERSION) tuple consistent.
   bio_consent_ask: BIOMETRIC_CONSENT_TEXT,
-  bio_consent_yes: { ru: "✅ Согласен на биометрию", uz: "✅ Biometriyaga roziman" },
-  bio_consent_no: { ru: "❌ Отказаться", uz: "❌ Rad etish" },
+  bio_consent_yes: { ru: "✅ Согласен на биометрию", uz: "✅ Biometriyaga roziman",
+    tr:
+      "✅ Biyometriye rıza gösteriyorum",
+  },
+  bio_consent_no: { ru: "❌ Отказаться", uz: "❌ Rad etish",
+    tr:
+      "❌ Reddet",
+  },
 
   ready: {
     ru:
@@ -79,14 +103,24 @@ export const M = {
     uz:
       "✅ Tayyor. Raqam tasdiqlandi.\n" +
       "Roʻyxatni davom ettirish uchun Baxtlilar Mini App'ni oching: hududni tanlang, tekshiruv usulini tanlang va anketa yarating.",
+    tr:
+      "✅ Hazır. Numara doğrulandı.\nKayda devam etmek için Baxtlilar Mini App'i açın: bölge seçin, doğrulama yöntemini belirleyin ve anket oluşturun.",
   },
-  open_app: { ru: "Открыть Baxtlilar", uz: "Baxtlilar'ni ochish" },
+  open_app: { ru: "Открыть Baxtlilar", uz: "Baxtlilar'ni ochish",
+    tr:
+      "Baxtlilar'ı aç",
+  },
   // Текст постоянной menu-кнопки (без эмодзи — короче и стабильнее в TG UI).
-  menu_button: { ru: "Открыть Baxtlilar", uz: "Baxtlilar'ni ochish" },
+  menu_button: { ru: "Открыть Baxtlilar", uz: "Baxtlilar'ni ochish",
+    tr:
+      "Baxtlilar'ı aç",
+  },
 
   already_active: {
     ru: "Вы уже в Baxtlilar. Откройте Mini App:",
     uz: "Siz allaqachon Baxtlilar'dasiz. Mini App'ni oching:",
+    tr:
+      "Zaten Baxtlilar'dasınız. Mini App'i açın:",
   },
 
   declined_pd: {
@@ -96,20 +130,28 @@ export const M = {
     uz:
       "Shartlarni qabul qilmasangiz, hisob yarata olmaymiz va platforma ishlashi uchun maʼlumotlarni qayta ishlay olmaymiz.\n" +
       "Hujjatlarga qaytib, keyinroq davom ettirishingiz mumkin — /start yuboring.",
+    tr:
+      "Koşulları kabul etmeden hesap oluşturamaz ve platformun işleyişi için verileri işleyemeyiz.\nBelgelere geri dönüp daha sonra devam edebilirsiniz — /start gönderin.",
   },
   declined_bio: {
     ru: "Без согласия на биометрию верификация невозможна. Если передумаете — /start.",
     uz: "Biometriya roziligi boʻlmasa, tasdiqlash mumkin emas. Fikring oʻzgarsa — /start.",
+    tr:
+      "Biyometriye rıza olmadan doğrulama mümkün değildir. Fikrinizi değiştirirseniz — /start.",
   },
 
   resume_at_step: {
     ru: "Продолжим. Текущий шаг — ниже.",
     uz: "Davom etamiz. Joriy qadam — quyida.",
+    tr:
+      "Devam edelim. Mevcut adım — aşağıda.",
   },
 
   error_generic: {
     ru: "Что-то пошло не так. Попробуйте /start ещё раз.",
     uz: "Nimadir notoʻgʻri ketdi. /start ni qaytadan urinib koʻr.",
+    tr:
+      "Bir şeyler ters gitti. /start ile tekrar deneyin.",
   },
 
   // F-006: cooldown после удаления аккаунта. {until} подставляется ISO-датой
@@ -117,6 +159,8 @@ export const M = {
   phone_cooldown: {
     ru: "Этот номер недавно использовался для удалённого аккаунта. Регистрация повторно — после {until}. Если ошибка — напишите в поддержку.",
     uz: "Bu raqam yaqinda oʻchirilgan hisob uchun ishlatilgan. Qaytadan roʻyxatdan oʻtish {until} dan keyin. Xato boʻlsa — qoʻllab-quvvatlash xizmatiga yozing.",
+    tr:
+      "Bu numara yakın zamanda silinen bir hesap için kullanıldı. Yeniden kayıt — {until} tarihinden sonra. Bir hata varsa — destek ekibine yazın.",
   },
 
   // R2/C8/C11: blocking-tombstone от модератора. Не показываем until-дату
@@ -124,22 +168,32 @@ export const M = {
   phone_blocking: {
     ru: "Регистрация с этим номером недоступна. Если Вы считаете это ошибкой — напишите в поддержку.",
     uz: "Bu raqam bilan roʻyxatdan oʻtish mumkin emas. Agar bu xato deb hisoblasangiz — qoʻllab-quvvatlash xizmatiga yozing.",
+    tr:
+      "Bu numarayla kayıt kullanılamıyor. Bunun bir hata olduğunu düşünüyorsanız — destek ekibine yazın.",
   },
   phone_check_failed: {
     ru: "Не удалось проверить номер. Попробуйте чуть позже.",
     uz: "Raqamni tekshirib boʻlmadi. Bir oz keyinroq urinib koʻring.",
+    tr:
+      "Numara doğrulanamadı. Biraz sonra tekrar deneyin.",
   },
   blocked_by_moderator: {
     ru: "Заблокирован модератором.",
     uz: "Moderator tomonidan bloklangan.",
+    tr:
+      "Moderatör tarafından engellendi.",
   },
   phone_recognize_failed: {
     ru: "Не удалось распознать номер. Попробуйте ещё раз.",
     uz: "Raqam tushunilmadi. Qaytadan urinib koʻring.",
+    tr:
+      "Numara tanınamadı. Tekrar deneyin.",
   },
   phone_duplicate: {
     ru: "Этот номер уже зарегистрирован в Baxtlilar.",
     uz: "Bu raqam Baxtlilar da allaqachon roʻyxatdan oʻtgan.",
+    tr:
+      "Bu numara Baxtlilar'da zaten kayıtlı.",
   },
 
   // === Команды бота (2026-07-10, спец оунера: /app /status /support /language /privacy) ===
@@ -148,53 +202,75 @@ export const M = {
   cmd_app_prompt: {
     ru: "Открываю Baxtlilar. Нажмите кнопку ниже:",
     uz: "Baxtlilar'ni ochyapman. Pastdagi tugmani bosing:",
+    tr:
+      "Baxtlilar'ı açıyorum. Aşağıdaki düğmeye basın:",
   },
 
   // /status — статус профиля. Ответ зависит от lifecycle/onboarding_step.
   status_onboarding_bot: {
     ru: "Регистрация ещё не завершена. Отправьте /start, чтобы продолжить.",
     uz: "Roʻyxatdan oʻtish tugallanmagan. Davom etish uchun /start yuboring.",
+    tr:
+      "Kayıt henüz tamamlanmadı. Devam etmek için /start gönderin.",
   },
   status_onboarding_app: {
     ru: "Профиль заполняется. Откройте Baxtlilar Mini App, чтобы продолжить:",
     uz: "Profil toʻldirilmoqda. Davom etish uchun Baxtlilar Mini App'ni oching:",
+    tr:
+      "Profil dolduruluyor. Devam etmek için Baxtlilar Mini App'i açın:",
   },
   status_needs_changes: {
     ru: "Верификация требует доработки. Откройте Baxtlilar Mini App и следуйте подсказкам:",
     uz: "Tasdiqlash uchun tuzatish kerak. Baxtlilar Mini App'ni oching va koʻrsatmalarga amal qiling:",
+    tr:
+      "Doğrulama için düzeltme gerekiyor. Baxtlilar Mini App'i açın ve yönergeleri izleyin:",
   },
   status_active: {
     ru: "Ваша анкета активна. Откройте Baxtlilar Mini App:",
     uz: "Anketangiz faol. Baxtlilar Mini App'ni oching:",
+    tr:
+      "Anketiniz aktif. Baxtlilar Mini App'i açın:",
   },
   status_paused: {
     ru: "Ваша анкета на паузе. Откройте Baxtlilar Mini App, чтобы возобновить:",
     uz: "Anketangiz pauzada. Davom ettirish uchun Baxtlilar Mini App'ni oching:",
+    tr:
+      "Anketiniz duraklatıldı. Devam ettirmek için Baxtlilar Mini App'i açın:",
   },
   status_blocked: {
     ru: "Доступ ограничен модератором.",
     uz: "Kirish moderator tomonidan cheklangan.",
+    tr:
+      "Erişim moderatör tarafından kısıtlandı.",
   },
 
   // /support — канал поддержки. {url} = env().SUPPORT_URL; если не задан — fallback.
   support_info: {
     ru: "Поддержка Baxtlilar: {url}\nНапишите нам — поможем.",
     uz: "Baxtlilar qoʻllab-quvvatlash: {url}\nBizga yozing — yordam beramiz.",
+    tr:
+      "Baxtlilar destek: {url}\nBize yazın — yardımcı oluruz.",
   },
   support_no_url: {
     ru: "Служба поддержки скоро будет доступна. Спасибо за терпение.",
     uz: "Qoʻllab-quvvatlash xizmati tez orada ishga tushadi. Sabringiz uchun rahmat.",
+    tr:
+      "Destek hizmeti yakında kullanıma açılacak. Sabrınız için teşekkürler.",
   },
 
   // /language — смена языка интерфейса (setlang:*, без транзиции онбординга).
   language_ask: {
     ru: "Выберите язык интерфейса:",
     uz: "Interfeys tilini tanlang:",
+    tr:
+      "Arayüz dilini seçin:",
   },
   // pick() по ВЫБРАННОМУ языку: ru-поле подтверждает на русском, uz — на узбекском.
   language_changed: {
     ru: "Готово. Язык переключён на русский.",
     uz: "Tayyor. Til oʻzbekchaga oʻzgartirildi.",
+    tr:
+      "Hazır. Arayüz dili Türkçe olarak değiştirildi.",
   },
 
   // /privacy — приватность и правила (те же 4 PDF, но без consent-рамки).
@@ -213,11 +289,13 @@ export const M = {
       `• <a href="${APP_URL}/legal/user-agreement.pdf">Foydalanuvchi shartnomasi</a>\n` +
       `• <a href="${APP_URL}/legal/pd-consent.pdf">Shaxsiy maʼlumotlarni qayta ishlashga rozilik</a>\n\n` +
       "Maʼlumotlaringiz roziligingizsiz boshqa foydalanuvchilarga koʻrsatilmaydi.",
+    tr:
+      "🔒 <b>Gizlilik ve kurallar</b>\n\n• <a href=\"https://baxtlilar-mvp-production.up.railway.app/legal/privacy.pdf\">Gizlilik Politikası</a>\n• <a href=\"https://baxtlilar-mvp-production.up.railway.app/legal/rules.pdf\">Platform Kuralları</a>\n• <a href=\"https://baxtlilar-mvp-production.up.railway.app/legal/user-agreement.pdf\">Kullanıcı Sözleşmesi</a>\n• <a href=\"https://baxtlilar-mvp-production.up.railway.app/legal/pd-consent.pdf\">Kişisel Verilerin İşlenmesine Rıza</a>\n\nVerileriniz, rızanız olmadan diğer kullanıcılara gösterilmez.",
   },
 } as const;
 
-export type Lang = "ru" | "uz";
+export type Lang = "ru" | "uz" | "tr";
 
-export function pick<T extends { ru: string; uz: string }>(m: T, lang: Lang): string {
+export function pick<T extends { ru: string; uz: string; tr: string }>(m: T, lang: Lang): string {
   return m[lang];
 }

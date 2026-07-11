@@ -9,7 +9,7 @@
 // Формулировки — спец оунера: «документ, удостоверяющий личность» вместо
 // «фото паспорта»; «уполномоченные специалисты и системы проверки» вместо
 // «только модератор».
-export const BIOMETRIC_CONSENT_TEXT: { ru: string; uz: string } = {
+export const BIOMETRIC_CONSENT_TEXT: { ru: string; uz: string; tr: string } = {
   ru:
     "Отдельное согласие: обработка биометрических данных (документ, удостоверяющий личность, и селфи) " +
     "для проверки личности. Доступ имеют только уполномоченные специалисты и системы проверки " +
@@ -19,4 +19,6 @@ export const BIOMETRIC_CONSENT_TEXT: { ru: string; uz: string } = {
     "(shaxsni tasdiqlovchi hujjat va selfi). Kirish faqat platforma doirasidagi vakolatli " +
     "mutaxassislar va tekshiruv tizimlariga ruxsat etilgan; saqlash — shifrlangan; " +
     "oʻchirish — soʻrov boʻyicha.",
+  tr:
+    "Ayrı rıza: kimlik doğrulaması için biyometrik verilerin (kimlik belgesi ve selfie) işlenmesi. Erişim yalnızca platform kapsamındaki yetkili uzmanlara ve doğrulama sistemlerine açıktır; saklama — şifrelidir; silme — talep üzerinedir.",
 };
