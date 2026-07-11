@@ -3,6 +3,7 @@ import { ADMIN } from "@/lib/admin/admin-tokens";
 import { StatusPill } from "@/components/admin-ops/StatusPill";
 import { ageFromDate } from "@/lib/profile/schemas";
 import { loadFullProfile } from "@/lib/admin/load-profile-full";
+import { MaritalReviewAction } from "./MaritalReviewAction";
 import {
   labelOf,
   GENDER,
@@ -92,6 +93,11 @@ export async function ProfileTab({ userId }: { userId: string }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      {/* F4: контент-ревью семейного положения — профиль скрыт из мэтчинга до одобрения */}
+      {p.needs_marital_review === true ? (
+        <MaritalReviewAction userId={userId} maritalLabel={L(MARITAL_STATUS, p.marital_status)} />
+      ) : null}
+
       {/* Шапка */}
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span style={{ fontSize: 15, fontWeight: 500 }}>{raw(p.display_name)}</span>

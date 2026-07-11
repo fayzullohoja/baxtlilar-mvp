@@ -12,6 +12,7 @@ import { MatchStoryCard } from "@/components/v2/MatchStoryCard";
 import { InterestActions } from "@/components/v2/InterestActions";
 import { PausedResume } from "@/components/v2/PausedResume";
 import { getMatchOfTheDay } from "@/lib/v2/match-of-the-day";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,32 @@ export default async function MainPage({ params }: { params: Promise<{ locale: s
             status={user.verification_status}
             submittedAt={user.verification_submitted_at}
           />
+        </MiniAppShell>
+        <BottomNav active="feed" unread={unread} />
+      </>
+    );
+  }
+
+  // F4 (ревью оунера): профиль с needs_marital_review=true скрыт из мэтчинга
+  // (гейт в get_recommendations/is_matchable) до одобрения оператором. Показываем
+  // честную «на проверке» плашку вместо пустого/ищущего фида.
+  const { data: reviewRow } = await supabaseAdmin()
+    .from("user_profiles")
+    .select("needs_marital_review")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (reviewRow?.needs_marital_review === true) {
+    return (
+      <>
+        <MiniAppShell eyebrow="Baxtlilar" align="top" footer={null}>
+          <Headline size="lg" as="h1">
+            Анкета на проверке.
+          </Headline>
+          <Lead>
+            Мы уточняем некоторые данные Вашей анкеты. Пока идёт проверка, Вас не
+            показывают в подборе — обычно это занимает от нескольких часов до
+            суток. Как только всё подтвердим, подбор включится автоматически.
+          </Lead>
         </MiniAppShell>
         <BottomNav active="feed" unread={unread} />
       </>
