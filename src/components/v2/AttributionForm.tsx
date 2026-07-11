@@ -87,7 +87,7 @@ export function V2AttributionForm() {
                 transition: "all 0.12s ease",
               }}
             >
-              {t(src.label as any)}
+              {t(`attr_${src.value}`)}
             </button>
           );
         })}

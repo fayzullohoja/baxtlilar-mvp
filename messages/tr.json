@@ -137,7 +137,8 @@
     "vi_privacy": "Belgeyi ve selfie'yi yalnızca moderatör görür. Şifreli olarak saklanır ve profilde gösterilmez.",
     "vi_cta": "Doğrulamaya başla",
     "vi_cta_pending": "Açılıyor…",
-    "vi_error_retry": "Olmadı. Lütfen tekrar deneyin."
+    "vi_error_retry": "Olmadı. Lütfen tekrar deneyin.",
+    "attr_influencer": "Blogçu / influencer"
   },
   "Anketa": {
     "intro_title": "Anketinizi oluşturun",
@@ -198,7 +199,7 @@
     "btn_next": "Devam",
     "err_bio_has_contacts": "Metinde iletişim bilgisi bulundu (telefon, kullanıcı adı, bağlantı). Kaldırın — burada bu çalışmaz.",
     "err_name_has_contacts": "İsimde iletişim bilgisi bulundu. Yalnızca isim, bağlantı olmadan.",
-    "err_bio_too_short": "Biraz daha anlatın — en az 20 karakter.",
+    "err_bio_too_short": "Biraz daha anlatın — en az 30 karakter.",
     "err_bio_too_long": "Çok uzun — en fazla 1000 karakter.",
     "err_must_be_18": "Yaş 18 ve üzeri olmalıdır.",
     "err_invalid_age": "Doğum tarihinizi kontrol edin.",

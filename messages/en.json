@@ -137,7 +137,8 @@
     "vi_privacy": "Only a moderator can see your document and selfie. They're stored encrypted and not shown on your profile.",
     "vi_cta": "Start verification",
     "vi_cta_pending": "Opening…",
-    "vi_error_retry": "Something went wrong. Please try again."
+    "vi_error_retry": "Something went wrong. Please try again.",
+    "attr_influencer": "Blogger / influencer"
   },
   "Anketa": {
     "intro_title": "Create your profile",
@@ -198,7 +199,7 @@
     "btn_next": "Next",
     "err_bio_has_contacts": "We found a contact in the text (phone number, username, link). Remove it — it doesn't work here.",
     "err_name_has_contacts": "We found a contact in the name. Just your name, no links.",
-    "err_bio_too_short": "Tell us a bit more — at least 20 characters.",
+    "err_bio_too_short": "Tell us a bit more — at least 30 characters.",
     "err_bio_too_long": "Too long — 1000 characters maximum.",
     "err_must_be_18": "You must be 18 or older.",
     "err_invalid_age": "Check your date of birth.",

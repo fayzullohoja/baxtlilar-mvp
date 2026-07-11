@@ -137,7 +137,8 @@
     "vi_privacy": "Hujjat va selfini faqat moderator koʻradi. Shifrlangan saqlanadi va profilda koʻrsatilmaydi.",
     "vi_cta": "Tekshiruvni boshlash",
     "vi_cta_pending": "Ochilmoqda…",
-    "vi_error_retry": "Boʻlmadi. Yana urinib koʻring."
+    "vi_error_retry": "Boʻlmadi. Yana urinib koʻring.",
+    "attr_influencer": "Bloger / influenser"
   },
   "Anketa": {
     "intro_title": "Anketa yarating",
@@ -198,7 +199,7 @@
     "btn_next": "Keyingi",
     "err_bio_has_contacts": "Matning ichida kontakt (telefon, username, havola) topildi. Oʻchir — bu yerda ishlashdan oʻtmaydi.",
     "err_name_has_contacts": "Ismda kontakt topildi. Faqat ismsiz havolasiz.",
-    "err_bio_too_short": "Koʻproq yoz — kamida 20 ta belgi.",
+    "err_bio_too_short": "Koʻproq yoz — kamida 30 ta belgi.",
     "err_bio_too_long": "Juda uzun — maksimum 1000 ta belgi.",
     "err_must_be_18": "Yosh 18 yosh yoki undan koʻp boʻlishi kerak.",
     "err_invalid_age": "Tugʻilgan sanani tekshir.",
