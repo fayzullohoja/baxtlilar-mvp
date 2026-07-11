@@ -25,7 +25,7 @@ const SOURCES = [
   { value: "search", label: "Поиск Google / Яндекс" },
   { value: "media", label: "СМИ / статья" },
   { value: "event", label: "Мероприятие" },
-  { value: "influencer", label: "Блогер / influencer" },
+  { value: "influencer", label: "Блогер / инфлюэнсер" },
   { value: "other", label: "Другое" },
 ] as const;
 

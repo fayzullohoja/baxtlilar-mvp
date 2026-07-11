@@ -4,6 +4,7 @@ import {
   GENDER,
   MARITAL_STATUS,
   HAS_CHILDREN,
+  CHILDREN_LIVING,
   CHILDREN_PLAN,
   RELIGION,
   LIFE_VALUES,
@@ -163,12 +164,15 @@ export const basicSchema = z
 
 /** V2 ext 2026-06-28: демография — рост/вес/языки. */
 export const appearanceSchema = z.object({
-  height_cm: z.coerce.number().int().min(140).max(220),
+  // Ревью оунера Экран 2: рост опционален (range-picker), не required.
+  height_cm: z.coerce.number().int().min(140).max(220).optional().nullable(),
   // Вес — soft optional поле (anti drop-off, особенно для женщин).
   weight_kg: z.coerce.number().int().min(35).max(200).optional().nullable(),
   native_language: z.enum(tuple(vals(LANGUAGES_LIST))),
   // languages[] (что владеет) — min 1 (должен включать native обычно).
   languages: z.array(z.enum(tuple(vals(LANGUAGES_LIST)))).min(1).max(6),
+  // Ревью оунера Экран 2: свободный ввод при выборе «Другой/Boshqa». COLD → extended.langs.
+  other_language: z.string().trim().max(60).optional().nullable(),
 });
 
 export const familySchema = z.object({
@@ -219,23 +223,35 @@ export const lookingForSchema = z
 // ============================================================================
 
 /** Экран 2 — Место рождения. */
-export const birthPlaceSchema = z.object({
-  birth_country: z.string().trim().min(2).max(64),
-  birth_region: z.string().trim().max(128).optional().nullable(),
-  birth_district: z.string().trim().max(128).optional().nullable(),
-  birth_city: z.string().trim().max(128).optional().nullable(),
-});
+export const birthPlaceSchema = z
+  .object({
+    birth_country: z.string().trim().min(2).max(64),
+    birth_region: z.string().trim().max(128).optional().nullable(),
+    birth_district: z.string().trim().max(128).optional().nullable(),
+    birth_city: z.string().trim().max(128).optional().nullable(),
+  })
+  // Ревью оунера Экран 6: для UZ регион обязателен (Select из UZ_REGIONS).
+  // Клиент прячет freeform и показывает Select — сервер обязан проверить то же.
+  .refine((d) => d.birth_country !== "UZ" || !!d.birth_region?.trim(), {
+    message: "birth_region_required_for_uz",
+    path: ["birth_region"],
+  });
 
 /** Экран 3 — О себе + образование + деятельность + формат занятости. */
 export const selfSchema = z.object({
   bio: z
     .string()
     .trim()
-    .min(20, { message: "bio_too_short" })
+    .min(30, { message: "bio_too_short" })
     .max(1000, { message: "bio_too_long" })
     .refine((s) => !containsContact(s), { message: "bio_has_contacts" }),
   education: z.enum(tuple(vals(EDUCATION))),
+  // Ревью оунера Экран 4: условное поле «специальность / направление» (показывается
+  // при высшем/среднем-спец/магистр/PhD/учусь). COLD → extended.self. Опциональное.
+  specialty: z.string().trim().max(80).optional().nullable(),
   activity_field: z.enum(tuple(vals(ACTIVITY_FIELDS))),
+  // Ревью оунера Экран 4: свободный ввод при выборе «Другое» в сфере. COLD → extended.self.
+  activity_field_other: z.string().trim().max(80).optional().nullable(),
   // Ревью оунера Экран 4: статус занятости — primary (required); формат работы —
   // условный/опциональный (показывается при working/entrepreneur/freelancer).
   employment_status: z.enum(tuple(vals(EMPLOYMENT_STATUS))),
@@ -249,6 +265,8 @@ export const familyChildrenSchema = z
     has_children: z.enum(tuple(vals(HAS_CHILDREN))),
     children_count: z.coerce.number().int().min(0).max(10).optional().nullable(),
     youngest_child_age: z.coerce.number().int().min(0).max(50).optional().nullable(),
+    // Ревью оунера Экран 5: с кем проживают дети (COLD → extended.family, опц.).
+    children_living: z.enum(tuple(vals(CHILDREN_LIVING))).optional().nullable(),
     future_children_plan: z.enum(tuple(vals(FUTURE_CHILDREN_PLAN))),
   })
   // Bug #6 (2026-06-30): без refine API принимал {has_children:'yes'} без

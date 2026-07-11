@@ -31,16 +31,30 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { status: 400 },
     );
 
+  const sb = supabaseAdmin();
+  // Ревью оунера Экран 2: other_language (свободный ввод «Другой») — COLD, extended.langs.
+  const { data: prof } = await sb
+    .from("user_profiles")
+    .select("extended")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const ext = (prof?.extended as Record<string, unknown>) ?? {};
+  const langsSection = (ext.langs as Record<string, unknown>) ?? {};
+  const newExtended = parsed.data.other_language
+    ? { ...ext, langs: { ...langsSection, other_language: parsed.data.other_language } }
+    : ext;
+
   // Сохраняем ДО transition: если save упал — не двигаем шаг, иначе данные потеряны.
-  const { error: saveErr } = await supabaseAdmin()
+  const { error: saveErr } = await sb
     .from("user_profiles")
     .upsert(
       {
         user_id: user.id,
-        height_cm: parsed.data.height_cm,
+        height_cm: parsed.data.height_cm ?? null,
         weight_kg: parsed.data.weight_kg ?? null,
         native_language: parsed.data.native_language,
         languages: parsed.data.languages,
+        extended: newExtended,
       },
       { onConflict: "user_id" },
     );

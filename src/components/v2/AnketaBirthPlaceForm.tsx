@@ -75,7 +75,7 @@ export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
       </Field>
 
       {showUzRegions ? (
-        <Field label={t('birth_place_region_label')}>
+        <Field label={t('birth_place_region_label')} required>
           <Select
             options={UZ_REGIONS}
             value={region}
@@ -138,7 +138,7 @@ export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
       <Button
         variant="primary"
         onClick={submit}
-        disabled={!country || busy}
+        disabled={!country || (showUzRegions && !region) || busy}
         style={{ width: "100%" }}
       >
         {busy ? t('birth_place_saving') : t('birth_place_next')}

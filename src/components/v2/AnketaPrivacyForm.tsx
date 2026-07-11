@@ -23,7 +23,8 @@ import { PROFILE_VISIBILITY_MODE } from "@/lib/profile/options";
 export function V2AnketaPrivacyForm({ locale }: { locale: string }) {
   const t = useTranslations('AnketaPrivacy');
   const router = useRouter();
-  const [mode, setMode] = useState("public");
+  // Ревью оунера Экран 14: приватный по умолчанию (verified_only), не public.
+  const [mode, setMode] = useState("verified_only");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 

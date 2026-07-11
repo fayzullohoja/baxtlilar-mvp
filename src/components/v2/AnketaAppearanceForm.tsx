@@ -5,21 +5,29 @@ import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
 import { Field, Select, Chips, TextInput } from "./AnketaFields";
-import { LANGUAGES_LIST } from "@/lib/profile/options";
+import { LANGUAGES_LIST, type Opt } from "@/lib/profile/options";
 
 /**
- * V2 ext 2026-06-28: новый шаг анкеты — рост / вес / родной язык / владею.
+ * V2 ext 2026-06-28 → ревью оунера Экран 2: рост (range-picker, ОПЦИОНАЛЬНО) /
+ * вес (скрыт за тоглом, optional) / родной язык / владею + свободный ввод «Другой».
  * Между basic и family. API: /api/onboarding/profile/appearance.
- *
- * Вес — soft optional поле (anti drop-off). Поле явно помечено "можно пропустить".
  */
+
+// Ревью оунера: рост — picker, не ручной ввод. 140–220 см.
+const HEIGHT_OPTIONS: Opt[] = Array.from({ length: 81 }, (_, i) => {
+  const cm = 140 + i;
+  return { value: String(cm), ru: `${cm} см`, uz: `${cm} sm` };
+});
+
 export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
   const router = useRouter();
   const t = useTranslations("Anketa");
   const [heightCm, setHeightCm] = useState("");
   const [weightKg, setWeightKg] = useState("");
+  const [showWeight, setShowWeight] = useState(false);
   const [nativeLang, setNativeLang] = useState("");
   const [spokenLangs, setSpokenLangs] = useState<string[]>([]);
+  const [otherLanguage, setOtherLanguage] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -29,18 +37,23 @@ export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
     );
   }
 
+  const showOtherLang = spokenLangs.includes("other") || nativeLang === "other";
+
   async function submit() {
     if (busy) return;
     setBusy(true);
     setErr(null);
     try {
-      const hcm = Number(heightCm);
       const wkg = weightKg.trim() === "" ? null : Number(weightKg);
-      const body = {
-        height_cm: hcm,
-        ...(wkg !== null ? { weight_kg: wkg } : {}),
+      const body: Record<string, unknown> = {
         native_language: nativeLang,
         languages: spokenLangs,
+        // Рост опционален (ревью оунера) — отправляем только если выбран.
+        ...(heightCm !== "" ? { height_cm: Number(heightCm) } : {}),
+        ...(wkg !== null ? { weight_kg: wkg } : {}),
+        ...(showOtherLang && otherLanguage.trim()
+          ? { other_language: otherLanguage.trim() }
+          : {}),
       };
       const res = await fetch("/api/onboarding/profile/appearance", {
         method: "POST",
@@ -63,14 +76,11 @@ export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
     }
   }
 
-  const heightOk =
-    heightCm !== "" && Number(heightCm) >= 140 && Number(heightCm) <= 220;
-  // Вес optional — без него тоже валидно.
+  // Рост необязателен (picker гарантирует диапазон). Вес — optional.
   const weightOk =
     weightKg.trim() === "" ||
     (Number(weightKg) >= 35 && Number(weightKg) <= 200);
   const valid =
-    heightOk &&
     weightOk &&
     !!nativeLang &&
     spokenLangs.length >= 1 &&
@@ -78,31 +88,6 @@ export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
 
   return (
     <div>
-      <Field
-        label={t("heightLabel")}
-        required
-        hint={t("heightHint")}
-      >
-        <TextInput
-          maxLength={3}
-          value={heightCm}
-          onChange={(e) => setHeightCm(e.target.value.replace(/\D/g, ""))}
-          placeholder="170"
-        />
-      </Field>
-
-      <Field
-        label={t("weightLabel")}
-        hint={t("optionalFieldHint")}
-      >
-        <TextInput
-          maxLength={3}
-          value={weightKg}
-          onChange={(e) => setWeightKg(e.target.value.replace(/\D/g, ""))}
-          placeholder=""
-        />
-      </Field>
-
       <Field
         label={t("nativeLanguageLabel")}
         required
@@ -129,6 +114,56 @@ export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
           locale={locale}
         />
       </Field>
+
+      {showOtherLang ? (
+        <Field label={t("otherLanguageLabel")} hint={t("optionalHint")}>
+          <TextInput
+            value={otherLanguage}
+            onChange={(e) => setOtherLanguage(e.target.value)}
+            maxLength={60}
+            placeholder={t("otherLanguagePlaceholder")}
+          />
+        </Field>
+      ) : null}
+
+      <Field label={t("heightLabel")} hint={t("heightHint")}>
+        <Select
+          options={HEIGHT_OPTIONS}
+          value={heightCm}
+          onChange={setHeightCm}
+          locale={locale}
+          placeholder="—"
+        />
+      </Field>
+
+      {/* Ревью оунера: вес скрыт по умолчанию, раскрывается по желанию. */}
+      {showWeight ? (
+        <Field label={t("weightLabel")} hint={t("weightHiddenHint")}>
+          <TextInput
+            maxLength={3}
+            value={weightKg}
+            onChange={(e) => setWeightKg(e.target.value.replace(/\D/g, ""))}
+            placeholder=""
+          />
+        </Field>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowWeight(true)}
+          style={{
+            background: "none",
+            border: "none",
+            color: "var(--color-v2-accent)",
+            fontFamily: "var(--font-v2-body)",
+            fontSize: "13px",
+            fontWeight: 600,
+            cursor: "pointer",
+            padding: "4px 0 16px",
+          }}
+        >
+          + {t("weightAddButton")}
+        </button>
+      )}
 
       {err ? (
         <div

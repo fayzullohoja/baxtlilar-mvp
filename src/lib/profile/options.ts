@@ -6,12 +6,22 @@ export const GENDER: Opt[] = [
   { value: "m", ru: "Мужчина", uz: "Erkak" },
 ];
 
+// Ревью оунера Экран 5: gender-conditional лейблы (холост/не была; вдовец/вдова)
+// через getGenderedOptionLabel — см. gender-wording.ts. Добавлены divorcing +
+// married_separate (требуют модерации, IF/THEN в family route). «Предыдущий опыт
+// отношений» (женщины) НЕ добавляем — sensitive PD (legal-blocked). marital_status
+// = text без CHECK → новые значения без миграции.
 export const MARITAL_STATUS: Opt[] = [
   { value: "never", ru: "Никогда не был(а) в браке", uz: "Hech qachon turmush qurmagan" },
+  { value: "divorcing", ru: "В процессе развода", uz: "Ajrashish jarayonida" },
   { value: "divorced", ru: "В разводе", uz: "Ajrashgan" },
   { value: "widowed", ru: "Вдовец / вдова", uz: "Beva" },
+  { value: "married_separate", ru: "В браке, но живу отдельно", uz: "Nikohda, lekin alohida yashayman" },
   { value: "other", ru: "Другое", uz: "Boshqa" },
 ];
+/** marital_status значения, требующие ручной модерации перед публикацией
+ *  (ревью оунера: спорный статус — не выпускать в matching автоматически). */
+export const MARITAL_STATUS_NEEDS_REVIEW = ["divorcing", "married_separate"] as const;
 
 export const HAS_CHILDREN: Opt[] = [
   { value: "no", ru: "Нет", uz: "Yoʻq" },
@@ -307,6 +317,18 @@ export const FUTURE_CHILDREN_PLAN: Opt[] = [
   { value: "maybe", ru: "Возможно", uz: "Balki" },
   { value: "no", ru: "Нет", uz: "Yoʻq" },
   { value: "with_partner_decide", ru: "Решим вместе с партнёром", uz: "Hamroh bilan birga qaror qilamiz" },
+  // Ревью оунера Экран 5: «этот вопрос обсуждается индивидуально» (не жёсткий вывод).
+  { value: "individual", ru: "Обсуждается индивидуально", uz: "Alohida muhokama qilinadi" },
+];
+
+/** Экран 5: с кем сейчас проживают дети (cold, extended.family, показывается
+ *  только если has_children='yes'). Необязательное. */
+export const CHILDREN_LIVING: Opt[] = [
+  { value: "with_me", ru: "Со мной", uz: "Men bilan" },
+  { value: "with_other_parent", ru: "С другим родителем", uz: "Boshqa ota-ona bilan" },
+  { value: "with_relatives", ru: "С родственниками", uz: "Qarindoshlar bilan" },
+  { value: "separate", ru: "Отдельно / самостоятельно", uz: "Alohida / mustaqil" },
+  { value: "na", ru: "Предпочитаю не уточнять", uz: "Aniqlashtirishni xohlamayman" },
 ];
 
 /** Экран 6 — Топ-ценности (1-3 выбора из 14). */

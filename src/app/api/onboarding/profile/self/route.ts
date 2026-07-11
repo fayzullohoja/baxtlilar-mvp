@@ -35,7 +35,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { status: 400 },
     );
 
-  const { error: saveErr } = await supabaseAdmin()
+  const sb = supabaseAdmin();
+  // Ревью оунера Экран 4: specialty + activity_field_other — COLD (extended.self),
+  // read-merge-write чтобы не затирать чужие секции extended.
+  const { data: prof } = await sb
+    .from("user_profiles")
+    .select("extended")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const ext = (prof?.extended as Record<string, unknown>) ?? {};
+  const selfSection = (ext.self as Record<string, unknown>) ?? {};
+  const newExtended = {
+    ...ext,
+    self: {
+      ...selfSection,
+      ...(parsed.data.specialty ? { specialty: parsed.data.specialty } : {}),
+      ...(parsed.data.activity_field_other
+        ? { activity_field_other: parsed.data.activity_field_other }
+        : {}),
+    },
+  };
+
+  const { error: saveErr } = await sb
     .from("user_profiles")
     .upsert(
       {
@@ -45,6 +66,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         activity_field: parsed.data.activity_field,
         employment_status: parsed.data.employment_status,
         employment_format: parsed.data.employment_format ?? null,
+        extended: newExtended,
       },
       { onConflict: "user_id" },
     );

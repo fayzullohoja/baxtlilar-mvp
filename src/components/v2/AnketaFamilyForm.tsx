@@ -9,7 +9,12 @@ import {
   MARITAL_STATUS,
   HAS_CHILDREN,
   FUTURE_CHILDREN_PLAN,
+  CHILDREN_LIVING,
 } from "@/lib/profile/options";
+import {
+  getGenderedOptionLabel,
+  type Gender,
+} from "@/lib/profile/gender-wording";
 
 /**
  * V3 Sprint 2 — Экран 5 «О семье и детях» (extended).
@@ -22,18 +27,32 @@ import {
  * API: /api/onboarding/profile/family.
  */
 
-export function V2AnketaFamilyForm({ locale }: { locale: string }) {
+export function V2AnketaFamilyForm({
+  locale,
+  gender,
+}: {
+  locale: string;
+  gender: Gender | null;
+}) {
   const router = useRouter();
   const t = useTranslations("Anketa");
   const [marital, setMarital] = useState("");
   const [hasChildren, setHasChildren] = useState("");
   const [childrenCount, setChildrenCount] = useState("");
   const [youngestAge, setYoungestAge] = useState("");
+  const [childrenLiving, setChildrenLiving] = useState("");
   const [plan, setPlan] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const showChildrenDetails = hasChildren === "yes";
+
+  // Ревью оунера Экран 5: семейное положение звучит по-разному для М/Ж.
+  const maritalOptions = MARITAL_STATUS.map((opt) => ({
+    value: opt.value,
+    ru: getGenderedOptionLabel("MARITAL_STATUS", opt.value, gender, "ru"),
+    uz: getGenderedOptionLabel("MARITAL_STATUS", opt.value, gender, "uz"),
+  }));
 
   async function submit() {
     if (busy) return;
@@ -50,6 +69,7 @@ export function V2AnketaFamilyForm({ locale }: { locale: string }) {
         const age = parseInt(youngestAge, 10);
         if (!isNaN(count)) body.children_count = count;
         if (!isNaN(age)) body.youngest_child_age = age;
+        if (childrenLiving) body.children_living = childrenLiving;
       }
       const res = await fetch("/api/onboarding/profile/family", {
         method: "POST",
@@ -88,7 +108,7 @@ export function V2AnketaFamilyForm({ locale }: { locale: string }) {
     <div>
       <Field label={t("marital_label")} required>
         <Select
-          options={MARITAL_STATUS}
+          options={maritalOptions}
           value={marital}
           onChange={setMarital}
           locale={locale}
@@ -104,6 +124,7 @@ export function V2AnketaFamilyForm({ locale }: { locale: string }) {
             if (v !== "yes") {
               setChildrenCount("");
               setYoungestAge("");
+              setChildrenLiving("");
             }
           }}
           locale={locale}
@@ -138,6 +159,16 @@ export function V2AnketaFamilyForm({ locale }: { locale: string }) {
               onChange={(e) =>
                 setYoungestAge(e.target.value.replace(/\D/g, ""))
               }
+            />
+          </Field>
+
+          {/* Ревью оунера Экран 5: с кем проживают дети (опционально). */}
+          <Field label={t("childrenLivingLabel")} hint={t("optionalHint")}>
+            <Select
+              options={CHILDREN_LIVING}
+              value={childrenLiving}
+              onChange={setChildrenLiving}
+              locale={locale}
             />
           </Field>
         </>

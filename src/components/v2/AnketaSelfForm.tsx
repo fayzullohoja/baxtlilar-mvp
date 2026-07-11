@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
-import { Field, Select, TextArea } from "./AnketaFields";
+import { Field, Select, TextArea, TextInput } from "./AnketaFields";
 import {
   EMPLOYMENT_STATUS,
   EMPLOYMENT_WORKING_STATUSES,
@@ -32,7 +32,9 @@ export function V2AnketaSelfForm({ locale }: { locale: string }) {
   const router = useRouter();
   const [bio, setBio] = useState("");
   const [education, setEducation] = useState("");
+  const [specialty, setSpecialty] = useState("");
   const [activityField, setActivityField] = useState("");
+  const [activityFieldOther, setActivityFieldOther] = useState("");
   const [employmentStatus, setEmploymentStatus] = useState("");
   const [employmentFormat, setEmploymentFormat] = useState("");
   const [busy, setBusy] = useState(false);
@@ -49,7 +51,11 @@ export function V2AnketaSelfForm({ locale }: { locale: string }) {
         body: JSON.stringify({
           bio,
           education,
+          ...(showSpecialty && specialty.trim() ? { specialty: specialty.trim() } : {}),
           activity_field: activityField,
+          ...(activityField === "other" && activityFieldOther.trim()
+            ? { activity_field_other: activityFieldOther.trim() }
+            : {}),
           employment_status: employmentStatus,
           ...(showWorkFormat && employmentFormat ? { employment_format: employmentFormat } : {}),
         }),
@@ -75,6 +81,8 @@ export function V2AnketaSelfForm({ locale }: { locale: string }) {
   const showWorkFormat = (EMPLOYMENT_WORKING_STATUSES as readonly string[]).includes(
     employmentStatus,
   );
+  // Ревью оунера Экран 4: специальность показываем при высшем/среднем-спец/магистр/PhD/учусь.
+  const showSpecialty = ["vocational", "higher", "master", "phd", "studying"].includes(education);
   const valid =
     bio.trim().length >= 30 &&
     bio.trim().length <= 1000 &&
@@ -107,6 +115,17 @@ export function V2AnketaSelfForm({ locale }: { locale: string }) {
         />
       </Field>
 
+      {showSpecialty ? (
+        <Field label={t('specialtyLabel')} hint={t('specialtyHint')}>
+          <TextInput
+            value={specialty}
+            onChange={(e) => setSpecialty(e.target.value)}
+            maxLength={80}
+            placeholder={t('specialtyPlaceholder')}
+          />
+        </Field>
+      ) : null}
+
       <Field
         label={t('activityFieldLabel')}
         required
@@ -119,6 +138,17 @@ export function V2AnketaSelfForm({ locale }: { locale: string }) {
           locale={locale}
         />
       </Field>
+
+      {activityField === "other" ? (
+        <Field label={t('activityOtherLabel')} hint={t('optionalHint')}>
+          <TextInput
+            value={activityFieldOther}
+            onChange={(e) => setActivityFieldOther(e.target.value)}
+            maxLength={80}
+            placeholder={t('activityOtherPlaceholder')}
+          />
+        </Field>
+      ) : null}
 
       <Field label={t('employmentStatusLabel')} required>
         <Select

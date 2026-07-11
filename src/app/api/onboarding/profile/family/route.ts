@@ -29,7 +29,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { status: 400 },
     );
 
-  const { error: saveErr } = await supabaseAdmin()
+  const sb = supabaseAdmin();
+  // Ревью оунера Экран 5: children_living (с кем живут дети) — COLD, extended.family.
+  // read-merge-write, чтобы не затирать чужие секции extended.
+  const { data: prof } = await sb
+    .from("user_profiles")
+    .select("extended")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const ext = (prof?.extended as Record<string, unknown>) ?? {};
+  const familySection = (ext.family as Record<string, unknown>) ?? {};
+  const newExtended = parsed.data.children_living
+    ? {
+        ...ext,
+        family: { ...familySection, children_living: parsed.data.children_living },
+      }
+    : ext;
+
+  const { error: saveErr } = await sb
     .from("user_profiles")
     .upsert(
       {
@@ -39,6 +56,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         future_children_plan: parsed.data.future_children_plan,
         children_count: parsed.data.children_count ?? null,
         youngest_child_age: parsed.data.youngest_child_age ?? null,
+        extended: newExtended,
       },
       { onConflict: "user_id" },
     );

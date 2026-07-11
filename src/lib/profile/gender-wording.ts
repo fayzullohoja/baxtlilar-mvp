@@ -17,6 +17,7 @@
 
 import {
   HOUSEHOLD_RESPONSIBILITY_MODEL,
+  MARITAL_STATUS,
   labelOf,
   type Opt,
 } from "./options";
@@ -36,6 +37,7 @@ type OverrideEntry = { m?: PerGenderLabel; f?: PerGenderLabel };
  */
 const CONST_REGISTRY: Record<string, Opt[]> = {
   HOUSEHOLD_RESPONSIBILITY_MODEL,
+  MARITAL_STATUS,
 };
 
 /**
@@ -52,6 +54,17 @@ const GENDERED_OVERRIDES: Record<string, Record<string, OverrideEntry>> = {
     mostly_partner: {
       m: { ru: "В основном жена", uz: "Asosan xotin" },
       f: { ru: "В основном муж", uz: "Asosan er" },
+    },
+  },
+  // Ревью оунера Экран 5: семейное положение звучит по-разному для М/Ж.
+  MARITAL_STATUS: {
+    never: {
+      m: { ru: "Холост", uz: "Boʻydoq" },
+      f: { ru: "Не была в браке", uz: "Turmush qurmagan" },
+    },
+    widowed: {
+      m: { ru: "Вдовец", uz: "Beva" },
+      f: { ru: "Вдова", uz: "Beva" },
     },
   },
   // Extension points (MVP: не заполнены — используются нейтральные лейблы):
