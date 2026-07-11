@@ -12,6 +12,7 @@ export type PhotoCase = {
   ord: number;
   is_main: boolean;
   status: string;
+  photo_type: string; // portrait | full_body | family (PH-2)
   created_at: string;
   client: {
     display_name: string | null;
@@ -44,7 +45,7 @@ export async function loadPhotosQueue(
 
   let q = sb
     .from("profile_photos")
-    .select("id, user_id, path, ord, is_main, status, created_at")
+    .select("id, user_id, path, ord, is_main, status, photo_type, created_at")
     .in("status", ["under_review", "uploaded"])
     .order("created_at", { ascending: true });
 
@@ -62,6 +63,7 @@ export async function loadPhotosQueue(
     ord: number;
     is_main: boolean;
     status: string;
+    photo_type: string;
     created_at: string;
   }>;
 
@@ -107,6 +109,7 @@ export async function loadPhotosQueue(
       ord: r.ord,
       is_main: r.is_main,
       status: r.status,
+      photo_type: r.photo_type ?? "portrait",
       created_at: r.created_at,
       client: {
         display_name: (p?.display_name as string | null) ?? null,

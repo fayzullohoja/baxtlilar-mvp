@@ -6,7 +6,11 @@ import { ADMIN } from "@/lib/admin/admin-tokens";
 import { Drawer } from "@/components/admin-ops/Drawer";
 import { Button } from "@/components/admin-ops/Button";
 import { ReasonPicker } from "@/components/admin-ops/ReasonPicker";
+import { StatusPill } from "@/components/admin-ops/StatusPill";
+import { photoTypeLabel } from "@/lib/admin/photo-labels";
 import type { PhotoCase } from "@/lib/admin/load-photos";
+
+type NegativeAction = "reject" | "needs_replacement";
 
 export function PhotoDrawer({
   photo,
@@ -20,7 +24,10 @@ export function PhotoDrawer({
   defaultMode?: "view" | "reject";
 }) {
   const router = useRouter();
-  const [mode, setMode] = useState<"view" | "reject">(defaultMode ?? "view");
+  const [mode, setMode] = useState<"view" | "reason">(
+    defaultMode === "reject" ? "reason" : "view",
+  );
+  const [negative, setNegative] = useState<NegativeAction>("reject");
   const [code, setCode] = useState(reasonTemplates[0]?.code ?? "");
   const [text, setText] = useState(reasonTemplates[0]?.text ?? "");
   const [busy, setBusy] = useState(false);
@@ -28,17 +35,23 @@ export function PhotoDrawer({
 
   // Сброс формы при смене фото/режима — во время рендера (guarded), а не в
   // эффекте (set-state-in-effect). Паттерн «reset state on prop change».
+  // ВАЖНО: НЕ гейтить на `photo` — иначе при закрытии (photo=null) prevDrawerKey
+  // застревает, и переоткрытие ТОГО ЖЕ фото с тем же режимом даёт равный ключ →
+  // сброс пропускается → drawer открывается со stale mode/text/busy. Пустой
+  // photo просто рендерит null, лишний сброс безвреден и сходится за 1 рендер.
   const drawerKey = `${photo?.photo_id ?? ""}:${defaultMode ?? "view"}`;
   const [prevDrawerKey, setPrevDrawerKey] = useState(drawerKey);
-  if (photo && drawerKey !== prevDrawerKey) {
+  if (drawerKey !== prevDrawerKey) {
     setPrevDrawerKey(drawerKey);
-    setMode(defaultMode ?? "view");
+    setMode(defaultMode === "reject" ? "reason" : "view");
+    setNegative("reject");
     setCode(reasonTemplates[0]?.code ?? "");
     setText(reasonTemplates[0]?.text ?? "");
+    setBusy(false);
     setError(null);
   }
 
-  async function submit(action: "approve" | "reject") {
+  async function submit(action: "approve" | NegativeAction) {
     if (!photo) return;
     setBusy(true);
     setError(null);
@@ -66,11 +79,13 @@ export function PhotoDrawer({
     }
   }
 
+  const vs = photo?.client.verification_status;
+
   return (
     <Drawer open={!!photo} onClose={onClose} width={520}>
       {!photo ? null : (
         <div style={{ padding: 24 }}>
-          <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 4 }}>
+          <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 6 }}>
             <Link
               href={`/admin/clients/${photo.user_id}`}
               style={{ color: ADMIN.accent, textDecoration: "none" }}
@@ -79,6 +94,18 @@ export function PhotoDrawer({
                 photo.client.telegram_first_name ??
                 "—"}
             </Link>
+          </div>
+          {/* PH-2 тип фото + PH-8 верификация клиента */}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+            <StatusPill kind={photo.photo_type === "family" ? "warning" : "new"}>
+              {photoTypeLabel(photo.photo_type)}
+            </StatusPill>
+            {photo.is_main ? <StatusPill kind="verified">main</StatusPill> : null}
+            {vs ? (
+              <StatusPill kind={vs === "approved" ? "verified" : "pending"}>
+                {vs === "approved" ? "верифицирован" : `вериф: ${vs}`}
+              </StatusPill>
+            ) : null}
           </div>
           <div style={{ fontSize: 12, color: ADMIN.ink500, marginBottom: 16 }}>
             Фото #{photo.ord + 1} · загружено{" "}
@@ -102,19 +129,23 @@ export function PhotoDrawer({
           ) : null}
 
           {mode === "view" ? (
-            <div style={{ display: "flex", gap: 8 }}>
-              <Button
-                variant="primary"
-                onClick={() => submit("approve")}
-                disabled={busy}
-              >
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <Button variant="primary" onClick={() => submit("approve")} disabled={busy}>
                 ✓ Одобрить
               </Button>
               <Button
-                variant="danger"
-                onClick={() => setMode("reject")}
+                onClick={() => {
+                  setNegative("needs_replacement");
+                  setMode("reason");
+                }}
                 disabled={busy}
               >
+                ↻ Заменить…
+              </Button>
+              <Button variant="danger" onClick={() => {
+                setNegative("reject");
+                setMode("reason");
+              }} disabled={busy}>
                 ✕ Отклонить…
               </Button>
             </div>
@@ -127,10 +158,10 @@ export function PhotoDrawer({
                 border: `1px solid ${ADMIN.border}`,
               }}
             >
-              <div
-                style={{ fontSize: 12, color: ADMIN.ink700, marginBottom: 10 }}
-              >
-                Причина отклонения:
+              <div style={{ fontSize: 12, color: ADMIN.ink700, marginBottom: 10 }}>
+                {negative === "needs_replacement"
+                  ? "Причина запроса замены:"
+                  : "Причина отклонения:"}
               </div>
               <ReasonPicker
                 templates={reasonTemplates}
@@ -152,10 +183,14 @@ export function PhotoDrawer({
                 </Button>
                 <Button
                   variant="danger"
-                  onClick={() => submit("reject")}
+                  onClick={() => submit(negative)}
                   disabled={busy || text.length < 3}
                 >
-                  {busy ? "Отправляем…" : "Подтвердить reject"}
+                  {busy
+                    ? "Отправляем…"
+                    : negative === "needs_replacement"
+                      ? "Запросить замену"
+                      : "Подтвердить reject"}
                 </Button>
               </div>
             </div>

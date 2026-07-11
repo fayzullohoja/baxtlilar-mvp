@@ -29,6 +29,16 @@ export type LoadedCase = {
     citizenship: string | null;
     birth_place: string | null;
   };
+  // QZ-3: внутренние заметки модераторов по кейсу (chronological).
+  notes: { id: string; body: string; author: string; created_at: string }[];
+  // QZ-4: append-only таймлайн событий (claimed/released/draft_saved/decided…).
+  events: {
+    id: string;
+    action: string;
+    actor: string | null;
+    payload: Record<string, unknown>;
+    created_at: string;
+  }[];
 };
 
 async function signedUrl(path: string | null): Promise<string | null> {
@@ -77,6 +87,41 @@ export async function loadCase(caseId: string): Promise<LoadedCase | null> {
     signedUrl((doc?.selfie_path as string | null) ?? null),
   ]);
 
+  // QZ-3/QZ-4: заметки + таймлайн событий + логины авторов/акторов (без embed).
+  const [notesRaw, eventsRaw] = await Promise.all([
+    supabaseAdmin()
+      .from("case_notes")
+      .select("id, author_id, body, created_at")
+      .eq("case_id", caseId)
+      .order("created_at", { ascending: false }),
+    supabaseAdmin()
+      .from("case_events")
+      .select("id, actor_id, action, payload, created_at")
+      .eq("case_id", caseId)
+      .order("created_at", { ascending: false }),
+  ]);
+  const noteRows = (notesRaw.data ?? []) as Array<{
+    id: string; author_id: string; body: string; created_at: string;
+  }>;
+  const eventRows = (eventsRaw.data ?? []) as Array<{
+    id: string; actor_id: string | null; action: string;
+    payload: Record<string, unknown>; created_at: string;
+  }>;
+  const adminIds = [
+    ...new Set([
+      ...noteRows.map((n) => n.author_id),
+      ...eventRows.map((e) => e.actor_id).filter((x): x is string => !!x),
+    ]),
+  ];
+  const loginById = new Map<string, string>();
+  if (adminIds.length) {
+    const { data: admins } = await supabaseAdmin()
+      .from("admin_users")
+      .select("id, login")
+      .in("id", adminIds);
+    for (const a of admins ?? []) loginById.set(a.id as string, a.login as string);
+  }
+
   return {
     case_id: row.id as string,
     state: row.state as string,
@@ -107,5 +152,18 @@ export async function loadCase(caseId: string): Promise<LoadedCase | null> {
           .filter((x): x is string => typeof x === "string" && x !== "")
           .join(", ") || null,
     },
+    notes: noteRows.map((n) => ({
+      id: n.id,
+      body: n.body,
+      author: loginById.get(n.author_id) ?? "—",
+      created_at: n.created_at,
+    })),
+    events: eventRows.map((e) => ({
+      id: e.id,
+      action: e.action,
+      actor: e.actor_id ? (loginById.get(e.actor_id) ?? "—") : null,
+      payload: (e.payload as Record<string, unknown>) ?? {},
+      created_at: e.created_at,
+    })),
   };
 }

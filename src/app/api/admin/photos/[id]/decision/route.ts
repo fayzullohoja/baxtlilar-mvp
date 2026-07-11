@@ -16,7 +16,7 @@ export async function POST(
   if (res) return res;
   const { id } = await params;
   const body = (await req.json().catch(() => ({}))) as {
-    action?: "approve" | "reject";
+    action?: "approve" | "reject" | "needs_replacement";
     reason?: string; // legacy shape
     reason_code?: string; // new shape (reason templates)
     reason_text?: string;
@@ -24,7 +24,9 @@ export async function POST(
   const action = body.action;
   const reasonText = body.reason_text ?? body.reason ?? null;
   const reasonCode = body.reason_code ?? null;
-  if (action !== "approve" && action !== "reject")
+  // PH-4: needs_replacement — мягче reject (слот сохраняется, просим заменить).
+  const isNegative = action === "reject" || action === "needs_replacement";
+  if (action !== "approve" && !isNegative)
     return NextResponse.json({ ok: false, error: "bad_action" }, { status: 400 });
 
   const { data: photo } = await supabaseAdmin()
@@ -55,11 +57,17 @@ export async function POST(
 
   // Сначала убеждаемся, что апдейт реально применился, и только потом пишем аудит —
   // иначе журнал зафиксирует «фантомное» решение (approve/reject), которого в БД нет.
+  const newStatus =
+    action === "approve"
+      ? "approved"
+      : action === "needs_replacement"
+        ? "needs_replacement"
+        : "rejected";
   const { error } = await supabaseAdmin()
     .from("profile_photos")
     .update({
-      status: action === "approve" ? "approved" : "rejected",
-      reject_reason: action === "reject" ? reasonText : null,
+      status: newStatus,
+      reject_reason: isNegative ? reasonText : null,
     })
     .eq("id", id);
   if (error) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
@@ -74,9 +82,9 @@ export async function POST(
     ip: trustedIp(req),
   });
 
-  // PH-1: при reject уведомляем юзера через бота (best-effort). Раньше фото
-  // молча исчезало из выдачи — юзер не знал причину и не перезагружал.
-  if (action === "reject") {
+  // PH-1/PH-4: при reject/needs_replacement уведомляем юзера через бота
+  // (best-effort). Раньше фото молча исчезало из выдачи — юзер не знал причину.
+  if (isNegative) {
     const { data: u } = await supabaseAdmin()
       .from("users")
       .select("telegram_id, language")
@@ -88,9 +96,15 @@ export async function POST(
         ? `\nSabab: ${reasonText}`
         : `\nПричина: ${reasonText}`
       : "";
-    const msg = uz
-      ? `Suratingiz moderatsiyadan oʻtmadi.${reasonLine}\nIltimos, boshqa surat yuklang.`
-      : `Ваше фото не прошло модерацию.${reasonLine}\nПожалуйста, загрузите другое фото.`;
+    // needs_replacement — мягче: слот остаётся, просто просим заменить.
+    const msg =
+      action === "needs_replacement"
+        ? uz
+          ? `Iltimos, ushbu suratni boshqasiga almashtiring.${reasonLine}`
+          : `Пожалуйста, замените это фото на другое.${reasonLine}`
+        : uz
+          ? `Suratingiz moderatsiyadan oʻtmadi.${reasonLine}\nIltimos, boshqa surat yuklang.`
+          : `Ваше фото не прошло модерацию.${reasonLine}\nПожалуйста, загрузите другое фото.`;
     await notifyUser((u?.telegram_id as number | null) ?? null, msg);
   }
 

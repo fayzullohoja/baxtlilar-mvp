@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 import { StatusPill } from "@/components/admin-ops/StatusPill";
 import { Button } from "@/components/admin-ops/Button";
+import { photoTypeLabel } from "@/lib/admin/photo-labels";
 import type { PhotoCase } from "@/lib/admin/load-photos";
 
 function ago(iso: string): string {
@@ -30,11 +31,13 @@ export function PhotosTable({
   onOpen,
   onQuickApprove,
   onQuickReject,
+  busyIds,
 }: {
   rows: PhotoCase[];
   onOpen: (p: PhotoCase) => void;
   onQuickApprove: (p: PhotoCase) => void;
   onQuickReject: (p: PhotoCase) => void;
+  busyIds?: Set<string>; // PH-5: id фото с решением «в полёте» → кнопки disabled
 }) {
   // Стабильный «сейчас» за рендер — Date.now() прямо в render impure (purity-lint).
   const [now] = useState(() => Date.now());
@@ -170,12 +173,13 @@ export function PhotosTable({
                   color: ADMIN.ink700,
                 }}
               >
-                #{r.ord + 1}
-                {r.is_main ? (
-                  <span style={{ marginLeft: 6 }}>
-                    <StatusPill kind="verified">main</StatusPill>
-                  </span>
-                ) : null}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  #{r.ord + 1}
+                  {r.is_main ? <StatusPill kind="verified">main</StatusPill> : null}
+                  <StatusPill kind={r.photo_type === "family" ? "warning" : "new"}>
+                    {photoTypeLabel(r.photo_type)}
+                  </StatusPill>
+                </div>
               </td>
               <td
                 style={{
@@ -196,12 +200,17 @@ export function PhotosTable({
               </td>
               <td style={{ padding: "10px 12px" }}>
                 <div style={{ display: "flex", gap: 6 }}>
-                  <Button size="sm" onClick={() => onQuickApprove(r)}>
-                    ✓
+                  <Button
+                    size="sm"
+                    disabled={busyIds?.has(r.photo_id)}
+                    onClick={() => onQuickApprove(r)}
+                  >
+                    {busyIds?.has(r.photo_id) ? "…" : "✓"}
                   </Button>
                   <Button
                     size="sm"
                     variant="danger"
+                    disabled={busyIds?.has(r.photo_id)}
                     onClick={() => onQuickReject(r)}
                   >
                     ✕
@@ -209,6 +218,7 @@ export function PhotosTable({
                   <Button
                     size="sm"
                     variant="ghost"
+                    disabled={busyIds?.has(r.photo_id)}
                     onClick={() => onOpen(r)}
                   >
                     ⋯

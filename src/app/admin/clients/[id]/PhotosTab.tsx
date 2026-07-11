@@ -3,13 +3,21 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { signedPhotoUrls } from "@/lib/uploads/storage";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 import { StatusPill } from "@/components/admin-ops/StatusPill";
+import { photoTypeLabel, photoStatusLabel } from "@/lib/admin/photo-labels";
+import { loadReasonTemplates } from "@/lib/admin/load-reason-templates";
+import { PhotoCardActions } from "./PhotoCardActions";
+
+const ACTIONABLE = new Set(["under_review", "uploaded"]);
 
 export async function PhotosTab({ userId }: { userId: string }) {
-  const { data: photos } = await supabaseAdmin()
-    .from("profile_photos")
-    .select("id, path, status, is_main, ord, created_at")
-    .eq("user_id", userId)
-    .order("ord", { ascending: true });
+  const [{ data: photos }, reasonTemplates] = await Promise.all([
+    supabaseAdmin()
+      .from("profile_photos")
+      .select("id, path, status, is_main, ord, photo_type, created_at")
+      .eq("user_id", userId)
+      .order("ord", { ascending: true }),
+    loadReasonTemplates("photo", "ru"),
+  ]);
 
   const rows = (photos ?? []) as Array<{
     id: string;
@@ -17,6 +25,7 @@ export async function PhotosTab({ userId }: { userId: string }) {
     status: string;
     is_main: boolean;
     ord: number;
+    photo_type: string;
   }>;
 
   if (rows.length === 0) {
@@ -80,12 +89,16 @@ export async function PhotosTab({ userId }: { userId: string }) {
                 display: "flex",
                 gap: 4,
                 alignItems: "center",
+                flexWrap: "wrap",
                 fontSize: 11,
                 color: ADMIN.ink500,
               }}
             >
               #{p.ord + 1}
               {p.is_main ? <StatusPill kind="verified">main</StatusPill> : null}
+              <StatusPill kind={p.photo_type === "family" ? "warning" : "new"}>
+                {photoTypeLabel(p.photo_type)}
+              </StatusPill>
               <span style={{ flex: 1 }} />
               <StatusPill
                 kind={
@@ -96,9 +109,15 @@ export async function PhotosTab({ userId }: { userId: string }) {
                       : "pending"
                 }
               >
-                {p.status}
+                {photoStatusLabel(p.status)}
               </StatusPill>
             </div>
+            {/* PH-3: действия только для фото в активной модерации */}
+            {ACTIONABLE.has(p.status) ? (
+              <div style={{ borderTop: `1px solid ${ADMIN.border}` }}>
+                <PhotoCardActions photoId={p.id} reasonTemplates={reasonTemplates} />
+              </div>
+            ) : null}
           </div>
         );
       })}

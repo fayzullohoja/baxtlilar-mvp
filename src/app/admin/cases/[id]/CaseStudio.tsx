@@ -6,6 +6,7 @@ import { PassportViewer } from "@/components/admin-ops/case/PassportViewer";
 import { PassportDataEntryForm } from "@/components/admin-ops/case/PassportDataEntryForm";
 import { FaceMatchStep, type FaceMatchResult } from "@/components/admin-ops/case/FaceMatchStep";
 import { DecisionPanel } from "@/components/admin-ops/case/DecisionPanel";
+import { CaseHistory } from "./CaseHistory";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 import { Button } from "@/components/admin-ops/Button";
 import type { LoadedCase } from "@/lib/admin/load-case";
@@ -197,6 +198,13 @@ export function CaseStudio({
           </div>
         </div>
       ) : null}
+
+      {/* QZ-3/QZ-4: заметки модераторов + append-only таймлайн событий кейса */}
+      <CaseHistory
+        caseId={loadedCase.case_id}
+        notes={loadedCase.notes}
+        events={loadedCase.events}
+      />
     </div>
   );
 }
