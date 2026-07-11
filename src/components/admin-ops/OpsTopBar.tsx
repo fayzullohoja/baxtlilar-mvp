@@ -1,7 +1,13 @@
 "use client";
-import { IconCommand, IconBell } from "@tabler/icons-react";
+import Link from "next/link";
+import { IconSearch } from "@tabler/icons-react";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 
+// UX-DEADCTRL: раньше тут был disabled-«поиск» (⌘K «будет в Sprint 4») и мёртвый
+// колокольчик уведомлений — оба выглядели интерактивными, но ничего не делали.
+// Колокольчик убран; «поиск» стал реальной ссылкой на директорию (/admin/clients
+// — там уже живой type-ahead с автофокусом). Для модератора страница редиректит
+// на его очередь (graceful).
 export function OpsTopBar() {
   return (
     <div
@@ -19,10 +25,8 @@ export function OpsTopBar() {
         zIndex: 5,
       }}
     >
-      <button
-        type="button"
-        disabled
-        title="Cmd+K — будет в Sprint 4"
+      <Link
+        href="/admin/clients"
         style={{
           flex: 1,
           maxWidth: 460,
@@ -37,32 +41,14 @@ export function OpsTopBar() {
           color: ADMIN.ink500,
           fontSize: 13,
           fontFamily: ADMIN.fontSans,
-          cursor: "not-allowed",
+          textDecoration: "none",
         }}
       >
-        <IconCommand size={14} stroke={1.5} />
+        <IconSearch size={14} stroke={1.5} />
         Найти клиента, кейс, ПИНФЛ…
-        <span style={{ marginLeft: "auto", fontSize: 11, color: ADMIN.ink300 }}>
-          ⌘K
-        </span>
-      </button>
+      </Link>
 
       <div style={{ flex: 1 }} />
-
-      <button
-        type="button"
-        disabled
-        aria-label="Notifications"
-        style={{
-          background: "transparent",
-          border: 0,
-          color: ADMIN.ink500,
-          cursor: "not-allowed",
-          padding: 6,
-        }}
-      >
-        <IconBell size={18} stroke={1.5} />
-      </button>
     </div>
   );
 }

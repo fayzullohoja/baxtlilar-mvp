@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { ADMIN } from "@/lib/admin/admin-tokens";
 
 /**
  * Граница ошибок админки. Страницы админки намеренно «падают громко» при сбое БД
@@ -34,7 +35,8 @@ export default function AdminError({
         <div className="mt-5 flex justify-center gap-3">
           <button
             onClick={reset}
-            className="rounded-lg bg-baxt-coral px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+            className="rounded-lg px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+            style={{ background: ADMIN.accent }}
           >
             Повторить
           </button>

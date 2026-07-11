@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, type ReactNode } from "react";
 import { ADMIN } from "@/lib/admin/admin-tokens";
+import { useFocusTrap } from "@/lib/admin/use-focus-trap";
 
 /** Slide-over справа. Escape и клик по backdrop закрывают. */
 export function Drawer({
@@ -14,6 +15,8 @@ export function Drawer({
   width?: number;
   children: ReactNode;
 }) {
+  const trapRef = useFocusTrap<HTMLDivElement>(open);
+
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -46,6 +49,10 @@ export function Drawer({
         }}
       />
       <div
+        ref={trapRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
         style={{
           position: "relative",
           width,
@@ -54,6 +61,7 @@ export function Drawer({
           borderLeft: `1px solid ${ADMIN.border}`,
           boxShadow: "-12px 0 32px rgba(15,23,30,0.12)",
           overflowY: "auto",
+          outline: "none",
         }}
       >
         {children}

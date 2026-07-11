@@ -10,7 +10,20 @@ export const metadata: Metadata = {
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru" className="h-full">
-      <body className="min-h-full bg-slate-100 text-slate-800 antialiased">{children}</body>
+      <body className="bx-admin min-h-full bg-slate-100 text-slate-800 antialiased">
+        {/* UX-FOCUS: видимое кольцо фокуса ТОЛЬКО для клавиатуры (:focus-visible),
+            scoped к .bx-admin, чтобы не влиять на mini-app. Раньше tab-фокус был
+            невидим — оператор с клавиатуры не понимал, где находится. */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+.bx-admin :focus-visible{outline:2px solid #2d4a5c;outline-offset:2px;border-radius:4px}
+.bx-admin :focus:not(:focus-visible){outline:none}
+`,
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
