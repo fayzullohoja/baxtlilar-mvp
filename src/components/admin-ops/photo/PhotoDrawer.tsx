@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ADMIN } from "@/lib/admin/admin-tokens";
@@ -26,14 +26,17 @@ export function PhotoDrawer({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (photo) {
-      setMode(defaultMode ?? "view");
-      setCode(reasonTemplates[0]?.code ?? "");
-      setText(reasonTemplates[0]?.text ?? "");
-      setError(null);
-    }
-  }, [photo, defaultMode, reasonTemplates]);
+  // Сброс формы при смене фото/режима — во время рендера (guarded), а не в
+  // эффекте (set-state-in-effect). Паттерн «reset state on prop change».
+  const drawerKey = `${photo?.photo_id ?? ""}:${defaultMode ?? "view"}`;
+  const [prevDrawerKey, setPrevDrawerKey] = useState(drawerKey);
+  if (photo && drawerKey !== prevDrawerKey) {
+    setPrevDrawerKey(drawerKey);
+    setMode(defaultMode ?? "view");
+    setCode(reasonTemplates[0]?.code ?? "");
+    setText(reasonTemplates[0]?.text ?? "");
+    setError(null);
+  }
 
   async function submit(action: "approve" | "reject") {
     if (!photo) return;

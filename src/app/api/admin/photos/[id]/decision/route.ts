@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi, adminAudit } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { trustedIp } from "@/lib/http/ip";
+import { notifyUser } from "@/lib/telegram/notify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -72,5 +73,26 @@ export async function POST(
     reason: reasonText ?? undefined,
     ip: trustedIp(req),
   });
+
+  // PH-1: при reject уведомляем юзера через бота (best-effort). Раньше фото
+  // молча исчезало из выдачи — юзер не знал причину и не перезагружал.
+  if (action === "reject") {
+    const { data: u } = await supabaseAdmin()
+      .from("users")
+      .select("telegram_id, language")
+      .eq("id", photo.user_id)
+      .maybeSingle();
+    const uz = u?.language === "uz";
+    const reasonLine = reasonText
+      ? uz
+        ? `\nSabab: ${reasonText}`
+        : `\nПричина: ${reasonText}`
+      : "";
+    const msg = uz
+      ? `Suratingiz moderatsiyadan oʻtmadi.${reasonLine}\nIltimos, boshqa surat yuklang.`
+      : `Ваше фото не прошло модерацию.${reasonLine}\nПожалуйста, загрузите другое фото.`;
+    await notifyUser((u?.telegram_id as number | null) ?? null, msg);
+  }
+
   return NextResponse.json({ ok: true });
 }

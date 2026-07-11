@@ -12,6 +12,12 @@ export const dynamic = "force-dynamic";
 type Body = {
   action?: "approve" | "needs_changes" | "reject_technical";
   payload?: Partial<PassportPayload>;
+  // QZ-5: результат ручной сверки лица — пишется в case_events (аудит).
+  face_match?: {
+    face_selfie_matches: boolean;
+    liveness_ok: boolean;
+    age_matches: boolean;
+  } | null;
   reason_code?: string;
   reason_text?: string;
   expected_updated_at?: string;
@@ -56,6 +62,7 @@ export async function POST(
         p_admin_id: session.adminId,
         p_payload: body.payload,
         p_expected_updated_at: body.expected_updated_at,
+        p_face_match: body.face_match ?? null,
       },
     );
     if (error) {

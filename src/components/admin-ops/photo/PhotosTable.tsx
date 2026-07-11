@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 import { StatusPill } from "@/components/admin-ops/StatusPill";
@@ -35,6 +36,8 @@ export function PhotosTable({
   onQuickApprove: (p: PhotoCase) => void;
   onQuickReject: (p: PhotoCase) => void;
 }) {
+  // Стабильный «сейчас» за рендер — Date.now() прямо в render impure (purity-lint).
+  const [now] = useState(() => Date.now());
   if (rows.length === 0) {
     return (
       <div
@@ -80,7 +83,7 @@ export function PhotosTable({
           const name =
             r.client.display_name ?? r.client.telegram_first_name ?? "—";
           const overdue =
-            Date.now() - new Date(r.created_at).getTime() > 24 * 3600 * 1000;
+            now - new Date(r.created_at).getTime() > 24 * 3600 * 1000;
           return (
             <tr
               key={r.photo_id}

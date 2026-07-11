@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { CaseHeader } from "@/components/admin-ops/case/CaseHeader";
 import { PassportViewer } from "@/components/admin-ops/case/PassportViewer";
 import { PassportDataEntryForm } from "@/components/admin-ops/case/PassportDataEntryForm";
-import { FaceMatchStep } from "@/components/admin-ops/case/FaceMatchStep";
+import { FaceMatchStep, type FaceMatchResult } from "@/components/admin-ops/case/FaceMatchStep";
 import { DecisionPanel } from "@/components/admin-ops/case/DecisionPanel";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 import { Button } from "@/components/admin-ops/Button";
@@ -28,7 +28,9 @@ export function CaseStudio({
   const [enteredPayload, setEnteredPayload] = useState<PassportPayload | null>(
     null,
   );
-  const [claiming, setClaiming] = useState(false);
+  // QZ-5: результат ручной сверки лица (шаг 3) → в решение (approve) → case_events.
+  const [faceMatch, setFaceMatch] = useState<FaceMatchResult | null>(null);
+  const [claiming, setClaiming] = useState(() => !loadedCase.assignee_id);
   const [claimError, setClaimError] = useState<string | null>(null);
   // H-3: живой токен оптимистичной блокировки. Инициализируется значением с
   // сервера и ре-синкается при каждой перезагрузке кейса (claim → router.refresh
@@ -47,13 +49,19 @@ export function CaseStudio({
       new Date(next).getTime() >= new Date(prev).getTime() ? next : prev,
     );
   }, []);
-  useEffect(() => {
+  // H-3: ре-синк токена при перезагрузке кейса (claim → router.refresh меняет
+  // updated_at). Делаем ВО ВРЕМЯ РЕНДЕРА (guarded), а не в эффекте — иначе
+  // set-state-in-effect триггерит каскадный ре-рендер. Паттерн «adjust state on
+  // prop change» из React-доков.
+  const [syncedUpdatedAt, setSyncedUpdatedAt] = useState(loadedCase.updated_at);
+  if (loadedCase.updated_at !== syncedUpdatedAt) {
+    setSyncedUpdatedAt(loadedCase.updated_at);
     advanceUpdatedAt(loadedCase.updated_at);
-  }, [loadedCase.updated_at, advanceUpdatedAt]);
+  }
 
   useEffect(() => {
     if (loadedCase.assignee_id) return;
-    setClaiming(true);
+    // claiming уже инициализирован true (useState выше), не сетим синхронно.
     fetch(`/api/admin/cases/${loadedCase.case_id}/claim`, { method: "POST" })
       .then((r) => r.json())
       .then((d: { ok: boolean; error?: string }) => {
@@ -154,7 +162,10 @@ export function CaseStudio({
           selfieUrl={loadedCase.selfie_image_url}
           passportUrl={loadedCase.passport_image_url}
           onBack={() => setStep(2)}
-          onConfirm={() => setStep(4)}
+          onConfirm={(fm) => {
+            setFaceMatch(fm);
+            setStep(4);
+          }}
         />
       ) : null}
 
@@ -163,6 +174,7 @@ export function CaseStudio({
           caseId={loadedCase.case_id}
           userId={loadedCase.user.id}
           payload={enteredPayload}
+          faceMatch={faceMatch}
           expectedUpdatedAt={currentUpdatedAt}
           reasonTemplates={reasonTemplates}
           onBack={() => setStep(3)}
