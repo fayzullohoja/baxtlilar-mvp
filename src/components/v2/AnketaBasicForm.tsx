@@ -12,6 +12,7 @@ import {
   UZ_REGIONS,
   UZ_DISTRICTS_BY_REGION,
   hasDistrictList,
+  labelOf,
 } from "@/lib/profile/options";
 
 /**
@@ -30,9 +31,15 @@ import {
 export function V2AnketaBasicForm({
   defaultName,
   locale,
+  verifiedGender,
+  verifiedLegalName,
 }: {
   defaultName?: string;
   locale: string;
+  // Ревью оунера: пол/ФИО из верифицированного user_identity (модератор ввёл из
+  // документа). Пол блокируем на это значение; ФИО показываем read-only.
+  verifiedGender?: string | null;
+  verifiedLegalName?: string | null;
 }) {
   const router = useRouter();
   const t = useTranslations("Anketa");
@@ -44,11 +51,15 @@ export function V2AnketaBasicForm({
     must_be_18: t("err_must_be_18"),
     invalid_age: t("err_invalid_age"),
     region_required_for_uz: t("err_region_required_for_uz"),
+    gender_locked: t("genderVerifiedNote"),
     validation: t("err_validation"),
     failed: t("err_failed"),
   };
   const [name, setName] = useState(defaultName ?? "");
-  const [gender, setGender] = useState("");
+  // Пол заблокирован на верифицированное значение (если оно есть) — иначе
+  // редактируемый Select.
+  const genderLocked = verifiedGender === "m" || verifiedGender === "f";
+  const [gender, setGender] = useState(genderLocked ? verifiedGender! : "");
   const [birth, setBirth] = useState("");
   // V2 ext 2026-06-28: гражданство + страна проживания + регион.
   const [citizenship, setCitizenship] = useState("");
@@ -120,7 +131,42 @@ export function V2AnketaBasicForm({
 
   return (
     <div>
-      <Field label={t("name_label")}>
+      {/* Ревью оунера (name-split): ФИО по документу — read-only приватный
+          контекст, чтобы юзер понимал разницу между юр-именем и публичным. */}
+      {verifiedLegalName ? (
+        <div
+          style={{
+            marginBottom: "16px",
+            padding: "10px 14px",
+            background: "var(--color-v2-chip-teal)",
+            borderRadius: "12px",
+            fontFamily: "var(--font-v2-body)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "11px",
+              fontWeight: 700,
+              color: "var(--color-v2-chip-teal-ink)",
+              opacity: 0.75,
+              marginBottom: "2px",
+            }}
+          >
+            {t("legalNameVerifiedLabel")}
+          </div>
+          <div
+            style={{
+              fontSize: "14px",
+              fontWeight: 600,
+              color: "var(--color-v2-chip-teal-ink)",
+            }}
+          >
+            {verifiedLegalName}
+          </div>
+        </div>
+      ) : null}
+
+      <Field label={t("name_label")} hint={t("displayNamePublicHint")}>
         <TextInput
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -128,9 +174,31 @@ export function V2AnketaBasicForm({
           placeholder={t("name_placeholder")}
         />
       </Field>
-      <Field label={t("gender_label")}>
-        <Select options={GENDER} value={gender} onChange={setGender} locale={locale} />
-      </Field>
+      {genderLocked ? (
+        <Field label={t("gender_label")} hint={t("genderVerifiedNote")}>
+          <div
+            style={{
+              padding: "12px 14px",
+              background: "var(--color-v2-ink-600, #f4f3ef)",
+              border: "1px solid var(--color-v2-border)",
+              borderRadius: "12px",
+              fontFamily: "var(--font-v2-body)",
+              fontSize: "15px",
+              color: "var(--color-v2-ink-300)",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            <span aria-hidden>🔒</span>
+            {labelOf(GENDER, gender, locale)}
+          </div>
+        </Field>
+      ) : (
+        <Field label={t("gender_label")}>
+          <Select options={GENDER} value={gender} onChange={setGender} locale={locale} />
+        </Field>
+      )}
       <Field label={t("birth_label")}>
         <TextInput type="date" value={birth} onChange={(e) => setBirth(e.target.value)} />
       </Field>

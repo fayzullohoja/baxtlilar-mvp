@@ -467,7 +467,10 @@
     "publish_button_approved": "Publishing…",
     "error_gender_mismatch": "The gender in your profile doesn't match your passport data. Message support @baxtlilar_support — an operator will help.",
     "error_publish_failed": "Couldn't publish. Check your profile and try again.",
-    "error_publish_generic": "Something went wrong. Please try again."
+    "error_publish_generic": "Something went wrong. Please try again.",
+    "genderVerifiedNote": "Gender is verified from your document and cannot be changed.",
+    "legalNameVerifiedLabel": "Full name from document (private)",
+    "displayNamePublicHint": "Public name — this is how others see you. Your legal name from the document stays private."
   },
   "Quiz": {
     "intro_title": "10 questions about you",

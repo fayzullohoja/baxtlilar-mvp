@@ -467,7 +467,10 @@
     "publish_button_approved": "Eʼlon qilinyapti…",
     "error_gender_mismatch": "Anketadagi jins pasport maʼlumotlariga mos kelmaydi. @baxtlilar_support qoʻllab-quvvatlash xizmatiga yozing — operator yordam beradi.",
     "error_publish_failed": "Eʼlon qilib boʻlmadi. Anketani tekshirib, qayta urinib koʻring.",
-    "error_publish_generic": "Nimadir xato ketdi. Qayta urinib koʻring."
+    "error_publish_generic": "Nimadir xato ketdi. Qayta urinib koʻring.",
+    "genderVerifiedNote": "Jins hujjat boʻyicha tasdiqlangan — oʻzgartirib boʻlmaydi.",
+    "legalNameVerifiedLabel": "Hujjat boʻyicha FISH (maxfiy)",
+    "displayNamePublicHint": "Ommaviy ism — sizni shunday koʻrishadi. Hujjatdagi FISH maxfiy qoladi."
   },
   "Quiz": {
     "intro_title": "Siz haqingizda 10 ta savol",

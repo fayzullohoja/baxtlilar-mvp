@@ -4,6 +4,7 @@ import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { basicSchema, splitHotCold } from "@/lib/profile/schemas";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
+import { verifiedGenderMatches } from "@/lib/onboarding/verified-gender";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { ok: false, error: "validation", detail: parsed.error.issues[0]?.message },
       { status: 400 },
     );
+
+  // Ревью оунера (gender-lock, defense-in-depth): пол в анкете обязан совпадать
+  // с верифицированным паспортным (user_identity.gender, ввёл модератор). UI
+  // блокирует поле, но клиент можно обойти — сервер обязан проверить то же.
+  const { data: idRow } = await supabaseAdmin()
+    .from("user_identity")
+    .select("gender")
+    .eq("user_id", user.id)
+    .is("superseded_at", null)
+    .maybeSingle();
+  if (!verifiedGenderMatches(parsed.data.gender, idRow?.gender as string | null | undefined))
+    return NextResponse.json({ ok: false, error: "gender_locked" }, { status: 409 });
 
   // Сохраняем ДО перехода: если запись не легла, нельзя продвигать шаг — иначе
   // данные анкеты теряются, а пользователь уходит дальше (и застрянет на публикации).

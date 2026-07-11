@@ -467,7 +467,10 @@
     "publish_button_approved": "Yayımlanıyor…",
     "error_gender_mismatch": "Anketteki cinsiyet pasaport bilgileriyle eşleşmiyor. @baxtlilar_support destek hattına yazın — operatör yardımcı olacaktır.",
     "error_publish_failed": "Yayımlanamadı. Anketi kontrol edip tekrar deneyin.",
-    "error_publish_generic": "Bir şeyler ters gitti. Lütfen tekrar deneyin."
+    "error_publish_generic": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
+    "genderVerifiedNote": "Cinsiyet belgeye göre doğrulandı — değiştirilemez.",
+    "legalNameVerifiedLabel": "Belgeye göre ad soyad (gizli)",
+    "displayNamePublicHint": "Herkese açık ad — başkaları sizi böyle görür. Belgedeki ad soyad gizli kalır."
   },
   "Quiz": {
     "intro_title": "Uyum anketi",
