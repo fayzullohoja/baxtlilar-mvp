@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi, adminAudit } from "@/lib/admin/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { tryTransition } from "@/lib/state-machine/transitions";
+import type { LifecycleState } from "@/lib/state-machine/types";
 import { trustedIp } from "@/lib/http/ip";
 
 export const runtime = "nodejs";
@@ -19,7 +20,7 @@ export async function POST(
 
   const { data: u } = await supabaseAdmin()
     .from("users")
-    .select("quiz_completion, lifecycle_state")
+    .select("quiz_completion, lifecycle_state, pending_ban_prev_lifecycle")
     .eq("id", id)
     .maybeSingle();
   if (!u) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
@@ -28,8 +29,15 @@ export async function POST(
   // переводил кого попало в active/onboarding).
   if (u.lifecycle_state !== "blocked")
     return NextResponse.json({ ok: false, error: "not_blocked", state: u.lifecycle_state }, { status: 409 });
-  // Вернуть в active, если онбординг был завершён; иначе — назад в onboarding.
-  const restored = u?.quiz_completion === "completed" ? "active" : "onboarding";
+  // AUTH-1 parity: восстанавливаем ИСТИННОЕ pre-ban состояние (propose пишет его в
+  // pending_ban_prev_lifecycle; ban_cancel/expire уже используют его, а blocked→unban
+  // путь раньше — нет). Иначе self-paused юзер после ban→unban воскресал active и
+  // снова становился видим в ленте вопреки своей паузе. Fallback на quiz-derive,
+  // если prev пуст/невалиден (blocked/deleted).
+  const prev = u.pending_ban_prev_lifecycle as LifecycleState | null;
+  const safePrev = prev && prev !== "blocked" && prev !== "deleted" ? prev : null;
+  const restored: LifecycleState =
+    safePrev ?? (u.quiz_completion === "completed" ? "active" : "onboarding");
 
   // M18: снимаем blocked_at/blocked_reason в том же атомарном переходе
   const tr = await tryTransition(
@@ -39,6 +47,12 @@ export async function POST(
     { kind: "admin", id: session.adminId },
   );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
+  // Чистим использованный prev-lifecycle (transition_user его не трогает — не в whitelist).
+  // Best-effort: если не прошло, значение перезапишется при следующем ban-propose.
+  await supabaseAdmin()
+    .from("users")
+    .update({ pending_ban_prev_lifecycle: null })
+    .eq("id", id);
   await adminAudit({
     adminId: session.adminId,
     action: "unban_user",
