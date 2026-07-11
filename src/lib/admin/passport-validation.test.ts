@@ -113,8 +113,26 @@ describe("validatePassportPayload", () => {
     );
   });
 
-  it("blocks pinfl with bad checksum", () => {
+  it("WARNS (not blocks) pinfl with bad checksum — паспорт = источник истины", () => {
     const errors = validatePassportPayload({ ...valid, pinfl: "31204970123459" });
+    // Контрольная цифра — эвристика (алгоритм не сверен со спекой) → warn, не block.
+    expect(errors).toContainEqual(
+      expect.objectContaining({ field: "pinfl", severity: "warn" }),
+    );
+    // Критично: не должен БЛОКИРОВАТЬ верификацию валидного человека.
+    expect(errors.filter((e) => e.field === "pinfl" && e.severity === "block")).toEqual([]);
+  });
+
+  it("WARNS (not blocks) pinfl with first digit outside 3–6", () => {
+    const errors = validatePassportPayload({ ...valid, pinfl: "22222222222222" });
+    expect(errors).toContainEqual(
+      expect.objectContaining({ field: "pinfl", severity: "warn" }),
+    );
+    expect(errors.filter((e) => e.field === "pinfl" && e.severity === "block")).toEqual([]);
+  });
+
+  it("still BLOCKS pinfl with wrong length (формат объективен)", () => {
+    const errors = validatePassportPayload({ ...valid, pinfl: "123" });
     expect(errors).toContainEqual(
       expect.objectContaining({ field: "pinfl", severity: "block" }),
     );

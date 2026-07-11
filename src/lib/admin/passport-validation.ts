@@ -1,8 +1,15 @@
 // Passport data validation для admin verification 3-step studio.
 // Чистая функция — никаких IO, ничего серверного.
-// UZ PINFL: 14 цифр; 1-я цифра кодирует век (3 = 1900-1999, 4 = 2000-2099,
-// 5 = 2100-2199), 7-я цифра кодирует пол (нечётная = M, чётная = F),
-// 14-я цифра — контрольная (mod 11 от взвешенной суммы 13 первых, веса 7-3-1).
+// UZ PINFL: 14 цифр; 1-я цифра — код века+пола (3 = М 1900-1999, 4 = Ж 1900-1999,
+// 5 = М 2000-2099, 6 = Ж 2000-2099), 7-я цифра дублирует пол (нечёт = M, чёт = F),
+// 14-я — контрольная.
+//
+// ⚠️ Контрольная цифра и правило «первая цифра 3–6» — ЭВРИСТИКИ: точный алгоритм
+// не сверен с официальной узбекской спекой (веса 7-3-1 + mod11-mod10 совпадают с
+// паттерном росс. ИНН — возможно, скопированы). Источник истины — паспорт в руках
+// модератора. Поэтому эти две проверки = severity "warn", НЕ "block": подсвечиваем
+// вероятную опечатку, но НЕ мешаем записать то, что реально в документе (иначе
+// один неверный коэффициент навсегда блокирует верификацию валидного человека).
 
 export type PassportPayload = {
   last_name: string;
@@ -73,17 +80,34 @@ export function validatePassportPayload(p: Partial<PassportPayload>): FieldError
   }
 
   if (!p.pinfl || !PINFL_RE.test(p.pinfl)) {
+    // Формат (14 цифр) — объективный, алгоритм-независимый → остаётся BLOCK.
     errors.push({ field: "pinfl", severity: "block", message: "ПИНФЛ: 14 цифр" });
-  } else if (!validatePinflChecksum(p.pinfl)) {
-    errors.push({ field: "pinfl", severity: "block", message: "ПИНФЛ: контрольная цифра не совпадает" });
-  } else if (p.gender) {
-    const encoded = pinflGenderDigit(p.pinfl);
-    if (encoded && encoded !== p.gender) {
+  } else {
+    // Первая цифра и контрольная — эвристики (см. коммент к validatePinflChecksum)
+    // → WARN, не BLOCK. else-if: не сыпать обе, когда первая цифра уже неверна.
+    if (!"3456".includes(p.pinfl[0])) {
       errors.push({
-        field: "gender",
+        field: "pinfl",
         severity: "warn",
-        message: `ПИНФЛ кодирует ${encoded}, выбрано ${p.gender}`,
+        message: "ПИНФЛ: первая цифра обычно 3–6 (код века/пола) — перепроверьте номер",
       });
+    } else if (!validatePinflChecksum(p.pinfl)) {
+      errors.push({
+        field: "pinfl",
+        severity: "warn",
+        message: "ПИНФЛ: контрольная цифра не сходится — перепроверьте номер",
+      });
+    }
+    // Сверка пола — независима от контрольной цифры, показываем всегда при 14 цифрах.
+    if (p.gender) {
+      const encoded = pinflGenderDigit(p.pinfl);
+      if (encoded && encoded !== p.gender) {
+        errors.push({
+          field: "gender",
+          severity: "warn",
+          message: `ПИНФЛ кодирует ${encoded}, выбрано ${p.gender}`,
+        });
+      }
     }
   }
 
