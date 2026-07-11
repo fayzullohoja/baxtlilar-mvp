@@ -196,6 +196,18 @@ export default async function ReportsModeration() {
                     {new Date(r.created_at).toLocaleString("ru-RU")}
                   </td>
                   <td style={{ padding: "10px 12px" }}>
+                    <Link
+                      href={`/admin/reports/${r.id}`}
+                      style={{
+                        fontSize: 12,
+                        color: ADMIN.accent,
+                        textDecoration: "none",
+                        display: "block",
+                        marginBottom: 6,
+                      }}
+                    >
+                      разобрать →
+                    </Link>
                     <ReportActions reportId={r.id} />
                   </td>
                 </tr>

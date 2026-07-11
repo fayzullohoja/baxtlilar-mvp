@@ -98,8 +98,25 @@ export async function ModerationTab({ userId }: { userId: string }) {
                   fontSize: 13,
                 }}
               >
-                <StatusPill kind={r.status === "resolved" ? "verified" : "pending"}>
-                  {r.status}
+                <StatusPill
+                  kind={
+                    ["action_taken", "not_confirmed", "confirmed", "closed"].includes(r.status)
+                      ? "verified"
+                      : "warning"
+                  }
+                >
+                  {(
+                    {
+                      new: "Новая",
+                      in_progress: "В работе",
+                      requires_clarification: "Уточнения",
+                      escalated: "Эскалация",
+                      action_taken: "Меры приняты",
+                      not_confirmed: "Отклонена",
+                      confirmed: "Подтверждена",
+                      closed: "Закрыта",
+                    } as Record<string, string>
+                  )[r.status] ?? r.status}
                 </StatusPill>
                 <span style={{ flex: 1 }}>
                   {r.reason_code}
