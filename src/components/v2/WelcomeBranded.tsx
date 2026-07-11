@@ -315,11 +315,12 @@ function Logo() {
 }
 
 function LanguageSwitcher({ current }: { current: string }) {
+  // Порядок по спеке оунера: UZ / RU / EN / TR.
   const langs = [
-    { code: "ru", label: "RU" },
     { code: "uz", label: "UZ" },
-    { code: "tr", label: "TR" },
+    { code: "ru", label: "RU" },
     { code: "en", label: "EN" },
+    { code: "tr", label: "TR" },
   ];
   return (
     <div

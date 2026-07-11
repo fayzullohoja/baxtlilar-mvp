@@ -22,7 +22,7 @@ export default async function V2AttributionPage({
   await requireUserAtStep(locale, "attribution");
 
   return (
-    <MiniAppShell eyebrow="Почти всё" align="top">
+    <MiniAppShell eyebrow="Почти готово" align="top">
       <div className="v2-screen-in">
         <Headline size="lg" as="h1">
           Откуда узнал про&nbsp;нас?

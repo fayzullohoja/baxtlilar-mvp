@@ -54,7 +54,7 @@ export default async function V2SelfiePage({
       <div style={{ marginTop: "32px" }}>
         <UploadField
           endpoint="/api/onboarding/selfie"
-          uploadLabel={t('upload_label')}
+          uploadLabel={t('selfie_upload_label')}
           capture="user"
         />
       </div>
