@@ -36,15 +36,20 @@ export async function POST(
   if (prof.needs_marital_review !== true)
     return NextResponse.json({ ok: false, error: "not_flagged" }, { status: 409 });
 
-  const { error } = await sb
+  const { data: updated, error } = await sb
     .from("user_profiles")
     .update({ needs_marital_review: false })
     .eq("user_id", id)
-    .eq("needs_marital_review", true); // guard against race / double-approve
+    .eq("needs_marital_review", true) // guard against race / double-approve
+    .select("user_id");
   if (error) {
     console.error("[approve-marital] update error:", error.message);
     return NextResponse.json({ ok: false, error: "internal" }, { status: 500 });
   }
+  // Гонка: другой оператор снял флаг между нашим SELECT и UPDATE → 0 строк.
+  // Идемпотентно отвечаем ok, но НЕ пишем дубль в admin_audit_log.
+  if (!updated || updated.length === 0)
+    return NextResponse.json({ ok: true, already_cleared: true });
 
   await adminAudit({
     adminId: session.adminId,
