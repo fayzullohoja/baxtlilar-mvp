@@ -22,6 +22,13 @@ export type LoadedCase = {
   };
   passport_image_url: string | null;
   selfie_image_url: string | null;
+  // QZ-6: то, что юзер сам указал в анкете — для сверки с паспортом при вводе.
+  self_declared: {
+    birth_date: string | null;
+    gender: string | null;
+    citizenship: string | null;
+    birth_place: string | null;
+  };
 };
 
 async function signedUrl(path: string | null): Promise<string | null> {
@@ -53,7 +60,9 @@ export async function loadCase(caseId: string): Promise<LoadedCase | null> {
 
   const { data: profile } = await supabaseAdmin()
     .from("user_profiles")
-    .select("display_name")
+    .select(
+      "display_name, birth_date, gender, citizenship, birth_country, birth_region, birth_district, birth_city",
+    )
     .eq("user_id", row.user_id)
     .maybeSingle();
 
@@ -89,5 +98,14 @@ export async function loadCase(caseId: string): Promise<LoadedCase | null> {
     },
     passport_image_url,
     selfie_image_url,
+    self_declared: {
+      birth_date: (profile?.birth_date as string | null) ?? null,
+      gender: (profile?.gender as string | null) ?? null,
+      citizenship: (profile?.citizenship as string | null) ?? null,
+      birth_place:
+        [profile?.birth_country, profile?.birth_region, profile?.birth_district, profile?.birth_city]
+          .filter((x): x is string => typeof x === "string" && x !== "")
+          .join(", ") || null,
+    },
   };
 }

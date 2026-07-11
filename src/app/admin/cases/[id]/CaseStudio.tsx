@@ -10,6 +10,7 @@ import { ADMIN } from "@/lib/admin/admin-tokens";
 import { Button } from "@/components/admin-ops/Button";
 import type { LoadedCase } from "@/lib/admin/load-case";
 import type { PassportPayload } from "@/lib/admin/passport-validation";
+import { labelOf, GENDER, CITIZENSHIP } from "@/lib/profile/options";
 
 export function CaseStudio({
   loadedCase,
@@ -146,15 +147,18 @@ export function CaseStudio({
       ) : null}
 
       {step === 2 ? (
-        <PassportDataEntryForm
-          caseId={loadedCase.case_id}
-          initialPayload={initialDraft}
-          onDraftSaved={advanceUpdatedAt}
-          onProceed={(payload) => {
-            setEnteredPayload(payload);
-            setStep(3);
-          }}
-        />
+        <>
+          <SelfDeclared sd={loadedCase.self_declared} />
+          <PassportDataEntryForm
+            caseId={loadedCase.case_id}
+            initialPayload={initialDraft}
+            onDraftSaved={advanceUpdatedAt}
+            onProceed={(payload) => {
+              setEnteredPayload(payload);
+              setStep(3);
+            }}
+          />
+        </>
       ) : null}
 
       {step === 3 ? (
@@ -189,6 +193,42 @@ export function CaseStudio({
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+// QZ-6: то, что юзер сам указал в анкете — рядом с вводом паспорта, чтобы
+// поймать расхождение (напр. «в анкете 1995, в паспорте 2005») до approve.
+function SelfDeclared({ sd }: { sd: LoadedCase["self_declared"] }) {
+  return (
+    <div
+      style={{
+        padding: "10px 14px",
+        marginBottom: 16,
+        border: `1px solid ${ADMIN.border}`,
+        borderRadius: 8,
+        background: ADMIN.surface2,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 11,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          color: ADMIN.ink500,
+          marginBottom: 6,
+        }}
+      >
+        Самозаявлено — сверьте с паспортом
+      </div>
+      <div
+        style={{ display: "flex", flexWrap: "wrap", gap: "4px 18px", fontSize: 13, color: ADMIN.ink700 }}
+      >
+        <span>ДР: {sd.birth_date ?? "—"}</span>
+        <span>Пол: {sd.gender ? labelOf(GENDER, sd.gender, "ru") : "—"}</span>
+        <span>Гражданство: {sd.citizenship ? labelOf(CITIZENSHIP, sd.citizenship, "ru") : "—"}</span>
+        <span>Место рожд.: {sd.birth_place ?? "—"}</span>
+      </div>
     </div>
   );
 }
