@@ -26,60 +26,54 @@ function maskPhone(p: string): string {
 }
 
 /**
- * Поиск клиентов для /admin/clients. Матчинг живёт в RPC admin_search_clients
- * (ПИНФЛ/паспорт/@username/телефон/ФИО через pg_trgm) — она возвращает
- * ранжированный массив user_id; здесь дотягиваем строки и сшиваем, СОХРАНЯЯ
- * порядок релевантности.
+ * Поиск клиентов для /admin/clients. Матчинг И фильтры И пагинация живут в RPC
+ * admin_search_clients (ПИНФЛ/паспорт/@username/телефон/ФИО через pg_trgm; фильтры
+ * status/gender/verification/deleted и offset/limit — на стороне БД). Она
+ * возвращает ранжированный массив user_id; здесь дотягиваем строки и сшиваем,
+ * СОХРАНЯЯ порядок релевантности.
  *
- * Пустой q → последние зарегистрированные (директория показывает их по
- * умолчанию). Это намеренная верхняя граница, не пагинация — см. note в UI.
+ * Волна 4: раньше фильтры применялись в JS по уже-урезанным строкам (неполнота
+ * на 10k) и терялись при непустом q. Теперь всё в RPC → поиск+фильтр компонуются,
+ * страницы режутся в БД. hasMore считаем по limit+1 (как loadPhotosQueue).
  *
- * RPC зависит от pg_trgm extension + индексов (миграции 100500/110000); её сбой
- * поднимается явно, а не маскируется пустой директорией.
+ * RPC зависит от pg_trgm extension + индексов; её сбой поднимается явно, а не
+ * маскируется пустой директорией.
  */
-export type ClientFilters = { status?: string; gender?: string };
+export type ClientFilters = {
+  status?: string; // lifecycle_state | 'deleted' | 'all'
+  gender?: string; // 'm' | 'f' | 'all'
+  verification?: string; // verification_status | 'all'
+};
 
 export async function searchClients(
   q: string,
   limit = 50,
   filters?: ClientFilters,
-): Promise<{ rows: ClientRow[] }> {
+  offset = 0,
+): Promise<{ rows: ClientRow[]; hasMore: boolean }> {
   const sb = supabaseAdmin();
-  const statusF = filters?.status && filters.status !== "all" ? filters.status : null;
+  const norm = (v?: string) => (v && v !== "all" ? v : null);
+  const statusF = norm(filters?.status);
   const genderF =
     filters?.gender === "m" || filters?.gender === "f" ? filters.gender : null;
+  const verifF = norm(filters?.verification);
 
-  let ids: string[];
-  if (q.trim() === "" && (statusF || genderF)) {
-    // Просмотр с фильтрами (как было в /admin/users): запрос users напрямую,
-    // RPC поиска не нужен. pg_trgm-поиск (по q) фильтры не применяет.
-    let genderIds: string[] | null = null;
-    if (genderF) {
-      genderIds = unwrapRows(
-        await sb.from("user_profiles").select("user_id").eq("gender", genderF),
-      ).map((r) => r.user_id as string);
-      if (genderIds.length === 0) return { rows: [] };
-    }
-    let uq = sb
-      .from("users")
-      .select("id")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(limit);
-    if (statusF) uq = uq.eq("lifecycle_state", statusF);
-    if (genderIds) uq = uq.in("id", genderIds);
-    ids = unwrapRows(await uq).map((r) => r.id as string);
-  } else {
-    const { data: rpcData, error: rpcErr } = await sb.rpc(
-      "admin_search_clients",
-      { p_q: q ?? "", p_limit: limit },
-    );
-    if (rpcErr) {
-      throw new Error(`admin_search_clients failed: ${rpcErr.message}`);
-    }
-    ids = Array.isArray(rpcData) ? (rpcData as string[]) : [];
+  // limit+1 — чтобы узнать hasMore, не делая второй запрос.
+  const { data: rpcData, error: rpcErr } = await sb.rpc("admin_search_clients", {
+    p_q: q ?? "",
+    p_limit: limit + 1,
+    p_offset: Math.max(offset, 0),
+    p_status: statusF,
+    p_gender: genderF,
+    p_verification: verifF,
+  });
+  if (rpcErr) {
+    throw new Error(`admin_search_clients failed: ${rpcErr.message}`);
   }
-  if (ids.length === 0) return { rows: [] };
+  const allIds = Array.isArray(rpcData) ? (rpcData as string[]) : [];
+  const hasMore = allIds.length > limit;
+  const ids = hasMore ? allIds.slice(0, limit) : allIds;
+  if (ids.length === 0) return { rows: [], hasMore: false };
 
   const [usersRes, profilesRes, identsRes] = await Promise.all([
     sb
@@ -143,5 +137,5 @@ export async function searchClients(
       created_at: u.created_at as string,
     });
   }
-  return { rows };
+  return { rows, hasMore };
 }

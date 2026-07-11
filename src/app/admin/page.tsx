@@ -24,7 +24,7 @@ export default async function AdminDashboard() {
     .eq("id", session.adminId)
     .maybeSingle();
 
-  const [pending, photos, demo, reports] = await Promise.all([
+  const [pending, photos, demo, reports, health] = await Promise.all([
     // VF-1: считаем ОТКРЫТЫЕ кейсы, а не users.pending_review. Иначе счётчик
     // (per-user) расходится с очередью (per-case): pending_review без кейса даёт
     // фантомную работу — число есть, а в очереди пусто. Теперь оба читают
@@ -42,6 +42,7 @@ export default async function AdminDashboard() {
       .from("reports")
       .select("*", { count: "exact", head: true })
       .in("status", ["new", "in_progress", "requires_clarification", "escalated"]),
+    sb.rpc("get_queue_health"), // QZ-7: SLA / aging
   ]);
 
   const pendingCount = unwrapCount(pending);
@@ -52,6 +53,17 @@ export default async function AdminDashboard() {
     gender?: { m: number; f: number };
     lifecycle?: Record<string, number>;
   };
+  const h = (unwrapOne(health) ?? {}) as {
+    open_total?: number;
+    unassigned?: number;
+    oldest_open_hours?: number;
+    over_24h?: number;
+    over_72h?: number;
+    photos_over_24h?: number;
+  };
+  const oldestH = Number(h.oldest_open_hours ?? 0);
+  const oldestLabel =
+    oldestH >= 24 ? `${Math.floor(oldestH / 24)} дн` : `${Math.round(oldestH)} ч`;
 
   return (
     <OpsShell adminName={admin?.login ?? "—"} adminRole={session.role}>
@@ -79,6 +91,41 @@ export default async function AdminDashboard() {
             label="Жалобы открытые"
             value={reportsCount}
             accent={reportsCount > 0}
+          />
+        </Grid>
+      </Section>
+
+      <Section label="Требуют внимания (SLA)">
+        <Grid>
+          <StatCard
+            href="/admin/queue/mine?view=all"
+            label="Старейший кейс в очереди"
+            value={h.open_total ? oldestLabel : "—"}
+            accent={oldestH >= 24}
+          />
+          <StatCard
+            href="/admin/queue/mine?view=all"
+            label="Кейсов > 24 ч"
+            value={h.over_24h ?? 0}
+            accent={(h.over_24h ?? 0) > 0}
+          />
+          <StatCard
+            href="/admin/queue/mine?view=all"
+            label="Кейсов > 72 ч"
+            value={h.over_72h ?? 0}
+            accent={(h.over_72h ?? 0) > 0}
+          />
+          <StatCard
+            href="/admin/queue/mine?view=all"
+            label="Без владельца"
+            value={h.unassigned ?? 0}
+            accent={(h.unassigned ?? 0) > 0}
+          />
+          <StatCard
+            href="/admin/photos?tab=overdue"
+            label="Фото > 24 ч"
+            value={h.photos_over_24h ?? 0}
+            accent={(h.photos_over_24h ?? 0) > 0}
           />
         </Grid>
       </Section>
@@ -151,7 +198,7 @@ function StatCard({
 }: {
   href: string;
   label: string;
-  value: number;
+  value: number | string;
   accent?: boolean;
 }) {
   return (

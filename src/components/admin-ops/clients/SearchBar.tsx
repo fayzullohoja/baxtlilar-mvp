@@ -1,43 +1,22 @@
 "use client";
-import { useEffect, useState } from "react";
 import { ADMIN } from "@/lib/admin/admin-tokens";
-import type { ClientRow } from "@/lib/admin/load-clients-search";
 
+// Контролируемый инпут: дебаунс/фетч владеет ClientsScreen (ему нужны q+offset
+// для «показать ещё» и он же тянет активные фильтры директории в запрос).
 export function SearchBar({
-  onResults,
+  value,
+  onChange,
+  busy,
 }: {
-  onResults: (rows: ClientRow[] | null) => void;
+  value: string;
+  onChange: (q: string) => void;
+  busy: boolean;
 }) {
-  const [q, setQ] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    if (q.trim().length === 0) {
-      onResults(null);
-      return;
-    }
-    // setBusy внутри async-колбэка таймаута (а не синхронно в эффекте) — не
-    // триггерит каскадный ре-рендер (set-state-in-effect).
-    const t = setTimeout(async () => {
-      setBusy(true);
-      try {
-        const r = await fetch(
-          `/api/admin/clients/search?q=${encodeURIComponent(q)}`,
-        );
-        const d = await r.json();
-        if (d.ok) onResults(d.rows as ClientRow[]);
-      } finally {
-        setBusy(false);
-      }
-    }, 250);
-    return () => clearTimeout(t);
-  }, [q, onResults]);
-
   return (
     <div style={{ position: "relative", maxWidth: 480 }}>
       <input
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
         placeholder="ФИО, ПИНФЛ, паспорт, телефон, @username…"
         autoFocus
         style={{

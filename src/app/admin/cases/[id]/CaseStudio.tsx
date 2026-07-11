@@ -138,6 +138,10 @@ export function CaseStudio({
         step={step}
       />
 
+      {loadedCase.assignee_id === currentAdminId ? (
+        <ReleaseBar caseId={loadedCase.case_id} />
+      ) : null}
+
       {step === 1 ? (
         <PassportViewer
           passportUrl={loadedCase.passport_image_url}
@@ -192,6 +196,52 @@ export function CaseStudio({
             <Button onClick={() => setStep(2)}>← К шагу 2</Button>
           </div>
         </div>
+      ) : null}
+    </div>
+  );
+}
+
+// QZ-2: освободить кейс обратно в пул (черновик сохраняется). Для случаев
+// «взял, но не могу закончить» — без этого кейс висел бы на модераторе до SLA.
+function ReleaseBar({ caseId }: { caseId: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function release() {
+    if (!confirm("Освободить кейс? Он вернётся в пул без владельца (черновик сохранится).")) {
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      const r = await fetch(`/api/admin/cases/${caseId}/release`, { method: "POST" });
+      const d = (await r.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (d.ok) router.push("/admin/queue/mine");
+      else {
+        setErr(d.error ?? "error");
+        setBusy(false);
+      }
+    } catch {
+      setErr("network");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        margin: "0 0 16px",
+      }}
+    >
+      <Button variant="ghost" size="sm" disabled={busy} onClick={release}>
+        {busy ? "Освобождаю…" : "Освободить кейс"}
+      </Button>
+      {err ? (
+        <span style={{ fontSize: 12, color: ADMIN.danger }}>Ошибка: {err}</span>
       ) : null}
     </div>
   );

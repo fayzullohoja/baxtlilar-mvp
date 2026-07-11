@@ -14,7 +14,20 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (session.role !== "superadmin") {
     return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   }
-  const q = new URL(req.url).searchParams.get("q") ?? "";
-  const result = await searchClients(q, 20);
-  return NextResponse.json({ ok: true, rows: result.rows });
+  const sp = new URL(req.url).searchParams;
+  const q = sp.get("q") ?? "";
+  const offset = Math.max(parseInt(sp.get("offset") ?? "0", 10) || 0, 0);
+  // Фильтры протягиваются с UI, чтобы поиск компоновался с активным фильтром
+  // директории (раньше type-ahead молча их сбрасывал).
+  const filters = {
+    status: sp.get("status") ?? undefined,
+    gender: sp.get("gender") ?? undefined,
+    verification: sp.get("verification") ?? undefined,
+  };
+  const result = await searchClients(q, 30, filters, offset);
+  return NextResponse.json({
+    ok: true,
+    rows: result.rows,
+    hasMore: result.hasMore,
+  });
 }
