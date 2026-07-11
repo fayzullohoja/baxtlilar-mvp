@@ -70,6 +70,7 @@ export type TgUpdate = {
 function detectLang(tg?: TgUser): Lang {
   const lc = tg?.language_code?.toLowerCase() ?? "";
   if (lc.startsWith("uz")) return "uz";
+  if (lc.startsWith("en")) return "en";
   return "ru";
 }
 
@@ -237,7 +238,10 @@ function langKeyboard(): InlineKeyboardMarkup {
       [
         { text: M.lang_ru, callback_data: "lang:ru" },
         { text: M.lang_uz, callback_data: "lang:uz" },
+      ],
+      [
         { text: M.lang_tr, callback_data: "lang:tr" },
+        { text: M.lang_en, callback_data: "lang:en" },
       ],
     ],
   };
@@ -252,7 +256,10 @@ function langChangeKeyboard(): InlineKeyboardMarkup {
       [
         { text: M.lang_ru, callback_data: "setlang:ru" },
         { text: M.lang_uz, callback_data: "setlang:uz" },
+      ],
+      [
         { text: M.lang_tr, callback_data: "setlang:tr" },
+        { text: M.lang_en, callback_data: "setlang:en" },
       ],
     ],
   };
@@ -545,7 +552,7 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
   try {
     // /language: смена языка в любой момент (не завязана на onboarding_step).
     if (ns === "setlang") {
-      const lang: Lang = val === "uz" || val === "tr" ? val : "ru";
+      const lang: Lang = val === "uz" || val === "tr" || val === "en" ? val : "ru";
       const sb = supabaseAdmin();
       const { error } = await sb.from("users").update({ language: lang }).eq("id", user.id);
       if (error) throw new Error(error.message);
@@ -556,7 +563,7 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
     }
 
     if (ns === "lang" && user.onboarding_step === "bot_language") {
-      const lang: Lang = val === "uz" || val === "tr" ? val : "ru";
+      const lang: Lang = val === "uz" || val === "tr" || val === "en" ? val : "ru";
       const sb = supabaseAdmin();
       const { error } = await sb.from("users").update({ language: lang }).eq("id", user.id);
       if (error) throw new Error(error.message);

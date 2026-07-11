@@ -319,6 +319,7 @@ function LanguageSwitcher({ current }: { current: string }) {
     { code: "ru", label: "RU" },
     { code: "uz", label: "UZ" },
     { code: "tr", label: "TR" },
+    { code: "en", label: "EN" },
   ];
   return (
     <div

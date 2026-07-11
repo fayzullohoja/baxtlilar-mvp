@@ -154,7 +154,7 @@ describe("bot commands (owner spec 2026-07-10)", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await handleUpdate(msg("/language") as any);
     expect(sent[0].text).toBe(M.language_ask.ru);
-    expect(callbackData(sent[0].markup).sort()).toEqual(["setlang:ru", "setlang:tr", "setlang:uz"]);
+    expect(callbackData(sent[0].markup).sort()).toEqual(["setlang:en", "setlang:ru", "setlang:tr", "setlang:uz"]);
   });
 
   it("/privacy: HTML-сообщение с юр-ссылками", async () => {
