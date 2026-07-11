@@ -195,7 +195,9 @@ export default async function RequestsPage({
                         }}
                       >
                         {m?.name}
-                        {m?.age ? `, ${m.age}` : ""}
+                        {/* PRIVACY: возраст НЕ показываем до взаимного интереса
+                            (входящие/исходящие pending = pre-mutual) — соответствует
+                            копи Экрана 14 «возраст скрыт». Раскрывается post-mutual. */}
                       </div>
                       <div
                         style={{
