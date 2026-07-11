@@ -15,17 +15,29 @@ const STATUS_FILTERS = [
   { key: "active", label: "Активные" },
   { key: "paused", label: "Пауза" },
   { key: "blocked", label: "Заблокир." },
+  { key: "deleted", label: "Удалённые" }, // DZ-4
 ];
 const GENDER_FILTERS = [
   { key: "all", label: "Любой пол" },
   { key: "m", label: "Мужчины" },
   { key: "f", label: "Женщины" },
 ];
+// UL-3: фильтр по стадии верификации (те статусы, что важны модерации).
+const VERIFICATION_FILTERS = [
+  { key: "all", label: "Любая верификация" },
+  { key: "pending_review", label: "На проверке" },
+  { key: "approved", label: "Подтверждён" },
+  { key: "needs_changes", label: "Доработка" },
+  { key: "rejected", label: "Отклонён" },
+  { key: "not_started", label: "Не начата" },
+];
+
+const PAGE_SIZE = 50;
 
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; gender?: string }>;
+  searchParams: Promise<{ status?: string; gender?: string; verification?: string }>;
 }) {
   const session = await requireAdmin();
   // F-120: директория = browse-anyone PII (ПИНФЛ/паспорт/телефон). Super-only,
@@ -35,6 +47,7 @@ export default async function Page({
   const sp = await searchParams;
   const statusF = sp.status ?? "all";
   const genderF = sp.gender === "m" || sp.gender === "f" ? sp.gender : "all";
+  const verifF = sp.verification ?? "all";
 
   const { data: admin } = await supabaseAdmin()
     .from("admin_users")
@@ -42,33 +55,50 @@ export default async function Page({
     .eq("id", session.adminId)
     .maybeSingle();
 
-  const { rows } = await searchClients("", 50, {
-    status: statusF,
-    gender: genderF,
-  });
+  const filters = { status: statusF, gender: genderF, verification: verifF };
+  const { rows, hasMore } = await searchClients("", PAGE_SIZE, filters);
 
-  const hrefStatus = (k: string) =>
-    `/admin/clients?status=${k}${genderF !== "all" ? `&gender=${genderF}` : ""}`;
-  const hrefGender = (k: string) =>
-    `/admin/clients?gender=${k}${statusF !== "all" ? `&status=${statusF}` : ""}`;
+  // href сохраняет ВСЕ активные фильтры, меняя один. Пустые (all) не пишем.
+  const hrefWith = (override: Partial<typeof filters>) => {
+    const merged = { status: statusF, gender: genderF, verification: verifF, ...override };
+    const qs = new URLSearchParams();
+    if (merged.status !== "all") qs.set("status", merged.status);
+    if (merged.gender !== "all") qs.set("gender", merged.gender);
+    if (merged.verification !== "all") qs.set("verification", merged.verification);
+    const s = qs.toString();
+    return `/admin/clients${s ? `?${s}` : ""}`;
+  };
+  const anyFilter = statusF !== "all" || genderF !== "all" || verifF !== "all";
 
   return (
     <OpsShell adminName={admin?.login ?? "—"} adminRole={session.role}>
       <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 4 }}>Клиенты</h1>
       <p style={{ color: ADMIN.ink500, fontSize: 13, marginBottom: 20 }}>
-        Поиск по ФИО, ПИНФЛ, паспорту, телефону, @username — или фильтры ниже.
+        Поиск по ФИО, ПИНФЛ, паспорту, телефону, @username — фильтры применяются и
+        к поиску.
       </p>
 
       <Pills>
         {STATUS_FILTERS.map((f) => (
-          <Pill key={f.key} href={hrefStatus(f.key)} active={statusF === f.key}>
+          <Pill key={f.key} href={hrefWith({ status: f.key })} active={statusF === f.key}>
             {f.label}
           </Pill>
         ))}
       </Pills>
       <Pills mt={8}>
         {GENDER_FILTERS.map((f) => (
-          <Pill key={f.key} href={hrefGender(f.key)} active={genderF === f.key}>
+          <Pill key={f.key} href={hrefWith({ gender: f.key })} active={genderF === f.key}>
+            {f.label}
+          </Pill>
+        ))}
+      </Pills>
+      <Pills mt={8}>
+        {VERIFICATION_FILTERS.map((f) => (
+          <Pill
+            key={f.key}
+            href={hrefWith({ verification: f.key })}
+            active={verifF === f.key}
+          >
             {f.label}
           </Pill>
         ))}
@@ -76,8 +106,11 @@ export default async function Page({
 
       <div style={{ marginTop: 20 }}>
         <ClientsScreen
+          key={`${statusF}|${genderF}|${verifF}`}
           initial={rows}
-          filtered={statusF !== "all" || genderF !== "all"}
+          hasMore={hasMore}
+          filters={filters}
+          filtered={anyFilter}
         />
       </div>
     </OpsShell>
