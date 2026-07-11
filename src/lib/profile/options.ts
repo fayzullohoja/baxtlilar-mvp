@@ -571,6 +571,19 @@ export const PARTNER_ORIGIN_REGION_PREF: Opt[] = [
   { value: "open", ru: "Готов(а) рассмотреть разные варианты", uz: "Turli variantlarni koʻrib chiqishga tayyorman" },
 ];
 
+/** Экран 12: hard/soft-переключатель (ревью оунера). Какие из ожиданий к партнёру
+ *  для пользователя ПРИНЦИПИАЛЬНЫ (не обсуждаются). Multi-select, cold (extended.partner),
+ *  пусто = все критерии гибкие. Пока ИНФОРМАЦИОННОЕ поле (для match-story/кураторства),
+ *  в тюнингованном get_recommendations НЕ энфорсится — matching не трогаем. */
+export const PARTNER_HARD_CRITERIA: Opt[] = [
+  { value: "age", ru: "Возраст", uz: "Yosh" },
+  { value: "religion", ru: "Религия и вера", uz: "Din va eʼtiqod" },
+  { value: "marital", ru: "Семейное положение", uz: "Oilaviy holat" },
+  { value: "children", ru: "Наличие детей", uz: "Farzandlar borligi" },
+  { value: "region", ru: "Регион и происхождение", uz: "Hudud va kelib chiqishi" },
+  { value: "height", ru: "Рост", uz: "Boʻy" },
+];
+
 // ---------- Типы фото (Экран 13) ----------
 // portrait — главное, видно ДО взаимного интереса; full_body — видно pre-mutual;
 // family — чувствительное, только post-mutual (см. миграцию 20260711020000 +

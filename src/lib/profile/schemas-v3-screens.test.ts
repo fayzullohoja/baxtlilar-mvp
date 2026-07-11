@@ -269,6 +269,24 @@ describe("V3 partnerExtendedSchema (Экран 8)", () => {
       }).success,
     ).toBe(false);
   });
+
+  it("принимает partner_hard_criteria (hard/soft-переключатель)", () => {
+    expect(
+      partnerExtendedSchema.safeParse({
+        ...ok,
+        partner_hard_criteria: ["religion", "marital"],
+      }).success,
+    ).toBe(true);
+  });
+
+  it("отклоняет неверный hard-критерий", () => {
+    expect(
+      partnerExtendedSchema.safeParse({
+        ...ok,
+        partner_hard_criteria: ["telepathy"],
+      }).success,
+    ).toBe(false);
+  });
 });
 
 // =============================================================================

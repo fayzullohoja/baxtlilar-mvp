@@ -11,6 +11,7 @@ import { PhotosTab } from "./PhotosTab";
 import { ProfileTab } from "./ProfileTab";
 import { ActivityTab } from "./ActivityTab";
 import { ModerationTab } from "./ModerationTab";
+import { DangerZone } from "./DangerZone";
 
 export const dynamic = "force-dynamic";
 
@@ -64,6 +65,26 @@ export default async function Page({
     .eq("id", session.adminId)
     .maybeSingle();
 
+  // DZ-1..3: danger-zone только для superadmin. Тянем ban/lifecycle-состояние.
+  type DangerData = {
+    lifecycle_state: string;
+    verification_status: string;
+    pending_ban_at: string | null;
+    pending_ban_by_admin_id: string | null;
+    pending_ban_reason: string | null;
+  };
+  let danger: DangerData | null = null;
+  if (session.role === "superadmin") {
+    const { data: u } = await supabaseAdmin()
+      .from("users")
+      .select(
+        "lifecycle_state, verification_status, pending_ban_at, pending_ban_by_admin_id, pending_ban_reason",
+      )
+      .eq("id", id)
+      .maybeSingle();
+    danger = (u as DangerData | null) ?? null;
+  }
+
   return (
     <OpsShell adminName={admin?.login ?? "—"} adminRole={session.role}>
       <ClientHero client={c} />
@@ -73,6 +94,23 @@ export default async function Page({
       {tab === "photos" ? <PhotosTab userId={id} /> : null}
       {tab === "activity" ? <ActivityTab userId={id} /> : null}
       {tab === "moderation" ? <ModerationTab userId={id} /> : null}
+      {danger ? (
+        <DangerZone
+          userId={id}
+          lifecycleState={danger.lifecycle_state}
+          verificationStatus={danger.verification_status}
+          pendingBan={
+            danger.pending_ban_at
+              ? {
+                  at: danger.pending_ban_at,
+                  byAdminId: danger.pending_ban_by_admin_id ?? "",
+                  reason: danger.pending_ban_reason,
+                }
+              : null
+          }
+          currentAdminId={session.adminId}
+        />
+      ) : null}
     </OpsShell>
   );
 }
