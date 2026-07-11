@@ -39,9 +39,14 @@ export async function getMiniProfiles(ids: string[]): Promise<Record<string, Min
   const out: Record<string, Mini> = {};
   for (const p of profs ?? []) {
     const uid = p.user_id as string;
+    // PRIVACY: только ПЕРВОЕ имя (фамилия скрыта). Мини-карточка показывается и
+    // ДО взаимного интереса (входящие pending-запросы в /requests), где фамилия
+    // не должна утекать — так же, как ProgressiveProfile берёт первое слово.
+    // Полное имя раскрывается post-mutual через RevealedProfile.
+    const fullName = (p.display_name as string) ?? "";
     out[uid] = {
       id: uid,
-      name: (p.display_name as string) ?? "",
+      name: fullName.trim().split(/\s+/)[0] ?? "",
       age: p.birth_date ? ageFromDate(p.birth_date as string) : null,
       city: (p.city as string) ?? "",
       photoUrl: photoBy[uid] ?? null,
