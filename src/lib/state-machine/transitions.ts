@@ -8,6 +8,7 @@ import {
   type QuizCompletion,
   type VerificationStatus,
 } from "./types";
+import { ONBOARDING_BACK } from "./router";
 
 export type UserStatePatch = Partial<{
   lifecycle_state: LifecycleState;
@@ -58,7 +59,11 @@ export async function transition(
 
   if (patch.onboarding_step && cur.onboarding_step !== patch.onboarding_step) {
     const allowed = ALLOWED_TRANSITIONS[cur.onboarding_step as OnboardingStep] ?? [];
-    if (!allowed.includes(patch.onboarding_step)) {
+    // Кнопка «Назад»: разрешаем ровно один шаг назад по каноническому V4-порядку
+    // (ONBOARDING_BACK), не раздувая forward-таблицу. Идёт через тот же RPC —
+    // с аудитом в user_state_transitions и optimistic concurrency.
+    const back = ONBOARDING_BACK[cur.onboarding_step as OnboardingStep];
+    if (!allowed.includes(patch.onboarding_step) && patch.onboarding_step !== back) {
       throw new TransitionError(
         `disallowed onboarding_step: ${cur.onboarding_step} -> ${patch.onboarding_step}`,
       );

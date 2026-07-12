@@ -60,6 +60,33 @@ export const ONBOARDING_PATHS: Record<OnboardingStep, string> = {
   active: "/main",
 };
 
+/**
+ * Предыдущий шаг для кнопки «Назад» (канонический V4-порядок, обратный).
+ * basic — первый шаг анкеты, у него back нет (назад = верификация, не нужно).
+ * Используется /api/onboarding/back и transition() (разрешает ровно один back-шаг).
+ */
+export const ONBOARDING_BACK: Partial<Record<OnboardingStep, OnboardingStep>> = {
+  profile_appearance: "profile_basic",
+  profile_birth_place: "profile_appearance",
+  profile_self: "profile_birth_place",
+  profile_family: "profile_self",
+  profile_values: "profile_family",
+  profile_family_model: "profile_values",
+  profile_finance: "profile_family_model",
+  profile_lifestyle: "profile_finance",
+  profile_marriage: "profile_lifestyle",
+  profile_partner_extended: "profile_marriage",
+  profile_privacy: "profile_partner_extended",
+  profile_photos: "profile_privacy",
+  profile_preview: "profile_photos",
+  quiz: "profile_preview",
+  attribution: "quiz",
+  tutorial_intro: "attribution",
+  tutorial_swipe: "tutorial_intro",
+  tutorial_chat: "tutorial_swipe",
+  tutorial_safety: "tutorial_chat",
+};
+
 /** Какой экран показать пользователю при заходе (по lifecycle + step). */
 export function nextScreenFor(user: DbUser): string {
   switch (user.lifecycle_state) {

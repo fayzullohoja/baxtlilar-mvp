@@ -197,6 +197,7 @@
     "name_placeholder": "Masalan: Nodirbek, Nodir, Madina",
     "btn_saving": "Saqlanmoqda…",
     "btn_next": "Keyingi",
+    "back": "Orqaga",
     "err_bio_has_contacts": "Matnda kontakt (telefon, username, havola) topildi. Oʻchiring — bu yerda u ishlamaydi.",
     "err_name_has_contacts": "Ismda kontakt topildi. Faqat ism, havolasiz.",
     "err_bio_too_short": "Koʻproq yozing — kamida 30 ta belgi.",

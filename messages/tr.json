@@ -197,6 +197,7 @@
     "name_placeholder": "Örneğin: Nodirbek, Nodir, Madina",
     "btn_saving": "Kaydediliyor…",
     "btn_next": "Devam",
+    "back": "Geri",
     "err_bio_has_contacts": "Metinde iletişim bilgisi bulundu (telefon, kullanıcı adı, bağlantı). Kaldırın — burada bu çalışmaz.",
     "err_name_has_contacts": "İsimde iletişim bilgisi bulundu. Yalnızca isim, bağlantı olmadan.",
     "err_bio_too_short": "Biraz daha anlatın — en az 30 karakter.",

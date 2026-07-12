@@ -197,6 +197,7 @@
     "name_placeholder": "e.g. Nodirbek, Nodir, Madina",
     "btn_saving": "Saving…",
     "btn_next": "Next",
+    "back": "Back",
     "err_bio_has_contacts": "We found a contact in the text (phone number, username, link). Remove it — it doesn't work here.",
     "err_name_has_contacts": "We found a contact in the name. Just your name, no links.",
     "err_bio_too_short": "Tell us a bit more — at least 30 characters.",

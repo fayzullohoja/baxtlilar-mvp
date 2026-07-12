@@ -11,6 +11,7 @@
  */
 
 import type { ReactNode } from "react";
+import { BackButton } from "./BackButton";
 
 type Props = {
   children: ReactNode;
@@ -20,6 +21,8 @@ type Props = {
   footer?: ReactNode;
   /** Прижать контент сверху (default: center) */
   align?: "top" | "center";
+  /** Показать кнопку «Назад» сверху (шаги онбординга/анкеты, кроме первого) */
+  showBack?: boolean;
 };
 
 export function MiniAppShell({
@@ -27,6 +30,7 @@ export function MiniAppShell({
   eyebrow,
   footer,
   align = "center",
+  showBack = false,
 }: Props) {
   return (
     <div
@@ -49,6 +53,11 @@ export function MiniAppShell({
           padding: "0 var(--v2-screen-padding)",
         }}
       >
+        {showBack ? (
+          <div style={{ marginBottom: "12px", marginLeft: "-4px" }}>
+            <BackButton />
+          </div>
+        ) : null}
         {eyebrow ? (
           <div
             className="mb-6"
