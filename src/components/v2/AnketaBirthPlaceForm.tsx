@@ -5,12 +5,15 @@ import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 import { Field, Select, TextInput } from "./AnketaFields";
 import { COUNTRY_OF_RESIDENCE, UZ_REGIONS } from "@/lib/profile/options";
+import { UZ_DISTRICTS_BY_REGION, hasDistrictList } from "@/lib/profile/uz-districts";
+import { citiesForRegion, hasCityList } from "@/lib/profile/cities";
 import { useTranslations } from 'next-intl';
 
 /**
  * V3 Sprint 1 — Экран 2 «Место рождения / родной регион».
  * 4 поля: страна (required), регион / район / город (опц).
- * Для UZ — Select из UZ_REGIONS; для остальных стран — freeform input.
+ * Для UZ — Select из UZ_REGIONS; район/город — зависимые дропдауны от региона
+ * (где есть справочник), иначе freeform. Для остальных стран — freeform.
  * API: /api/onboarding/profile/birth-place.
  */
 export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
@@ -24,6 +27,10 @@ export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
   const [err, setErr] = useState<string | null>(null);
 
   const showUzRegions = country === "UZ";
+  // Район/город — дропдауны, если для выбранного региона есть справочник
+  // (6 из 14 регионов); иначе freeform-ввод.
+  const districtFromDict = showUzRegions && !!region && hasDistrictList(region);
+  const cityFromDict = showUzRegions && !!region && hasCityList(region);
 
   async function submit() {
     if (busy) return;
@@ -71,8 +78,10 @@ export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
             // Регион меняет тип (UZ → Select из UZ_REGIONS, иначе freeform),
             // поэтому сбрасываем при ЛЮБОЙ смене страны — иначе freeform-строка
             // (напр. «Almaty») утечёт в UZ-Select и уйдёт на сервер как невалидный
-            // birth_region для birth_country=UZ.
+            // birth_region для birth_country=UZ. Район/город тоже зависят от региона.
             setRegion("");
+            setDistrict("");
+            setCity("");
           }}
           locale={locale}
         />
@@ -83,7 +92,12 @@ export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
           <Select
             options={UZ_REGIONS}
             value={region}
-            onChange={setRegion}
+            onChange={(v) => {
+              // Смена региона обнуляет зависимые район/город.
+              setRegion(v);
+              setDistrict("");
+              setCity("");
+            }}
             locale={locale}
           />
         </Field>
@@ -104,22 +118,40 @@ export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
         label={t('birth_place_district_label')}
         hint={t('birth_place_district_hint')}
       >
-        <TextInput
-          value={district}
-          onChange={(e) => setDistrict(e.target.value)}
-          maxLength={128}
-        />
+        {districtFromDict ? (
+          <Select
+            options={UZ_DISTRICTS_BY_REGION[region]}
+            value={district}
+            onChange={setDistrict}
+            locale={locale}
+          />
+        ) : (
+          <TextInput
+            value={district}
+            onChange={(e) => setDistrict(e.target.value)}
+            maxLength={128}
+          />
+        )}
       </Field>
 
       <Field
         label={t('birth_place_city_label')}
         hint={t('birth_place_city_hint')}
       >
-        <TextInput
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          maxLength={128}
-        />
+        {cityFromDict ? (
+          <Select
+            options={citiesForRegion(region)}
+            value={city}
+            onChange={setCity}
+            locale={locale}
+          />
+        ) : (
+          <TextInput
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            maxLength={128}
+          />
+        )}
       </Field>
 
       {err ? (

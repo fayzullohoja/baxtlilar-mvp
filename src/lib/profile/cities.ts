@@ -200,6 +200,42 @@ export const CITY_GROUPS: CityGroup[] = [
 /** Плоский список всех валидных значений города (для валидации). */
 export const ALL_CITY_VALUES: string[] = CITY_GROUPS.flatMap((g) => g.cities.map((c) => c.value));
 
+// Связь region.ru → код региона (совпадает с UZ_REGIONS в options.ts).
+// Матч по подписи (а не по индексу) — устойчиво к переупорядочиванию CITY_GROUPS.
+const REGION_LABEL_TO_CODE: Record<string, string> = {
+  "Город Ташкент": "tashkent_city",
+  "Ташкентская область": "tashkent_region",
+  "Республика Каракалпакстан": "karakalpakstan",
+  "Андижанская область": "andijan",
+  "Бухарская область": "bukhara",
+  "Джизакская область": "jizzakh",
+  "Кашкадарьинская область": "kashkadarya",
+  "Навоийская область": "navoiy",
+  "Наманганская область": "namangan",
+  "Самаркандская область": "samarkand",
+  "Сурхандарьинская область": "surkhandarya",
+  "Сырдарьинская область": "sirdaryo",
+  "Ферганская область": "fergana",
+  "Хорезмская область": "khorezm",
+};
+
+/** Города по коду региона (для зависимого дропдауна город←регион, Экран 2). */
+export const CITIES_BY_REGION: Record<string, CityOpt[]> = Object.fromEntries(
+  CITY_GROUPS.map((g) => [REGION_LABEL_TO_CODE[g.region.ru], g.cities]).filter(
+    (pair): pair is [string, CityOpt[]] => typeof pair[0] === "string",
+  ),
+);
+
+/** Список городов для региона (пусто, если региона нет в справочнике). */
+export function citiesForRegion(regionCode: string): CityOpt[] {
+  return CITIES_BY_REGION[regionCode] ?? [];
+}
+
+/** Есть ли справочник городов для региона (иначе — freeform ввод). */
+export function hasCityList(regionCode: string): boolean {
+  return (CITIES_BY_REGION[regionCode]?.length ?? 0) > 0;
+}
+
 const CITY_BY_VALUE: Record<string, CityOpt> = Object.fromEntries(
   CITY_GROUPS.flatMap((g) => g.cities).map((c) => [c.value, c]),
 );
