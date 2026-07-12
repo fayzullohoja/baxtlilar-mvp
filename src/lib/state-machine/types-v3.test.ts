@@ -42,11 +42,14 @@ describe("V4 anketa transitions", () => {
     expect(ALLOWED_TRANSITIONS.profile_marriage).toContain("profile_partner_extended");
   });
 
-  it("profile_partner_extended → profile_privacy", () => {
-    expect(ALLOWED_TRANSITIONS.profile_partner_extended).toContain("profile_privacy");
+  it("profile_partner_extended → profile_photos (экран privacy пропущен)", () => {
+    expect(ALLOWED_TRANSITIONS.profile_partner_extended).toContain("profile_photos");
+    // 2026-07-12: privacy убран из forward-потока — партнёр ведёт сразу на фото
+    expect(ALLOWED_TRANSITIONS.profile_partner_extended).not.toContain("profile_privacy");
   });
 
-  it("profile_privacy → profile_photos", () => {
+  // legacy pass-through: юзер, застрявший на profile_privacy, всё ещё уходит на photos
+  it("profile_privacy → profile_photos (legacy)", () => {
     expect(ALLOWED_TRANSITIONS.profile_privacy).toContain("profile_photos");
   });
 

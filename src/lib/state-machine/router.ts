@@ -76,8 +76,10 @@ export const ONBOARDING_BACK: Partial<Record<OnboardingStep, OnboardingStep>> = 
   profile_lifestyle: "profile_finance",
   profile_marriage: "profile_lifestyle",
   profile_partner_extended: "profile_marriage",
+  // Экран privacy убран из потока (2026-07-12) — фото сразу после partner_extended.
+  // profile_privacy оставлен как back-цель для легаси-юзеров, застрявших на нём.
   profile_privacy: "profile_partner_extended",
-  profile_photos: "profile_privacy",
+  profile_photos: "profile_partner_extended",
   profile_preview: "profile_photos",
   quiz: "profile_preview",
   attribution: "quiz",

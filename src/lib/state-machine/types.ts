@@ -45,7 +45,7 @@ export type OnboardingStep =
   | "profile_finance" // Экран 9 — Финансы и материальная стабильность
   | "profile_lifestyle" // Экран 10 — Образ жизни и привычки
   | "profile_partner_extended" // Экран 8 расширение (Sprint 2)
-  | "profile_privacy" // Экран 16 — глобальный режим видимости (Sprint 3)
+  | "profile_privacy" // Экран 16 — LEGACY с 2026-07-12: экран убран из потока; видимость живёт дефолтом 'verified_only'
   | "profile_looking_for"
   | "profile_photos"
   | "profile_preview"
@@ -133,8 +133,9 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   profile_finance: ["profile_lifestyle"],
   profile_lifestyle: ["profile_marriage"],
   profile_marriage: ["profile_partner_extended"],
-  profile_partner_extended: ["profile_privacy", "profile_photos"],
-  profile_privacy: ["profile_photos"],
+  // 2026-07-12: экран privacy убран из потока — partner_extended → photos напрямую.
+  profile_partner_extended: ["profile_photos"],
+  profile_privacy: ["profile_photos"], // legacy pass-through: застрявший юзер → photos
   profile_looking_for: ["profile_photos"], // legacy back-compat only
   profile_photos: ["profile_preview"],
   // V4: preview позволяет вернуться в любой anketa-шаг (для правок).
@@ -150,7 +151,7 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
     "profile_lifestyle",
     "profile_marriage",
     "profile_partner_extended",
-    "profile_privacy",
+    // profile_privacy убран (2026-07-12) — экран больше не редактируется из preview.
     "quiz",
   ],
   quiz: ["attribution"],

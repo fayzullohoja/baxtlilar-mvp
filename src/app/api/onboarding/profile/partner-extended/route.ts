@@ -21,7 +21,9 @@ export const dynamic = "force-dynamic";
  * Пол партнёра выводится автоматически как противоположный своему
  * (как и в legacy looking_for).
  *
- * V3 Sprint 3: после partner_extended → profile_privacy (Экран 16).
+ * 2026-07-12 (ревью оунера): экран privacy убран из потока —
+ * partner_extended ведёт СРАЗУ на profile_photos. Видимость остаётся
+ * дефолтом 'verified_only'; шаг privacy — legacy pass-through.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const { user, res } = await loadUserForStep("profile_partner_extended");
@@ -92,12 +94,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (saveErr)
     return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
+  // 2026-07-12 (ревью оунера): экран приватности убран — анкета видна только
+  // при мэтчинге (profile_visibility_mode остаётся дефолтом 'verified_only').
+  // partner_extended → photos напрямую (шаг privacy пропущен для новых юзеров).
   const tr = await tryTransition(
     user.id,
-    { onboarding_step: "profile_privacy" },
-    "anketa v3: partner-extended → privacy",
+    { onboarding_step: "profile_photos" },
+    "anketa: partner-extended → photos (privacy skipped)",
     { kind: "user", id: user.id },
   );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_privacy });
+  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_photos });
 }

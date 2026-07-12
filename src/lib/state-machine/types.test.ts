@@ -124,6 +124,10 @@ describe("ALLOWED_TRANSITIONS connectivity (анти-застревание)", (
     // в profile_partner_extended (учредительская поправка №10). Оставлен как
     // терминальный для in-flight пользователей, у которых сохранён такой шаг.
     "profile_looking_for",
+    // 2026-07-12: profile_privacy убран из потока (partner_extended → photos
+    // напрямую, экран убран и из preview-правок). Как looking_for — оставлен
+    // терминальным legacy-шагом (page/route/back сохранены для in-flight юзеров).
+    "profile_privacy",
   ]);
   const LIVE = ALL_STEPS.filter((s) => !LEGACY.has(s));
 

@@ -18,7 +18,7 @@ import {
  * V4 (2026-06-30) — Чат 2 — Анкета.md Экран 9 «Финансы и материальная стабильность».
  *
  * Все 6 полей — cold (extended.finance). Экран hidden public по спеке;
- * per-block видимость регулируется на экране privacy (Экран 16).
+ * видимость профиля — глобальный дефолт 'verified_only' (экран privacy убран 2026-07-12).
  *
  * Блоки:
  * 1. income_source_stability   — Select (required)

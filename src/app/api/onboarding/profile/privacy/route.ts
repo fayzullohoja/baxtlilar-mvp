@@ -9,13 +9,13 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * V3 Sprint 3 — Экран 16 «Приватность» (MVP).
+ * Экран 16 «Приватность» — LEGACY pass-through (с 2026-07-12).
  *
- * Только глобальный profile_visibility_mode. Per-block visibility отложен.
- * После privacy → profile_photos (фото — следующий шаг).
- *
- * Шаг profile_privacy идёт ПОСЛЕ profile_partner_extended вместо
- * profile_photos для новых юзеров.
+ * Экран убран из потока: новые юзеры идут partner_extended → photos напрямую
+ * и сюда НЕ попадают. Роут сохранён, чтобы in-flight юзеры, застрявшие на
+ * onboarding_step='profile_privacy', могли сохранить profile_visibility_mode
+ * и уйти дальше (privacy → profile_photos). Только глобальный
+ * profile_visibility_mode; per-block visibility отложен.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const { user, res } = await loadUserForStep("profile_privacy");
