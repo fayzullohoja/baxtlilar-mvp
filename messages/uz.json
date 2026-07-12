@@ -278,7 +278,7 @@
     "preview_eyebrow": "Anketa · Koʻrib chiqish",
     "preview_headline": "Anketangiz boshqalarga shunday koʻrinadi.",
     "preview_lead": "Anketangiz tavsiyalarda qanday koʻrinishini tekshiring. Telefon raqami, Telegram, hujjatlar, tekshiruv selfisi, familiya, tugʻilgan sana va nozik javoblar boshqa foydalanuvchilarga koʻrsatilmaydi.",
-    "preview_empty_state": "Anketa bo'sh. Qaytip qadamlarni to'ldiring.",
+    "preview_empty_state": "Anketa bo'sh. Qaytib, qadamlarni to'ldiring.",
     "publishFailed": "Nishri bola olmadi. Anketa-ni tekshiring va yana urinib ko'ring.",
     "religionLabel": "Din",
     "religiousPracticeLabel": "Buni qanday yashaydingiz",
@@ -476,6 +476,8 @@
   "Quiz": {
     "intro_title": "Siz haqingizda 10 ta savol",
     "intro_text": "Big Five — muloqot uslubi, masʼuliyat, ochiqlik va odamlarga munosabatni tushunishga yordam beradigan shaxs modeli. Bu tashxis ham, baho ham emas — javoblar faqat moslik uchun ishlatiladi va anketada koʻrsatilmaydi.",
+    "intro_eyebrow": "Psixoportret",
+    "intro_scale_note": "1–5 shkala: bu fikr sizga qanchalik mos. Toʻgʻri javob yoʻq.",
     "scale_min": "Menga umuman mos emas",
     "scale_max": "Menga juda mos",
     "submit": "Soʻrovni yakunlash",

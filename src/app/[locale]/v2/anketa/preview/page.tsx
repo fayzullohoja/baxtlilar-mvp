@@ -101,7 +101,7 @@ export default async function V2AnketaPreviewPage({
               fontSize: "14px",
             }}
           >
-            Анкета пустая. Вернись и&nbsp;заполни шаги.
+            {t("preview_empty_state")}
           </p>
         )}
       </div>

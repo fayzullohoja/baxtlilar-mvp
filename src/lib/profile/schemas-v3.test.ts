@@ -10,13 +10,21 @@ import {
 describe("V3 birthPlaceSchema", () => {
   const ok = {
     birth_country: "UZ",
-    birth_region: "Samarqand",
+    birth_region: "samarkand",
     birth_district: "Pastdargom",
     birth_city: "Samarqand",
   };
 
   it("принимает полный payload UZ", () => {
     expect(birthPlaceSchema.safeParse(ok).success).toBe(true);
+  });
+
+  it("отклоняет неканонический birth_region для UZ (не из UZ_REGIONS)", () => {
+    // Регресс: смена страны обратно на UZ раньше оставляла freeform-строку
+    // (напр. «Almaty») в birth_region — сервер обязан отклонять.
+    expect(
+      birthPlaceSchema.safeParse({ ...ok, birth_region: "Almaty" }).success,
+    ).toBe(false);
   });
 
   it("принимает только birth_country (region/district/city опц.)", () => {

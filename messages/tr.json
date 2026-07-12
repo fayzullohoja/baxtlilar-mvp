@@ -476,6 +476,8 @@
   "Quiz": {
     "intro_title": "Uyum anketi",
     "intro_text": "10 kısa ifade — 1'den 5'e kadar puanlayın.",
+    "intro_eyebrow": "Psiko-portre",
+    "intro_scale_note": "1–5 ölçeği: ifade sizi ne kadar yansıtıyor. Doğru cevap yok.",
     "scale_min": "Bana uygun değil",
     "scale_max": "Tam bana göre",
     "submit": "Anketi tamamla",

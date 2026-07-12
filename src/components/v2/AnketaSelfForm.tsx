@@ -18,17 +18,17 @@ import {
  * Поля: bio (30-1000 симв с anti-contact фильтром) + education + activity_field +
  * employment_format. API: /api/onboarding/profile/self.
  */
-const ERR_COPY: Record<string, string> = {
-  bio_has_contacts:
-    "В тексте нашёлся контакт (телефон, ник, ссылка). Удали — здесь это не работает.",
-  bio_too_short: "Расскажи побольше — минимум 30 символов.",
-  bio_too_long: "Слишком длинно — максимум 1000 символов.",
-  validation: "Проверь заполненные поля.",
-  failed: "Не получилось сохранить. Попробуй ещё раз.",
-};
 
 export function V2AnketaSelfForm({ locale }: { locale: string }) {
   const t = useTranslations('Anketa');
+  // Локализованные ошибки из i18n (как в AnketaBasicForm) — не хардкод RU.
+  const errCopy: Record<string, string> = {
+    bio_has_contacts: t("err_bio_has_contacts"),
+    bio_too_short: t("err_bio_too_short"),
+    bio_too_long: t("err_bio_too_long"),
+    validation: t("err_validation"),
+    failed: t("err_failed"),
+  };
   const router = useRouter();
   const [bio, setBio] = useState("");
   const [education, setEducation] = useState("");
@@ -184,7 +184,7 @@ export function V2AnketaSelfForm({ locale }: { locale: string }) {
             lineHeight: "1.5",
           }}
         >
-          {ERR_COPY[err] ?? ERR_COPY.failed}
+          {errCopy[err] ?? errCopy.failed}
         </div>
       ) : null}
 

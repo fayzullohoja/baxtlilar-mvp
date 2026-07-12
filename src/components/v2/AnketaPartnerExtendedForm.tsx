@@ -123,6 +123,10 @@ export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
     ageMax !== "" &&
     Number(ageMin) >= 18 &&
     Number(ageMax) >= 18 &&
+    // Верхняя граница совпадает со схемой (partner_age_*.max(100)) — иначе возраст
+    // вроде 150 проходит клиент-гейт и падает на сервере с общей ошибкой.
+    Number(ageMin) <= 100 &&
+    Number(ageMax) <= 100 &&
     Number(ageMax) >= Number(ageMin);
   const heightOk =
     (heightMin.trim() === "" && heightMax.trim() === "") ||

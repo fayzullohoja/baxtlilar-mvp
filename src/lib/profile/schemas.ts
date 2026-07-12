@@ -236,7 +236,16 @@ export const birthPlaceSchema = z
   .refine((d) => d.birth_country !== "UZ" || !!d.birth_region?.trim(), {
     message: "birth_region_required_for_uz",
     path: ["birth_region"],
-  });
+  })
+  // Для UZ регион обязан быть каноническим кодом из UZ_REGIONS — иначе freeform-строка
+  // (из другой страны) может утечь в hot-колонку birth_region и сломать гео/землячество.
+  .refine(
+    (d) =>
+      d.birth_country !== "UZ" ||
+      !d.birth_region?.trim() ||
+      vals(UZ_REGIONS).includes(d.birth_region.trim()),
+    { message: "birth_region_invalid_for_uz", path: ["birth_region"] },
+  );
 
 /** Экран 3 — О себе + образование + деятельность + формат занятости. */
 export const selfSchema = z.object({

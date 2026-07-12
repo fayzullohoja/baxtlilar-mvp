@@ -68,7 +68,11 @@ export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
           value={country}
           onChange={(v) => {
             setCountry(v);
-            if (v !== "UZ") setRegion("");
+            // Регион меняет тип (UZ → Select из UZ_REGIONS, иначе freeform),
+            // поэтому сбрасываем при ЛЮБОЙ смене страны — иначе freeform-строка
+            // (напр. «Almaty») утечёт в UZ-Select и уйдёт на сервер как невалидный
+            // birth_region для birth_country=UZ.
+            setRegion("");
           }}
           locale={locale}
         />

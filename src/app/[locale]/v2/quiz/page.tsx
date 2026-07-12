@@ -5,7 +5,7 @@
  * API: /api/onboarding/quiz/complete.
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { V2QuizForm } from "@/components/v2/QuizForm";
@@ -20,6 +20,7 @@ export default async function V2QuizPage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireUserAtStep(locale, "quiz");
+  const t = await getTranslations("Quiz");
 
   return (
     <div
@@ -49,15 +50,13 @@ export default async function V2QuizPage({
             marginBottom: "24px",
           }}
         >
-          Психо-портрет
+          {t("intro_eyebrow")}
         </div>
         <Headline size="lg" as="h1" style={{ color: "#FFF7F0", fontWeight: 800 }}>
-          Десять вопросов про&nbsp;Вас.
+          {t("intro_title")}
         </Headline>
         <Lead style={{ color: "rgba(255, 247, 240, 0.78)" }}>
-          Big Five — простая модель личности. Не диагноз, не приговор. Просто
-          точки, по которым алгоритм поймёт совпадение в характере, а не только
-          в анкете.
+          {t("intro_text")}
         </Lead>
         <Lead
           style={{
@@ -66,7 +65,7 @@ export default async function V2QuizPage({
             color: "rgba(255, 247, 240, 0.62)",
           }}
         >
-          Шкала 1–5: насколько утверждение про Вас. Без правильных ответов.
+          {t("intro_scale_note")}
         </Lead>
 
         <div

@@ -476,6 +476,8 @@
   "Quiz": {
     "intro_title": "10 questions about you",
     "intro_text": "The Big Five is a personality model: it helps understand your communication style, sense of responsibility, openness, and attitude toward others. It's not a diagnosis or a grade — your answers are used only for matching and aren't shown in your profile.",
+    "intro_eyebrow": "Psycho-portrait",
+    "intro_scale_note": "Scale 1–5: how much the statement is about you. No right answers.",
     "scale_min": "Not like me at all",
     "scale_max": "Very much like me",
     "submit": "Finish the survey",
