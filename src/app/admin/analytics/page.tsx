@@ -7,6 +7,16 @@ import { OpsShell } from "@/components/admin-ops/OpsShell";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 import { cityLabel, regionLabelOfCity } from "@/lib/profile/cities";
 import { LIFECYCLE_RU, VERIFICATION_RU } from "@/lib/admin/labels";
+import {
+  ChartStyles,
+  StatHero,
+  FunnelChart,
+  HBarList,
+  GenderBalance,
+  VizCard,
+  type BarRow,
+  type FunnelStage,
+} from "@/components/admin-ops/charts";
 
 export const dynamic = "force-dynamic";
 
@@ -47,130 +57,28 @@ type FunnelData = {
   north_star: number;
 };
 
-const FUNNEL_STAGES: { key: keyof FunnelData["funnel"]; label: string }[] = [
+const FUNNEL_KEYS: { key: keyof FunnelData["funnel"]; label: string }[] = [
   { key: "signup", label: "Регистрация" },
   { key: "verified", label: "Верифицированы" },
   { key: "published", label: "Анкета опубликована" },
-  { key: "first_mutual", label: "Первый взаимный интерес" },
+  { key: "first_mutual", label: "Взаимный интерес" },
   { key: "chat_unlocked", label: "Чат открыт" },
 ];
 
-function pct(part: number, whole: number): string {
-  if (whole <= 0) return "0%";
-  return Math.round((part / whole) * 100) + "%";
+function pctStr(part: number, whole: number): string {
+  return whole > 0 ? Math.round((part / whole) * 100) + "%" : "0%";
 }
 
-const cardStyle = {
-  border: `1px solid ${ADMIN.border}`,
-  borderRadius: 8,
-  background: ADMIN.surface,
-  padding: 20,
-} as const;
-
-const th = {
-  textAlign: "left" as const,
-  padding: "10px 12px",
-  fontSize: 11,
-  color: ADMIN.ink500,
-  textTransform: "uppercase" as const,
-  letterSpacing: "0.04em",
-  fontWeight: 500,
+const grid2: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
+  gap: 16,
+  marginTop: 16,
 };
-
-const td = { padding: "10px 12px", fontSize: 13, color: ADMIN.ink700 } as const;
-const tdNum = {
-  padding: "10px 12px",
-  fontSize: 13,
-  color: ADMIN.ink500,
-  fontFamily: ADMIN.fontMono,
-} as const;
-
-/** Полоса соотношения мужчины/женщины (slate-blue, без cyan/pink). */
-function GenderBar({ m, f }: { m: number; f: number }) {
-  const total = m + f;
-  const mPct = total > 0 ? (m / total) * 100 : 0;
-  const fPct = total > 0 ? (f / total) * 100 : 0;
-  return (
-    <div>
-      <div
-        style={{
-          display: "flex",
-          height: 12,
-          width: "100%",
-          overflow: "hidden",
-          borderRadius: 999,
-          background: ADMIN.surface2,
-        }}
-      >
-        <div style={{ width: `${mPct}%`, background: ADMIN.accent }} />
-        <div style={{ width: `${fPct}%`, background: ADMIN.ink300 }} />
-      </div>
-      <div
-        style={{
-          marginTop: 8,
-          display: "flex",
-          justifyContent: "space-between",
-          fontSize: 13,
-        }}
-      >
-        <span style={{ color: ADMIN.accent }}>
-          ♂ Мужчины — {m} ({pct(m, total)})
-        </span>
-        <span style={{ color: ADMIN.ink500 }}>
-          ♀ Женщины — {f} ({pct(f, total)})
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section style={cardStyle}>
-      <h2
-        style={{
-          marginBottom: 16,
-          fontSize: 11,
-          fontWeight: 500,
-          textTransform: "uppercase",
-          letterSpacing: "0.04em",
-          color: ADMIN.ink500,
-        }}
-      >
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
-
-function MiniStat({ label, value }: { label: string; value: number | string }) {
-  return (
-    <div style={cardStyle}>
-      <div
-        style={{ fontSize: 28, fontWeight: 600, color: ADMIN.ink900, lineHeight: 1.1 }}
-      >
-        {value}
-      </div>
-      <div style={{ marginTop: 6, fontSize: 13, color: ADMIN.ink500 }}>{label}</div>
-    </div>
-  );
-}
-
-function noData() {
-  return <p style={{ fontSize: 13, color: ADMIN.ink500 }}>Нет данных.</p>;
-}
 
 export default async function AnalyticsPage() {
   const session = await requireAdmin();
-  // RBAC (Волна 7): аналитика — super-only (раньше sidebar прятал от модератора,
-  // но сама страница была any-admin → модератор мог зайти по прямой ссылке).
+  // RBAC (Волна 7): аналитика — super-only.
   if (!can(session.role, "analytics.view")) notFound();
 
   const { data: admin } = await supabaseAdmin()
@@ -179,415 +87,165 @@ export default async function AnalyticsPage() {
     .eq("id", session.adminId)
     .maybeSingle();
 
-  // unwrapOne бросает на сбое БД; genuine «нет данных» (null) ниже даёт «Нет данных».
   const [demoRes, funnelRes] = await Promise.all([
     supabaseAdmin().rpc("get_admin_demographics"),
     supabaseAdmin().rpc("get_admin_funnel"),
   ]);
   const d = unwrapOne(demoRes) as Demographics | null;
-  const f = unwrapOne(funnelRes) as FunnelData | null;
+  const fu = unwrapOne(funnelRes) as FunnelData | null;
 
   if (!d) {
     return (
       <OpsShell adminName={admin?.login ?? "—"} adminRole={session.role}>
-        <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 16 }}>
-          Демография
-        </h1>
+        <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 16 }}>Аналитика</h1>
         <p style={{ fontSize: 13, color: ADMIN.ink500 }}>Нет данных.</p>
       </OpsShell>
     );
   }
 
-  // агрегируем города в регионы (область) для географии
+  // География: агрегируем города в регионы.
   const byRegion = new Map<string, { m: number; f: number; n: number }>();
   for (const c of d.cities) {
     const region = regionLabelOfCity(c.city, "ru");
     const cur = byRegion.get(region) ?? { m: 0, f: 0, n: 0 };
-    cur.m += c.m;
-    cur.f += c.f;
-    cur.n += c.n;
+    cur.m += c.m; cur.f += c.f; cur.n += c.n;
     byRegion.set(region, cur);
   }
-  const regions = [...byRegion.entries()].sort((a, b) => b[1].n - a[1].n);
-  const topCities = [...d.cities].sort((a, b) => b.n - a.n).slice(0, 12);
+  const regionRows: BarRow[] = [...byRegion.entries()]
+    .sort((a, b) => b[1].n - a[1].n).slice(0, 8)
+    .map(([name, v]) => ({ label: name, value: v.n, m: v.m, f: v.f }));
+
+  const ageRows: BarRow[] = d.age_buckets.map((b) => ({ label: b.bucket, value: b.n, m: b.m, f: b.f }));
+  const verifRows: BarRow[] = Object.entries(d.verification)
+    .sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ label: VERIFICATION_RU[k] ?? k, value: v }));
+  const lifeRows: BarRow[] = Object.entries(d.lifecycle)
+    .sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ label: LIFECYCLE_RU[k] ?? k, value: v }));
+
+  const funnelStages: FunnelStage[] = fu
+    ? FUNNEL_KEYS.map((s) => ({ label: s.label, n: fu.funnel[s.key].n, m: fu.funnel[s.key].m, f: fu.funnel[s.key].f }))
+    : [];
+  const emptyCityRows: BarRow[] = fu
+    ? fu.empty_feed.by_city.filter((c) => c.empty > 0).sort((a, b) => b.empty - a.empty).slice(0, 8)
+        .map((c) => ({ label: cityLabel(c.city, "ru"), value: c.empty }))
+    : [];
 
   return (
     <OpsShell adminName={admin?.login ?? "—"} adminRole={session.role}>
-      <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 4 }}>Демография</h1>
-      <p style={{ color: ADMIN.ink500, fontSize: 13, marginBottom: 24 }}>
-        Состав аудитории, пол, возраст, география и статусы
+      <ChartStyles />
+      <h1 style={{ fontSize: 22, fontWeight: 500, marginBottom: 4 }}>Аналитика</h1>
+      <p style={{ color: ADMIN.ink500, fontSize: 13, marginBottom: 20 }}>
+        Куда движется маркетплейс: рост, воронка до первого чата, баланс полов и география.
       </p>
 
+      {/* Ключевые метрики */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: 16,
+          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+          gap: 12,
         }}
       >
-        <MiniStat label="Всего пользователей" value={d.total} />
-        <MiniStat label="С анкетой" value={d.with_profile} />
-        <MiniStat label="Новых за 7 дней" value={d.reg_7d} />
-        <MiniStat label="Сегодня" value={d.reg_today} />
+        {fu ? (
+          <StatHero
+            value={fu.north_star}
+            label="Северная звезда — взаимные пары с чатом"
+            tone="accent"
+            accent
+          />
+        ) : null}
+        <StatHero value={d.total} label="Всего пользователей" delay={40} />
+        <StatHero value={d.with_profile} label="С заполненной анкетой" delay={80} />
+        <StatHero
+          value={`+${d.reg_7d}`}
+          label="Новых за 7 дней"
+          sub={`сегодня +${d.reg_today} · 30 дн +${d.reg_30d}`}
+          tone="success"
+          delay={120}
+        />
       </div>
 
-      {/* FUNNEL-2..4: North Star + воронка + пустой фид (get_admin_funnel) */}
-      {f && (
-        <>
-          <div
-            style={{
-              marginTop: 24,
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-              gap: 16,
-            }}
+      {/* Воронка — сигнатура */}
+      {fu ? (
+        <div style={{ marginTop: 16 }}>
+          <VizCard
+            title="Воронка — путь до первого чата"
+            hint="ширина ∝ доле от регистраций · ♂ slate / ♀ глина"
           >
-            <MiniStat
-              label="Северная звезда — взаимные пары с начатым чатом"
-              value={f.north_star}
-            />
-            <MiniStat
-              label="Завершают онбординг"
-              value={pct(f.rates.onboarding.past_onboarding, f.rates.onboarding.total)}
-            />
-            <MiniStat
-              label="Верификация одобрена"
-              value={pct(f.rates.verification.approved, f.rates.verification.submitted)}
-            />
-            <MiniStat
-              label="Пустой фид (строгий подбор)"
-              value={pct(f.empty_feed.empty, f.empty_feed.eligible)}
-            />
-          </div>
+            <FunnelChart stages={funnelStages} />
+            <p style={{ marginTop: 16, fontSize: 12, color: ADMIN.ink500, lineHeight: 1.5 }}>
+              Пока чат открывается синхронно при взаимности, «Взаимный интерес» и «Чат
+              открыт» совпадают. Завершают онбординг:{" "}
+              <b style={{ color: ADMIN.ink900 }}>
+                {pctStr(fu.rates.onboarding.past_onboarding, fu.rates.onboarding.total)}
+              </b>{" "}
+              · верификация одобрена:{" "}
+              <b style={{ color: ADMIN.ink900 }}>
+                {pctStr(fu.rates.verification.approved, fu.rates.verification.submitted)}
+              </b>
+              .
+            </p>
+          </VizCard>
+        </div>
+      ) : null}
 
-          <div
-            style={{
-              marginTop: 24,
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-              gap: 24,
-            }}
-          >
-            <Section title="Воронка">
-              {FUNNEL_STAGES.map((s, i) => {
-                const cur = f.funnel[s.key];
-                const base = f.funnel.signup.n;
-                const prev = i > 0 ? f.funnel[FUNNEL_STAGES[i - 1].key].n : cur.n;
-                const w =
-                  cur.n === 0 || base === 0
-                    ? 0
-                    : Math.max(2, Math.round((cur.n / base) * 100));
-                return (
-                  <div key={s.key} style={{ marginBottom: 12 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontSize: 13,
-                        marginBottom: 4,
-                      }}
-                    >
-                      <span style={{ color: ADMIN.ink700 }}>{s.label}</span>
-                      <span style={{ color: ADMIN.ink500, fontFamily: ADMIN.fontMono }}>
-                        {cur.n}{" "}
-                        <span style={{ fontSize: 11 }}>
-                          (♂{cur.m} / ♀{cur.f})
-                        </span>
-                        {i > 0 && (
-                          <span style={{ marginLeft: 8, color: ADMIN.ink900 }}>
-                            {pct(cur.n, prev)}
-                          </span>
-                        )}
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        height: 10,
-                        borderRadius: 999,
-                        background: ADMIN.surface2,
-                        overflow: "hidden",
-                      }}
-                    >
-                      <div
-                        style={{ width: `${w}%`, height: "100%", background: ADMIN.accent }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-              <p style={{ marginTop: 12, fontSize: 12, color: ADMIN.ink500 }}>
-                Процент — конверсия из предыдущего шага. Пока чат создаётся
-                синхронно при взаимности, «Первый взаимный интерес» и «Чат
-                открыт» совпадают. «Завершают онбординг» — прокси: событие
-                «открыл приложение» не трекается.
-              </p>
-            </Section>
-
-            <Section title="Пустой фид по городам (строгий подбор)">
-              {f.empty_feed.by_city.length === 0 ? (
-                noData()
-              ) : (
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr style={{ borderBottom: `1px solid ${ADMIN.border}` }}>
-                      <th style={th}>Город</th>
-                      <th style={th}>В подборе</th>
-                      <th style={th}>Пустой фид</th>
-                      <th style={th}>%</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {f.empty_feed.by_city.map((c) => (
-                      <tr
-                        key={c.city}
-                        style={{ borderBottom: `1px solid ${ADMIN.border}` }}
-                      >
-                        <td style={td}>{cityLabel(c.city, "ru")}</td>
-                        <td style={tdNum}>{c.eligible}</td>
-                        <td style={tdNum}>{c.empty}</td>
-                        <td style={{ ...tdNum, color: ADMIN.ink900, fontWeight: 500 }}>
-                          {pct(c.empty, c.eligible)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-              <p style={{ marginTop: 12, fontSize: 12, color: ADMIN.ink500 }}>
-                Доля активных опубликованных анкет, которым строгий подбор
-                (уровень 0, без расширения возраста) не находит ни одного
-                кандидата. Высокий % в городе = дефицит противоположного пола
-                в нужных возрастах.
-              </p>
-            </Section>
-          </div>
-        </>
-      )}
-
-      <div
-        style={{
-          marginTop: 24,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: 24,
-        }}
-      >
-        <Section title="Пол (среди заполнивших анкету)">
-          <GenderBar m={d.gender.m} f={d.gender.f} />
-          <p style={{ marginTop: 12, fontSize: 12, color: ADMIN.ink500 }}>
-            Пол определяется на шаге анкеты. Пользователи без анкеты сюда не входят.
-          </p>
-        </Section>
-
-        <Section title="Активные по полу">
-          <GenderBar m={d.active_gender.m} f={d.active_gender.f} />
-          <p style={{ marginTop: 12, fontSize: 12, color: ADMIN.ink500 }}>
-            Только пользователи в статусе «Активные» (готовы к подбору).
-          </p>
-        </Section>
-      </div>
-
-      <div
-        style={{
-          marginTop: 24,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: 24,
-        }}
-      >
-        <Section title="Возраст по полу">
-          {d.age_buckets.length === 0 ? (
-            noData()
-          ) : (
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-              }}
-            >
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${ADMIN.border}` }}>
-                  <th style={th}>Возраст</th>
-                  <th style={th}>♂ М</th>
-                  <th style={th}>♀ Ж</th>
-                  <th style={th}>Всего</th>
-                </tr>
-              </thead>
-              <tbody>
-                {d.age_buckets.map((b) => (
-                  <tr
-                    key={b.bucket}
-                    style={{ borderBottom: `1px solid ${ADMIN.border}` }}
-                  >
-                    <td style={td}>{b.bucket}</td>
-                    <td style={tdNum}>{b.m}</td>
-                    <td style={tdNum}>{b.f}</td>
-                    <td
-                      style={{
-                        ...tdNum,
-                        color: ADMIN.ink900,
-                        fontWeight: 500,
-                      }}
-                    >
-                      {b.n}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </Section>
-
-        <Section title="География (по областям)">
-          {regions.length === 0 ? (
-            noData()
-          ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${ADMIN.border}` }}>
-                  <th style={th}>Область</th>
-                  <th style={th}>♂ М</th>
-                  <th style={th}>♀ Ж</th>
-                  <th style={th}>Всего</th>
-                </tr>
-              </thead>
-              <tbody>
-                {regions.map(([region, v]) => (
-                  <tr
-                    key={region}
-                    style={{ borderBottom: `1px solid ${ADMIN.border}` }}
-                  >
-                    <td style={td}>{region}</td>
-                    <td style={tdNum}>{v.m}</td>
-                    <td style={tdNum}>{v.f}</td>
-                    <td style={{ ...tdNum, color: ADMIN.ink900, fontWeight: 500 }}>
-                      {v.n}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </Section>
-      </div>
-
-      <div
-        style={{
-          marginTop: 24,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          gap: 24,
-        }}
-      >
-        <Section title="Топ городов">
-          {topCities.length === 0 ? (
-            noData()
-          ) : (
-            <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-              {topCities.map((c) => (
-                <li
-                  key={c.city}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: "6px 0",
-                    fontSize: 13,
-                  }}
-                >
-                  <span style={{ color: ADMIN.ink700 }}>
-                    {cityLabel(c.city, "ru")}
-                  </span>
-                  <span
-                    style={{ color: ADMIN.ink500, fontFamily: ADMIN.fontMono }}
-                  >
-                    {c.n}{" "}
-                    <span style={{ fontSize: 11 }}>
-                      (♂{c.m} / ♀{c.f})
-                    </span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Section>
-
-        <Section title="Статусы и верификация">
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              columnGap: 24,
-              rowGap: 6,
-              fontSize: 13,
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  marginBottom: 6,
-                  fontSize: 11,
-                  fontWeight: 500,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.04em",
-                  color: ADMIN.ink500,
-                }}
-              >
-                Жизненный цикл
-              </div>
-              {Object.entries(d.lifecycle).map(([k, v]) => (
-                <div
-                  key={k}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: "3px 0",
-                  }}
-                >
-                  <span style={{ color: ADMIN.ink700 }}>{LIFECYCLE_RU[k] ?? k}</span>
-                  <span
-                    style={{ color: ADMIN.ink900, fontFamily: ADMIN.fontMono }}
-                  >
-                    {v}
-                  </span>
-                </div>
-              ))}
+      {/* Баланс полов + возраст */}
+      <div style={grid2}>
+        <VizCard title="Баланс полов" hint="среди заполнивших анкету">
+          <GenderBalance m={d.gender.m} f={d.gender.f} />
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${ADMIN.border}` }}>
+            <div style={{ fontSize: 11, color: ADMIN.ink500, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>
+              Среди активных (готовы к подбору)
             </div>
-            <div>
-              <div
-                style={{
-                  marginBottom: 6,
-                  fontSize: 11,
-                  fontWeight: 500,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.04em",
-                  color: ADMIN.ink500,
-                }}
-              >
-                Верификация
-              </div>
-              {Object.entries(d.verification).map(([k, v]) => (
-                <div
-                  key={k}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    padding: "3px 0",
-                  }}
-                >
-                  <span style={{ color: ADMIN.ink700 }}>
-                    {VERIFICATION_RU[k] ?? k}
-                  </span>
-                  <span
-                    style={{ color: ADMIN.ink900, fontFamily: ADMIN.fontMono }}
-                  >
-                    {v}
-                  </span>
-                </div>
-              ))}
-            </div>
+            <GenderBalance m={d.active_gender.m} f={d.active_gender.f} />
           </div>
-        </Section>
+        </VizCard>
+
+        <VizCard title="Возраст" hint="♂ / ♀ в каждой группе">
+          <HBarList rows={ageRows} showSex labelWidth={64} />
+        </VizCard>
       </div>
+
+      {/* География + статусы */}
+      <div style={grid2}>
+        <VizCard title="География" hint="топ регионов, ♂ / ♀">
+          <HBarList rows={regionRows} showSex labelWidth={130} />
+        </VizCard>
+
+        <VizCard title="Статусы аккаунтов">
+          <HBarList rows={lifeRows} color={ADMIN.accent} labelWidth={130} />
+          <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${ADMIN.border}` }}>
+            <div style={{ fontSize: 11, color: ADMIN.ink500, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>
+              Верификация
+            </div>
+            <HBarList rows={verifRows} color={ADMIN.ink500} labelWidth={130} />
+          </div>
+        </VizCard>
+      </div>
+
+      {/* Пустой фид — дефицит противоположного пола по городам */}
+      {fu ? (
+        <div style={{ marginTop: 16 }}>
+          <VizCard
+            title="Пустой фид — где строгий подбор не находит никого"
+            hint={`всего ${pctStr(fu.empty_feed.empty, fu.empty_feed.eligible)} активных анкет`}
+          >
+            {emptyCityRows.length === 0 ? (
+              <p style={{ fontSize: 13, color: ADMIN.success }}>
+                Во всех городах подбор находит кандидатов. 🎉
+              </p>
+            ) : (
+              <>
+                <HBarList rows={emptyCityRows} color={ADMIN.danger} labelWidth={130} />
+                <p style={{ marginTop: 16, fontSize: 12, color: ADMIN.ink500, lineHeight: 1.5 }}>
+                  Число анкет, которым строгий подбор (без расширения возраста) не даёт ни
+                  одного кандидата. Высокое значение = дефицит противоположного пола в нужных
+                  возрастах именно в этом городе.
+                </p>
+              </>
+            )}
+          </VizCard>
+        </div>
+      ) : null}
     </OpsShell>
   );
 }
