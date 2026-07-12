@@ -45,10 +45,11 @@ export default async function V2DocPage({
       </div>
 
       <div style={{ marginTop: "32px" }}>
+        {/* Без capture — документ можно выбрать из галереи/файлов ИЛИ снять камерой
+            (нативный пикер даёт выбор). Форс-камера убрана по запросу оунера. */}
         <UploadField
           endpoint="/api/onboarding/document"
           uploadLabel={t('upload_label')}
-          capture="environment"
         />
       </div>
 

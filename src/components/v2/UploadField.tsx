@@ -8,7 +8,9 @@ import { Button } from "./Button";
 /**
  * V2 UploadField — file picker для паспорта/селфи в editorial-стилe.
  *
- * Camera-first для mobile (capture="environment" → back camera, "user" → front).
+ * capture НЕ задан → нативный пикер (галерея / файлы / камера — выбор юзера).
+ * capture="user" → фронт-камера (селфи, liveness — нужен живой снимок).
+ * Документ загружаем БЕЗ capture — чтобы можно было выбрать из галереи/файлов.
  * После выбора файла кнопка превращается в Submit. Преview не строим
  * (минимализм + privacy — не светим фото в DOM до отправки).
  *
@@ -20,7 +22,7 @@ type Props = {
   endpoint: string;
   uploadLabel: string;
   submitLabel?: string;
-  capture: "user" | "environment";
+  capture?: "user" | "environment";
 };
 
 function getErrorCopy(t: ReturnType<typeof useTranslations>) {

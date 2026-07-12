@@ -12,7 +12,8 @@ function FilePick({
   onPick,
 }: {
   label: string;
-  capture: "user" | "environment";
+  // Не задан → нативный пикер (галерея/файлы/камера). "user" → фронт-камера (селфи).
+  capture?: "user" | "environment";
   onPick: (f: File | null) => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
@@ -71,7 +72,8 @@ export function NeedsChangesForm({ target = "both" }: { target?: "passport" | "s
   return (
     <div className="space-y-3">
       {showPassport ? (
-        <FilePick label={t("doc_upload")} capture="environment" onPick={setPassport} />
+        // Документ — без capture: выбор из галереи/файлов или камера (по запросу оунера).
+        <FilePick label={t("doc_upload")} onPick={setPassport} />
       ) : null}
       {showSelfie ? <FilePick label={t("selfie_upload")} capture="user" onPick={setSelfie} /> : null}
       {error ? <p className="text-sm text-baxt-coral-dk">{error}</p> : null}
