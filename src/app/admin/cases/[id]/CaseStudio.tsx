@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CaseHeader } from "@/components/admin-ops/case/CaseHeader";
-import { PassportViewer } from "@/components/admin-ops/case/PassportViewer";
+import { PassportViewer, PassportImagePanel } from "@/components/admin-ops/case/PassportViewer";
 import { PassportDataEntryForm } from "@/components/admin-ops/case/PassportDataEntryForm";
 import { FaceMatchStep, type FaceMatchResult } from "@/components/admin-ops/case/FaceMatchStep";
 import { DecisionPanel } from "@/components/admin-ops/case/DecisionPanel";
@@ -152,18 +152,32 @@ export function CaseStudio({
       ) : null}
 
       {step === 2 ? (
-        <>
-          <SelfDeclared sd={loadedCase.self_declared} />
-          <PassportDataEntryForm
-            caseId={loadedCase.case_id}
-            initialPayload={initialDraft}
-            onDraftSaved={advanceUpdatedAt}
-            onProceed={(payload) => {
-              setEnteredPayload(payload);
-              setStep(3);
-            }}
-          />
-        </>
+        // Паспорт (sticky, слева) РЯДОМ с формой ввода (справа) — модератор видит
+        // документ, пока заполняет, не возвращаясь на шаг 1.
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(300px, 1fr) minmax(0, 1.35fr)",
+            gap: 20,
+            alignItems: "start",
+          }}
+        >
+          <div style={{ position: "sticky", top: 12 }}>
+            <PassportImagePanel title="Паспорт" url={loadedCase.passport_image_url} />
+          </div>
+          <div>
+            <SelfDeclared sd={loadedCase.self_declared} />
+            <PassportDataEntryForm
+              caseId={loadedCase.case_id}
+              initialPayload={initialDraft}
+              onDraftSaved={advanceUpdatedAt}
+              onProceed={(payload) => {
+                setEnteredPayload(payload);
+                setStep(3);
+              }}
+            />
+          </div>
+        </div>
       ) : null}
 
       {step === 3 ? (

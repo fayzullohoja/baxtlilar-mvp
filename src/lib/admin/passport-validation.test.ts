@@ -1,17 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
   validatePassportPayload,
-  validatePinflChecksum,
-  pinflGenderDigit,
   type PassportPayload,
 } from "./passport-validation";
 
-// Test fixtures computed manually against UZ PINFL algorithm
-// (weights 7-3-1 repeating, mod 11, first digit must be 3-6 for century).
-// PINFL_VALID_M: digits 3120497012345 → checksum 5 → "31204970123455", 7th digit=7 (odd → M)
-// PINFL_VALID_F: digits 3120490022345 → checksum 1 → "31204900223451", 7th digit=0 (even → F)
-const PINFL_VALID_M = "31204970123455";
-const PINFL_VALID_F = "31204900223451";
+// ПИНФЛ теперь валидируется ТОЛЬКО по формату (14 цифр) — контрольная цифра,
+// правило «первая 3–6» и сверка пола убраны (решение оунера). Фикстуры — любые
+// 14-значные строки, семантика цифр больше не важна.
+const PINFL_14 = "31204970123455";
 
 const valid: PassportPayload = {
   last_name: "Каримов",
@@ -23,7 +19,7 @@ const valid: PassportPayload = {
   birth_place: "Самарканд",
   passport_series: "AA",
   passport_number: "1234567",
-  pinfl: PINFL_VALID_M,
+  pinfl: PINFL_14,
   issued_by: "ОВД Юнусабадского района",
   issued_at: "2018-06-15",
   expires_at: "2099-06-15",
@@ -32,38 +28,6 @@ const valid: PassportPayload = {
   locality: "Ташкент",
   street_address: "Бунёдкор 18, кв 42",
 };
-
-describe("validatePinflChecksum", () => {
-  it("validates a checksum-correct PINFL", () => {
-    expect(validatePinflChecksum(PINFL_VALID_M)).toBe(true);
-    expect(validatePinflChecksum(PINFL_VALID_F)).toBe(true);
-  });
-  it("rejects all-zeros (invalid century digit)", () => {
-    expect(validatePinflChecksum("00000000000000")).toBe(false);
-  });
-  it("rejects non-14-digit input", () => {
-    expect(validatePinflChecksum("12345")).toBe(false);
-  });
-  it("rejects mismatched checksum", () => {
-    // Last digit altered
-    expect(validatePinflChecksum("31204970123459")).toBe(false);
-  });
-  it("rejects non-digit characters", () => {
-    expect(validatePinflChecksum("3120497012345a")).toBe(false);
-  });
-});
-
-describe("pinflGenderDigit", () => {
-  it("returns M for odd 7th digit", () => {
-    expect(pinflGenderDigit(PINFL_VALID_M)).toBe("M");
-  });
-  it("returns F for even 7th digit", () => {
-    expect(pinflGenderDigit(PINFL_VALID_F)).toBe("F");
-  });
-  it("returns null for invalid input", () => {
-    expect(pinflGenderDigit("123")).toBe(null);
-  });
-});
 
 describe("validatePassportPayload", () => {
   it("returns no blocking errors for valid payload", () => {
@@ -113,29 +77,14 @@ describe("validatePassportPayload", () => {
     );
   });
 
-  it("WARNS (not blocks) pinfl with bad checksum — паспорт = источник истины", () => {
-    const errors = validatePassportPayload({ ...valid, pinfl: "31204970123459" });
-    // Контрольная цифра — эвристика (алгоритм не сверен со спекой) → warn, не block.
-    expect(errors).toContainEqual(
-      expect.objectContaining({ field: "pinfl", severity: "warn" }),
-    );
-    // Критично: не должен БЛОКИРОВАТЬ верификацию валидного человека.
-    expect(errors.filter((e) => e.field === "pinfl" && e.severity === "block")).toEqual([]);
-  });
-
-  it("WARNS (not blocks) pinfl with first digit outside 3–6", () => {
-    const errors = validatePassportPayload({ ...valid, pinfl: "22222222222222" });
-    expect(errors).toContainEqual(
-      expect.objectContaining({ field: "pinfl", severity: "warn" }),
-    );
-    expect(errors.filter((e) => e.field === "pinfl" && e.severity === "block")).toEqual([]);
-  });
-
-  it("still BLOCKS pinfl with wrong length (формат объективен)", () => {
-    const errors = validatePassportPayload({ ...valid, pinfl: "123" });
-    expect(errors).toContainEqual(
-      expect.objectContaining({ field: "pinfl", severity: "block" }),
-    );
+  it("accepts any 14-digit PINFL — no checksum/first-digit/gender validation", () => {
+    // Раньше эти давали warn; теперь — никакой pinfl/gender-ошибки вообще.
+    for (const pinfl of ["31204970123459", "22222222222222", "99999999999999"]) {
+      const errors = validatePassportPayload({ ...valid, pinfl });
+      expect(errors.filter((e) => e.field === "pinfl")).toEqual([]);
+      // и никаких производных gender-warn от ПИНФЛ
+      expect(errors.filter((e) => e.field === "gender" && e.severity === "warn")).toEqual([]);
+    }
   });
 
   it("blocks age < 18", () => {
@@ -152,14 +101,6 @@ describe("validatePassportPayload", () => {
     const errors = validatePassportPayload({ ...valid, expires_at: "2020-01-01" });
     expect(errors).toContainEqual(
       expect.objectContaining({ field: "expires_at", severity: "warn" }),
-    );
-  });
-
-  it("warns when pinfl gender digit mismatches selected gender", () => {
-    // PINFL_VALID_F encodes F (7th digit=0 even); selecting M should warn
-    const errors = validatePassportPayload({ ...valid, pinfl: PINFL_VALID_F, gender: "M" });
-    expect(errors).toContainEqual(
-      expect.objectContaining({ field: "gender", severity: "warn" }),
     );
   });
 

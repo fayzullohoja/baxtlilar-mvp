@@ -79,36 +79,11 @@ export function validatePassportPayload(p: Partial<PassportPayload>): FieldError
     errors.push({ field: "passport_number", severity: "block", message: "Номер: 7 цифр" });
   }
 
+  // ПИНФЛ: ТОЛЬКО формат (14 цифр). Контрольная цифра, правило «первая 3–6» и
+  // сверка пола по 7-й цифре УБРАНЫ (решение оунера): алгоритм не сверен с офиц.
+  // узбекской спекой и мешал модератору. Источник истины — паспорт в руках.
   if (!p.pinfl || !PINFL_RE.test(p.pinfl)) {
-    // Формат (14 цифр) — объективный, алгоритм-независимый → остаётся BLOCK.
     errors.push({ field: "pinfl", severity: "block", message: "ПИНФЛ: 14 цифр" });
-  } else {
-    // Первая цифра и контрольная — эвристики (см. коммент к validatePinflChecksum)
-    // → WARN, не BLOCK. else-if: не сыпать обе, когда первая цифра уже неверна.
-    if (!"3456".includes(p.pinfl[0])) {
-      errors.push({
-        field: "pinfl",
-        severity: "warn",
-        message: "ПИНФЛ: первая цифра обычно 3–6 (код века/пола) — перепроверьте номер",
-      });
-    } else if (!validatePinflChecksum(p.pinfl)) {
-      errors.push({
-        field: "pinfl",
-        severity: "warn",
-        message: "ПИНФЛ: контрольная цифра не сходится — перепроверьте номер",
-      });
-    }
-    // Сверка пола — независима от контрольной цифры, показываем всегда при 14 цифрах.
-    if (p.gender) {
-      const encoded = pinflGenderDigit(p.pinfl);
-      if (encoded && encoded !== p.gender) {
-        errors.push({
-          field: "gender",
-          severity: "warn",
-          message: `ПИНФЛ кодирует ${encoded}, выбрано ${p.gender}`,
-        });
-      }
-    }
   }
 
   if (!p.birth_date || !DATE_RE.test(p.birth_date)) {
@@ -143,26 +118,4 @@ export function validatePassportPayload(p: Partial<PassportPayload>): FieldError
   }
 
   return errors;
-}
-
-// UZ PINFL checksum:
-// 1-я цифра должна быть 3-6 (век рождения).
-// Контрольная (14-я) = (sum of digits[0..12] * weights[7-3-1 repeating]) mod 11,
-// затем mod 10 если результат = 10 (т.к. контрольная — одна цифра).
-export function validatePinflChecksum(pinfl: string): boolean {
-  if (!PINFL_RE.test(pinfl)) return false;
-  if (!"3456".includes(pinfl[0])) return false;
-  const weights = [7, 3, 1, 7, 3, 1, 7, 3, 1, 7, 3, 1, 7];
-  let sum = 0;
-  for (let i = 0; i < 13; i++) {
-    sum += Number(pinfl[i]) * weights[i];
-  }
-  const expected = sum % 11 % 10;
-  return expected === Number(pinfl[13]);
-}
-
-export function pinflGenderDigit(pinfl: string): "M" | "F" | null {
-  if (!PINFL_RE.test(pinfl)) return null;
-  const d = Number(pinfl[6]);
-  return d % 2 === 1 ? "M" : "F";
 }

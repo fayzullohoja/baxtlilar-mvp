@@ -15,8 +15,8 @@ export function PassportViewer({
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
-        <ImagePanel title="Паспорт" url={passportUrl} />
-        <ImagePanel title="Селфи" url={selfieUrl} />
+        <PassportImagePanel title="Паспорт" url={passportUrl} />
+        <PassportImagePanel title="Селфи" url={selfieUrl} />
       </div>
       <div
         style={{
@@ -34,7 +34,7 @@ export function PassportViewer({
   );
 }
 
-function ImagePanel({ title, url }: { title: string; url: string | null }) {
+export function PassportImagePanel({ title, url }: { title: string; url: string | null }) {
   const [scale, setScale] = useState(1);
   const [rot, setRot] = useState(0);
 
