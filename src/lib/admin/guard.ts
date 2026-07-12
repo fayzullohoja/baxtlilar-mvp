@@ -10,10 +10,17 @@ import { notifyUser } from "@/lib/telegram/notify";
 
 export type AdminRow = { id: string; login: string; role: "superadmin" | "moderator" };
 
-/** Свежие данные админа из БД (роль авторитетна тут, не в куке). null → удалён. */
+/** Свежие данные админа из БД (роль авторитетна тут, не в куке). null → удалён
+ *  ИЛИ деактивирован (staff-управление): деактивированный аккаунт мгновенно
+ *  теряет доступ на следующем запросе, даже с валидной кукой. */
 async function freshAdmin(adminId: string): Promise<{ id: string; role: "superadmin" | "moderator" } | null> {
-  const { data } = await supabaseAdmin().from("admin_users").select("id, role").eq("id", adminId).maybeSingle();
-  return data ? { id: data.id as string, role: data.role as "superadmin" | "moderator" } : null;
+  const { data } = await supabaseAdmin()
+    .from("admin_users")
+    .select("id, role, active")
+    .eq("id", adminId)
+    .maybeSingle();
+  if (!data || data.active === false) return null;
+  return { id: data.id as string, role: data.role as "superadmin" | "moderator" };
 }
 
 /** Для admin-страниц: вернуть сессию (роль — из БД) или редирект на /admin/login. */

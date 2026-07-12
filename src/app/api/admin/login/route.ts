@@ -28,11 +28,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const { data: admin } = await supabaseAdmin()
     .from("admin_users")
-    .select("id, role, password_hash, totp_secret")
+    .select("id, role, password_hash, totp_secret, active")
     .eq("login", login)
     .maybeSingle();
 
-  const ok = admin ? verifyPassword(password, admin.password_hash as string) : false;
+  // Деактивированный аккаунт (staff-управление) не входит — тихо, как неверный
+  // пароль (не раскрываем факт деактивации).
+  const ok =
+    admin && admin.active !== false
+      ? verifyPassword(password, admin.password_hash as string)
+      : false;
   if (!ok) {
     await recordLoginAttempt(ip, false);
     await recordLoginAttempt(loginKey, false);

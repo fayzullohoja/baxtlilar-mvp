@@ -9,6 +9,7 @@ import {
   IconUsers,
   IconChartBar,
   IconHistory,
+  IconUserShield,
   IconLogout,
 } from "@tabler/icons-react";
 import { ADMIN } from "@/lib/admin/admin-tokens";
@@ -52,6 +53,12 @@ const GROUPS: Group[] = [
     items: [
       { href: "/admin/analytics", label: "Аналитика", icon: IconChartBar, perm: "analytics.view" },
       { href: "/admin/audit", label: "Журнал", icon: IconHistory, perm: "audit.viewAll" },
+    ],
+  },
+  {
+    label: "СИСТЕМА",
+    items: [
+      { href: "/admin/staff", label: "Персонал", icon: IconUserShield, perm: "staff.manage" },
     ],
   },
 ];
