@@ -233,3 +233,81 @@ body {
   font-family: var(--admin-font-mono);
   font-variant-numeric: tabular-nums;
 }
+
+/* =============================================================================
+ * V2 Anketa — RangeSlider (Экран 2: рост / вес). Ползунок «Живой Baxtlilar».
+ * Заливка до пальца — янтарный градиент; трек — тёплый hairline; палец — белый
+ * кружок с янтарной обводкой. --pct задаётся инлайном из React.
+ * ========================================================================== */
+.v2-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  outline: none;
+  cursor: pointer;
+  background: linear-gradient(
+    to right,
+    #e9a23b 0%,
+    #f2b84b var(--pct, 0%),
+    #f0ddd0 var(--pct, 0%),
+    #f0ddd0 100%
+  );
+  transition: background 0.05s linear;
+}
+.v2-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #e9a23b;
+  box-shadow: 0 3px 10px rgba(193, 54, 47, 0.28);
+  cursor: grab;
+  transition: transform 0.12s ease;
+}
+.v2-range::-webkit-slider-thumb:active {
+  transform: scale(1.15);
+  cursor: grabbing;
+}
+.v2-range::-moz-range-track {
+  height: 10px;
+  border-radius: 999px;
+  background: #f0ddd0;
+}
+.v2-range::-moz-range-progress {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(to right, #e9a23b, #f2b84b);
+}
+.v2-range::-moz-range-thumb {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #e9a23b;
+  box-shadow: 0 3px 10px rgba(193, 54, 47, 0.28);
+  cursor: grab;
+}
+.v2-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px var(--color-v2-accent-soft), 0 3px 10px rgba(193, 54, 47, 0.28);
+}
+
+/* Не указано (unset): приглушённый трек и палец. */
+.v2-range-off {
+  background: #f0ddd0;
+}
+.v2-range-off::-webkit-slider-thumb {
+  border-color: #cbb5a8;
+  box-shadow: 0 2px 6px rgba(90, 74, 94, 0.14);
+  background: #fbf5ef;
+}
+.v2-range-off::-moz-range-progress {
+  background: transparent;
+}
+.v2-range-off::-moz-range-thumb {
+  border-color: #cbb5a8;
+  background: #fbf5ef;
+}

@@ -4,26 +4,32 @@ import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
-import { Field, Select, Chips, TextInput } from "./AnketaFields";
-import { LANGUAGES_LIST, type Opt } from "@/lib/profile/options";
+import { Field, Select, Chips, TextInput, RangeSlider } from "./AnketaFields";
+import { LANGUAGES_LIST } from "@/lib/profile/options";
 
 /**
- * V2 ext 2026-06-28 → ревью оунера Экран 2: рост (range-picker, ОПЦИОНАЛЬНО) /
- * вес (скрыт за тоглом, optional) / родной язык / владею + свободный ввод «Другой».
+ * V2 ext 2026-06-28 → ревью оунера Экран 2: рост (ползунок, ОПЦИОНАЛЬНО) /
+ * вес (ползунок, optional) / родной язык / владею + свободный ввод «Другой».
+ * Рост/вес — интерактивные RangeSlider со состоянием «не указано».
  * Между basic и family. API: /api/onboarding/profile/appearance.
  */
 
-// Ревью оунера: рост — picker, не ручной ввод. 140–220 см.
-const HEIGHT_OPTIONS: Opt[] = Array.from({ length: 81 }, (_, i) => {
-  const cm = 140 + i;
-  return { value: String(cm), ru: `${cm} см`, uz: `${cm} sm` };
-});
+// Диапазоны ползунков (совпадают со схемой: рост 140–220, вес 35–200).
+const HEIGHT_MIN = 140;
+const HEIGHT_MAX = 220;
+const HEIGHT_MID = 170;
+const WEIGHT_MIN = 40;
+const WEIGHT_MAX = 150;
+const WEIGHT_MID = 70;
 
 export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
   const router = useRouter();
   const t = useTranslations("Anketa");
-  const [heightCm, setHeightCm] = useState("");
-  const [weightKg, setWeightKg] = useState("");
+  const [heightCm, setHeightCm] = useState(HEIGHT_MID);
+  const [heightSet, setHeightSet] = useState(false);
+  const [weightKg, setWeightKg] = useState(WEIGHT_MID);
+  const [weightSet, setWeightSet] = useState(false);
+  // Вес — чувствительное поле: скрыт за кнопкой, раскрывается ползунком (ревью оунера).
   const [showWeight, setShowWeight] = useState(false);
   const [nativeLang, setNativeLang] = useState("");
   const [spokenLangs, setSpokenLangs] = useState<string[]>([]);
@@ -44,13 +50,12 @@ export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
     setBusy(true);
     setErr(null);
     try {
-      const wkg = weightKg.trim() === "" ? null : Number(weightKg);
       const body: Record<string, unknown> = {
         native_language: nativeLang,
         languages: spokenLangs,
-        // Рост опционален (ревью оунера) — отправляем только если выбран.
-        ...(heightCm !== "" ? { height_cm: Number(heightCm) } : {}),
-        ...(wkg !== null ? { weight_kg: wkg } : {}),
+        // Рост/вес опциональны — отправляем только если ползунок «указан».
+        ...(heightSet ? { height_cm: heightCm } : {}),
+        ...(showWeight && weightSet ? { weight_kg: weightKg } : {}),
         ...(showOtherLang && otherLanguage.trim()
           ? { other_language: otherLanguage.trim() }
           : {}),
@@ -76,15 +81,10 @@ export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
     }
   }
 
-  // Рост необязателен (picker гарантирует диапазон). Вес — optional.
-  const weightOk =
-    weightKg.trim() === "" ||
-    (Number(weightKg) >= 35 && Number(weightKg) <= 200);
+  // Рост/вес необязательны и всегда в диапазоне ползунка — валидность
+  // определяется только языками.
   const valid =
-    weightOk &&
-    !!nativeLang &&
-    spokenLangs.length >= 1 &&
-    spokenLangs.length <= 6;
+    !!nativeLang && spokenLangs.length >= 1 && spokenLangs.length <= 6;
 
   return (
     <div>
@@ -127,29 +127,47 @@ export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
       ) : null}
 
       <Field label={t("heightLabel")} hint={t("heightHint")}>
-        <Select
-          options={HEIGHT_OPTIONS}
+        <RangeSlider
+          min={HEIGHT_MIN}
+          max={HEIGHT_MAX}
+          mid={HEIGHT_MID}
           value={heightCm}
-          onChange={setHeightCm}
-          locale={locale}
-          placeholder="—"
+          isSet={heightSet}
+          onChange={(v, set) => {
+            setHeightCm(v);
+            setHeightSet(set);
+          }}
+          unit={t("unitCm")}
+          notSetLabel={t("notSpecified")}
+          clearLabel={t("clearValue")}
         />
       </Field>
 
-      {/* Ревью оунера: вес скрыт по умолчанию, раскрывается по желанию. */}
+      {/* Ревью оунера: вес скрыт по умолчанию, раскрывается ползунком по желанию. */}
       {showWeight ? (
         <Field label={t("weightLabel")} hint={t("weightHiddenHint")}>
-          <TextInput
-            maxLength={3}
+          <RangeSlider
+            min={WEIGHT_MIN}
+            max={WEIGHT_MAX}
+            mid={WEIGHT_MID}
             value={weightKg}
-            onChange={(e) => setWeightKg(e.target.value.replace(/\D/g, ""))}
-            placeholder=""
+            isSet={weightSet}
+            onChange={(v, set) => {
+              setWeightKg(v);
+              setWeightSet(set);
+            }}
+            unit={t("unitKg")}
+            notSetLabel={t("notSpecified")}
+            clearLabel={t("clearValue")}
           />
         </Field>
       ) : (
         <button
           type="button"
-          onClick={() => setShowWeight(true)}
+          onClick={() => {
+            setShowWeight(true);
+            setWeightSet(true);
+          }}
           style={{
             background: "none",
             border: "none",

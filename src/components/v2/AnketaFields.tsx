@@ -1,6 +1,11 @@
 "use client";
 
-import { useId, type ReactNode, type ChangeEventHandler } from "react";
+import {
+  useId,
+  type ReactNode,
+  type ChangeEventHandler,
+  type CSSProperties,
+} from "react";
 import { CITY_GROUPS } from "@/lib/profile/cities";
 import type { Opt } from "@/lib/profile/options";
 
@@ -386,6 +391,144 @@ export function NumberScale({
           <span>{labels.max}</span>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+// =============================================================================
+// RangeSlider — интерактивный ползунок (Экран 2: рост / вес)
+// =============================================================================
+
+/**
+ * Опциональный слайдер: большая крупная цифра + янтарный ползунок.
+ * Пока не тронут — состояние «не указано» (приглушённый трек, палец по центру).
+ * Первое движение → isSet=true; «Не указывать» → сбрасывает обратно.
+ */
+export function RangeSlider({
+  min,
+  max,
+  step = 1,
+  value,
+  isSet,
+  onChange,
+  mid,
+  unit,
+  notSetLabel,
+  clearLabel,
+}: {
+  min: number;
+  max: number;
+  step?: number;
+  value: number;
+  isSet: boolean;
+  onChange: (value: number, isSet: boolean) => void;
+  /** Позиция пальца в состоянии «не указано». */
+  mid: number;
+  unit: string;
+  notSetLabel: string;
+  clearLabel: string;
+}) {
+  const pct = Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
+  return (
+    <div
+      style={{
+        background: "#ffffff",
+        border: "1.5px solid var(--color-v2-ink-500)",
+        borderRadius: "var(--v2-radius-md)",
+        padding: "18px 18px 14px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          minHeight: "38px",
+          marginBottom: "14px",
+        }}
+      >
+        {isSet ? (
+          <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+            <span
+              style={{
+                fontFamily: "var(--font-v2-display)",
+                fontSize: "36px",
+                fontWeight: 800,
+                lineHeight: 1,
+                color: "var(--color-v2-ink-100)",
+              }}
+            >
+              {value}
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-v2-body)",
+                fontSize: "15px",
+                fontWeight: 600,
+                color: "var(--color-v2-ink-400)",
+              }}
+            >
+              {unit}
+            </span>
+          </div>
+        ) : (
+          <span
+            style={{
+              fontFamily: "var(--font-v2-body)",
+              fontSize: "16px",
+              fontWeight: 600,
+              color: "var(--color-v2-ink-400)",
+            }}
+          >
+            {notSetLabel}
+          </span>
+        )}
+
+        {isSet ? (
+          <button
+            type="button"
+            onClick={() => onChange(mid, false)}
+            style={{
+              background: "none",
+              border: "none",
+              padding: "4px 0",
+              cursor: "pointer",
+              fontFamily: "var(--font-v2-body)",
+              fontSize: "12px",
+              fontWeight: 600,
+              color: "var(--color-v2-ink-400)",
+            }}
+          >
+            {clearLabel}
+          </button>
+        ) : null}
+      </div>
+
+      <input
+        type="range"
+        className={isSet ? "v2-range" : "v2-range v2-range-off"}
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value), true)}
+        style={{ "--pct": `${pct}%` } as CSSProperties}
+        aria-valuetext={isSet ? `${value} ${unit}` : notSetLabel}
+      />
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginTop: "10px",
+          fontFamily: "var(--font-v2-body)",
+          fontSize: "12px",
+          color: "var(--color-v2-ink-400)",
+        }}
+      >
+        <span>{min}</span>
+        <span>{max}</span>
+      </div>
     </div>
   );
 }
