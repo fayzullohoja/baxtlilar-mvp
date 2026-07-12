@@ -301,6 +301,10 @@ function SelfDeclared({ sd }: { sd: LoadedCase["self_declared"] }) {
         <span>Гражданство: {sd.citizenship ? labelOf(CITIZENSHIP, sd.citizenship, "ru") : "—"}</span>
         <span>Место рожд.: {sd.birth_place ?? "—"}</span>
       </div>
+      <div style={{ marginTop: 8, fontSize: 12, color: ADMIN.ink500 }}>
+        При подтверждении дата рождения и пол в профиле будут заменены на паспортные
+        (self-declared может быть неверным).
+      </div>
     </div>
   );
 }

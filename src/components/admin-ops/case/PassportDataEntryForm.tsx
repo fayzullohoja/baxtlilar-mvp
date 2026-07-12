@@ -8,6 +8,7 @@ import {
   type PassportPayload,
   type FieldError,
 } from "@/lib/admin/passport-validation";
+import { CITIZENSHIP } from "@/lib/profile/options";
 
 const inputStyle = {
   height: 32,
@@ -251,10 +252,11 @@ export function PassportDataEntryForm({
             value={p.citizenship ?? "UZ"}
             onChange={(e) => set("citizenship", e.target.value)}
           >
-            <option value="UZ">UZ</option>
-            <option value="RU">RU</option>
-            <option value="KZ">KZ</option>
-            <option value="OTHER">Другое</option>
+            {CITIZENSHIP.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.ru}
+              </option>
+            ))}
           </select>
         </Field>
         <Field label="Место рождения" required {...fieldOf("birth_place")}>
