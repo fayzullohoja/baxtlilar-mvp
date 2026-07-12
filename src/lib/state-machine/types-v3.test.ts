@@ -22,6 +22,16 @@ describe("V4 anketa transitions", () => {
     expect(ALLOWED_TRANSITIONS.profile_self).toContain("profile_family");
   });
 
+  // Экран 6 «Родители» вставлен между family и values (2026-07-12).
+  it("profile_family → profile_parents (NEW Экран 6)", () => {
+    expect(ALLOWED_TRANSITIONS.profile_family).toContain("profile_parents");
+    expect(ALLOWED_TRANSITIONS.profile_family).not.toContain("profile_values");
+  });
+
+  it("profile_parents → profile_values", () => {
+    expect(ALLOWED_TRANSITIONS.profile_parents).toContain("profile_values");
+  });
+
   it("profile_values → profile_family_model", () => {
     expect(ALLOWED_TRANSITIONS.profile_values).toContain("profile_family_model");
   });

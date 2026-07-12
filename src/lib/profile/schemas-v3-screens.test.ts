@@ -6,6 +6,7 @@ import {
   familyModelSchema,
   partnerExtendedSchema,
   privacySchema,
+  parentsSchema,
 } from "./schemas";
 
 // =============================================================================
@@ -361,5 +362,74 @@ describe("V3 privacySchema (Экран 16)", () => {
 
   it("отклоняет пустой объект", () => {
     expect(privacySchema.safeParse({}).success).toBe(false);
+  });
+});
+
+// =============================================================================
+// Экран 6 — parentsSchema (2026-07-12)
+// =============================================================================
+
+describe("parentsSchema (Экран 6 — Родители)", () => {
+  const ok = {
+    father_status: "alive",
+    mother_status: "alive",
+    family_involvement: "independent",
+  };
+
+  it("минимум: статус отца/матери + участие семьи", () => {
+    expect(parentsSchema.safeParse(ok).success).toBe(true);
+  });
+
+  it("требует father_status", () => {
+    const { father_status, ...rest } = ok;
+    void father_status;
+    expect(parentsSchema.safeParse(rest).success).toBe(false);
+  });
+
+  it("требует mother_status", () => {
+    const { mother_status, ...rest } = ok;
+    void mother_status;
+    expect(parentsSchema.safeParse(rest).success).toBe(false);
+  });
+
+  it("требует family_involvement", () => {
+    const { family_involvement, ...rest } = ok;
+    void family_involvement;
+    expect(parentsSchema.safeParse(rest).success).toBe(false);
+  });
+
+  it("принимает «предпочитаю не отвечать» на статусах и участии", () => {
+    expect(
+      parentsSchema.safeParse({
+        father_status: "prefer_not",
+        mother_status: "prefer_not",
+        family_involvement: "prefer_not",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("принимает опциональные детали (возраст/профессия/локация/контекст)", () => {
+    expect(
+      parentsSchema.safeParse({
+        ...ok,
+        father_age_range: "45_54",
+        father_profession: "business",
+        father_origin_country: "UZ",
+        father_origin_region: "tashkent_city",
+        mother_current_country: "UZ",
+        parents_marital: "together",
+        family_relations: "close",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("отклоняет невалидный enum-статус", () => {
+    expect(
+      parentsSchema.safeParse({ ...ok, father_status: "unknown_x" }).success,
+    ).toBe(false);
+  });
+
+  it("отклоняет пустой объект", () => {
+    expect(parentsSchema.safeParse({}).success).toBe(false);
   });
 });

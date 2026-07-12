@@ -56,6 +56,14 @@ import {
   PARTNER_CHILDREN_PREF,
   PARTNER_ORIGIN_REGION_PREF,
   PARTNER_HARD_CRITERIA,
+  // Экран 6 «Родители» 2026-07-12:
+  FATHER_STATUS,
+  MOTHER_STATUS,
+  PARENT_AGE_RANGE,
+  PARENT_PROFESSION,
+  PARENTS_MARITAL,
+  FAMILY_RELATIONS,
+  FAMILY_INVOLVEMENT,
 } from "./options";
 
 const tuple = (a: string[]) => a as [string, ...string[]];
@@ -299,7 +307,48 @@ export const familyChildrenSchema = z
 // необязательный диапазон. UI требует выбор количества (в т.ч. «не уточнять»),
 // сервер не форсит наличие числа/возраста.
 
-/** Экран 6 — Ценности и вера (новая версия с top_life_values вместо values).
+/**
+ * Экран 6 «Родители и участие семьи» (2026-07-12) — идёт между family и values.
+ * Всё COLD → extended.parents (отец/мать/семья). Обязательны только father_status,
+ * mother_status, family_involvement (каждый с «предпочитаю не отвечать»); остальное
+ * опционально — не заставляем вводить точные данные (эффект «досье» недопустим).
+ * IF/THEN (умерший/не отвечать → детали скрыты) энфорсится в UI; сервер лоялен.
+ * Локации: country — enum COUNTRY_OF_RESIDENCE (опц.), region/city — free (UZ-каскад
+ * пишет коды, прочие страны — freeform). Форма шлёт undefined вместо "".
+ */
+const parentLocation = {
+  country: z.enum(tuple(vals(COUNTRY_OF_RESIDENCE))).optional().nullable(),
+  region: z.string().max(128).optional().nullable(),
+  city: z.string().max(128).optional().nullable(),
+};
+export const parentsSchema = z.object({
+  // Отец
+  father_status: z.enum(tuple(vals(FATHER_STATUS))),
+  father_age_range: z.enum(tuple(vals(PARENT_AGE_RANGE))).optional().nullable(),
+  father_profession: z.enum(tuple(vals(PARENT_PROFESSION))).optional().nullable(),
+  father_origin_country: parentLocation.country,
+  father_origin_region: parentLocation.region,
+  father_origin_city: parentLocation.city,
+  father_current_country: parentLocation.country,
+  father_current_region: parentLocation.region,
+  father_current_city: parentLocation.city,
+  // Мать
+  mother_status: z.enum(tuple(vals(MOTHER_STATUS))),
+  mother_age_range: z.enum(tuple(vals(PARENT_AGE_RANGE))).optional().nullable(),
+  mother_profession: z.enum(tuple(vals(PARENT_PROFESSION))).optional().nullable(),
+  mother_origin_country: parentLocation.country,
+  mother_origin_region: parentLocation.region,
+  mother_origin_city: parentLocation.city,
+  mother_current_country: parentLocation.country,
+  mother_current_region: parentLocation.region,
+  mother_current_city: parentLocation.city,
+  // Семейный контекст
+  parents_marital: z.enum(tuple(vals(PARENTS_MARITAL))).optional().nullable(),
+  family_relations: z.enum(tuple(vals(FAMILY_RELATIONS))).optional().nullable(),
+  family_involvement: z.enum(tuple(vals(FAMILY_INVOLVEMENT))),
+});
+
+/** Экран 6 (нумерация legacy) — Ценности и вера (top_life_values вместо values).
  *  V4 2026-06-30 (Чат-2): religion_practice стал optional и удалён из формы;
  *  religion_partner_match переезжает в partner-extended (раздел «Кого ищу»). */
 export const valuesV3Schema = z.object({

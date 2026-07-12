@@ -619,6 +619,71 @@ export const PHOTO_TYPES_PRE_MUTUAL = ["portrait", "full_body"] as const;
 // по 6 крупнейшим регионам (Phase 1). Остальные регионы — freeform fallback.
 export { UZ_DISTRICTS_BY_REGION, hasDistrictList } from "./uz-districts";
 
+// ---------- Экран 6 «Родители и участие семьи» (2026-07-12) ----------
+// Всё COLD в extended.parents. Статус отца/матери — единые value, гендерные
+// лейблы (Жив/Жива, Ушёл/Ушла). «Предпочитаю не отвечать» здесь ЕСТЬ намеренно —
+// родители = чувствительный контекст (исключение из общей чистки prefer-not).
+
+export const FATHER_STATUS: Opt[] = [
+  { value: "alive", ru: "Жив", uz: "Hayotda" },
+  { value: "deceased", ru: "Ушёл из жизни", uz: "Vafot etgan" },
+  { value: "no_contact", ru: "Нет связи / не общаемся", uz: "Aloqa yoʻq / muloqot qilmaymiz" },
+  { value: "prefer_not", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
+];
+
+export const MOTHER_STATUS: Opt[] = [
+  { value: "alive", ru: "Жива", uz: "Hayotda" },
+  { value: "deceased", ru: "Ушла из жизни", uz: "Vafot etgan" },
+  { value: "no_contact", ru: "Нет связи / не общаемся", uz: "Aloqa yoʻq / muloqot qilmaymiz" },
+  { value: "prefer_not", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
+];
+
+export const PARENT_AGE_RANGE: Opt[] = [
+  { value: "under_45", ru: "До 45 лет", uz: "45 yoshgacha" },
+  { value: "45_54", ru: "45–54", uz: "45–54" },
+  { value: "55_64", ru: "55–64", uz: "55–64" },
+  { value: "65_plus", ru: "65 и старше", uz: "65 va undan katta" },
+];
+
+export const PARENT_PROFESSION: Opt[] = [
+  { value: "gov_service", ru: "Государственная служба", uz: "Davlat xizmati" },
+  { value: "business", ru: "Бизнес / предпринимательство", uz: "Biznes / tadbirkorlik" },
+  { value: "education_science", ru: "Образование / наука", uz: "Taʼlim / ilm-fan" },
+  { value: "medicine", ru: "Медицина / здоровье", uz: "Tibbiyot / sogʻliqni saqlash" },
+  { value: "agriculture", ru: "Сельское хозяйство", uz: "Qishloq xoʻjaligi" },
+  { value: "manufacturing", ru: "Производство / промышленность", uz: "Ishlab chiqarish / sanoat" },
+  { value: "trade_services", ru: "Торговля / услуги", uz: "Savdo / xizmat koʻrsatish" },
+  { value: "religious", ru: "Религиозная / духовная сфера", uz: "Diniy / maʼnaviy soha" },
+  { value: "home_family", ru: "Дом и семья", uz: "Uy va oila" },
+  { value: "retired", ru: "На пенсии", uz: "Nafaqada" },
+  { value: "other", ru: "Другое", uz: "Boshqa" },
+];
+
+export const PARENTS_MARITAL: Opt[] = [
+  { value: "together", ru: "Родители вместе", uz: "Ota-onam birga" },
+  { value: "divorced", ru: "Родители разведены", uz: "Ota-onam ajrashgan" },
+  { value: "father_deceased", ru: "Отец ушёл из жизни", uz: "Otam vafot etgan" },
+  { value: "mother_deceased", ru: "Мать ушла из жизни", uz: "Onam vafot etgan" },
+  { value: "both_deceased", ru: "Оба родителя ушли из жизни", uz: "Ikkalasi ham vafot etgan" },
+  { value: "other", ru: "Другое", uz: "Boshqa" },
+];
+
+export const FAMILY_RELATIONS: Opt[] = [
+  { value: "close", ru: "Близкие", uz: "Yaqin" },
+  { value: "normal", ru: "Обычные", uz: "Oddiy" },
+  { value: "rare", ru: "Редко общаемся", uz: "Kam muloqot qilamiz" },
+  { value: "separate_connected", ru: "Живу отдельно, но связь поддерживаю", uz: "Alohida yashayman, lekin aloqadamiz" },
+];
+
+export const FAMILY_INVOLVEMENT: Opt[] = [
+  { value: "family_aware", ru: "Для меня важно, чтобы семья была в курсе", uz: "Oilam xabardor boʻlishi men uchun muhim" },
+  { value: "family_consultation", ru: "Я хочу советоваться с семьёй", uz: "Oilam bilan maslahatlashishni xohlayman" },
+  { value: "independent", ru: "Решение принимаю самостоятельно", uz: "Qarorni mustaqil qabul qilaman" },
+  { value: "depends", ru: "Это зависит от ситуации", uz: "Vaziyatga bogʻliq" },
+  // Требование оунера: поле обязательно, но с escape-вариантом «не отвечать».
+  { value: "prefer_not", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
+];
+
 export const vals = (o: Opt[]): string[] => o.map((x) => x.value);
 export const labelOf = (o: Opt[], value: string, locale: string): string =>
   o.find((x) => x.value === value)?.[locale === "uz" ? "uz" : "ru"] ?? value;

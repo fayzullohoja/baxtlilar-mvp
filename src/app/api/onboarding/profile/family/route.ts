@@ -74,12 +74,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (saveErr)
     return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
+  // 2026-07-12: вставлен Экран 6 «Родители» — family ведёт на parents, не values.
   const tr = await tryTransition(
     user.id,
-    { onboarding_step: "profile_values" },
-    "anketa v3: family children",
+    { onboarding_step: "profile_parents" },
+    "anketa: family children → parents",
     { kind: "user", id: user.id },
   );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_values });
+  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_parents });
 }

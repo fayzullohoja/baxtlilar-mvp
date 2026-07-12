@@ -37,6 +37,7 @@ export type OnboardingStep =
   | "profile_birth_place" // Экран 2 — место рождения
   | "profile_self" // Экран 3 — bio + education + activity_field (Sprint 2)
   | "profile_family"
+  | "profile_parents" // Экран 6 — родители и участие семьи (2026-07-12)
   | "profile_values"
   // V2 extension (2026-06-28): формат проживания после брака — после ценностей.
   | "profile_marriage"
@@ -127,7 +128,9 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   profile_appearance: ["profile_birth_place", "profile_self"],
   profile_birth_place: ["profile_self", "profile_family"],
   profile_self: ["profile_family"],
-  profile_family: ["profile_values"],
+  // 2026-07-12: вставлен Экран 6 «Родители» между family и values.
+  profile_family: ["profile_parents"],
+  profile_parents: ["profile_values"],
   profile_values: ["profile_family_model"],
   profile_family_model: ["profile_finance", "profile_marriage"],
   profile_finance: ["profile_lifestyle"],
@@ -145,6 +148,7 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
     "profile_birth_place",
     "profile_self",
     "profile_family",
+    "profile_parents",
     "profile_values",
     "profile_family_model",
     "profile_finance",

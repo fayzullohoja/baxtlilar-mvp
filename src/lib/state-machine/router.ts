@@ -42,6 +42,7 @@ export const ONBOARDING_PATHS: Record<OnboardingStep, string> = {
   profile_partner_extended: "/v2/anketa/partner-extended",
   profile_privacy: "/v2/anketa/privacy",
   profile_family: "/v2/anketa/family",
+  profile_parents: "/v2/anketa/parents",
   profile_values: "/v2/anketa/values",
   // V2 ext 2026-06-28: marriage (формат проживания) между values и looking-for.
   profile_marriage: "/v2/anketa/marriage",
@@ -70,7 +71,9 @@ export const ONBOARDING_BACK: Partial<Record<OnboardingStep, OnboardingStep>> = 
   profile_birth_place: "profile_appearance",
   profile_self: "profile_birth_place",
   profile_family: "profile_self",
-  profile_values: "profile_family",
+  // 2026-07-12: Экран 6 «Родители» — back-цепочка family ← parents ← values.
+  profile_parents: "profile_family",
+  profile_values: "profile_parents",
   profile_family_model: "profile_values",
   profile_finance: "profile_family_model",
   profile_lifestyle: "profile_finance",

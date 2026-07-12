@@ -35,6 +35,7 @@ describe("ONBOARDING_BACK — кнопка «Назад»", () => {
       "profile_birth_place",
       "profile_self",
       "profile_family",
+      "profile_parents",
       "profile_values",
       "profile_family_model",
       "profile_finance",
