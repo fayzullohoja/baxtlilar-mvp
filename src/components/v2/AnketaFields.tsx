@@ -6,6 +6,7 @@ import {
   type ChangeEventHandler,
   type CSSProperties,
 } from "react";
+import { useTranslations } from "next-intl";
 import { CITY_GROUPS } from "@/lib/profile/cities";
 import type { Opt } from "@/lib/profile/options";
 
@@ -566,6 +567,9 @@ export function DualRangeSlider({
   clearLabel: string;
   clearable?: boolean;
 }) {
+  // 2026-07-12 (i18n fix): «от»/«до» в aria-подписях были захардкожены по-русски
+  // (uz/en/tr скринридер слышал русский). Берём из namespace Anketa.
+  const t = useTranslations("Anketa");
   const clamp = (v: number) => Math.min(max, Math.max(min, v));
   const lo = clamp(minValue);
   const hi = clamp(maxValue);
@@ -665,7 +669,7 @@ export function DualRangeSlider({
             onChange(clamp(v), hi, true);
           }}
           style={{ zIndex: 3 }}
-          aria-label={`${notSetLabel} — от`}
+          aria-label={`${notSetLabel} — ${t("rangeFrom")}`}
         />
         <input
           type="range"
@@ -679,7 +683,7 @@ export function DualRangeSlider({
             onChange(lo, clamp(v), true);
           }}
           style={{ zIndex: 2 }}
-          aria-label={`${notSetLabel} — до`}
+          aria-label={`${notSetLabel} — ${t("rangeTo")}`}
         />
       </div>
 

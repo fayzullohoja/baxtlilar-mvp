@@ -715,27 +715,8 @@
     "verifiedBadge": "Doğrulanmış"
   },
   "Tutorial": {
-    "intro.title": "Tanışma · 4'ten 1",
     "next": "İleri",
-    "intro.heading": "Baxtlilar nasıl çalışır.",
-    "intro.body1": "Burası Tinder değil. Burada daha az insan ve herkese daha çok ilgi var.",
-    "intro.body2": "Günde 1 anket göstereceğiz — algoritmanın değerlerinize göre seçtiği bir anket.",
-    "chat.title": "Sohbetler · 4'ten 3",
-    "chat.heading": "Yalnızca karşılıklı ilgiden sonra.",
-    "chat.body1": "Sohbet, yalnızca her iki taraf da ilgi gönderdiyse açılır.",
-    "chat.body2": "Toplu mesaj ve spam yok. Yalnızca canlı diyalog.",
-    "chat.body3": "İletişimi istediğiniz an sonlandırabilirsiniz — açıklama yapmadan.",
-    "safety.title": "Güvenlik · 4'ten 4",
     "complete": "Tamam",
-    "safety.heading": "Birkaç kural.",
-    "safety.body1": "Buluşmadan önce numara ve bağlantı paylaşmayın. Algoritma bu tür mesajları filtreler.",
-    "safety.body2": "Biri kötü davranıyorsa «Şikâyet Et»e basın. Moderatör inceleyecektir.",
-    "safety.body3": "Hesabı ayarlardan silebilirsiniz — anket ve tüm fotoğraflar geri dönüşü olmayacak şekilde silinir.",
-    "swipe.title": "İlgi · 4'ten 2",
-    "swipe.heading": "Kaydırma yok.",
-    "swipe.body1": "Kaydırma bir kumardır. Bizde bilinçli ilgi var: okuduktan sonra siz karar verirsiniz.",
-    "swipe.body2": "İlgiye kişisel bir mesaj ekleyebilirsiniz — karşı taraf onu hemen görür.",
-    "swipe.body3": "İlgi karşılıklıysa — sohbet açılır.",
     "skipTour": "Turu atla",
     "pending": "Lütfen bekleyin…",
     "intro": {
@@ -789,11 +770,7 @@
     "validation": "Doldurduğunuz alanları kontrol edin."
   },
   "Buttons": {
-    "saving.next": "Kaydediliyor…",
-    "resuming.resume": "Duraklatma kaldırılıyor…",
-    "sending.send": "Gönderiliyor…",
     "send": "Gönder",
-    "publishing.publish": "Yayımlanıyor…",
     "startVerification": "Başlayalım",
     "waiting": "Lütfen bekleyin…",
     "skipTour": "Turu atla",
@@ -803,36 +780,45 @@
     "cancel": "İptal",
     "sending": {
       "send": "Gönderiliyor…"
+    },
+    "resuming": {
+      "resume": "Duraklatma kaldırılıyor…"
+    },
+    "publishing": {
+      "publish": "Yayımlanıyor…"
     }
   },
   "Verification": {
-    "queued.label": "Sırada",
-    "queued.title": "Moderatör şu anda başvurunuzu inceliyor.",
-    "queued.body": "Bu genellikle 2–4 saat sürer. Karar hazır olduğunda Telegram üzerinden bir bildirim gelir. Bu süre boyunca akışta görünmezsiniz ve ilgi almazsınız.",
-    "needsChanges.label": "Düzeltilmesi gerekiyor",
-    "needsChanges.title": "Moderatör birkaç noktanın açıklanmasını istiyor.",
-    "needsChanges.body": "Bu genellikle kötü bir selfie ya da okunamayan bir pasaport fotoğrafıdır. Doğrulama bölümünü açıp yeniden yapın — birkaç dakika sürer.",
-    "rejected.label": "Geçemedi",
-    "rejected.title": "Maalesef profilinizi doğrulayamıyoruz.",
-    "rejected.body": "Bunun bir hata olduğunu düşünüyorsanız — bize @baxtlilar_support üzerinden yazın. Moderatörün kararı kesindir.",
-    "notStarted.label": "Adım tamamlanmadı",
-    "notStarted.title": "Önce doğrulama.",
-    "notStarted.body": "Başkalarına gösterilmeniz için kimliğinizi doğrulamanız gerekir — pasaport ve selfie. Botu açıp adımları tamamlayın.",
-    "approved.label": "Tamam",
-    "approved.title": "Profil doğrulandı.",
-    "approved.body": "Sayfayı yenileyin — akış görünmeli."
+    "queued": {
+      "label": "Sırada",
+      "title": "Moderatör şu anda başvurunuzu inceliyor.",
+      "body": "Bu genellikle 2–4 saat sürer. Karar hazır olduğunda Telegram üzerinden bir bildirim gelir. Bu süre boyunca akışta görünmezsiniz ve ilgi almazsınız."
+    },
+    "needsChanges": {
+      "label": "Düzeltilmesi gerekiyor",
+      "title": "Moderatör birkaç noktanın açıklanmasını istiyor.",
+      "body": "Bu genellikle kötü bir selfie ya da okunamayan bir pasaport fotoğrafıdır. Doğrulama bölümünü açıp yeniden yapın — birkaç dakika sürer."
+    },
+    "rejected": {
+      "label": "Geçemedi",
+      "title": "Maalesef profilinizi doğrulayamıyoruz.",
+      "body": "Bunun bir hata olduğunu düşünüyorsanız — bize @baxtlilar_support üzerinden yazın. Moderatörün kararı kesindir."
+    },
+    "notStarted": {
+      "label": "Adım tamamlanmadı",
+      "title": "Önce doğrulama.",
+      "body": "Başkalarına gösterilmeniz için kimliğinizi doğrulamanız gerekir — pasaport ve selfie. Botu açıp adımları tamamlayın."
+    },
+    "approved": {
+      "label": "Tamam",
+      "title": "Profil doğrulandı.",
+      "body": "Sayfayı yenileyin — akış görünmeli."
+    }
   },
   "Time": {
     "justNow": "az önce"
   },
   "InterestModal": {
-    "errors.contactBlocked": "Mesajda bir iletişim bilgisi bulundu (telefon, kullanıcı adı, bağlantı). Bu burada işe yaramaz — silip tekrar deneyin.",
-    "errors.alreadySent": "Bu kişiye zaten ilgi gönderdiniz.",
-    "errors.dailyLimit": "Bugünlük ilgi limitiniz doldu. Yarın tekrar gelin.",
-    "errors.declined": "Bu kişi şu anda uygun değil.",
-    "errors.blocked": "Bu kişi şu anda uygun değil.",
-    "errors.unavailable": "Anket artık mevcut değil.",
-    "errors.noPermission": "İlgi göndermek için doğrulama gerekir.",
     "messagePlaceholder": "Ankette sizi ne etkiledi?",
     "sentTitle": "İlgi gönderildi.",
     "sentDescription": "{name} karşılık verirse — Telegram'da bir bildirim gelir ve sohbet açılır. Aksi hâlde 72 saat sonra başvuru otomatik olarak kapanır ve kişi onu isteklerinde görmez.",
@@ -851,15 +837,18 @@
     "err_blocked": "Bu kişi şu anda uygun değil.",
     "err_unavailable": "Anket artık mevcut değil.",
     "err_no_interest_permission": "İlgi göndermek için doğrulama gerekir.",
-    "err_failed": "Bir şeyler ters gitti. Lütfen tekrar deneyin."
+    "err_failed": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
+    "errors": {
+      "contactBlocked": "Mesajda bir iletişim bilgisi bulundu (telefon, kullanıcı adı, bağlantı). Bu burada işe yaramaz — silip tekrar deneyin.",
+      "alreadySent": "Bu kişiye zaten ilgi gönderdiniz.",
+      "dailyLimit": "Bugünlük ilgi limitiniz doldu. Yarın tekrar gelin.",
+      "declined": "Bu kişi şu anda uygun değil.",
+      "blocked": "Bu kişi şu anda uygun değil.",
+      "unavailable": "Anket artık mevcut değil.",
+      "noPermission": "İlgi göndermek için doğrulama gerekir."
+    }
   },
   "Upload": {
-    "errors.badType": "Desteklenmeyen dosya türü",
-    "errors.tooLarge": "Dosya çok büyük",
-    "errors.duplicateIdentity": "Bu kimlik zaten kayıtlı",
-    "errors.duplicatePassport": "Bu pasaport zaten kullanılmış",
-    "errors.duplicateSelfie": "Bu selfie zaten kullanılmış",
-    "errors.failed": "Yüklenemedi",
     "errors": {
       "badType": "Desteklenmeyen dosya türü",
       "tooLarge": "Dosya çok büyük",
@@ -876,15 +865,17 @@
     "blockedLabel": "Engellendi"
   },
   "Report": {
-    "reasons.fake": "Sahte / gerçek değil gibi görünüyor",
-    "reasons.offensive": "Hakaret, kabalık",
-    "reasons.contacts": "Uygulama dışı iletişim istiyor",
-    "reasons.spam": "Reklam, spam",
-    "reasons.inappropriate": "Tanışma için uygun olmayan içerik",
-    "reasons.other": "Diğer",
     "detailsPlaceholder": "Ayrıntılar (isteğe bağlı)",
     "titleWithName": "{name} hakkında şikayet et",
-    "reasonsTitle": "Sorun ne:"
+    "reasonsTitle": "Sorun ne:",
+    "reasons": {
+      "fake": "Sahte / gerçek değil gibi görünüyor",
+      "offensive": "Hakaret, kabalık",
+      "contacts": "Uygulama dışı iletişim istiyor",
+      "spam": "Reklam, spam",
+      "inappropriate": "Tanışma için uygun olmayan içerik",
+      "other": "Diğer"
+    }
   },
   "InterestActions": {
     "skipButton": "Şimdi uygun değil"
@@ -896,37 +887,53 @@
     "to": "en fazla"
   },
   "Attribution": {
-    "sources.telegram": "Telegram kanalı",
-    "sources.friends": "Arkadaşlar / tanıdıklar",
-    "sources.ads": "Reklam",
-    "sources.search": "Google / Yandex araması",
-    "sources.media": "Basın / makale",
-    "sources.event": "Etkinlik",
-    "sources.other": "Diğer"
+    "sources": {
+      "telegram": "Telegram kanalı",
+      "friends": "Arkadaşlar / tanıdıklar",
+      "ads": "Reklam",
+      "search": "Google / Yandex araması",
+      "media": "Basın / makale",
+      "event": "Etkinlik",
+      "other": "Diğer"
+    }
   },
   "MatchStory": {
     "commonSection": "Ortak yönleriniz",
     "cautionsSection": "Dikkat edilmesi gerekenler"
   },
   "AnketaSelf": {
-    "errors.bioHasContacts": "Metinde iletişim bilgisi bulundu (telefon, kullanıcı adı, bağlantı). Lütfen kaldırın — burada işe yaramaz.",
-    "errors.bioTooShort": "Biraz daha anlatın — en az 30 karakter.",
-    "errors.bioTooLong": "Çok uzun — en fazla 1000 karakter."
+    "errors": {
+      "bioHasContacts": "Metinde iletişim bilgisi bulundu (telefon, kullanıcı adı, bağlantı). Lütfen kaldırın — burada işe yaramaz.",
+      "bioTooShort": "Biraz daha anlatın — en az 30 karakter.",
+      "bioTooLong": "Çok uzun — en fazla 1000 karakter."
+    }
   },
   "Personality": {
-    "openness.high": "yeni deneyimlere açık",
-    "openness.low": "istikrarı ve alışılmışı seven",
-    "conscientiousness.high": "düzenli ve derli toplu",
-    "conscientiousness.low": "esnek, katı kurallardan uzak",
-    "extraversion.high": "insanlardan ve sohbetten güç alan",
-    "extraversion.low": "sakin, sınırlı ortamları tercih eden",
-    "agreeableness.high": "sıcak ve cana yakın",
-    "agreeableness.low": "dolambaçsız, açık sözlü",
-    "emotionalStability.high": "duygusal olarak dengeli",
-    "emotionalStability.low": "hassas, derin duygulara sahip"
+    "openness": {
+      "high": "yeni deneyimlere açık",
+      "low": "istikrarı ve alışılmışı seven"
+    },
+    "conscientiousness": {
+      "high": "düzenli ve derli toplu",
+      "low": "esnek, katı kurallardan uzak"
+    },
+    "extraversion": {
+      "high": "insanlardan ve sohbetten güç alan",
+      "low": "sakin, sınırlı ortamları tercih eden"
+    },
+    "agreeableness": {
+      "high": "sıcak ve cana yakın",
+      "low": "dolambaçsız, açık sözlü"
+    },
+    "emotionalStability": {
+      "high": "duygusal olarak dengeli",
+      "low": "hassas, derin duygulara sahip"
+    }
   },
   "AnketaLooking": {
-    "errors.ageRangeInvalid": "En yüksek değer, en düşük değere eşit veya daha büyük olmalı."
+    "errors": {
+      "ageRangeInvalid": "En yüksek değer, en düşük değere eşit veya daha büyük olmalı."
+    }
   },
   "VerificationPlashka": {
     "queued": {

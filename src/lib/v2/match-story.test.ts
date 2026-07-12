@@ -35,32 +35,21 @@ describe("generateMatchStory — reasons (positive overlap)", () => {
     expect(story.reasons[0]).toMatch(/Вас обоих волнует одно/i);
   });
 
-  it("совпавшая религия + близкая практика (gap ≤1) → reason про вероисповедание", () => {
-    const v = profile({ religion: "islam"});
+  // 2026-07-12 (privacy fix, owner A4): вероисповедание и планы на детей —
+  // post-mutual поля (progressive-view их НЕ отдаёт на клиент). Story НЕ должна
+  // раскрывать их до взаимного интереса — иначе зритель пиннит значение кандидата.
+  it("совпавшая религия НЕ даёт pre-mutual reason (спец-ПД)", () => {
+    const v = profile({ religion: "islam", top_life_values: [] });
     const c = profile({ religion: "islam", top_life_values: [] });
     const story = generateMatchStory(v, c);
-    expect(story.reasons.some((r) => r.includes("вероисповеданию"))).toBe(true);
+    expect(story.reasons.some((r) => r.includes("вероисповеданию"))).toBe(false);
   });
 
-  it("ИСЛАМ + null practice у одной стороны → reason всё равно даётся", () => {
-    const v = profile({ religion: "islam"});
-    const c = profile({ religion: "islam", top_life_values: [] });
-    const story = generateMatchStory(v, c);
-    expect(story.reasons.some((r) => r.includes("вероисповеданию"))).toBe(true);
-  });
-
-  it("оба хотят детей (yes_soon/yes_later) → reason про детей", () => {
+  it("совпавшие планы на детей НЕ дают pre-mutual reason", () => {
     const v = profile({ future_children_plan: "yes_soon", top_life_values: [] });
     const c = profile({ future_children_plan: "yes_later", top_life_values: [] });
     const story = generateMatchStory(v, c);
-    expect(story.reasons.some((r) => r.includes("видите будущее с детьми"))).toBe(true);
-  });
-
-  it("оба НЕ хотят детей (no) → reason про редкое совпадение", () => {
-    const v = profile({ future_children_plan: "no", top_life_values: [] });
-    const c = profile({ future_children_plan: "no", top_life_values: [] });
-    const story = generateMatchStory(v, c);
-    expect(story.reasons.some((r) => r.includes("не планируете"))).toBe(true);
+    expect(story.reasons.some((r) => /детьми|не планируете/.test(r))).toBe(false);
   });
 
   it("близкий психо-вектор (avg diff <18) → reason про личность", () => {
@@ -97,26 +86,18 @@ describe("generateMatchStory — reasons (positive overlap)", () => {
 });
 
 describe("generateMatchStory — cautions (friction)", () => {
-  it("yes_soon vs no → caution про детей", () => {
+  // 2026-07-12 (privacy fix, owner A4): конфликт по детям (future_children_plan)
+  // и гео-предпочтение (geo_preference) — post-mutual поля; caution по ним
+  // раскрывал значение кандидата до мэтча. Убраны из pre-mutual story.
+  it("конфликт по детям НЕ даёт pre-mutual caution", () => {
     const v = profile({ future_children_plan: "yes_soon" });
     const c = profile({ future_children_plan: "no" });
     const story = generateMatchStory(v, c);
-    expect(story.cautions.some((c) => c.includes("детей"))).toBe(true);
+    expect(story.cautions.some((c) => c.includes("детей"))).toBe(false);
   });
 
-  // V4 (2026-06-30): religious-practice caution убран — учредительская
-  // поправка №5 исключила religion_practice из анкеты. Разница по практике
-  // больше не сигнал для matching cautions.
-
-  it("разные города + оба my_city → caution про разные города", () => {
+  it("разные города + оба my_city НЕ даёт caution (geo_preference post-mutual)", () => {
     const v = profile({ city: "tashkent", geo_preference: "my_city" });
-    const c = profile({ city: "samarkand", geo_preference: "my_city" });
-    const story = generateMatchStory(v, c);
-    expect(story.cautions.some((c) => c.includes("разных городах"))).toBe(true);
-  });
-
-  it("разные города но один country-preference → НЕТ caution про города", () => {
-    const v = profile({ city: "tashkent", geo_preference: "country" });
     const c = profile({ city: "samarkand", geo_preference: "my_city" });
     const story = generateMatchStory(v, c);
     expect(story.cautions.some((c) => c.includes("разных городах"))).toBe(false);

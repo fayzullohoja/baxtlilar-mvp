@@ -86,29 +86,12 @@ function reasonsFor(viewer: ProfileForMatch, cand: ProfileForMatch): string[] {
     out.push(`Вас обоих волнует одно — ${lab.toLowerCase()}.`);
   }
 
-  // V4: religion type equality — practice-signal убран из анкеты. Проверяем
-  // только конфессию (islam == islam и т.д.), без градации уровня практики.
-  if (
-    viewer.religion &&
-    cand.religion &&
-    viewer.religion === cand.religion &&
-    viewer.religion !== "na" &&
-    viewer.religion !== "none"
-  ) {
-    out.push("Совпали по вероисповеданию.");
-  }
-
-  // Семейные планы совместимы
-  if (viewer.future_children_plan && cand.future_children_plan) {
-    const PRO_KIDS = new Set(["yes_soon", "yes_later", "maybe"]);
-    const NO_KIDS = new Set(["no"]);
-    const bothPro =
-      PRO_KIDS.has(viewer.future_children_plan) && PRO_KIDS.has(cand.future_children_plan);
-    const bothNo =
-      NO_KIDS.has(viewer.future_children_plan) && NO_KIDS.has(cand.future_children_plan);
-    if (bothPro) out.push("Оба видите будущее с детьми.");
-    else if (bothNo) out.push("Оба не планируете детей в будущем — это редкое совпадение.");
-  }
+  // 2026-07-12 (privacy fix, owner A4): вероисповедание и планы на детей —
+  // post-mutual поля (спец-ПД; progressive-view их НЕ отдаёт на клиент).
+  // Раньше здесь были reasons «Совпали по вероисповеданию» и «Оба видите
+  // будущее с детьми» — они раскрывали значение кандидата ДО взаимного
+  // интереса (зритель знает своё → пиннит чужое). Убрано: до мэтча story
+  // строится только на whitelist-полях (ценности, психо-вектор, город).
 
   // Близость психо-вектора (если есть quiz_results у обоих)
   const diff = vectorAvgDiff(viewer.vector, cand.vector);
@@ -144,34 +127,11 @@ function cautionsFor(
     );
   }
 
-  // Конфликт по детям
-  if (viewer.future_children_plan && cand.future_children_plan) {
-    const PRO_KIDS = new Set(["yes_soon", "yes_later"]);
-    const NO_KIDS = new Set(["no"]);
-    const conflict =
-      (PRO_KIDS.has(viewer.future_children_plan) &&
-        NO_KIDS.has(cand.future_children_plan)) ||
-      (NO_KIDS.has(viewer.future_children_plan) &&
-        PRO_KIDS.has(cand.future_children_plan));
-    if (conflict) {
-      out.push("По-разному смотрите на детей в будущем. Это важно обсудить сразу.");
-    }
-  }
-
-  // V4: religion practice cautions больше нет — practice-signal убран.
-  // Разница по конфессии сама по себе не caution — платформа поддерживает
-  // межконфессиональные браки в рамках «взаимоуважение» (RELIGION_PARTNER_MATCH).
-
-  // Гео несовпадение + оба хотят свой город
-  if (
-    viewer.city &&
-    cand.city &&
-    viewer.city !== cand.city &&
-    viewer.geo_preference === "my_city" &&
-    cand.geo_preference === "my_city"
-  ) {
-    out.push("Вы в разных городах, и оба предпочитаете не уезжать.");
-  }
+  // 2026-07-12 (privacy fix, owner A4): убраны cautions по планам на детей
+  // (future_children_plan) и по гео-предпочтению (geo_preference) — оба поля
+  // post-mutual (progressive-view их не отдаёт), а caution раскрывал значение
+  // кандидата до мэтча. До взаимного интереса caution строится только на
+  // relax-факте и возрастных диапазонах (не спец-ПД).
 
   // Возраст вне взаимных диапазонов
   if (relaxLevel === 0 && viewer.birth_date && cand.birth_date) {

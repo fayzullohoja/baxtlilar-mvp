@@ -42,55 +42,42 @@ type Props = {
  * Личностные черты из Big Five (O/C/E/A/ES) 0-100.
  * Возвращает 1-3 короткие фразы про доминирующие черты (>60) или их
  * противоположности (<40). Среднее (40-60) скипаем.
+ *
+ * 2026-07-12 (i18n fix): фразы берутся из namespace `Personality` (все локали),
+ * а не хардкодятся по-русски — иначе uz/en/tr юзер видел русский текст характера.
+ * `t` — переводчик useTranslations("Personality"); ключи вида `openness.high`.
  */
-function personalityTraits(vector: Record<string, number>): string[] {
-  const out: string[] = [];
-  const O = vector.O;
-  const C = vector.C;
-  const E = vector.E;
-  const A = vector.A;
-  const ES = vector.ES;
+function personalityTraits(
+  vector: Record<string, number>,
+  t: (key: string) => string,
+): string[] {
+  const dims: Array<[number | undefined, string]> = [
+    [vector.O, "openness"],
+    [vector.C, "conscientiousness"],
+    [vector.E, "extraversion"],
+    [vector.A, "agreeableness"],
+    [vector.ES, "emotionalStability"],
+  ];
 
-  if (typeof O === "number") {
-    if (O > 60) out.push("открытый новому опыту");
-    else if (O < 40) out.push("ценящий стабильность и привычное");
-  }
-  if (typeof C === "number") {
-    if (C > 60) out.push("организованный и собранный");
-    else if (C < 40) out.push("гибкий, без жёстких рамок");
-  }
-  if (typeof E === "number") {
-    if (E > 60) out.push("заряжается от людей и общения");
-    else if (E < 40) out.push("спокойный, предпочитает камерное");
-  }
-  if (typeof A === "number") {
-    if (A > 60) out.push("тёплый и располагающий");
-    else if (A < 40) out.push("прямой, без обиняков");
-  }
-  if (typeof ES === "number") {
-    if (ES > 60) out.push("эмоционально устойчивый");
-    else if (ES < 40) out.push("чувствительный, глубоко переживает");
+  const out: string[] = [];
+  for (const [val, key] of dims) {
+    if (typeof val !== "number") continue;
+    if (val > 60) out.push(t(`${key}.high`));
+    else if (val < 40) out.push(t(`${key}.low`));
   }
 
   // Если все черты в среднем диапазоне (40-60), секция «характер» пустовала бы.
-  // Показываем ближайшую к краю черту, чтобы карточка не выглядела скромной.
-  // (Если вектора ещё нет — напр. до прохождения опроса — вернём пусто.)
+  // Показываем ближайшую к краю черту (переиспользуя её high/low ключ), чтобы
+  // карточка не выглядела скромной. (Если вектора нет — вернём пусто.)
   if (out.length === 0) {
-    const dims: Array<[number | undefined, string, string]> = [
-      [O, "тянется к новому опыту", "ценит проверенное и привычное"],
-      [C, "организованный и собранный", "гибкий, без жёстких рамок"],
-      [E, "заряжается от общения", "спокойный, предпочитает камерное"],
-      [A, "тёплый и располагающий", "прямой, без обиняков"],
-      [ES, "эмоционально устойчивый", "тонко и глубоко чувствует"],
-    ];
     let best: string | null = null;
     let bestDelta = -1;
-    for (const [val, hi, lo] of dims) {
+    for (const [val, key] of dims) {
       if (typeof val !== "number") continue;
       const delta = Math.abs(val - 50);
       if (delta > bestDelta) {
         bestDelta = delta;
-        best = val >= 50 ? hi : lo;
+        best = t(`${key}.${val >= 50 ? "high" : "low"}`);
       }
     }
     if (best) return [best];
@@ -134,8 +121,9 @@ const sectionLabelStyle: React.CSSProperties = {
 
 export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
   const t = useTranslations("Profile");
+  const tPersonality = useTranslations("Personality");
   const name = profile.first_name;
-  const traits = personalityTraits(profile.vector);
+  const traits = personalityTraits(profile.vector, tPersonality as (key: string) => string);
   const values = profile.top_life_values.map((v: string) => ({
     key: v,
     label: labelOf(LIFE_VALUES_V3, v, locale),

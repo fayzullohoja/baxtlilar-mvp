@@ -715,27 +715,8 @@
     "verifiedBadge": "Verified"
   },
   "Tutorial": {
-    "intro.title": "Getting started · 1 of 4",
     "next": "Next",
-    "intro.heading": "Things don't work the usual way here.",
-    "intro.body1": "You won't see hundreds of profiles in one evening. The feed is small, carefully curated, with no endless scrolling.",
-    "intro.body2": "We don't show you to others until a moderator confirms your identity. In the meantime, you'll go through a short tour — what each screen means and what to pay attention to.",
-    "chat.title": "Getting started · 3 of 4",
-    "chat.heading": "Chat opens only when it's mutual.",
-    "chat.body1": "You sent your interest. The other person opened your profile and replied with interest in return. Only then does a chat appear.",
-    "chat.body2": "Until that moment, you can't message each other. Not you to them, not them to you. This isn't a bug — it's the whole point.",
-    "chat.body3": "Once the chat is open, it's a normal conversation with text, voice messages, and photos. No timers, no games of who-writes-first.",
-    "safety.title": "Getting started · 4 of 4",
     "complete": "Done",
-    "safety.heading": "If something's wrong — say so.",
-    "safety.body1": "Every profile and every chat has a Report option. A moderator reviews each report. A decision comes within 24 hours.",
-    "safety.body2": "If someone's unpleasant — block them. They won't see you in the feed, can't message you, and won't know you blocked them.",
-    "safety.body3": "Your profile stays private until interest is mutual. Photos can't be saved with a \"download\" button.",
-    "swipe.title": "Getting started · 2 of 4",
-    "swipe.heading": "Not swipes. Interests.",
-    "swipe.body1": "To say \"I'm interested in you,\" you need to open the full profile — photos, text, values — and tap Send interest.",
-    "swipe.body2": "You can (and should) add a short message about what caught your eye. Not \"hi,\" not \"how are you.\"",
-    "swipe.body3": "That's why no one spams anyone. And that's why a reply already means something.",
     "skipTour": "Skip tour",
     "pending": "Please wait…",
     "intro": {
@@ -789,11 +770,7 @@
     "validation": "Check the fields you filled in."
   },
   "Buttons": {
-    "saving.next": "Saving…",
-    "resuming.resume": "Unpausing…",
-    "sending.send": "Sending…",
     "send": "Send",
-    "publishing.publish": "Publishing…",
     "startVerification": "Let's go",
     "waiting": "Please wait…",
     "skipTour": "Skip tour",
@@ -803,36 +780,45 @@
     "cancel": "Cancel",
     "sending": {
       "send": "Sending…"
+    },
+    "resuming": {
+      "resume": "Unpausing…"
+    },
+    "publishing": {
+      "publish": "Publishing…"
     }
   },
   "Verification": {
-    "queued.label": "In queue",
-    "queued.title": "A moderator is reviewing your application right now.",
-    "queued.body": "This usually takes 2–4 hours. When there's a decision, you'll get a notification in Telegram. Until then, you won't appear in the feed or receive interests.",
-    "needsChanges.label": "Needs fixing",
-    "needsChanges.title": "The moderator needs you to clarify a couple of things.",
-    "needsChanges.body": "It's usually a poor selfie or an unreadable photo of your document. Open the verification section and redo it — it'll take just a couple of minutes.",
-    "rejected.label": "Not approved",
-    "rejected.title": "Unfortunately, we can't verify your profile.",
-    "rejected.body": "If you think this is a mistake, write to us at @baxtlilar_support. The moderator's decision is final.",
-    "notStarted.label": "Step not completed",
-    "notStarted.title": "Verification first.",
-    "notStarted.body": "To be shown to others, you need to verify your identity — a document and a selfie. Open the bot and complete the steps.",
-    "approved.label": "Done",
-    "approved.title": "Your profile is verified.",
-    "approved.body": "Reload the page — the feed should appear."
+    "queued": {
+      "label": "In queue",
+      "title": "A moderator is reviewing your application right now.",
+      "body": "This usually takes 2–4 hours. When there's a decision, you'll get a notification in Telegram. Until then, you won't appear in the feed or receive interests."
+    },
+    "needsChanges": {
+      "label": "Needs fixing",
+      "title": "The moderator needs you to clarify a couple of things.",
+      "body": "It's usually a poor selfie or an unreadable photo of your document. Open the verification section and redo it — it'll take just a couple of minutes."
+    },
+    "rejected": {
+      "label": "Not approved",
+      "title": "Unfortunately, we can't verify your profile.",
+      "body": "If you think this is a mistake, write to us at @baxtlilar_support. The moderator's decision is final."
+    },
+    "notStarted": {
+      "label": "Step not completed",
+      "title": "Verification first.",
+      "body": "To be shown to others, you need to verify your identity — a document and a selfie. Open the bot and complete the steps."
+    },
+    "approved": {
+      "label": "Done",
+      "title": "Your profile is verified.",
+      "body": "Reload the page — the feed should appear."
+    }
   },
   "Time": {
     "justNow": "just now"
   },
   "InterestModal": {
-    "errors.contactBlocked": "We found contact info in your message (phone, handle, or link). That doesn't work here — remove it and try again.",
-    "errors.alreadySent": "You've already sent interest to this person.",
-    "errors.dailyLimit": "You've reached today's interest limit. Come back tomorrow.",
-    "errors.declined": "This person is unavailable.",
-    "errors.blocked": "This person is unavailable.",
-    "errors.unavailable": "This profile is no longer available.",
-    "errors.noPermission": "You need verification to send interest.",
     "messagePlaceholder": "What in the profile spoke to you?",
     "sentTitle": "Interest sent.",
     "sentDescription": "If {name} responds with interest, you'll get a Telegram notification and a chat will open. If not, the request will close automatically after 72 hours, and the person won't see it among their requests.",
@@ -851,15 +837,18 @@
     "err_blocked": "This person is unavailable.",
     "err_unavailable": "This profile is no longer available.",
     "err_no_interest_permission": "You need verification to send interest.",
-    "err_failed": "Something went wrong. Please try again."
+    "err_failed": "Something went wrong. Please try again.",
+    "errors": {
+      "contactBlocked": "We found contact info in your message (phone, handle, or link). That doesn't work here — remove it and try again.",
+      "alreadySent": "You've already sent interest to this person.",
+      "dailyLimit": "You've reached today's interest limit. Come back tomorrow.",
+      "declined": "This person is unavailable.",
+      "blocked": "This person is unavailable.",
+      "unavailable": "This profile is no longer available.",
+      "noPermission": "You need verification to send interest."
+    }
   },
   "Upload": {
-    "errors.badType": "JPG, PNG, WebP, and HEIC are supported. Please try again.",
-    "errors.tooLarge": "The file is too large. Reduce its size or take another photo.",
-    "errors.duplicateIdentity": "This document is already registered to another profile.",
-    "errors.duplicatePassport": "This document is already registered.",
-    "errors.duplicateSelfie": "This selfie has already been seen.",
-    "errors.failed": "Upload failed. Check your connection and try again.",
     "errors": {
       "badType": "Unsupported file type",
       "tooLarge": "File is too large",
@@ -876,15 +865,17 @@
     "blockedLabel": "Blocked"
   },
   "Report": {
-    "reasons.fake": "I suspect a fake / not a real person",
-    "reasons.offensive": "Insults, rudeness",
-    "reasons.contacts": "Asking for contacts outside Baxtlilar",
-    "reasons.spam": "Advertising, spam",
-    "reasons.inappropriate": "Content not meant for dating",
-    "reasons.other": "Other",
     "detailsPlaceholder": "Details (optional)",
     "titleWithName": "Report {name}",
-    "reasonsTitle": "What's wrong:"
+    "reasonsTitle": "What's wrong:",
+    "reasons": {
+      "fake": "I suspect a fake / not a real person",
+      "offensive": "Insults, rudeness",
+      "contacts": "Asking for contacts outside Baxtlilar",
+      "spam": "Advertising, spam",
+      "inappropriate": "Content not meant for dating",
+      "other": "Other"
+    }
   },
   "InterestActions": {
     "skipButton": "Not right now"
@@ -896,37 +887,53 @@
     "to": "to"
   },
   "Attribution": {
-    "sources.telegram": "Telegram channel",
-    "sources.friends": "Friends / acquaintances",
-    "sources.ads": "Advertising",
-    "sources.search": "Google / Yandex search",
-    "sources.media": "Media / article",
-    "sources.event": "Event",
-    "sources.other": "Other"
+    "sources": {
+      "telegram": "Telegram channel",
+      "friends": "Friends / acquaintances",
+      "ads": "Advertising",
+      "search": "Google / Yandex search",
+      "media": "Media / article",
+      "event": "Event",
+      "other": "Other"
+    }
   },
   "MatchStory": {
     "commonSection": "What you have in common",
     "cautionsSection": "What to keep in mind"
   },
   "AnketaSelf": {
-    "errors.bioHasContacts": "We found a contact in the text (phone, handle, or link). Remove it — it won't work here.",
-    "errors.bioTooShort": "Tell us a bit more — at least 30 characters.",
-    "errors.bioTooLong": "Too long — 1000 characters max."
+    "errors": {
+      "bioHasContacts": "We found a contact in the text (phone, handle, or link). Remove it — it won't work here.",
+      "bioTooShort": "Tell us a bit more — at least 30 characters.",
+      "bioTooLong": "Too long — 1000 characters max."
+    }
   },
   "Personality": {
-    "openness.high": "open to new experiences",
-    "openness.low": "values stability and the familiar",
-    "conscientiousness.high": "organized and focused",
-    "conscientiousness.low": "flexible, without rigid rules",
-    "extraversion.high": "energized by people and connection",
-    "extraversion.low": "calm, prefers intimate settings",
-    "agreeableness.high": "warm and welcoming",
-    "agreeableness.low": "direct, no beating around the bush",
-    "emotionalStability.high": "emotionally steady",
-    "emotionalStability.low": "sensitive, feels things deeply"
+    "openness": {
+      "high": "open to new experiences",
+      "low": "values stability and the familiar"
+    },
+    "conscientiousness": {
+      "high": "organized and focused",
+      "low": "flexible, without rigid rules"
+    },
+    "extraversion": {
+      "high": "energized by people and connection",
+      "low": "calm, prefers intimate settings"
+    },
+    "agreeableness": {
+      "high": "warm and welcoming",
+      "low": "direct, no beating around the bush"
+    },
+    "emotionalStability": {
+      "high": "emotionally steady",
+      "low": "sensitive, feels things deeply"
+    }
   },
   "AnketaLooking": {
-    "errors.ageRangeInvalid": "The maximum must be greater than or equal to the minimum."
+    "errors": {
+      "ageRangeInvalid": "The maximum must be greater than or equal to the minimum."
+    }
   },
   "VerificationPlashka": {
     "queued": {

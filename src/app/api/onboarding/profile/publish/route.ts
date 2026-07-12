@@ -25,6 +25,10 @@ export async function POST(): Promise<NextResponse> {
   // юзеров region валидно null, и проверять его truthy здесь — это permanent
   // блок публикации.
   const regionOk = p && (p.country_of_residence !== "UZ" || !!p.region);
+  // 2026-07-12: religion стал ОПЦИОНАЛЬНЫМ в анкете (owner: «вера/доход
+  // опциональны», убран «не хочу указывать»). Раньше publish требовал
+  // p.religion → юзер, не указавший веру (теперь легальный выбор), навсегда
+  // застревал на profile_preview с profile_incomplete (dead-end). Убираем.
   const complete =
     p &&
     p.display_name &&
@@ -32,7 +36,6 @@ export async function POST(): Promise<NextResponse> {
     p.birth_date &&
     regionOk &&
     p.bio &&
-    p.religion &&
     Array.isArray(p.top_life_values) &&
     p.top_life_values.length >= 1 &&
     p.partner_age_min &&

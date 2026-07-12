@@ -715,27 +715,8 @@
     "verifiedBadge": "Tasdiqlangan"
   },
   "Tutorial": {
-    "intro.title": "Tanishish · 1 dan 4",
     "next": "Keyingi",
-    "intro.heading": "Bu yerda hamma narsa odatdagiga o'xshamaydi.",
-    "intro.body1": "Siz kechqurun yuzlab anketa ko'rmaydi. Lenta kichik, ehtiyotkorlik bilan tanlangan, cheksiz aylanmasiz.",
-    "intro.body2": "Biz sizni odamlarga ko'rsatmaymiz, moderator sizning shaxsiyatni tasdiqlagungacha. Shu bilan birga, siz qisqa turni o'tasiz — har bir ekran nima ekanligini va nima e'tibor berish kerakligini.",
-    "chat.title": "Tanishish · 3 dan 4",
-    "chat.heading": "Chat o'zaro ochiladi.",
-    "chat.body1": "Siz manfaat jo'natdingiz. Ikkinchi kishi sizning profilingizni ochdi va o'z navbatida manfaat bilan javob berdi. Faqat shundan keyin chat paydo bo'ladi.",
-    "chat.body2": "Shu vaqtgacha bir-biringizga yoza olmaysiz. Na siz unga, na u sizga. Bu xato emas — bu mahsulatdir.",
-    "chat.body3": "Chat ochilganda — tekst, ovozli va fotolashlar bilan oddiy muloqot. Taymerlarsiz va \"birinchi kim\" o'yinlarsiz.",
-    "safety.title": "Tanishish · 4 dan 4",
     "complete": "Tayyor",
-    "safety.heading": "Agar biror narsa to'g'ri bo'lmasa — ayting.",
-    "safety.body1": "Har qaysi profil va har qaysi chatda Shikoyat qilish tugmasi mavjud. Moderator har bir shikoyatni ko'rib chiqadi. Qaror 24 soat ichida keladi.",
-    "safety.body2": "Agar shaxs yoqimsiz bo'lsa — uni blokka oling. U sizni lentada ko'rmaydi, yoza olmaydi, uni bloklashganingizni bilmaydi.",
-    "safety.body3": "Anketa o'zaro manfaatgacha maxfiy qoladi. Fotolarni \"yuklash\" tugmasi orqali saqlab bo'lmaydi.",
-    "swipe.title": "Tanishish · 2 dan 4",
-    "swipe.heading": "Suvayp emas. Manfaatlar.",
-    "swipe.body1": "«Siz meni manfaatlantiradi» demoqchi bo'lsangiz, anketa butunini ochishingiz kerak — fotolar, matn, qiymatlar — va Manfaat jo'natish tugmasini bosing.",
-    "swipe.body2": "Manfaatga qisqa xabar qo'shishingiz mumkin (va kerak) — nima tarzida oldi. \"Salom\" emas, \"qandaysiz\" emas.",
-    "swipe.body3": "Shuning uchun hech kim hech koga spam jo'natmaydi. Va shuning uchun javob allaqachon natijador.",
     "skipTour": "Turni oʻtkazib yuborish",
     "pending": "Kuting…",
     "intro": {
@@ -789,11 +770,7 @@
     "validation": "To'ldirilgan maydonlarni tekshiring."
   },
   "Buttons": {
-    "saving.next": "Saqlanmoqda…",
-    "resuming.resume": "Pauza olib tashlanmoqda…",
-    "sending.send": "Yuborilmoqda…",
     "send": "Yuborish",
-    "publishing.publish": "Nishryotilmoqda…",
     "startVerification": "Boshlaylik",
     "waiting": "Kutib turing…",
     "skipTour": "Turni oʻtkazib yuborish",
@@ -803,36 +780,45 @@
     "cancel": "Bekor qilish",
     "sending": {
       "send": "Yuborilyapti…"
+    },
+    "resuming": {
+      "resume": "Pauza olib tashlanmoqda…"
+    },
+    "publishing": {
+      "publish": "Nishryotilmoqda…"
     }
   },
   "Verification": {
-    "queued.label": "Navbatda",
-    "queued.title": "Moderator hozir sizning arizangizni ko'rayapti.",
-    "queued.body": "Odatda 2–4 soat vaqt oladi. Qaror qabul qilinganda Telegram'da xabar keladi. Shu paytda siz lentada ko'rinmaysiz va boshqalarning ankesini ko'rmaysiz.",
-    "needsChanges.label": "Tuzatish kerak",
-    "needsChanges.title": "Moderator bir necha narsani aniqlashni so'ramoqda.",
-    "needsChanges.body": "Odatda bu sifatsiz selfi yoki oʻqib boʻlmaydigan hujjat fotosi. Tekshiruv boʻlimini oching va qaytadan bajaring — bir necha daqiqa oladi.",
-    "rejected.label": "Rad etildi",
-    "rejected.title": "Afsuski, biz sizning profilingizni tasdiqlaya olmaymiz.",
-    "rejected.body": "Agar bu xato deb o'ylasangiz, bizga @baxtlilar_support'ga yozing. Moderatorning qaroriga berilgan so'z oxirgi.",
-    "notStarted.label": "Qadam o'tilmadi",
-    "notStarted.title": "Avval tekshirish.",
-    "notStarted.body": "Sizni boshqalarga koʻrsatishimiz uchun shaxsni tasdiqlash kerak — hujjat va selfi. Botni oching va bosqichlardan oʻting.",
-    "approved.label": "Tayyor",
-    "approved.title": "Profil tasdiqlandi.",
-    "approved.body": "Sahifani qayta yuklang — tasmasi paydo bo'lishi kerak."
+    "queued": {
+      "label": "Navbatda",
+      "title": "Moderator hozir sizning arizangizni ko'rayapti.",
+      "body": "Odatda 2–4 soat vaqt oladi. Qaror qabul qilinganda Telegram'da xabar keladi. Shu paytda siz lentada ko'rinmaysiz va boshqalarning ankesini ko'rmaysiz."
+    },
+    "needsChanges": {
+      "label": "Tuzatish kerak",
+      "title": "Moderator bir necha narsani aniqlashni so'ramoqda.",
+      "body": "Odatda bu sifatsiz selfi yoki oʻqib boʻlmaydigan hujjat fotosi. Tekshiruv boʻlimini oching va qaytadan bajaring — bir necha daqiqa oladi."
+    },
+    "rejected": {
+      "label": "Rad etildi",
+      "title": "Afsuski, biz sizning profilingizni tasdiqlaya olmaymiz.",
+      "body": "Agar bu xato deb o'ylasangiz, bizga @baxtlilar_support'ga yozing. Moderatorning qaroriga berilgan so'z oxirgi."
+    },
+    "notStarted": {
+      "label": "Qadam o'tilmadi",
+      "title": "Avval tekshirish.",
+      "body": "Sizni boshqalarga koʻrsatishimiz uchun shaxsni tasdiqlash kerak — hujjat va selfi. Botni oching va bosqichlardan oʻting."
+    },
+    "approved": {
+      "label": "Tayyor",
+      "title": "Profil tasdiqlandi.",
+      "body": "Sahifani qayta yuklang — tasmasi paydo bo'lishi kerak."
+    }
   },
   "Time": {
     "justNow": "endigina"
   },
   "InterestModal": {
-    "errors.contactBlocked": "Xabarda kontakt topildi (telefon, nikname, havola). Bu yerda ishlami — o'chirib tashlang va yana urinib ko'ring.",
-    "errors.alreadySent": "Siz allaqachon bu odamga qiziqishingizni yubordingiz.",
-    "errors.dailyLimit": "Bugun qiziqish chegarasi tugab qoldi. Ertaga qaytib keling.",
-    "errors.declined": "Bu odam mavjud emas.",
-    "errors.blocked": "Bu odam mavjud emas.",
-    "errors.unavailable": "Anketa endi mavjud emas.",
-    "errors.noPermission": "Qiziqishni yuborish uchun tekshirish kerak.",
     "messagePlaceholder": "Anketa-da nimasi sizga yoqdi?",
     "sentTitle": "Qiziqish yuborildi.",
     "sentDescription": "Agar {name} qiziqish bilan javob bersa — Telegram orqali bildirishnoma keladi va chat ochiladi. Boʻlmasa — 72 soatdan keyin soʻrov avtomatik yopiladi va inson uni oʻzining soʻrovlarida koʻrmaydi.",
@@ -851,15 +837,18 @@
     "err_blocked": "Bu inson mavjud emas.",
     "err_unavailable": "Anketa endi mavjud emas.",
     "err_no_interest_permission": "Qiziqish yuborish uchun tasdiqlash kerak.",
-    "err_failed": "Nimadir notoʻgʻri ketdi. Qayta urinib koʻring."
+    "err_failed": "Nimadir notoʻgʻri ketdi. Qayta urinib koʻring.",
+    "errors": {
+      "contactBlocked": "Xabarda kontakt topildi (telefon, nikname, havola). Bu yerda ishlami — o'chirib tashlang va yana urinib ko'ring.",
+      "alreadySent": "Siz allaqachon bu odamga qiziqishingizni yubordingiz.",
+      "dailyLimit": "Bugun qiziqish chegarasi tugab qoldi. Ertaga qaytib keling.",
+      "declined": "Bu odam mavjud emas.",
+      "blocked": "Bu odam mavjud emas.",
+      "unavailable": "Anketa endi mavjud emas.",
+      "noPermission": "Qiziqishni yuborish uchun tekshirish kerak."
+    }
   },
   "Upload": {
-    "errors.badType": "JPG, PNG, WebP, HEIC qo'llab-quvvatlanadi. Yana urinib ko'ring.",
-    "errors.tooLarge": "Fayl juda katta. Hajmini kichraytiring yoki boshqacha oling.",
-    "errors.duplicateIdentity": "Bu hujjat boshqa anketa uchun ro'yxatga olingan.",
-    "errors.duplicatePassport": "Bu hujjat allaqachon roʻyxatga olingan.",
-    "errors.duplicateSelfie": "Bu selfi allaqachon uchratilgan.",
-    "errors.failed": "Yuklaya olmadi. Ulanishni tekshiring va yana urinib ko'ring.",
     "errors": {
       "badType": "Qoʻllab-quvvatlanmaydigan fayl turi",
       "tooLarge": "Fayl juda katta",
@@ -876,15 +865,17 @@
     "blockedLabel": "Bloklangan"
   },
   "Report": {
-    "reasons.fake": "Shubhali / real emas deb o'ylayman",
-    "reasons.offensive": "Ko'pirtko'likklar, xamsalik",
-    "reasons.contacts": "Baxtlilardan tashqari kontakt soʻramoqda",
-    "reasons.spam": "Reklama, spam",
-    "reasons.inappropriate": "Tanishish uchun mos emas",
-    "reasons.other": "Boshqa",
     "detailsPlaceholder": "Batafsil (ixtiyoriy)",
     "titleWithName": "{name} ga shikoyat qilish",
-    "reasonsTitle": "Nima notoʻgʻri:"
+    "reasonsTitle": "Nima notoʻgʻri:",
+    "reasons": {
+      "fake": "Shubhali / real emas deb o'ylayman",
+      "offensive": "Ko'pirtko'likklar, xamsalik",
+      "contacts": "Baxtlilardan tashqari kontakt soʻramoqda",
+      "spam": "Reklama, spam",
+      "inappropriate": "Tanishish uchun mos emas",
+      "other": "Boshqa"
+    }
   },
   "InterestActions": {
     "skipButton": "Hozir mos emas"
@@ -896,37 +887,53 @@
     "to": "gacha"
   },
   "Attribution": {
-    "sources.telegram": "Telegram-kanal",
-    "sources.friends": "Do'stlar / tanishlar",
-    "sources.ads": "Reklama",
-    "sources.search": "Google / Yandex qidiruvi",
-    "sources.media": "Ommaviy axborot / maqola",
-    "sources.event": "Tadbir",
-    "sources.other": "Boshqa"
+    "sources": {
+      "telegram": "Telegram-kanal",
+      "friends": "Do'stlar / tanishlar",
+      "ads": "Reklama",
+      "search": "Google / Yandex qidiruvi",
+      "media": "Ommaviy axborot / maqola",
+      "event": "Tadbir",
+      "other": "Boshqa"
+    }
   },
   "MatchStory": {
     "commonSection": "Sizda nima o'rtaq",
     "cautionsSection": "Nimaga e'tibor berish kerak"
   },
   "AnketaSelf": {
-    "errors.bioHasContacts": "Matnda kontakt topildi (telefon, nikname, havola). O'chirib tashlang — bu yerda ishlami.",
-    "errors.bioTooShort": "Ko'proq aytib bering — minimal 30 ta belgi.",
-    "errors.bioTooLong": "Juda uzun — maksimal 1000 ta belgi."
+    "errors": {
+      "bioHasContacts": "Matnda kontakt topildi (telefon, nikname, havola). O'chirib tashlang — bu yerda ishlami.",
+      "bioTooShort": "Ko'proq aytib bering — minimal 30 ta belgi.",
+      "bioTooLong": "Juda uzun — maksimal 1000 ta belgi."
+    }
   },
   "Personality": {
-    "openness.high": "yangi tajribaga ochiq",
-    "openness.low": "barqarorlik va tanishni qiymatlang",
-    "conscientiousness.high": "tashkiliy va yig'ma",
-    "conscientiousness.low": "moslashuvchan, qat'iy chegaralarsiz",
-    "extraversion.high": "odamlarda va suhbatda energiya oladi",
-    "extraversion.low": "sokin, intim ommaviy tashabbuhi afzal ko'radi",
-    "agreeableness.high": "iliq va o'zimiz uchun",
-    "agreeableness.low": "to'g'ri, hojjat-ho'jjatsiz",
-    "emotionalStability.high": "emosional turg'un",
-    "emotionalStability.low": "sezgir, chuqur his qiladi"
+    "openness": {
+      "high": "yangi tajribaga ochiq",
+      "low": "barqarorlik va tanishni qiymatlang"
+    },
+    "conscientiousness": {
+      "high": "tashkiliy va yig'ma",
+      "low": "moslashuvchan, qat'iy chegaralarsiz"
+    },
+    "extraversion": {
+      "high": "odamlarda va suhbatda energiya oladi",
+      "low": "sokin, intim ommaviy tashabbuhi afzal ko'radi"
+    },
+    "agreeableness": {
+      "high": "iliq va o'zimiz uchun",
+      "low": "to'g'ri, hojjat-ho'jjatsiz"
+    },
+    "emotionalStability": {
+      "high": "emosional turg'un",
+      "low": "sezgir, chuqur his qiladi"
+    }
   },
   "AnketaLooking": {
-    "errors.ageRangeInvalid": "Maksimum minimalga teng yoki katta bo'lishi kerak."
+    "errors": {
+      "ageRangeInvalid": "Maksimum minimalga teng yoki katta bo'lishi kerak."
+    }
   },
   "VerificationPlashka": {
     "queued": {
