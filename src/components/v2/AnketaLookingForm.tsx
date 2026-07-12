@@ -17,15 +17,15 @@ import { GEO_PREFERENCE } from "@/lib/profile/options";
  * API: /api/onboarding/profile/looking-for.
  */
 
-const ERR_COPY: Record<string, string> = {
-  age_range_invalid: "Максимум должен быть больше или равен минимуму.",
-  validation: "Проверь возраст — от 18 до 100.",
-  failed: "Не получилось сохранить. Попробуй ещё раз.",
-};
-
 export function V2AnketaLookingForm({ locale }: { locale: string }) {
   const router = useRouter();
   const t = useTranslations("Anketa");
+  // Локализованные ошибки из i18n — не хардкод RU ты-формы.
+  const errCopy: Record<string, string> = {
+    age_range_invalid: t("err_age_range_invalid"),
+    validation: t("err_age_out_of_range"),
+    failed: t("err_failed"),
+  };
   const [min, setMin] = useState("");
   const [max, setMax] = useState("");
   const [geo, setGeo] = useState("");
@@ -76,10 +76,7 @@ export function V2AnketaLookingForm({ locale }: { locale: string }) {
 
   return (
     <div>
-      <Field
-        label={t("partnerAgeLabel")}
-        hint="От и до — фильтр алгоритма. Не строгая граница, просто чтобы не показывать совсем мимо."
-      >
+      <Field label={t("partnerAgeLabel")} hint={t("partnerAgeHint")}>
         <div style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}>
           <div style={{ flex: 1 }}>
             <div
@@ -90,7 +87,7 @@ export function V2AnketaLookingForm({ locale }: { locale: string }) {
                 marginBottom: "4px",
               }}
             >
-              От
+              {t("rangeFrom")}
             </div>
             <TextInput
               type="number"
@@ -118,7 +115,7 @@ export function V2AnketaLookingForm({ locale }: { locale: string }) {
                 marginBottom: "4px",
               }}
             >
-              До
+              {t("rangeTo")}
             </div>
             <TextInput
               type="number"
@@ -147,7 +144,7 @@ export function V2AnketaLookingForm({ locale }: { locale: string }) {
             marginBottom: "16px",
           }}
         >
-          {ERR_COPY[err] ?? ERR_COPY.failed}
+          {errCopy[err] ?? errCopy.failed}
         </div>
       ) : null}
 

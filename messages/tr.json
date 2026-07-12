@@ -206,6 +206,10 @@
     "err_region_required_for_uz": "Özbekistan'da yaşıyorsanız il veya şehir seçin.",
     "err_validation": "Doldurduğunuz alanları kontrol edin.",
     "err_failed": "Kaydedilemedi. Lütfen tekrar deneyin.",
+    "err_age_range_invalid": "En büyük değer, en küçüğe eşit veya ondan büyük olmalıdır.",
+    "err_age_out_of_range": "Yaşı kontrol edin — 18 ile 100 arası.",
+    "rangeFrom": "En az",
+    "rangeTo": "En çok",
     "birth_place_country_label": "Doğduğunuz ülke",
     "birth_place_country_hint": "Nerede doğdunuz. Şu anki yaşadığınız yerden farklı olabilir.",
     "birth_place_region_label": "İl / bölge",
@@ -492,7 +496,18 @@
   "Main": {
     "title": "Hoş geldiniz!",
     "subtitle": "Profiliniz aktif",
-    "feed_soon": "Size uygun kişilerin seçkisi yakında burada görünecek."
+    "feed_soon": "Size uygun kişilerin seçkisi yakında burada görünecek.",
+    "eyebrow_paused": "Duraklatıldı",
+    "paused_title": "Duraklamadasınız.",
+    "paused_body": "Eşleştirmede gösterilmiyorsunuz ve yeni ilgi almıyorsunuz. Mevcut sohbetler kalır — yanıt verebilirsiniz. Hazır olduğunuzda duraklamayı kaldırın.",
+    "eyebrow_today": "Bugün · eşleşme",
+    "review_title": "Profiliniz inceleniyor.",
+    "review_body": "Profilinizin bazı bilgilerini kontrol ediyoruz. İnceleme sürerken eşleştirmede gösterilmezsiniz — bu genellikle birkaç saatten bir güne kadar sürer. Her şey onaylanır onaylanmaz eşleştirme otomatik olarak açılır.",
+    "error_title": "Eşleşme yüklenemedi.",
+    "error_body": "Bizim tarafımızda geçici bir teknik aksaklık. Bir dakika sonra sayfayı yenileyin — verileriniz güvende.",
+    "empty_title": "Algoritma doğru kişiyi arıyor.",
+    "empty_body": "Henüz sizinkiyle yeterince eşleşen bir profil yok. Bu normal — herkesi göstermiyoruz. Her gün yeni insanlar geliyor: doğru kişiyi bulur bulmaz burada olacak.",
+    "empty_body_2": "Bu arada — profilde tercih ettiğiniz yaş aralığını genişletebilir veya psiko-portrenizi tamamlayabilirsiniz. Verileriniz ne kadar kesin olursa, eşleştirme o kadar geniş ve isabetli olur."
   },
   "Nav": {
     "feed": "Akış",

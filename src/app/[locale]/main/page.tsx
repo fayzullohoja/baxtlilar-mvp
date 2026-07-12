@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireActiveUser } from "@/lib/auth/active-guard";
 import { getUnreadTotal } from "@/lib/chat/list";
 import { BottomNav } from "@/components/bottom-nav";
@@ -32,6 +32,7 @@ export const dynamic = "force-dynamic";
 export default async function MainPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations("Main");
   // allowPaused: paused — first-class state. БЕЗ него router (paused→/main) и
   // гард (отвергает paused) образуют бесконечную петлю редиректов: юзер на
   // паузе намертво заперт и не может сняться. C1.
@@ -45,15 +46,11 @@ export default async function MainPage({ params }: { params: Promise<{ locale: s
   if (role === "paused") {
     return (
       <>
-        <MiniAppShell eyebrow="Пауза" align="top" footer={null}>
+        <MiniAppShell eyebrow={t("eyebrow_paused")} align="top" footer={null}>
           <Headline size="lg" as="h1">
-            Вы на паузе.
+            {t("paused_title")}
           </Headline>
-          <Lead>
-            Вас не показывают в подборе, новые интересы не приходят. Существующие
-            чаты остаются — можно отвечать. Снимите паузу, когда будете готовы
-            продолжить.
-          </Lead>
+          <Lead>{t("paused_body")}</Lead>
           <div style={{ marginTop: "28px" }}>
             <PausedResume />
           </div>
@@ -91,13 +88,9 @@ export default async function MainPage({ params }: { params: Promise<{ locale: s
       <>
         <MiniAppShell eyebrow="Baxtlilar" align="top" footer={null}>
           <Headline size="lg" as="h1">
-            Анкета на проверке.
+            {t("review_title")}
           </Headline>
-          <Lead>
-            Мы уточняем некоторые данные Вашей анкеты. Пока идёт проверка, Вас не
-            показывают в подборе — обычно это занимает от нескольких часов до
-            суток. Как только всё подтвердим, подбор включится автоматически.
-          </Lead>
+          <Lead>{t("review_body")}</Lead>
         </MiniAppShell>
         <BottomNav active="feed" unread={unread} />
       </>
@@ -114,14 +107,11 @@ export default async function MainPage({ params }: { params: Promise<{ locale: s
   } catch {
     return (
       <>
-        <MiniAppShell eyebrow="Сегодня · подбор" align="top" footer={null}>
+        <MiniAppShell eyebrow={t("eyebrow_today")} align="top" footer={null}>
           <Headline size="lg" as="h1">
-            Не удалось загрузить подбор.
+            {t("error_title")}
           </Headline>
-          <Lead>
-            Временная техническая заминка на нашей стороне. Обновите страницу
-            через минуту — Ваши данные в порядке.
-          </Lead>
+          <Lead>{t("error_body")}</Lead>
         </MiniAppShell>
         <BottomNav active="feed" unread={unread} />
       </>
@@ -131,23 +121,14 @@ export default async function MainPage({ params }: { params: Promise<{ locale: s
   if (!match) {
     return (
       <>
-        <MiniAppShell eyebrow="Сегодня · подбор" align="top" footer={null}>
+        <MiniAppShell eyebrow={t("eyebrow_today")} align="top" footer={null}>
           <Headline size="lg" as="h1">
-            Алгоритм ищет подходящего человека.
+            {t("empty_title")}
           </Headline>
           {/* MATCH-4: честный last-resort — сюда попадают после полной
               degradation ladder; не обещаем «завтра точно сработает». */}
-          <Lead>
-            Пока нет анкеты, которая бы достаточно совпадала с Вашей. Это
-            нормально — мы не показываем кого попало. Новые люди появляются
-            каждый день: как только найдём подходящего человека, он будет
-            здесь.
-          </Lead>
-          <Lead style={{ marginTop: "20px" }}>
-            А пока — можете расширить желаемый возрастной диапазон в анкете
-            или дополнить психо-портрет. Чем точнее данные, тем шире и точнее
-            подбор.
-          </Lead>
+          <Lead>{t("empty_body")}</Lead>
+          <Lead style={{ marginTop: "20px" }}>{t("empty_body_2")}</Lead>
         </MiniAppShell>
         <BottomNav active="feed" unread={unread} />
       </>
@@ -160,7 +141,7 @@ export default async function MainPage({ params }: { params: Promise<{ locale: s
   return (
     <>
       <MiniAppShell
-        eyebrow="Сегодня · подбор"
+        eyebrow={t("eyebrow_today")}
         align="top"
         footer={
           <InterestActions

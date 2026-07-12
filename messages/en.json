@@ -206,6 +206,10 @@
     "err_region_required_for_uz": "If you live in Uzbekistan, select a region or city.",
     "err_validation": "Check the fields you've filled in.",
     "err_failed": "Couldn't save. Please try again.",
+    "err_age_range_invalid": "The maximum must be greater than or equal to the minimum.",
+    "err_age_out_of_range": "Check the age — from 18 to 100.",
+    "rangeFrom": "From",
+    "rangeTo": "To",
     "birth_place_country_label": "Country of birth",
     "birth_place_country_hint": "Where you were born. May differ from where you live now.",
     "birth_place_region_label": "Region / area",
@@ -492,7 +496,18 @@
   "Main": {
     "title": "Welcome!",
     "subtitle": "Your profile is active",
-    "feed_soon": "Matches with the right people will appear here soon."
+    "feed_soon": "Matches with the right people will appear here soon.",
+    "eyebrow_paused": "Paused",
+    "paused_title": "You're on pause.",
+    "paused_body": "You're hidden from matching and won't receive new interests. Existing chats stay — you can still reply. Lift the pause whenever you're ready to continue.",
+    "eyebrow_today": "Today · match",
+    "review_title": "Your profile is under review.",
+    "review_body": "We're double-checking some details of your profile. While the review is in progress you're hidden from matching — this usually takes from a few hours to a day. As soon as everything is confirmed, matching turns on automatically.",
+    "error_title": "Couldn't load your match.",
+    "error_body": "A temporary technical hiccup on our side. Refresh the page in a minute — your data is safe.",
+    "empty_title": "The algorithm is looking for the right person.",
+    "empty_body": "There's no profile yet that matches yours closely enough. That's normal — we don't show just anyone. New people appear every day: as soon as we find the right person, they'll be here.",
+    "empty_body_2": "In the meantime, you can widen your preferred age range in the profile or complete your psycho-portrait. The more precise your data, the broader and more accurate the matching."
   },
   "Nav": {
     "feed": "Feed",
