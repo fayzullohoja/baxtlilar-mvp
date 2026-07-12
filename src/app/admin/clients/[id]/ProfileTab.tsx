@@ -89,6 +89,24 @@ export async function ProfileTab({ userId }: { userId: string }) {
   const age = p.birth_date ? ageFromDate(String(p.birth_date)) : null;
   const status = p.status as string | null;
 
+  // Дети: пол+возраст каждого (extended.family.children). Легаси-фолбэк — диапазон.
+  const childKids = (Array.isArray(fam.children) ? fam.children : []) as Array<{
+    gender?: string | null;
+    age?: number | null;
+  }>;
+  const childrenSummary = childKids.length
+    ? childKids
+        .map((c) => {
+          const g =
+            c?.gender === "boy" ? "мальчик" : c?.gender === "girl" ? "девочка" : "";
+          const a = typeof c?.age === "number" ? `${c.age} л.` : "?";
+          return [g, a].filter(Boolean).join(" ");
+        })
+        .join(", ")
+    : fam.children_age_range
+      ? L(CHILDREN_AGE_RANGE, fam.children_age_range)
+      : "";
+
   const districtLine =
     p.district != null && p.district !== ""
       ? `${raw(p.district)}${p.district_visible_public ? " · публично" : " · скрыт"}`
@@ -130,7 +148,7 @@ export async function ProfileTab({ userId }: { userId: string }) {
             p.has_children
               ? `${L(HAS_CHILDREN, p.has_children)}${
                   typeof p.children_count === "number" ? ` · ${p.children_count} дет.` : ""
-                }${fam.children_age_range ? ` · ${L(CHILDREN_AGE_RANGE, fam.children_age_range)}` : ""}`
+                }${childrenSummary ? ` · ${childrenSummary}` : ""}`
               : "—"
           }
         />

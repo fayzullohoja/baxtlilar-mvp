@@ -274,10 +274,21 @@ export const familyChildrenSchema = z
   .object({
     marital_status: z.enum(tuple(vals(MARITAL_STATUS))),
     has_children: z.enum(tuple(vals(HAS_CHILDREN))),
-    // Ревью оунера Экран 5: количество детей — бакеты 1/2/3/4+/«не уточнять»;
-    // форма шлёт int (4+→4, «не уточнять»→null). Колонка hot int (0-10).
-    children_count: z.coerce.number().int().min(0).max(10).optional().nullable(),
-    // Возраст детей — диапазоны (не точный возраст), COLD → extended.family.
+    // 2026-07-12: количество детей = длина массива children (точное число).
+    // Колонка hot int.
+    children_count: z.coerce.number().int().min(0).max(20).optional().nullable(),
+    // 2026-07-12 (ревью оунера): пол+возраст КАЖДОГО ребёнка. COLD → extended.family.children.
+    children: z
+      .array(
+        z.object({
+          gender: z.enum(["boy", "girl"]).optional().nullable(),
+          age: z.coerce.number().int().min(0).max(30).optional().nullable(),
+        }),
+      )
+      .max(20)
+      .optional()
+      .nullable(),
+    // Возраст детей — легаси-диапазон (заменён на children[].age), COLD.
     children_age_range: z.enum(tuple(vals(CHILDREN_AGE_RANGE))).optional().nullable(),
     // С кем проживают дети (COLD → extended.family, опц.).
     children_living: z.enum(tuple(vals(CHILDREN_LIVING))).optional().nullable(),

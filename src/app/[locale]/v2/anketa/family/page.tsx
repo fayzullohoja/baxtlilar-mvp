@@ -10,6 +10,7 @@ import { loadAnketaDraft, draftSection } from "@/lib/onboarding/load-draft";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { V2AnketaFamilyForm } from "@/components/v2/AnketaFamilyForm";
+import type { ChildInfo } from "@/components/v2/ChildrenDetails";
 import type { Gender } from "@/lib/profile/gender-wording";
 
 export const dynamic = "force-dynamic";
@@ -36,15 +37,13 @@ export default async function V2AnketaFamilyPage({
 
   const draft = await loadAnketaDraft(user.id);
   const family = draftSection(draft, "family");
-  // children_count hot-колонка — INT, но state childrenCount — строка-enum.
-  // Реверс к submit-мэппингу: 1→"1", 2→"2", 3→"3", >=4→"4plus", null→"".
-  const rawChildrenCount = draft.children_count;
-  const childrenCount =
-    typeof rawChildrenCount === "number"
-      ? rawChildrenCount >= 4
-        ? "4plus"
-        : String(rawChildrenCount)
-      : "";
+  // 2026-07-12: пер-детей (пол+возраст) в extended.family.children. Легаси-фолбэк
+  // — children_count (int) без пер-детей → форма развернёт в N детей без возраста.
+  const savedChildren = Array.isArray(family.children)
+    ? (family.children as ChildInfo[])
+    : undefined;
+  const legacyCount =
+    typeof draft.children_count === "number" ? String(draft.children_count) : "";
 
   return (
     <MiniAppShell eyebrow={t("family_eyebrow")} align="top" showBack>
@@ -59,8 +58,8 @@ export default async function V2AnketaFamilyPage({
             marital_status: (draft.marital_status as string) ?? "",
             has_children: (draft.has_children as string) ?? "",
             future_children_plan: (draft.future_children_plan as string) ?? "",
-            children_count: childrenCount,
-            children_age_range: (family.children_age_range as string) ?? "",
+            children_count: legacyCount,
+            children: savedChildren,
             children_living: (family.children_living as string) ?? "",
           }}
         />

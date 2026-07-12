@@ -6,12 +6,16 @@ import { useTranslations } from "next-intl";
 import { Button } from "./Button";
 import { Field, Select } from "./AnketaFields";
 import {
+  ChildrenDetails,
+  childrenComplete,
+  resizeChildren,
+  type ChildInfo,
+} from "./ChildrenDetails";
+import {
   MARITAL_STATUS,
   HAS_CHILDREN,
   FUTURE_CHILDREN_PLAN,
   CHILDREN_LIVING,
-  CHILDREN_COUNT,
-  CHILDREN_AGE_RANGE,
 } from "@/lib/profile/options";
 import {
   getGenderedOptionLabel,
@@ -19,16 +23,27 @@ import {
 } from "@/lib/profile/gender-wording";
 
 /**
- * V3 Sprint 2 — Экран 5 «О семье и детях» (extended).
+ * V3 Sprint 2 — Экран 5 «О семье и детях».
  *
- * Изменения относительно V2:
- * - children_plan (5 опций) → future_children_plan (5 новых опций V3)
- * - + children_count (Select 1/2/3/4+/«не уточнять», conditional: has_children=yes)
- * - + children_age_range (Select-диапазон, COLD extended.family, опц.)
- * - + children_living (COLD extended.family, опц.)
+ * 2026-07-12 (ревью оунера): дети переработаны — количество ползунком (точное
+ * число) + пол/возраст КАЖДОГО ребёнка (ChildrenDetails), вместо «4 и более»
+ * и одного диапазона возраста на всех. children[] хранится в extended.family.
  *
  * API: /api/onboarding/profile/family.
  */
+
+function initialChildren(initial: {
+  children?: ChildInfo[];
+  children_count?: string;
+  has_children?: string;
+}): ChildInfo[] {
+  if (initial.children && initial.children.length > 0) return initial.children;
+  // Легаси: был только children_count (int) без пер-детей → N детей без возраста.
+  const legacy = Number(initial.children_count);
+  if (Number.isFinite(legacy) && legacy >= 1) return resizeChildren([], legacy);
+  if (initial.has_children === "yes") return [{ gender: null, age: null }];
+  return [];
+}
 
 export function V2AnketaFamilyForm({
   locale,
@@ -42,7 +57,7 @@ export function V2AnketaFamilyForm({
     has_children?: string;
     future_children_plan?: string;
     children_count?: string;
-    children_age_range?: string;
+    children?: ChildInfo[];
     children_living?: string;
   };
 }) {
@@ -50,11 +65,8 @@ export function V2AnketaFamilyForm({
   const t = useTranslations("Anketa");
   const [marital, setMarital] = useState(initial?.marital_status ?? "");
   const [hasChildren, setHasChildren] = useState(initial?.has_children ?? "");
-  const [childrenCount, setChildrenCount] = useState(
-    initial?.children_count ?? "",
-  );
-  const [childrenAgeRange, setChildrenAgeRange] = useState(
-    initial?.children_age_range ?? "",
+  const [children, setChildren] = useState<ChildInfo[]>(() =>
+    initialChildren(initial ?? {}),
   );
   const [childrenLiving, setChildrenLiving] = useState(
     initial?.children_living ?? "",
@@ -83,13 +95,8 @@ export function V2AnketaFamilyForm({
         future_children_plan: plan,
       };
       if (showChildrenDetails) {
-        // Количество (hot int): 1/2/3 → int; «4 и более» → 4; «не уточнять» → null.
-        if (childrenCount === "4plus") body.children_count = 4;
-        else if (childrenCount && childrenCount !== "na")
-          body.children_count = Number(childrenCount);
-        else body.children_count = null;
-        // Возраст-диапазон (COLD) и «с кем живут» (COLD) — enum, «na» валидна.
-        if (childrenAgeRange) body.children_age_range = childrenAgeRange;
+        body.children_count = children.length; // hot int = длина массива
+        body.children = children; // COLD extended.family.children (пол + возраст)
         if (childrenLiving) body.children_living = childrenLiving;
       }
       const res = await fetch("/api/onboarding/profile/family", {
@@ -114,9 +121,8 @@ export function V2AnketaFamilyForm({
     }
   }
 
-  // Количество детей — обязателен выбор (включая «Предпочитаю не уточнять»);
-  // возраст-диапазон и «с кем живут» — опциональны.
-  const childrenDetailsOk = !showChildrenDetails || childrenCount !== "";
+  // У каждого ребёнка должен быть указан возраст (пол опционален).
+  const childrenDetailsOk = !showChildrenDetails || childrenComplete(children);
 
   const valid = !!marital && !!hasChildren && !!plan && childrenDetailsOk;
 
@@ -137,9 +143,11 @@ export function V2AnketaFamilyForm({
           value={hasChildren}
           onChange={(v) => {
             setHasChildren(v);
-            if (v !== "yes") {
-              setChildrenCount("");
-              setChildrenAgeRange("");
+            if (v === "yes") {
+              if (children.length === 0)
+                setChildren([{ gender: null, age: null }]);
+            } else {
+              setChildren([]);
               setChildrenLiving("");
             }
           }}
@@ -149,22 +157,12 @@ export function V2AnketaFamilyForm({
 
       {showChildrenDetails ? (
         <>
-          <Field label={t("childrenCountLabel")} required>
-            <Select
-              options={CHILDREN_COUNT}
-              value={childrenCount}
-              onChange={setChildrenCount}
-              locale={locale}
-            />
-          </Field>
-
-          <Field label={t("childrenAgeRangeLabel")} hint={t("optionalHint")}>
-            <Select
-              options={CHILDREN_AGE_RANGE}
-              value={childrenAgeRange}
-              onChange={setChildrenAgeRange}
-              locale={locale}
-            />
+          <Field
+            label={t("childrenCountLabel")}
+            required
+            hint={t("childrenCountHint")}
+          >
+            <ChildrenDetails items={children} onChange={setChildren} />
           </Field>
 
           {/* Ревью оунера Экран 5: с кем проживают дети (опционально). */}

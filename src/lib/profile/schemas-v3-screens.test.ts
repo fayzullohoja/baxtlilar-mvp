@@ -86,9 +86,32 @@ describe("V3 familyChildrenSchema (Экран 5)", () => {
     ).toBe(true);
   });
 
-  it("отклоняет children_count > 10", () => {
+  it("отклоняет children_count > 20", () => {
     expect(
-      familyChildrenSchema.safeParse({ ...ok, children_count: 11 }).success,
+      familyChildrenSchema.safeParse({ ...ok, children_count: 21 }).success,
+    ).toBe(false);
+  });
+
+  it("принимает children[] (пол+возраст каждого ребёнка)", () => {
+    expect(
+      familyChildrenSchema.safeParse({
+        ...ok,
+        has_children: "yes",
+        children_count: 2,
+        children: [
+          { gender: "boy", age: 7 },
+          { gender: "girl", age: 12 },
+        ],
+      }).success,
+    ).toBe(true);
+  });
+
+  it("отклоняет неверный child.gender", () => {
+    expect(
+      familyChildrenSchema.safeParse({
+        ...ok,
+        children: [{ gender: "alien", age: 5 }],
+      }).success,
     ).toBe(false);
   });
 

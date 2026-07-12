@@ -39,14 +39,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .maybeSingle();
   const ext = (prof?.extended as Record<string, unknown>) ?? {};
   const familySection = (ext.family as Record<string, unknown>) ?? {};
-  // Ревью оунера Экран 5: children_living + children_age_range (диапазон возраста)
-  // — оба COLD в extended.family. read-merge-write, не затирая чужие секции.
+  // 2026-07-12 (ревью оунера): пол+возраст каждого ребёнка (children[]) + «с кем
+  // живут» — COLD в extended.family. read-merge-write, не затирая чужие секции.
   const familyUpdates: Record<string, unknown> = {};
-  if (parsed.data.children_living) familyUpdates.children_living = parsed.data.children_living;
-  if (parsed.data.children_age_range) familyUpdates.children_age_range = parsed.data.children_age_range;
-  const newExtended = Object.keys(familyUpdates).length
-    ? { ...ext, family: { ...familySection, ...familyUpdates } }
-    : ext;
+  if (parsed.data.has_children === "yes") {
+    familyUpdates.children = parsed.data.children ?? [];
+    if (parsed.data.children_living)
+      familyUpdates.children_living = parsed.data.children_living;
+  } else {
+    // Нет детей → чистим пер-детей и «с кем живут».
+    familyUpdates.children = null;
+    familyUpdates.children_living = null;
+  }
+  // Легаси-диапазон возраста заменён на children[].age — всегда чистим.
+  familyUpdates.children_age_range = null;
+  const newExtended = { ...ext, family: { ...familySection, ...familyUpdates } };
 
   const { error: saveErr } = await sb
     .from("user_profiles")
