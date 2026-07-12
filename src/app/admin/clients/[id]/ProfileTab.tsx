@@ -3,6 +3,8 @@ import { ADMIN } from "@/lib/admin/admin-tokens";
 import { StatusPill } from "@/components/admin-ops/StatusPill";
 import { ageFromDate } from "@/lib/profile/schemas";
 import { loadFullProfile } from "@/lib/admin/load-profile-full";
+import { districtLabel } from "@/lib/profile/uz-districts";
+import { cityLabel } from "@/lib/profile/cities";
 import { MaritalReviewAction } from "./MaritalReviewAction";
 import {
   labelOf,
@@ -157,8 +159,8 @@ export async function ProfileTab({ userId }: { userId: string }) {
       <Section title="Место рождения">
         <Field label="Страна" value={raw(p.birth_country)} />
         <Field label="Регион" value={L(UZ_REGIONS, p.birth_region)} />
-        <Field label="Район" value={raw(p.birth_district)} />
-        <Field label="Город" value={raw(p.birth_city)} />
+        <Field label="Район" value={districtLabel(p.birth_district as string | null, "ru") || "—"} />
+        <Field label="Город" value={cityLabel(p.birth_city as string | null, "ru") || "—"} />
       </Section>
 
       <ChipSection title="Ценности" items={chips(LIFE_VALUES_V3, p.top_life_values)} />

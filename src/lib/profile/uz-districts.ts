@@ -134,3 +134,22 @@ export const UZ_DISTRICTS_BY_REGION: Record<string, Opt[]> = {
 export function hasDistrictList(region: string): boolean {
   return region in UZ_DISTRICTS_BY_REGION;
 }
+
+// Плоская карта код-района → Opt (по всем регионам) — для показа названия
+// вместо кода (напр. в admin ProfileTab).
+const DISTRICT_BY_VALUE: Record<string, Opt> = Object.fromEntries(
+  Object.values(UZ_DISTRICTS_BY_REGION)
+    .flat()
+    .map((d) => [d.value, d]),
+);
+
+/** Локализованное название района по коду; freeform/неизвестное — как есть. */
+export function districtLabel(
+  value: string | null | undefined,
+  locale: string,
+): string {
+  if (!value) return "";
+  const d = DISTRICT_BY_VALUE[value];
+  if (!d) return value; // freeform-ввод или старое/неизвестное значение
+  return locale === "uz" ? d.uz : d.ru;
+}
