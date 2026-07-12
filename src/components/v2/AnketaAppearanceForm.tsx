@@ -22,18 +22,37 @@ const WEIGHT_MIN = 40;
 const WEIGHT_MAX = 150;
 const WEIGHT_MID = 70;
 
-export function V2AnketaAppearanceForm({ locale }: { locale: string }) {
+export function V2AnketaAppearanceForm({
+  locale,
+  initial,
+}: {
+  locale: string;
+  initial?: {
+    height_cm?: number;
+    weight_kg?: number;
+    native_language?: string;
+    languages?: string[];
+    other_language?: string;
+  };
+}) {
   const router = useRouter();
   const t = useTranslations("Anketa");
-  const [heightCm, setHeightCm] = useState(HEIGHT_MID);
-  const [heightSet, setHeightSet] = useState(false);
-  const [weightKg, setWeightKg] = useState(WEIGHT_MID);
-  const [weightSet, setWeightSet] = useState(false);
+  const hasHeight = typeof initial?.height_cm === "number";
+  const hasWeight = typeof initial?.weight_kg === "number";
+  const [heightCm, setHeightCm] = useState(initial?.height_cm ?? HEIGHT_MID);
+  const [heightSet, setHeightSet] = useState(hasHeight);
+  const [weightKg, setWeightKg] = useState(initial?.weight_kg ?? WEIGHT_MID);
+  const [weightSet, setWeightSet] = useState(hasWeight);
   // Вес — чувствительное поле: скрыт за кнопкой, раскрывается ползунком (ревью оунера).
-  const [showWeight, setShowWeight] = useState(false);
-  const [nativeLang, setNativeLang] = useState("");
-  const [spokenLangs, setSpokenLangs] = useState<string[]>([]);
-  const [otherLanguage, setOtherLanguage] = useState("");
+  // Если вес уже сохранён, раскрываем блок сразу, чтобы «Назад» показал значение.
+  const [showWeight, setShowWeight] = useState(hasWeight);
+  const [nativeLang, setNativeLang] = useState(initial?.native_language ?? "");
+  const [spokenLangs, setSpokenLangs] = useState<string[]>(
+    initial?.languages ?? [],
+  );
+  const [otherLanguage, setOtherLanguage] = useState(
+    initial?.other_language ?? "",
+  );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 

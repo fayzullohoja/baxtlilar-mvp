@@ -72,6 +72,7 @@ export default async function V2AnketaPreviewPage({
     <MiniAppShell
       eyebrow={t("preview_eyebrow")}
       align="top"
+      showBack
       footer={<V2PublishButton verificationStatus={user.verification_status} />}
     >
       <Headline size="lg" as="h1">{t("preview_headline")}</Headline>

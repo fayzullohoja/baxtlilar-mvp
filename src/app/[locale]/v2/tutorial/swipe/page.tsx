@@ -31,6 +31,7 @@ export default async function TutorialSwipePage({
     <MiniAppShell
       eyebrow={t("swipe.title")}
       align="top"
+      showBack
       footer={<TutorialStep cta={t("next")} />}
     >
       <div className="v2-screen-in">

@@ -8,6 +8,7 @@
 
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
+import { loadAnketaDraft, draftSection } from "@/lib/onboarding/load-draft";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { V2AnketaPartnerExtendedForm } from "@/components/v2/AnketaPartnerExtendedForm";
@@ -21,16 +22,48 @@ export default async function V2AnketaPartnerExtendedPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  await requireUserAtStep(locale, "profile_partner_extended");
+  const user = await requireUserAtStep(locale, "profile_partner_extended");
   const t = await getTranslations("Anketa");
+  const draft = await loadAnketaDraft(user.id);
+  const partner = draftSection(draft, "partner");
 
   return (
-    <MiniAppShell eyebrow={t("partner_extended_eyebrow")} align="top">
+    <MiniAppShell eyebrow={t("partner_extended_eyebrow")} align="top" showBack>
       <Headline size="lg" as="h1">{t("partner_extended_headline")}</Headline>
       <Lead>{t("partner_extended_lead")}</Lead>
 
       <div style={{ marginTop: "32px" }}>
-        <V2AnketaPartnerExtendedForm locale={locale} />
+        <V2AnketaPartnerExtendedForm
+          locale={locale}
+          initial={{
+            partner_age_min:
+              draft.partner_age_min != null ? String(draft.partner_age_min) : "",
+            partner_age_max:
+              draft.partner_age_max != null ? String(draft.partner_age_max) : "",
+            partner_height_min:
+              draft.partner_height_min != null
+                ? String(draft.partner_height_min)
+                : "",
+            partner_height_max:
+              draft.partner_height_max != null
+                ? String(draft.partner_height_max)
+                : "",
+            partner_top_qualities:
+              (draft.partner_top_qualities as string[]) ?? [],
+            partner_religion_match:
+              (draft.partner_religion_match as string) ?? "",
+            partner_preferred_countries:
+              (draft.partner_preferred_countries as string[]) ?? [],
+            partner_marital_pref:
+              (partner.partner_marital_pref as string[]) ?? [],
+            partner_children_pref:
+              (partner.partner_children_pref as string) ?? "",
+            partner_hard_criteria:
+              (partner.partner_hard_criteria as string[]) ?? [],
+            partner_origin_region_pref:
+              (partner.partner_origin_region_pref as string) ?? "",
+          }}
+        />
       </div>
     </MiniAppShell>
   );

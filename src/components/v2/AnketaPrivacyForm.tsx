@@ -20,11 +20,21 @@ import { PROFILE_VISIBILITY_MODE } from "@/lib/profile/options";
  *
  * API: /api/onboarding/profile/privacy.
  */
-export function V2AnketaPrivacyForm({ locale }: { locale: string }) {
+export function V2AnketaPrivacyForm({
+  locale,
+  initial,
+}: {
+  locale: string;
+  initial?: {
+    profile_visibility_mode?: string;
+  };
+}) {
   const t = useTranslations('AnketaPrivacy');
   const router = useRouter();
   // Ревью оунера Экран 14: приватный по умолчанию (verified_only), не public.
-  const [mode, setMode] = useState("verified_only");
+  const [mode, setMode] = useState(
+    initial?.profile_visibility_mode ?? "verified_only",
+  );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 

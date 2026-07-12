@@ -9,6 +9,7 @@
 
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
+import { loadAnketaDraft } from "@/lib/onboarding/load-draft";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { V2AnketaBirthPlaceForm } from "@/components/v2/AnketaBirthPlaceForm";
@@ -22,16 +23,25 @@ export default async function V2AnketaBirthPlacePage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  await requireUserAtStep(locale, "profile_birth_place");
+  const user = await requireUserAtStep(locale, "profile_birth_place");
   const t = await getTranslations("Anketa");
+  const draft = await loadAnketaDraft(user.id);
 
   return (
-    <MiniAppShell eyebrow={t("birthplace_eyebrow")} align="top">
+    <MiniAppShell eyebrow={t("birthplace_eyebrow")} align="top" showBack>
       <Headline size="lg" as="h1">{t("birthplace_headline")}</Headline>
       <Lead>{t("birthplace_lead")}</Lead>
 
       <div style={{ marginTop: "32px" }}>
-        <V2AnketaBirthPlaceForm locale={locale} />
+        <V2AnketaBirthPlaceForm
+          locale={locale}
+          initial={{
+            birth_country: (draft.birth_country as string) ?? "UZ",
+            birth_region: (draft.birth_region as string) ?? "",
+            birth_district: (draft.birth_district as string) ?? "",
+            birth_city: (draft.birth_city as string) ?? "",
+          }}
+        />
       </div>
     </MiniAppShell>
   );

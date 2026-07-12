@@ -20,11 +20,20 @@ import {
  * API: /api/onboarding/profile/values.
  */
 
-export function V2AnketaValuesForm({ locale }: { locale: string }) {
+export function V2AnketaValuesForm({
+  locale,
+  initial,
+}: {
+  locale: string;
+  initial?: {
+    religion?: string;
+    top_life_values?: string[];
+  };
+}) {
   const t = useTranslations('Anketa');
   const router = useRouter();
-  const [religion, setReligion] = useState("");
-  const [values, setValues] = useState<string[]>([]);
+  const [religion, setReligion] = useState(initial?.religion ?? "");
+  const [values, setValues] = useState<string[]>(initial?.top_life_values ?? []);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 

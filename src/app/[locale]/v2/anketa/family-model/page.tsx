@@ -6,6 +6,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { loadAnketaDraft, draftSection } from "@/lib/onboarding/load-draft";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { V2AnketaFamilyModelForm } from "@/components/v2/AnketaFamilyModelForm";
@@ -33,13 +34,27 @@ export default async function V2AnketaFamilyModelPage({
   const gender: Gender | null =
     prof?.gender === "m" || prof?.gender === "f" ? (prof.gender as Gender) : null;
 
+  const draft = await loadAnketaDraft(user.id);
+  const family = draftSection(draft, "family");
+
   return (
-    <MiniAppShell eyebrow={t("family_model_eyebrow")} align="top">
+    <MiniAppShell eyebrow={t("family_model_eyebrow")} align="top" showBack>
       <Headline size="lg" as="h1">{t("family_model_headline")}</Headline>
       <Lead>{t("family_model_lead")}</Lead>
 
       <div style={{ marginTop: "32px" }}>
-        <V2AnketaFamilyModelForm locale={locale} gender={gender} />
+        <V2AnketaFamilyModelForm
+          locale={locale}
+          gender={gender}
+          initial={{
+            family_role_model: (draft.family_role_model as string) ?? "",
+            wife_work_after_marriage_view:
+              (draft.wife_work_after_marriage_view as string) ?? "",
+            decision_model: (family.decision_model as string) ?? "",
+            household_responsibility_model:
+              (family.household_responsibility_model as string) ?? "",
+          }}
+        />
       </div>
     </MiniAppShell>
   );

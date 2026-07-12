@@ -33,18 +33,33 @@ import {
 export function V2AnketaFamilyForm({
   locale,
   gender,
+  initial,
 }: {
   locale: string;
   gender: Gender | null;
+  initial?: {
+    marital_status?: string;
+    has_children?: string;
+    future_children_plan?: string;
+    children_count?: string;
+    children_age_range?: string;
+    children_living?: string;
+  };
 }) {
   const router = useRouter();
   const t = useTranslations("Anketa");
-  const [marital, setMarital] = useState("");
-  const [hasChildren, setHasChildren] = useState("");
-  const [childrenCount, setChildrenCount] = useState("");
-  const [childrenAgeRange, setChildrenAgeRange] = useState("");
-  const [childrenLiving, setChildrenLiving] = useState("");
-  const [plan, setPlan] = useState("");
+  const [marital, setMarital] = useState(initial?.marital_status ?? "");
+  const [hasChildren, setHasChildren] = useState(initial?.has_children ?? "");
+  const [childrenCount, setChildrenCount] = useState(
+    initial?.children_count ?? "",
+  );
+  const [childrenAgeRange, setChildrenAgeRange] = useState(
+    initial?.children_age_range ?? "",
+  );
+  const [childrenLiving, setChildrenLiving] = useState(
+    initial?.children_living ?? "",
+  );
+  const [plan, setPlan] = useState(initial?.future_children_plan ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 

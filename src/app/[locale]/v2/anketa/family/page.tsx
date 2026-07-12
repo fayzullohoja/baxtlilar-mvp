@@ -6,6 +6,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { loadAnketaDraft, draftSection } from "@/lib/onboarding/load-draft";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { V2AnketaFamilyForm } from "@/components/v2/AnketaFamilyForm";
@@ -33,13 +34,36 @@ export default async function V2AnketaFamilyPage({
   const gender: Gender | null =
     prof?.gender === "m" || prof?.gender === "f" ? (prof.gender as Gender) : null;
 
+  const draft = await loadAnketaDraft(user.id);
+  const family = draftSection(draft, "family");
+  // children_count hot-колонка — INT, но state childrenCount — строка-enum.
+  // Реверс к submit-мэппингу: 1→"1", 2→"2", 3→"3", >=4→"4plus", null→"".
+  const rawChildrenCount = draft.children_count;
+  const childrenCount =
+    typeof rawChildrenCount === "number"
+      ? rawChildrenCount >= 4
+        ? "4plus"
+        : String(rawChildrenCount)
+      : "";
+
   return (
-    <MiniAppShell eyebrow={t("family_eyebrow")} align="top">
+    <MiniAppShell eyebrow={t("family_eyebrow")} align="top" showBack>
       <Headline size="lg" as="h1">{t("family_headline")}</Headline>
       <Lead>{t("family_lead")}</Lead>
 
       <div style={{ marginTop: "32px" }}>
-        <V2AnketaFamilyForm locale={locale} gender={gender} />
+        <V2AnketaFamilyForm
+          locale={locale}
+          gender={gender}
+          initial={{
+            marital_status: (draft.marital_status as string) ?? "",
+            has_children: (draft.has_children as string) ?? "",
+            future_children_plan: (draft.future_children_plan as string) ?? "",
+            children_count: childrenCount,
+            children_age_range: (family.children_age_range as string) ?? "",
+            children_living: (family.children_living as string) ?? "",
+          }}
+        />
       </div>
     </MiniAppShell>
   );

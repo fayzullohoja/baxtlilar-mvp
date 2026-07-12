@@ -16,13 +16,24 @@ import { useTranslations } from 'next-intl';
  * (где есть справочник), иначе freeform. Для остальных стран — freeform.
  * API: /api/onboarding/profile/birth-place.
  */
-export function V2AnketaBirthPlaceForm({ locale }: { locale: string }) {
+export function V2AnketaBirthPlaceForm({
+  locale,
+  initial,
+}: {
+  locale: string;
+  initial?: {
+    birth_country?: string;
+    birth_region?: string;
+    birth_district?: string;
+    birth_city?: string;
+  };
+}) {
   const t = useTranslations('Anketa');
   const router = useRouter();
-  const [country, setCountry] = useState("UZ");
-  const [region, setRegion] = useState("");
-  const [district, setDistrict] = useState("");
-  const [city, setCity] = useState("");
+  const [country, setCountry] = useState(initial?.birth_country || "UZ");
+  const [region, setRegion] = useState(initial?.birth_region ?? "");
+  const [district, setDistrict] = useState(initial?.birth_district ?? "");
+  const [city, setCity] = useState(initial?.birth_city ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 

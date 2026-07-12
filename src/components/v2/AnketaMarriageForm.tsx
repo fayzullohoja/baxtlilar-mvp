@@ -12,12 +12,22 @@ import { useTranslations } from 'next-intl';
  * Между values и looking-for. Ключевой матчинг-сигнал для serious-marriage
  * платформы. API: /api/onboarding/profile/marriage.
  */
-export function V2AnketaMarriageForm({ locale }: { locale: string }) {
+export function V2AnketaMarriageForm({
+  locale,
+  initial,
+}: {
+  locale: string;
+  initial?: {
+    post_marriage_living?: string;
+    marriage_readiness?: string;
+    relocation_readiness?: string;
+  };
+}) {
   const router = useRouter();
   const t = useTranslations('Anketa');
-  const [living, setLiving] = useState("");
-  const [readiness, setReadiness] = useState("");
-  const [relocation, setRelocation] = useState("");
+  const [living, setLiving] = useState(initial?.post_marriage_living ?? "");
+  const [readiness, setReadiness] = useState(initial?.marriage_readiness ?? "");
+  const [relocation, setRelocation] = useState(initial?.relocation_readiness ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 

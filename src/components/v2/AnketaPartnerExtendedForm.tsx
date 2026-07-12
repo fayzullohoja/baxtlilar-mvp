@@ -31,20 +31,52 @@ import {
  *
  * API: /api/onboarding/profile/partner-extended.
  */
-export function V2AnketaPartnerExtendedForm({ locale }: { locale: string }) {
+export function V2AnketaPartnerExtendedForm({
+  locale,
+  initial,
+}: {
+  locale: string;
+  initial?: {
+    partner_age_min?: string;
+    partner_age_max?: string;
+    partner_height_min?: string;
+    partner_height_max?: string;
+    partner_top_qualities?: string[];
+    partner_religion_match?: string;
+    partner_preferred_countries?: string[];
+    partner_marital_pref?: string[];
+    partner_children_pref?: string;
+    partner_hard_criteria?: string[];
+    partner_origin_region_pref?: string;
+  };
+}) {
   const t = useTranslations("Anketa");
   const router = useRouter();
-  const [ageMin, setAgeMin] = useState("");
-  const [ageMax, setAgeMax] = useState("");
-  const [heightMin, setHeightMin] = useState("");
-  const [heightMax, setHeightMax] = useState("");
-  const [qualities, setQualities] = useState<string[]>([]);
-  const [religionMatch, setReligionMatch] = useState("");
-  const [countries, setCountries] = useState<string[]>([]);
-  const [maritalPref, setMaritalPref] = useState<string[]>([]);
-  const [childrenPref, setChildrenPref] = useState("");
-  const [regionPref, setRegionPref] = useState("");
-  const [hardCriteria, setHardCriteria] = useState<string[]>([]);
+  const [ageMin, setAgeMin] = useState(initial?.partner_age_min ?? "");
+  const [ageMax, setAgeMax] = useState(initial?.partner_age_max ?? "");
+  const [heightMin, setHeightMin] = useState(initial?.partner_height_min ?? "");
+  const [heightMax, setHeightMax] = useState(initial?.partner_height_max ?? "");
+  const [qualities, setQualities] = useState<string[]>(
+    initial?.partner_top_qualities ?? [],
+  );
+  const [religionMatch, setReligionMatch] = useState(
+    initial?.partner_religion_match ?? "",
+  );
+  const [countries, setCountries] = useState<string[]>(
+    initial?.partner_preferred_countries ?? [],
+  );
+  const [maritalPref, setMaritalPref] = useState<string[]>(
+    initial?.partner_marital_pref ?? [],
+  );
+  const [childrenPref, setChildrenPref] = useState(
+    initial?.partner_children_pref ?? "",
+  );
+  const [regionPref, setRegionPref] = useState(
+    initial?.partner_origin_region_pref ?? "",
+  );
+  const [hardCriteria, setHardCriteria] = useState<string[]>(
+    initial?.partner_hard_criteria ?? [],
+  );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 

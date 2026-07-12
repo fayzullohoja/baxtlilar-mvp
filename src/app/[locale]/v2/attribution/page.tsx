@@ -23,7 +23,7 @@ export default async function V2AttributionPage({
   const t = await getTranslations("Onboarding");
 
   return (
-    <MiniAppShell eyebrow={t("attr_eyebrow")} align="top">
+    <MiniAppShell eyebrow={t("attr_eyebrow")} align="top" showBack>
       <div className="v2-screen-in">
         <Headline size="lg" as="h1">
           {t("attr_title")}

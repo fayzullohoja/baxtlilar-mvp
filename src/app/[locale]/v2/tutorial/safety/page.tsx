@@ -31,6 +31,7 @@ export default async function TutorialSafetyPage({
     <MiniAppShell
       eyebrow={t('safety.title')}
       align="top"
+      showBack
       footer={<TutorialStep cta={t('complete')} showSkip={false} />}
     >
       <div className="v2-screen-in">

@@ -9,6 +9,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { V2QuizForm } from "@/components/v2/QuizForm";
+import { BackButton } from "@/components/v2/BackButton";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,9 @@ export default async function V2QuizPage({
           padding: "48px var(--v2-screen-padding) 40px",
         }}
       >
+        <div style={{ marginBottom: "12px", marginLeft: "-4px" }}>
+          <BackButton variant="dark" />
+        </div>
         <div
           style={{
             fontSize: "12px",

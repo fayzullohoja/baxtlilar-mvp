@@ -19,7 +19,21 @@ import {
  * employment_format. API: /api/onboarding/profile/self.
  */
 
-export function V2AnketaSelfForm({ locale }: { locale: string }) {
+export function V2AnketaSelfForm({
+  locale,
+  initial,
+}: {
+  locale: string;
+  initial?: {
+    bio?: string;
+    education?: string;
+    specialty?: string;
+    activity_field?: string;
+    activity_field_other?: string;
+    employment_status?: string;
+    employment_format?: string;
+  };
+}) {
   const t = useTranslations('Anketa');
   // Локализованные ошибки из i18n (как в AnketaBasicForm) — не хардкод RU.
   const errCopy: Record<string, string> = {
@@ -30,13 +44,19 @@ export function V2AnketaSelfForm({ locale }: { locale: string }) {
     failed: t("err_failed"),
   };
   const router = useRouter();
-  const [bio, setBio] = useState("");
-  const [education, setEducation] = useState("");
-  const [specialty, setSpecialty] = useState("");
-  const [activityField, setActivityField] = useState("");
-  const [activityFieldOther, setActivityFieldOther] = useState("");
-  const [employmentStatus, setEmploymentStatus] = useState("");
-  const [employmentFormat, setEmploymentFormat] = useState("");
+  const [bio, setBio] = useState(initial?.bio ?? "");
+  const [education, setEducation] = useState(initial?.education ?? "");
+  const [specialty, setSpecialty] = useState(initial?.specialty ?? "");
+  const [activityField, setActivityField] = useState(initial?.activity_field ?? "");
+  const [activityFieldOther, setActivityFieldOther] = useState(
+    initial?.activity_field_other ?? "",
+  );
+  const [employmentStatus, setEmploymentStatus] = useState(
+    initial?.employment_status ?? "",
+  );
+  const [employmentFormat, setEmploymentFormat] = useState(
+    initial?.employment_format ?? "",
+  );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 

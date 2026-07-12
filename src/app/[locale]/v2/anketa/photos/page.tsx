@@ -43,7 +43,7 @@ export default async function V2AnketaPhotosPage({
   }));
 
   return (
-    <MiniAppShell eyebrow={t("photos_eyebrow")} align="top">
+    <MiniAppShell eyebrow={t("photos_eyebrow")} align="top" showBack>
       <Headline size="lg" as="h1">{t("photos_headline")}</Headline>
       <Lead>{t("photos_lead")}</Lead>
 

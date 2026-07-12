@@ -33,16 +33,29 @@ import {
 export function V2AnketaFamilyModelForm({
   locale,
   gender,
+  initial,
 }: {
   locale: string;
   gender: Gender | null;
+  initial?: {
+    family_role_model?: string;
+    wife_work_after_marriage_view?: string;
+    decision_model?: string;
+    household_responsibility_model?: string;
+  };
 }) {
   const router = useRouter();
   const t = useTranslations("Anketa");
-  const [roleModel, setRoleModel] = useState("");
-  const [wifeWork, setWifeWork] = useState("");
-  const [decisionModel, setDecisionModel] = useState("");
-  const [householdModel, setHouseholdModel] = useState("");
+  const [roleModel, setRoleModel] = useState(initial?.family_role_model ?? "");
+  const [wifeWork, setWifeWork] = useState(
+    initial?.wife_work_after_marriage_view ?? "",
+  );
+  const [decisionModel, setDecisionModel] = useState(
+    initial?.decision_model ?? "",
+  );
+  const [householdModel, setHouseholdModel] = useState(
+    initial?.household_responsibility_model ?? "",
+  );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 

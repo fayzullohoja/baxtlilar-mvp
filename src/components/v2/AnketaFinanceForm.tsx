@@ -30,16 +30,44 @@ import {
  *
  * API: /api/onboarding/profile/finance → profile_lifestyle.
  */
-export function V2AnketaFinanceForm({ locale }: { locale: string }) {
+export function V2AnketaFinanceForm({
+  locale,
+  initial,
+}: {
+  locale: string;
+  initial?: {
+    income_source_stability?: string;
+    financial_stability_importance?: number | null;
+    family_finance_management?: string;
+    financial_priorities?: string[];
+    monthly_income_range?: string;
+    financial_obligations?: string;
+    housing_status?: string;
+  };
+}) {
   const t = useTranslations("Anketa");
   const router = useRouter();
-  const [incomeSource, setIncomeSource] = useState("");
-  const [importance, setImportance] = useState("");
-  const [management, setManagement] = useState("");
-  const [priorities, setPriorities] = useState<string[]>([]);
-  const [incomeRange, setIncomeRange] = useState("");
-  const [obligations, setObligations] = useState("");
-  const [housing, setHousing] = useState("");
+  const [incomeSource, setIncomeSource] = useState(
+    initial?.income_source_stability ?? "",
+  );
+  const [importance, setImportance] = useState(
+    initial?.financial_stability_importance != null
+      ? String(initial.financial_stability_importance)
+      : "",
+  );
+  const [management, setManagement] = useState(
+    initial?.family_finance_management ?? "",
+  );
+  const [priorities, setPriorities] = useState<string[]>(
+    initial?.financial_priorities ?? [],
+  );
+  const [incomeRange, setIncomeRange] = useState(
+    initial?.monthly_income_range ?? "",
+  );
+  const [obligations, setObligations] = useState(
+    initial?.financial_obligations ?? "",
+  );
+  const [housing, setHousing] = useState(initial?.housing_status ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 

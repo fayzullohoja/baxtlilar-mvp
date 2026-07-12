@@ -33,15 +33,30 @@ import {
  * API: /api/onboarding/profile/lifestyle.
  * После сохранения: profile_lifestyle → profile_marriage.
  */
-export function V2AnketaLifestyleForm({ locale }: { locale: string }) {
+export function V2AnketaLifestyleForm({
+  locale,
+  initial,
+}: {
+  locale: string;
+  initial?: {
+    lifestyle_pace?: string;
+    free_time_activities?: string[];
+    daily_routine?: string;
+    bad_habits_level?: string;
+    nutrition_style?: string;
+    alcohol_level?: string;
+  };
+}) {
   const router = useRouter();
   const t = useTranslations("Anketa");
-  const [pace, setPace] = useState("");
-  const [freeTime, setFreeTime] = useState<string[]>([]);
-  const [routine, setRoutine] = useState("");
-  const [badHabits, setBadHabits] = useState("");
-  const [nutrition, setNutrition] = useState("");
-  const [alcohol, setAlcohol] = useState("");
+  const [pace, setPace] = useState(initial?.lifestyle_pace ?? "");
+  const [freeTime, setFreeTime] = useState<string[]>(
+    initial?.free_time_activities ?? [],
+  );
+  const [routine, setRoutine] = useState(initial?.daily_routine ?? "");
+  const [badHabits, setBadHabits] = useState(initial?.bad_habits_level ?? "");
+  const [nutrition, setNutrition] = useState(initial?.nutrition_style ?? "");
+  const [alcohol, setAlcohol] = useState(initial?.alcohol_level ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 

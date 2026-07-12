@@ -31,6 +31,7 @@ export default async function TutorialChatPage({
     <MiniAppShell
       eyebrow={t("chat.title")}
       align="top"
+      showBack
       footer={<TutorialStep cta={t("next")} />}
     >
       <div className="v2-screen-in">

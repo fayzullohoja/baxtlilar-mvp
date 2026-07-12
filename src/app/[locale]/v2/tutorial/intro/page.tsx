@@ -30,6 +30,7 @@ export default async function TutorialIntroPage({
     <MiniAppShell
       eyebrow={t('intro.title')}
       align="top"
+      showBack
       footer={<TutorialStep cta={t('next')} />}
     >
       <div className="v2-screen-in">
