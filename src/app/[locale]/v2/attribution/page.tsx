@@ -4,7 +4,7 @@
  * API: /api/onboarding/attribution → переход в tutorial_intro (V2 Sprint 1).
  */
 
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
@@ -20,17 +20,15 @@ export default async function V2AttributionPage({
   const { locale } = await params;
   setRequestLocale(locale);
   await requireUserAtStep(locale, "attribution");
+  const t = await getTranslations("Onboarding");
 
   return (
-    <MiniAppShell eyebrow="Почти готово" align="top">
+    <MiniAppShell eyebrow={t("attr_eyebrow")} align="top">
       <div className="v2-screen-in">
         <Headline size="lg" as="h1">
-          Откуда узнал про&nbsp;нас?
+          {t("attr_title")}
         </Headline>
-        <Lead>
-          Помогает нам понять что работает. Можно пропустить — не влияет на
-          твою анкету.
-        </Lead>
+        <Lead>{t("attr_subtitle")}</Lead>
 
         <div style={{ marginTop: "32px" }}>
           <V2AttributionForm />
