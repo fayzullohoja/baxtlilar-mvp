@@ -5,6 +5,7 @@ import {
   MARITAL_STATUS,
   HAS_CHILDREN,
   CHILDREN_LIVING,
+  CHILDREN_AGE_RANGE,
   CHILDREN_PLAN,
   RELIGION,
   LIFE_VALUES,
@@ -263,25 +264,19 @@ export const familyChildrenSchema = z
   .object({
     marital_status: z.enum(tuple(vals(MARITAL_STATUS))),
     has_children: z.enum(tuple(vals(HAS_CHILDREN))),
+    // Ревью оунера Экран 5: количество детей — бакеты 1/2/3/4+/«не уточнять»;
+    // форма шлёт int (4+→4, «не уточнять»→null). Колонка hot int (0-10).
     children_count: z.coerce.number().int().min(0).max(10).optional().nullable(),
-    youngest_child_age: z.coerce.number().int().min(0).max(50).optional().nullable(),
-    // Ревью оунера Экран 5: с кем проживают дети (COLD → extended.family, опц.).
+    // Возраст детей — диапазоны (не точный возраст), COLD → extended.family.
+    children_age_range: z.enum(tuple(vals(CHILDREN_AGE_RANGE))).optional().nullable(),
+    // С кем проживают дети (COLD → extended.family, опц.).
     children_living: z.enum(tuple(vals(CHILDREN_LIVING))).optional().nullable(),
     future_children_plan: z.enum(tuple(vals(FUTURE_CHILDREN_PLAN))),
-  })
-  // Bug #6 (2026-06-30): без refine API принимал {has_children:'yes'} без
-  // children_count/age — данные оказывались логически неконсистентны. Клиент
-  // прячет поля при has_children='no', сервер обязан проверить то же самое.
-  .refine(
-    (d) =>
-      d.has_children === "no" ||
-      d.has_children === "na" ||
-      (d.children_count != null && d.youngest_child_age != null),
-    {
-      message: "children_count_and_age_required_if_has_children",
-      path: ["children_count"],
-    },
-  );
+  });
+// Ревью оунера Экран 5: жёсткий refine убран. У количества детей появился вариант
+// «Предпочитаю не уточнять» (→ null валидно даже при has_children=yes), возраст —
+// необязательный диапазон. UI требует выбор количества (в т.ч. «не уточнять»),
+// сервер не форсит наличие числа/возраста.
 
 /** Экран 6 — Ценности и вера (новая версия с top_life_values вместо values).
  *  V4 2026-06-30 (Чат-2): religion_practice стал optional и удалён из формы;

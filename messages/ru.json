@@ -314,7 +314,7 @@
     "employmentFormatLabel": "Формат работы",
     "maritalStatusLabel": "Семейный статус",
     "hasChildrenLabel": "Есть ли дети",
-    "childrenCountLabel": "Сколько детей",
+    "childrenCountLabel": "Количество детей",
     "childrenCountHint": "От 1 до 10.",
     "youngestChildAgeLabel": "Возраст младшего ребёнка",
     "ageRangeHint": "В годах, 0-50.",
@@ -470,7 +470,8 @@
     "error_publish_generic": "Что-то пошло не так. Попробуйте ещё раз.",
     "genderVerifiedNote": "Пол подтверждён по документу — редактировать нельзя.",
     "legalNameVerifiedLabel": "ФИО по документу (приватно)",
-    "displayNamePublicHint": "Публичное имя — так вас увидят другие. ФИО из документа остаётся приватным."
+    "displayNamePublicHint": "Публичное имя — так вас увидят другие. ФИО из документа остаётся приватным.",
+    "childrenAgeRangeLabel": "Возраст детей"
   },
   "Quiz": {
     "intro_title": "10 вопросов о вас",

@@ -314,7 +314,7 @@
     "employmentFormatLabel": "Ish formati",
     "maritalStatusLabel": "Oilaviy holati",
     "hasChildrenLabel": "Bolalari bormi",
-    "childrenCountLabel": "Nechi bolasi",
+    "childrenCountLabel": "Farzandlar soni",
     "childrenCountHint": "1dan 10gacha.",
     "youngestChildAgeLabel": "Eng kichik bolaning yoshi",
     "ageRangeHint": "Yillarda, 0-50.",
@@ -470,7 +470,8 @@
     "error_publish_generic": "Nimadir xato ketdi. Qayta urinib koʻring.",
     "genderVerifiedNote": "Jins hujjat boʻyicha tasdiqlangan — oʻzgartirib boʻlmaydi.",
     "legalNameVerifiedLabel": "Hujjat boʻyicha FISH (maxfiy)",
-    "displayNamePublicHint": "Ommaviy ism — sizni shunday koʻrishadi. Hujjatdagi FISH maxfiy qoladi."
+    "displayNamePublicHint": "Ommaviy ism — sizni shunday koʻrishadi. Hujjatdagi FISH maxfiy qoladi.",
+    "childrenAgeRangeLabel": "Farzandlar yoshi"
   },
   "Quiz": {
     "intro_title": "Siz haqingizda 10 ta savol",

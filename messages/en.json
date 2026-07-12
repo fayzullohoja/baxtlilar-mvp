@@ -470,7 +470,8 @@
     "error_publish_generic": "Something went wrong. Please try again.",
     "genderVerifiedNote": "Gender is verified from your document and cannot be changed.",
     "legalNameVerifiedLabel": "Full name from document (private)",
-    "displayNamePublicHint": "Public name — this is how others see you. Your legal name from the document stays private."
+    "displayNamePublicHint": "Public name — this is how others see you. Your legal name from the document stays private.",
+    "childrenAgeRangeLabel": "Children’s age"
   },
   "Quiz": {
     "intro_title": "10 questions about you",

@@ -39,11 +39,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .maybeSingle();
   const ext = (prof?.extended as Record<string, unknown>) ?? {};
   const familySection = (ext.family as Record<string, unknown>) ?? {};
-  const newExtended = parsed.data.children_living
-    ? {
-        ...ext,
-        family: { ...familySection, children_living: parsed.data.children_living },
-      }
+  // Ревью оунера Экран 5: children_living + children_age_range (диапазон возраста)
+  // — оба COLD в extended.family. read-merge-write, не затирая чужие секции.
+  const familyUpdates: Record<string, unknown> = {};
+  if (parsed.data.children_living) familyUpdates.children_living = parsed.data.children_living;
+  if (parsed.data.children_age_range) familyUpdates.children_age_range = parsed.data.children_age_range;
+  const newExtended = Object.keys(familyUpdates).length
+    ? { ...ext, family: { ...familySection, ...familyUpdates } }
     : ext;
 
   const { error: saveErr } = await sb
@@ -55,7 +57,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         has_children: parsed.data.has_children,
         future_children_plan: parsed.data.future_children_plan,
         children_count: parsed.data.children_count ?? null,
-        youngest_child_age: parsed.data.youngest_child_age ?? null,
+        // youngest_child_age устарел (заменён на children_age_range диапазон) —
+        // чистим hot-колонку, чтобы не осталось легаси-значения.
+        youngest_child_age: null,
         extended: newExtended,
       },
       { onConflict: "user_id" },

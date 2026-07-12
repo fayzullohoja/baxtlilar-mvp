@@ -314,7 +314,7 @@
     "employmentFormatLabel": "Çalışma biçimi",
     "maritalStatusLabel": "Medeni durum",
     "hasChildrenLabel": "Çocuğunuz var mı",
-    "childrenCountLabel": "Kaç çocuğunuz var",
+    "childrenCountLabel": "Çocuk sayısı",
     "childrenCountHint": "1 ile 10 arası.",
     "youngestChildAgeLabel": "En küçük çocuğun yaşı",
     "ageRangeHint": "Yıl olarak, 0-50.",
@@ -470,7 +470,8 @@
     "error_publish_generic": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
     "genderVerifiedNote": "Cinsiyet belgeye göre doğrulandı — değiştirilemez.",
     "legalNameVerifiedLabel": "Belgeye göre ad soyad (gizli)",
-    "displayNamePublicHint": "Herkese açık ad — başkaları sizi böyle görür. Belgedeki ad soyad gizli kalır."
+    "displayNamePublicHint": "Herkese açık ad — başkaları sizi böyle görür. Belgedeki ad soyad gizli kalır.",
+    "childrenAgeRangeLabel": "Çocukların yaşı"
   },
   "Quiz": {
     "intro_title": "Uyum anketi",

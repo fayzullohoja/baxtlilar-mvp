@@ -68,14 +68,21 @@ describe("V3 familyChildrenSchema (Экран 5)", () => {
     expect(familyChildrenSchema.safeParse(ok).success).toBe(true);
   });
 
-  it("принимает с children_count + youngest_child_age", () => {
+  it("принимает с children_count + children_age_range (диапазон)", () => {
     expect(
       familyChildrenSchema.safeParse({
         ...ok,
         has_children: "yes",
         children_count: 2,
-        youngest_child_age: 5,
+        children_age_range: "3_6",
       }).success,
+    ).toBe(true);
+  });
+
+  it("принимает has_children=yes без count (вариант «не уточнять» → null)", () => {
+    // Ревью оунера: жёсткий refine убран — count/age опциональны на сервере.
+    expect(
+      familyChildrenSchema.safeParse({ ...ok, has_children: "yes" }).success,
     ).toBe(true);
   });
 
@@ -85,9 +92,9 @@ describe("V3 familyChildrenSchema (Экран 5)", () => {
     ).toBe(false);
   });
 
-  it("отклоняет youngest_child_age > 50", () => {
+  it("отклоняет неверный children_age_range", () => {
     expect(
-      familyChildrenSchema.safeParse({ ...ok, youngest_child_age: 51 }).success,
+      familyChildrenSchema.safeParse({ ...ok, children_age_range: "99" }).success,
     ).toBe(false);
   });
 

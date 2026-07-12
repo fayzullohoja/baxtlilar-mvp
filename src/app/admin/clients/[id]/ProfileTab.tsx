@@ -12,6 +12,7 @@ import {
   UZ_REGIONS,
   MARITAL_STATUS,
   HAS_CHILDREN,
+  CHILDREN_AGE_RANGE,
   FUTURE_CHILDREN_PLAN,
   RELIGION,
   RELIGION_PRACTICE,
@@ -126,10 +127,8 @@ export async function ProfileTab({ userId }: { userId: string }) {
           value={
             p.has_children
               ? `${L(HAS_CHILDREN, p.has_children)}${
-                  typeof p.children_count === "number"
-                    ? ` · ${p.children_count} (мл. ${num(p.youngest_child_age)})`
-                    : ""
-                }`
+                  typeof p.children_count === "number" ? ` · ${p.children_count} дет.` : ""
+                }${fam.children_age_range ? ` · ${L(CHILDREN_AGE_RANGE, fam.children_age_range)}` : ""}`
               : "—"
           }
         />

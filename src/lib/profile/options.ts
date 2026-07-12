@@ -331,6 +331,27 @@ export const CHILDREN_LIVING: Opt[] = [
   { value: "na", ru: "Предпочитаю не уточнять", uz: "Aniqlashtirishni xohlamayman" },
 ];
 
+// Ревью оунера Экран 5: количество детей — бакеты (не свободный ввод). Форма
+// маппит value в int (4plus→4, na→null) для hot-колонки children_count.
+export const CHILDREN_COUNT: Opt[] = [
+  { value: "1", ru: "1", uz: "1" },
+  { value: "2", ru: "2", uz: "2" },
+  { value: "3", ru: "3", uz: "3" },
+  { value: "4plus", ru: "4 и более", uz: "4 va undan koʻp" },
+  { value: "na", ru: "Предпочитаю не уточнять", uz: "Aniqlashtirishni xohlamayman" },
+];
+
+// Ревью оунера Экран 5: возраст детей — диапазоны (не точный возраст). COLD →
+// extended.family.children_age_range (заменяет youngest_child_age).
+export const CHILDREN_AGE_RANGE: Opt[] = [
+  { value: "0_3", ru: "До 3 лет", uz: "3 yoshgacha" },
+  { value: "3_6", ru: "3–6 лет", uz: "3–6 yosh" },
+  { value: "7_12", ru: "7–12 лет", uz: "7–12 yosh" },
+  { value: "13_17", ru: "13–17 лет", uz: "13–17 yosh" },
+  { value: "18plus", ru: "18+", uz: "18+" },
+  { value: "na", ru: "Предпочитаю не уточнять", uz: "Aniqlashtirishni xohlamayman" },
+];
+
 /** Экран 6 — Топ-ценности (1-3 выбора из 14). */
 export const LIFE_VALUES_V3: Opt[] = [
   { value: "family", ru: "Семья", uz: "Oila" },

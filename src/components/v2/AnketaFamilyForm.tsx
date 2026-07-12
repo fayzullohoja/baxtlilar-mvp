@@ -4,12 +4,14 @@ import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
-import { Field, Select, TextInput } from "./AnketaFields";
+import { Field, Select } from "./AnketaFields";
 import {
   MARITAL_STATUS,
   HAS_CHILDREN,
   FUTURE_CHILDREN_PLAN,
   CHILDREN_LIVING,
+  CHILDREN_COUNT,
+  CHILDREN_AGE_RANGE,
 } from "@/lib/profile/options";
 import {
   getGenderedOptionLabel,
@@ -21,8 +23,9 @@ import {
  *
  * Изменения относительно V2:
  * - children_plan (5 опций) → future_children_plan (5 новых опций V3)
- * - + children_count (conditional: если has_children=yes)
- * - + youngest_child_age (conditional: если has_children=yes)
+ * - + children_count (Select 1/2/3/4+/«не уточнять», conditional: has_children=yes)
+ * - + children_age_range (Select-диапазон, COLD extended.family, опц.)
+ * - + children_living (COLD extended.family, опц.)
  *
  * API: /api/onboarding/profile/family.
  */
@@ -39,7 +42,7 @@ export function V2AnketaFamilyForm({
   const [marital, setMarital] = useState("");
   const [hasChildren, setHasChildren] = useState("");
   const [childrenCount, setChildrenCount] = useState("");
-  const [youngestAge, setYoungestAge] = useState("");
+  const [childrenAgeRange, setChildrenAgeRange] = useState("");
   const [childrenLiving, setChildrenLiving] = useState("");
   const [plan, setPlan] = useState("");
   const [busy, setBusy] = useState(false);
@@ -65,10 +68,13 @@ export function V2AnketaFamilyForm({
         future_children_plan: plan,
       };
       if (showChildrenDetails) {
-        const count = parseInt(childrenCount, 10);
-        const age = parseInt(youngestAge, 10);
-        if (!isNaN(count)) body.children_count = count;
-        if (!isNaN(age)) body.youngest_child_age = age;
+        // Количество (hot int): 1/2/3 → int; «4 и более» → 4; «не уточнять» → null.
+        if (childrenCount === "4plus") body.children_count = 4;
+        else if (childrenCount && childrenCount !== "na")
+          body.children_count = Number(childrenCount);
+        else body.children_count = null;
+        // Возраст-диапазон (COLD) и «с кем живут» (COLD) — enum, «na» валидна.
+        if (childrenAgeRange) body.children_age_range = childrenAgeRange;
         if (childrenLiving) body.children_living = childrenLiving;
       }
       const res = await fetch("/api/onboarding/profile/family", {
@@ -93,14 +99,9 @@ export function V2AnketaFamilyForm({
     }
   }
 
-  const childrenDetailsOk =
-    !showChildrenDetails ||
-    (childrenCount !== "" &&
-      Number(childrenCount) >= 1 &&
-      Number(childrenCount) <= 10 &&
-      youngestAge !== "" &&
-      Number(youngestAge) >= 0 &&
-      Number(youngestAge) <= 50);
+  // Количество детей — обязателен выбор (включая «Предпочитаю не уточнять»);
+  // возраст-диапазон и «с кем живут» — опциональны.
+  const childrenDetailsOk = !showChildrenDetails || childrenCount !== "";
 
   const valid = !!marital && !!hasChildren && !!plan && childrenDetailsOk;
 
@@ -123,7 +124,7 @@ export function V2AnketaFamilyForm({
             setHasChildren(v);
             if (v !== "yes") {
               setChildrenCount("");
-              setYoungestAge("");
+              setChildrenAgeRange("");
               setChildrenLiving("");
             }
           }}
@@ -133,32 +134,21 @@ export function V2AnketaFamilyForm({
 
       {showChildrenDetails ? (
         <>
-          <Field
-            label={t("childrenCountLabel")}
-            required
-            hint={t("childrenCountHint")}
-          >
-            <TextInput
-              maxLength={2}
+          <Field label={t("childrenCountLabel")} required>
+            <Select
+              options={CHILDREN_COUNT}
               value={childrenCount}
-              onChange={(e) =>
-                setChildrenCount(e.target.value.replace(/\D/g, ""))
-              }
-              placeholder="1"
+              onChange={setChildrenCount}
+              locale={locale}
             />
           </Field>
 
-          <Field
-            label={t("youngestChildAgeLabel")}
-            required
-            hint={t("ageRangeHint")}
-          >
-            <TextInput
-              maxLength={2}
-              value={youngestAge}
-              onChange={(e) =>
-                setYoungestAge(e.target.value.replace(/\D/g, ""))
-              }
+          <Field label={t("childrenAgeRangeLabel")} hint={t("optionalHint")}>
+            <Select
+              options={CHILDREN_AGE_RANGE}
+              value={childrenAgeRange}
+              onChange={setChildrenAgeRange}
+              locale={locale}
             />
           </Field>
 
