@@ -72,6 +72,30 @@ function personalityTraits(vector: Record<string, number>): string[] {
     else if (ES < 40) out.push("чувствительный, глубоко переживает");
   }
 
+  // Если все черты в среднем диапазоне (40-60), секция «характер» пустовала бы.
+  // Показываем ближайшую к краю черту, чтобы карточка не выглядела скромной.
+  // (Если вектора ещё нет — напр. до прохождения опроса — вернём пусто.)
+  if (out.length === 0) {
+    const dims: Array<[number | undefined, string, string]> = [
+      [O, "тянется к новому опыту", "ценит проверенное и привычное"],
+      [C, "организованный и собранный", "гибкий, без жёстких рамок"],
+      [E, "заряжается от общения", "спокойный, предпочитает камерное"],
+      [A, "тёплый и располагающий", "прямой, без обиняков"],
+      [ES, "эмоционально устойчивый", "тонко и глубоко чувствует"],
+    ];
+    let best: string | null = null;
+    let bestDelta = -1;
+    for (const [val, hi, lo] of dims) {
+      if (typeof val !== "number") continue;
+      const delta = Math.abs(val - 50);
+      if (delta > bestDelta) {
+        bestDelta = delta;
+        best = val >= 50 ? hi : lo;
+      }
+    }
+    if (best) return [best];
+  }
+
   return out.slice(0, 3);
 }
 
@@ -131,47 +155,76 @@ export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
       <div
         style={{
           background: "var(--v2-grad-hero)",
-          padding: "24px 20px 22px",
+          padding: "22px 20px 22px",
         }}
       >
-        {/* Бейдж «Проверен» — только для approved-профилей (ревью оунера).
-            Раньше показывался всегда (hardcode) — вводил в заблуждение. */}
-        {profile.is_verified ? (
+        {/* Верхний ряд: монограмма-аватар (фото скрыто pre-mutual — заполняет
+            «пустой» hero) слева + бейдж «Проверен» справа (только approved). */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: "16px",
+          }}
+        >
           <div
+            aria-hidden
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              background: "#ffffff",
+              width: "56px",
+              height: "56px",
               borderRadius: "999px",
-              padding: "4px 11px 4px 5px",
-              fontSize: "12px",
-              fontWeight: 700,
-              color: "var(--color-v2-ink-200)",
-              fontFamily: "var(--font-v2-body)",
-              marginBottom: "14px",
-              boxShadow: "0 2px 8px rgba(42, 26, 46, 0.12)",
+              background: "rgba(255, 247, 240, 0.18)",
+              border: "1.5px solid rgba(255, 247, 240, 0.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontFamily: "var(--font-v2-display)",
+              fontSize: "26px",
+              fontWeight: 800,
+              color: "#FFF7F0",
+              flexShrink: 0,
             }}
           >
-            <span
-              aria-hidden
+            {(name || "?").charAt(0).toUpperCase()}
+          </div>
+
+          {profile.is_verified ? (
+            <div
               style={{
-                width: "15px",
-                height: "15px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "#ffffff",
                 borderRadius: "999px",
-                background: "var(--color-v2-teal)",
-                color: "#ffffff",
-                fontSize: "9px",
-                lineHeight: "15px",
-                textAlign: "center",
-                flexShrink: 0,
+                padding: "4px 11px 4px 5px",
+                fontSize: "12px",
+                fontWeight: 700,
+                color: "var(--color-v2-ink-200)",
+                fontFamily: "var(--font-v2-body)",
+                boxShadow: "0 2px 8px rgba(42, 26, 46, 0.12)",
               }}
             >
-              ✓
-            </span>
-            {t("verifiedBadge")}
-          </div>
-        ) : null}
+              <span
+                aria-hidden
+                style={{
+                  width: "15px",
+                  height: "15px",
+                  borderRadius: "999px",
+                  background: "var(--color-v2-teal)",
+                  color: "#ffffff",
+                  fontSize: "9px",
+                  lineHeight: "15px",
+                  textAlign: "center",
+                  flexShrink: 0,
+                }}
+              >
+                ✓
+              </span>
+              {t("verifiedBadge")}
+            </div>
+          ) : null}
+        </div>
 
         {/* Имя */}
         <Headline size="lg" as="h2" style={{ color: "#FFF7F0" }}>
@@ -190,7 +243,10 @@ export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
         >
           {profile.city ? <span>{profile.city}</span> : null}
           {profile.education && profile.education !== "na" ? (
-            <span> · {labelOf(EDUCATION, profile.education, locale)}</span>
+            <span>
+              {profile.city ? " · " : ""}
+              {labelOf(EDUCATION, profile.education, locale)}
+            </span>
           ) : null}
           {/* Вероисповедание НЕ показываем в публичной карточке (спец-категория ПД,
               ревью оунера 2026-07-10) — религия остаётся matching-only. Ценность

@@ -9,9 +9,10 @@ import { QUESTIONS } from "@/lib/quiz/questions";
 /**
  * V2 Quiz (Blueprint §3.3 B7).
  *
- * 10 вопросов Big Five (O/C/E/A/ES). Шкала 1-5. Стиль «Живой Baxtlilar»:
- * тёмный экран (--v2-grad-dark), вопросы — белые serif-параграфы, шкала —
- * белые пилюли (выбранная — гранат), прогресс — amber-градиент.
+ * 10 вопросов Big Five (O/C/E/A/ES). Шкала 1-5. 2026-07-12: приведён к общему
+ * стилю анкеты «Живой Baxtlilar» — светлый кремовый фон, гранатовый акцент,
+ * шкала = бордюрные пилюли как в Select анкеты (выбранная — гранат), без
+ * «плавающих» теней. Прогресс — amber-градиент.
  *
  * Не paginate (one-at-a-time): 10 вопросов помещаются в один скролл, и
  * пользователь может «вернуться и переспросить».
@@ -61,7 +62,8 @@ export function V2QuizForm({ locale }: { locale: string }) {
 
   return (
     <div>
-      <div style={{ marginBottom: "32px" }}>
+      {/* Прогресс — гранатовый лейбл + amber-полоса */}
+      <div style={{ marginBottom: "34px" }}>
         <div
           style={{
             fontFamily: "var(--font-v2-body)",
@@ -69,7 +71,7 @@ export function V2QuizForm({ locale }: { locale: string }) {
             fontWeight: 800,
             textTransform: "uppercase",
             letterSpacing: "0.14em",
-            color: "var(--color-v2-amber-2)",
+            color: "var(--color-v2-accent)",
             marginBottom: "10px",
           }}
         >
@@ -79,7 +81,7 @@ export function V2QuizForm({ locale }: { locale: string }) {
           style={{
             height: "7px",
             borderRadius: "99px",
-            background: "rgba(255, 247, 240, 0.15)",
+            background: "var(--color-v2-ink-500)",
             overflow: "hidden",
           }}
         >
@@ -96,15 +98,15 @@ export function V2QuizForm({ locale }: { locale: string }) {
       </div>
 
       {QUESTIONS.map((q, i) => (
-        <div key={q.id} style={{ marginBottom: "40px" }}>
+        <div key={q.id} style={{ marginBottom: "36px" }}>
           <p
             style={{
               fontFamily: "var(--font-v2-display)",
               fontWeight: 800,
-              fontSize: "22px",
-              lineHeight: "1.3",
+              fontSize: "21px",
+              lineHeight: "1.32",
               letterSpacing: "-0.01em",
-              color: "#FFF7F0",
+              color: "var(--color-v2-ink-100)",
               marginBottom: "16px",
             }}
           >
@@ -113,8 +115,8 @@ export function V2QuizForm({ locale }: { locale: string }) {
                 fontFamily: "var(--font-v2-body)",
                 fontWeight: 800,
                 fontSize: "13px",
-                color: "var(--color-v2-amber-2)",
-                marginRight: "8px",
+                color: "var(--color-v2-accent)",
+                marginRight: "9px",
                 verticalAlign: "middle",
               }}
             >
@@ -122,7 +124,7 @@ export function V2QuizForm({ locale }: { locale: string }) {
             </span>
             {locale === "uz" ? q.uz : q.ru}
           </p>
-          <div style={{ display: "flex", gap: "6px" }}>
+          <div style={{ display: "flex", gap: "8px" }}>
             {[1, 2, 3, 4, 5].map((v) => {
               const selected = answers[q.id] === v;
               return (
@@ -130,19 +132,17 @@ export function V2QuizForm({ locale }: { locale: string }) {
                   key={v}
                   type="button"
                   onClick={() => setAnswers((a) => ({ ...a, [q.id]: v }))}
+                  aria-pressed={selected}
                   style={{
                     flex: 1,
-                    padding: "12px 0",
+                    padding: "13px 0",
                     fontFamily: "var(--font-v2-body)",
                     fontWeight: 800,
                     fontSize: "16px",
-                    color: selected ? "#fff" : "var(--color-v2-ink-200)",
-                    background: selected ? "var(--color-v2-accent)" : "#fff",
-                    border: "none",
+                    color: selected ? "#fff" : "var(--color-v2-ink-300)",
+                    background: selected ? "var(--color-v2-accent)" : "#ffffff",
+                    border: `1.5px solid ${selected ? "var(--color-v2-accent)" : "var(--color-v2-ink-500)"}`,
                     borderRadius: "var(--v2-radius-md)",
-                    boxShadow: selected
-                      ? "0 6px 16px rgba(193, 54, 47, 0.35)"
-                      : "0 2px 8px rgba(42, 26, 46, 0.12)",
                     cursor: "pointer",
                     transition: "all 0.12s ease",
                   }}
@@ -158,9 +158,9 @@ export function V2QuizForm({ locale }: { locale: string }) {
               justifyContent: "space-between",
               fontSize: "11px",
               fontWeight: 600,
-              color: "rgba(255, 247, 240, 0.6)",
+              color: "var(--color-v2-ink-400)",
               fontFamily: "var(--font-v2-body)",
-              marginTop: "6px",
+              marginTop: "7px",
             }}
           >
             <span>{t(SCALE_LABELS.min)}</span>
