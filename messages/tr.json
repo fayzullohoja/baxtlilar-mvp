@@ -304,6 +304,7 @@
     "householdResponsibilityLabel": "Ev içi sorumluluklar",
     "canSkipHint": "Atlayabilirsiniz.",
     "partnerAgeLabel": "Eşin yaşı",
+    "partnerAgePrompt": "Yaş aralığını belirtin",
     "partnerHeightLabel": "Eşin boyu, cm",
     "partnerHeightHint": "Atlayabilirsiniz. Boy ana eşleşme kriteri değildir.",
     "partnerQualitiesLabel": "Eşte önemli nitelikler",

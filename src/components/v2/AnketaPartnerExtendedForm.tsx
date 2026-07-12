@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
-import { Field, TextInput, Chips, Select } from "./AnketaFields";
+import { Field, Chips, Select, DualRangeSlider } from "./AnketaFields";
 import {
   PARTNER_QUALITIES,
   RELIGION_PARTNER_MATCH,
@@ -29,8 +29,34 @@ import {
  *
  * partner_location_preference (cold) — TBD Sprint 3.
  *
+ * 2026-07-12 (ревью оунера): возраст/рост — двойные ползунки-диапазоны.
  * API: /api/onboarding/profile/partner-extended.
  */
+
+const AGE_MIN = 18;
+const AGE_MAX = 80;
+const AGE_DEF_LO = 25;
+const AGE_DEF_HI = 35;
+const HEIGHT_MIN = 140;
+const HEIGHT_MAX = 220;
+const HEIGHT_DEF_LO = 160;
+const HEIGHT_DEF_HI = 185;
+
+function parseRange(
+  minStr: string | undefined,
+  maxStr: string | undefined,
+  defLo: number,
+  defHi: number,
+): { lo: number; hi: number; set: boolean } {
+  const hasMin = minStr != null && minStr !== "";
+  const hasMax = maxStr != null && maxStr !== "";
+  return {
+    lo: hasMin ? Number(minStr) : defLo,
+    hi: hasMax ? Number(maxStr) : defHi,
+    set: hasMin && hasMax,
+  };
+}
+
 export function V2AnketaPartnerExtendedForm({
   locale,
   initial,
@@ -52,10 +78,25 @@ export function V2AnketaPartnerExtendedForm({
 }) {
   const t = useTranslations("Anketa");
   const router = useRouter();
-  const [ageMin, setAgeMin] = useState(initial?.partner_age_min ?? "");
-  const [ageMax, setAgeMax] = useState(initial?.partner_age_max ?? "");
-  const [heightMin, setHeightMin] = useState(initial?.partner_height_min ?? "");
-  const [heightMax, setHeightMax] = useState(initial?.partner_height_max ?? "");
+  // Возраст/рост — диапазоны двойным ползунком. «Не указано» до касания (isSet).
+  const initAge = parseRange(
+    initial?.partner_age_min,
+    initial?.partner_age_max,
+    AGE_DEF_LO,
+    AGE_DEF_HI,
+  );
+  const initHeight = parseRange(
+    initial?.partner_height_min,
+    initial?.partner_height_max,
+    HEIGHT_DEF_LO,
+    HEIGHT_DEF_HI,
+  );
+  const [ageLo, setAgeLo] = useState(initAge.lo);
+  const [ageHi, setAgeHi] = useState(initAge.hi);
+  const [ageSet, setAgeSet] = useState(initAge.set);
+  const [heightLo, setHeightLo] = useState(initHeight.lo);
+  const [heightHi, setHeightHi] = useState(initHeight.hi);
+  const [heightSet, setHeightSet] = useState(initHeight.set);
   const [qualities, setQualities] = useState<string[]>(
     initial?.partner_top_qualities ?? [],
   );
@@ -116,12 +157,14 @@ export function V2AnketaPartnerExtendedForm({
     setErr(null);
     try {
       const body: Record<string, unknown> = {
-        partner_age_min: Number(ageMin),
-        partner_age_max: Number(ageMax),
+        partner_age_min: ageLo,
+        partner_age_max: ageHi,
         partner_top_qualities: qualities,
       };
-      if (heightMin.trim() !== "") body.partner_height_min = Number(heightMin);
-      if (heightMax.trim() !== "") body.partner_height_max = Number(heightMax);
+      if (heightSet) {
+        body.partner_height_min = heightLo;
+        body.partner_height_max = heightHi;
+      }
       if (religionMatch !== "") body.partner_religion_match = religionMatch;
       if (countries.length > 0) body.partner_preferred_countries = countries;
       if (maritalPref.length > 0) body.partner_marital_pref = maritalPref;
@@ -150,48 +193,33 @@ export function V2AnketaPartnerExtendedForm({
     }
   }
 
-  const ageOk =
-    ageMin !== "" &&
-    ageMax !== "" &&
-    Number(ageMin) >= 18 &&
-    Number(ageMax) >= 18 &&
-    // Верхняя граница совпадает со схемой (partner_age_*.max(100)) — иначе возраст
-    // вроде 150 проходит клиент-гейт и падает на сервере с общей ошибкой.
-    Number(ageMin) <= 100 &&
-    Number(ageMax) <= 100 &&
-    Number(ageMax) >= Number(ageMin);
-  const heightOk =
-    (heightMin.trim() === "" && heightMax.trim() === "") ||
-    (heightMin !== "" &&
-      heightMax !== "" &&
-      Number(heightMin) >= 140 &&
-      Number(heightMax) <= 220 &&
-      Number(heightMax) >= Number(heightMin));
+  // Возраст обязателен (нужно задать диапазон); рост опционален. Ползунок сам
+  // гарантирует lo<=hi и границы, так что валидность — просто «задан ли возраст».
+  const ageOk = ageSet;
   const qOk = qualities.length >= 1 && qualities.length <= 5;
   const countriesOk = countries.length <= 3;
-  const valid = ageOk && heightOk && qOk && countriesOk;
+  const valid = ageOk && qOk && countriesOk;
 
   return (
     <div>
       <Field label={t("partnerAgeLabel")} required hint={t("partnerAgeHint")}>
-        <div style={{ display: "flex", gap: 12 }}>
-          <TextInput
-            maxLength={3}
-            value={ageMin}
-            onChange={(e) => setAgeMin(e.target.value.replace(/\D/g, ""))}
-            placeholder={t("partnerAgeFrom")}
-          />
-          <TextInput
-            maxLength={3}
-            value={ageMax}
-            onChange={(e) => setAgeMax(e.target.value.replace(/\D/g, ""))}
-            placeholder={t("partnerAgeTo")}
-          />
-        </div>
-        {ageMin !== "" &&
-        ageMax !== "" &&
-        Number(ageMax) >= Number(ageMin) &&
-        Number(ageMax) - Number(ageMin) < 3 ? (
+        <DualRangeSlider
+          min={AGE_MIN}
+          max={AGE_MAX}
+          minValue={ageLo}
+          maxValue={ageHi}
+          isSet={ageSet}
+          onChange={(lo, hi, set) => {
+            setAgeLo(lo);
+            setAgeHi(hi);
+            setAgeSet(set);
+          }}
+          unit={t("childAgeUnit")}
+          notSetLabel={t("partnerAgePrompt")}
+          clearLabel={t("clearValue")}
+          clearable={false}
+        />
+        {ageSet && ageHi - ageLo < 3 ? (
           <div
             style={{
               marginTop: 8,
@@ -206,24 +234,22 @@ export function V2AnketaPartnerExtendedForm({
         ) : null}
       </Field>
 
-      <Field
-        label={t("partnerHeightLabel")}
-        hint={t("partnerHeightHint")}
-      >
-        <div style={{ display: "flex", gap: 12 }}>
-          <TextInput
-            maxLength={3}
-            value={heightMin}
-            onChange={(e) => setHeightMin(e.target.value.replace(/\D/g, ""))}
-            placeholder={t("partnerAgeFrom")}
-          />
-          <TextInput
-            maxLength={3}
-            value={heightMax}
-            onChange={(e) => setHeightMax(e.target.value.replace(/\D/g, ""))}
-            placeholder={t("partnerAgeTo")}
-          />
-        </div>
+      <Field label={t("partnerHeightLabel")} hint={t("partnerHeightHint")}>
+        <DualRangeSlider
+          min={HEIGHT_MIN}
+          max={HEIGHT_MAX}
+          minValue={heightLo}
+          maxValue={heightHi}
+          isSet={heightSet}
+          onChange={(lo, hi, set) => {
+            setHeightLo(lo);
+            setHeightHi(hi);
+            setHeightSet(set);
+          }}
+          unit={t("unitCm")}
+          notSetLabel={t("notSpecified")}
+          clearLabel={t("clearValue")}
+        />
       </Field>
 
       <Field

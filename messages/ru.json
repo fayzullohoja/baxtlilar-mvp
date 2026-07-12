@@ -304,6 +304,7 @@
     "householdResponsibilityLabel": "Бытовые обязанности",
     "canSkipHint": "Можно пропустить.",
     "partnerAgeLabel": "Возраст партнёра",
+    "partnerAgePrompt": "Укажите диапазон возраста",
     "partnerHeightLabel": "Рост партнёра, см",
     "partnerHeightHint": "Можно пропустить. Рост — не главный критерий подбора.",
     "partnerQualitiesLabel": "Важные качества партнёра",

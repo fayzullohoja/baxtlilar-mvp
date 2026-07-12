@@ -532,3 +532,170 @@ export function RangeSlider({
     </div>
   );
 }
+
+// =============================================================================
+// DualRangeSlider — диапазон «от…до» с двумя пальцами (возраст/рост партнёра)
+// =============================================================================
+
+/**
+ * Один слайдер, два пальца — диапазон minValue…maxValue. «Не указано» до
+ * первого касания (isSet). clearable=false — обязательное поле (без сброса).
+ */
+export function DualRangeSlider({
+  min,
+  max,
+  step = 1,
+  minValue,
+  maxValue,
+  isSet,
+  onChange,
+  unit,
+  notSetLabel,
+  clearLabel,
+  clearable = true,
+}: {
+  min: number;
+  max: number;
+  step?: number;
+  minValue: number;
+  maxValue: number;
+  isSet: boolean;
+  onChange: (minV: number, maxV: number, isSet: boolean) => void;
+  unit: string;
+  notSetLabel: string;
+  clearLabel: string;
+  clearable?: boolean;
+}) {
+  const clamp = (v: number) => Math.min(max, Math.max(min, v));
+  const lo = clamp(minValue);
+  const hi = clamp(maxValue);
+  const minPct = ((lo - min) / (max - min)) * 100;
+  const maxPct = ((hi - min) / (max - min)) * 100;
+
+  return (
+    <div
+      style={{
+        background: "#ffffff",
+        border: "1.5px solid var(--color-v2-ink-500)",
+        borderRadius: "var(--v2-radius-md)",
+        padding: "18px 18px 14px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          minHeight: "38px",
+          marginBottom: "16px",
+        }}
+      >
+        {isSet ? (
+          <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+            <span
+              style={{
+                fontFamily: "var(--font-v2-display)",
+                fontSize: "30px",
+                fontWeight: 800,
+                lineHeight: 1,
+                color: "var(--color-v2-ink-100)",
+              }}
+            >
+              {lo} – {hi}
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-v2-body)",
+                fontSize: "15px",
+                fontWeight: 600,
+                color: "var(--color-v2-ink-400)",
+              }}
+            >
+              {unit}
+            </span>
+          </div>
+        ) : (
+          <span
+            style={{
+              fontFamily: "var(--font-v2-body)",
+              fontSize: "16px",
+              fontWeight: 600,
+              color: "var(--color-v2-ink-400)",
+            }}
+          >
+            {notSetLabel}
+          </span>
+        )}
+
+        {isSet && clearable ? (
+          <button
+            type="button"
+            onClick={() => onChange(minValue, maxValue, false)}
+            style={{
+              background: "none",
+              border: "none",
+              padding: "4px 0",
+              cursor: "pointer",
+              fontFamily: "var(--font-v2-body)",
+              fontSize: "12px",
+              fontWeight: 600,
+              color: "var(--color-v2-ink-400)",
+            }}
+          >
+            {clearLabel}
+          </button>
+        ) : null}
+      </div>
+
+      <div className="v2-dual">
+        <div className="v2-dual-track" />
+        <div
+          className={isSet ? "v2-dual-fill" : "v2-dual-fill v2-dual-fill-off"}
+          style={{ left: `${minPct}%`, width: `${Math.max(0, maxPct - minPct)}%` }}
+        />
+        <input
+          type="range"
+          className={isSet ? "v2-dual-input" : "v2-dual-input v2-dual-input-off"}
+          min={min}
+          max={max}
+          step={step}
+          value={lo}
+          onChange={(e) => {
+            const v = Math.min(Number(e.target.value), hi - step);
+            onChange(clamp(v), hi, true);
+          }}
+          style={{ zIndex: 3 }}
+          aria-label={`${notSetLabel} — от`}
+        />
+        <input
+          type="range"
+          className={isSet ? "v2-dual-input" : "v2-dual-input v2-dual-input-off"}
+          min={min}
+          max={max}
+          step={step}
+          value={hi}
+          onChange={(e) => {
+            const v = Math.max(Number(e.target.value), lo + step);
+            onChange(lo, clamp(v), true);
+          }}
+          style={{ zIndex: 2 }}
+          aria-label={`${notSetLabel} — до`}
+        />
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginTop: "10px",
+          fontFamily: "var(--font-v2-body)",
+          fontSize: "12px",
+          color: "var(--color-v2-ink-400)",
+        }}
+      >
+        <span>{min}</span>
+        <span>{max}</span>
+      </div>
+    </div>
+  );
+}

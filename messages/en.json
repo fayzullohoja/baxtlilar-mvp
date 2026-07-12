@@ -304,6 +304,7 @@
     "householdResponsibilityLabel": "Household responsibilities",
     "canSkipHint": "You can skip this.",
     "partnerAgeLabel": "Partner's age",
+    "partnerAgePrompt": "Set the age range",
     "partnerHeightLabel": "Partner's height, cm",
     "partnerHeightHint": "You can skip this. Height isnt the main matching criterion.",
     "partnerQualitiesLabel": "Qualities that matter in a partner",
