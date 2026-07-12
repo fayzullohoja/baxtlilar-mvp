@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/guard";
 import { can } from "@/lib/admin/permissions";
+import { loadAdminSettings } from "@/lib/admin/settings";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { unwrapCount, unwrapOne } from "@/lib/db/unwrap";
 import { OpsShell } from "@/components/admin-ops/OpsShell";
@@ -69,6 +70,7 @@ export default async function AdminDashboard() {
     over_72h?: number;
     photos_over_24h?: number;
   };
+  const { slaWarnHours } = await loadAdminSettings(); // порог подсветки (Фаза 3)
   const oldestH = Number(h.oldest_open_hours ?? 0);
   const oldestLabel =
     oldestH >= 24 ? `${Math.floor(oldestH / 24)} дн` : `${Math.round(oldestH)} ч`;
@@ -109,7 +111,7 @@ export default async function AdminDashboard() {
             href="/admin/queue/mine?view=all"
             label="Старейший кейс в очереди"
             value={h.open_total ? oldestLabel : "—"}
-            accent={oldestH >= 24}
+            accent={oldestH >= slaWarnHours}
           />
           <StatCard
             href="/admin/queue/mine?view=all"
