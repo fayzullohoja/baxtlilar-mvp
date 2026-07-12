@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { BUCKET_DOCUMENTS, BUCKET_PHOTOS } from "@/lib/uploads/storage";
 
@@ -14,7 +15,7 @@ export async function POST(
 ): Promise<NextResponse> {
   const { session, res } = await requireAdminApi();
   if (res) return res;
-  if (session.role !== "superadmin")
+  if (!can(session.role, "users.sanction"))
     return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   const { id } = await params;
 

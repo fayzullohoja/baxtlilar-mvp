@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { requireAdmin, checkInQueueOrSuperPage } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { OpsShell } from "@/components/admin-ops/OpsShell";
 import { loadClient } from "@/lib/admin/load-client";
@@ -65,7 +66,7 @@ export default async function Page({
     .eq("id", session.adminId)
     .maybeSingle();
 
-  // DZ-1..3: danger-zone только для superadmin. Тянем ban/lifecycle-состояние.
+  // DZ-1..3: danger-zone только при users.sanction (super). Тянем ban/lifecycle.
   type DangerData = {
     lifecycle_state: string;
     verification_status: string;
@@ -74,7 +75,7 @@ export default async function Page({
     pending_ban_reason: string | null;
   };
   let danger: DangerData | null = null;
-  if (session.role === "superadmin") {
+  if (can(session.role, "users.sanction")) {
     const { data: u } = await supabaseAdmin()
       .from("users")
       .select(

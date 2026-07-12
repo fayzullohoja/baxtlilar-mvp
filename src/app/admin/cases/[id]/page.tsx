@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireAdmin, adminAudit } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { OpsShell } from "@/components/admin-ops/OpsShell";
 import { loadCase } from "@/lib/admin/load-case";
@@ -25,7 +26,7 @@ export default async function Page({
   // Без этого любой модератор читал документы любого юзера по прямой ссылке
   // /admin/cases/<id>, минуя scope-модель очереди.
   if (
-    session.role !== "superadmin" &&
+    !can(session.role, "queue.viewAll") &&
     c.assignee_id &&
     c.assignee_id !== session.adminId
   ) {

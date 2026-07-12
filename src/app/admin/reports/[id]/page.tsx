@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { OpsShell } from "@/components/admin-ops/OpsShell";
 import { StatusPill } from "@/components/admin-ops/StatusPill";
@@ -36,7 +37,7 @@ export default async function ReportDetail({
   params: Promise<{ id: string }>;
 }) {
   const session = await requireAdmin();
-  if (session.role !== "superadmin") notFound();
+  if (!can(session.role, "reports.triage")) notFound();
   const { id } = await params;
   const sb = supabaseAdmin();
 
@@ -138,6 +139,7 @@ export default async function ReportDetail({
         reportId={id}
         targetId={targetId}
         targetBlocked={target?.lifecycle_state === "blocked"}
+        canBan={can(session.role, "users.sanction")}
       />
 
       {/* Evidence-чат */}

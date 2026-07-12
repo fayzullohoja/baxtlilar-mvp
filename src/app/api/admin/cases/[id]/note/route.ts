@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -31,7 +32,7 @@ export async function POST(
   // Scope-гейт как в соседних case-мутациях (draft/decision/blocking-reject):
   // модератор пишет заметку только в СВОЙ (заклейменный) кейс; superadmin — в любой.
   // Без этого — write-IDOR: заметки в чужие/закрытые кейсы (RLS выключен).
-  if (session.role !== "superadmin" && kase.assignee_id !== session.adminId) {
+  if (!can(session.role, "queue.viewAll") && kase.assignee_id !== session.adminId) {
     return NextResponse.json({ ok: false, error: "not_claimed_by_you" }, { status: 403 });
   }
 

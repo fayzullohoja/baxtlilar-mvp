@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { OpsShell } from "@/components/admin-ops/OpsShell";
 import {
@@ -22,7 +23,7 @@ export default async function Page({
 }) {
   const session = await requireAdmin();
   const sp = await searchParams;
-  const isSuper = session.role === "superadmin";
+  const isSuper = can(session.role, "queue.viewAll");
   const view = sp.view === "all" && isSuper ? "all" : "mine";
   const cursor = sp.cursor || undefined;
 

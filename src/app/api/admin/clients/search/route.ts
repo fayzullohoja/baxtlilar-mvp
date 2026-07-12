@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 import { searchClients } from "@/lib/admin/load-clients-search";
 
 export const runtime = "nodejs";
@@ -11,7 +12,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // F-120: директория клиентов раскрывает ПИНФЛ/паспорт/телефон ЛЮБОГО клиента,
   // не только из очереди модератора — это super-only возможность (как /admin/users
   // в проде). Модератор работает через свою очередь и карточки из неё.
-  if (session.role !== "superadmin") {
+  if (!can(session.role, "clients.directory")) {
     return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   }
   const sp = new URL(req.url).searchParams;

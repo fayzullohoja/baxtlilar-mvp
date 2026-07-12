@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi, dispatchBanAction } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,6 +25,11 @@ export async function POST(
 ): Promise<NextResponse> {
   const { session, res } = await requireAdminApi();
   if (res) return res;
+  // RBAC (Волна 7): бан — деструктивная санкция, требует users.sanction (super).
+  // Раньше роут был any-admin (полагались на super-only UI) → латентная дыра:
+  // модератор мог POST'ить напрямую. Two-person rule предполагает super-admin'ов.
+  if (!can(session.role, "users.sanction"))
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   const { id } = await params;
 
   const body = (await req.json().catch(() => ({}))) as {

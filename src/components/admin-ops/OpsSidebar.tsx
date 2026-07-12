@@ -12,19 +12,22 @@ import {
   IconLogout,
 } from "@tabler/icons-react";
 import { ADMIN } from "@/lib/admin/admin-tokens";
+import { can, type Permission } from "@/lib/admin/permissions";
 import type { ComponentType } from "react";
 
 type Item = {
   href: string;
   label: string;
   icon: ComponentType<{ size?: number; stroke?: number }>;
-  superOnly?: boolean;
+  // Пункт виден, если у роли есть это право. Без perm — виден всем админам.
+  perm?: Permission;
   badge?: number;
 };
 type Group = { label: string; items: Item[] };
 
 // ЕДИНАЯ навигация: только реально существующие рабочие страницы (без 404).
-// Каждый модуль один раз. Все рендерятся в OpsShell → один дизайн.
+// Видимость через capability-map (та же, что гейтит сами страницы) — sidebar не
+// расходится с доступом. Жалобы теперь видны модератору (Волна 7).
 const GROUPS: Group[] = [
   {
     label: "ОБЗОР",
@@ -35,20 +38,20 @@ const GROUPS: Group[] = [
     items: [
       { href: "/admin/queue/mine", label: "Верификации", icon: IconShieldCheck },
       { href: "/admin/photos", label: "Фото", icon: IconPhoto },
-      { href: "/admin/reports", label: "Жалобы", icon: IconFlag, superOnly: true },
+      { href: "/admin/reports", label: "Жалобы", icon: IconFlag, perm: "reports.triage" },
     ],
   },
   {
     label: "РЕЕСТР",
     items: [
-      { href: "/admin/clients", label: "Клиенты", icon: IconUsers, superOnly: true },
+      { href: "/admin/clients", label: "Клиенты", icon: IconUsers, perm: "clients.directory" },
     ],
   },
   {
     label: "АНАЛИТИКА",
     items: [
-      { href: "/admin/analytics", label: "Аналитика", icon: IconChartBar, superOnly: true },
-      { href: "/admin/audit", label: "Журнал", icon: IconHistory, superOnly: true },
+      { href: "/admin/analytics", label: "Аналитика", icon: IconChartBar, perm: "analytics.view" },
+      { href: "/admin/audit", label: "Журнал", icon: IconHistory, perm: "audit.viewAll" },
     ],
   },
 ];
@@ -104,7 +107,7 @@ export function OpsSidebar({
       <div style={{ flex: 1, padding: "12px 0" }}>
         {GROUPS.map((g) => {
           const visibleItems = g.items.filter(
-            (i) => !i.superOnly || adminRole === "superadmin",
+            (i) => !i.perm || can(adminRole, i.perm),
           );
           if (visibleItems.length === 0) return null;
           return (

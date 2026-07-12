@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { OpsShell } from "@/components/admin-ops/OpsShell";
 import { searchClients } from "@/lib/admin/load-clients-search";
@@ -42,7 +43,7 @@ export default async function Page({
   const session = await requireAdmin();
   // F-120: директория = browse-anyone PII (ПИНФЛ/паспорт/телефон). Super-only,
   // как было /admin/users в проде. Модератор работает из своей очереди.
-  if (session.role !== "superadmin") redirect("/admin/queue/mine");
+  if (!can(session.role, "clients.directory")) redirect("/admin/queue/mine");
 
   const sp = await searchParams;
   const statusF = sp.status ?? "all";

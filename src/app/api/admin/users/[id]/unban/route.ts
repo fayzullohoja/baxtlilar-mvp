@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi, adminAudit } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import type { LifecycleState } from "@/lib/state-machine/types";
@@ -14,7 +15,7 @@ export async function POST(
 ): Promise<NextResponse> {
   const { session, res } = await requireAdminApi();
   if (res) return res;
-  if (session.role !== "superadmin")
+  if (!can(session.role, "users.sanction"))
     return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   const { id } = await params;
 

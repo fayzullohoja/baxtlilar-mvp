@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { unwrapCount, unwrapOne } from "@/lib/db/unwrap";
 import { OpsShell } from "@/components/admin-ops/OpsShell";
@@ -17,6 +18,11 @@ export const dynamic = "force-dynamic";
 export default async function AdminDashboard() {
   const session = await requireAdmin();
   const sb = supabaseAdmin();
+  // Демография/население = analytics-данные (тот же RPC, что /admin/analytics —
+  // super-only). Модератору не показываем И не зовём RPC (иначе дашборд обходит
+  // hardening analytics.view — модератор 404'ится из /analytics, но видит те же
+  // агрегаты тут). SLA-секция остаётся всем (это moderation-ops, не демография).
+  const showPopulation = can(session.role, "analytics.view");
 
   const { data: admin } = await sb
     .from("admin_users")
@@ -37,7 +43,9 @@ export default async function AdminDashboard() {
       .from("profile_photos")
       .select("*", { count: "exact", head: true })
       .eq("status", "under_review"),
-    sb.rpc("get_admin_demographics"),
+    showPopulation
+      ? sb.rpc("get_admin_demographics")
+      : Promise.resolve({ data: null, error: null }),
     sb
       .from("reports")
       .select("*", { count: "exact", head: true })
@@ -130,28 +138,32 @@ export default async function AdminDashboard() {
         </Grid>
       </Section>
 
-      <Section label="Население">
-        <Grid>
-          <StatCard href="/admin/clients" label="Всего пользователей" value={d.total ?? 0} />
-          <StatCard
-            href="/admin/clients?status=active"
-            label="Активных"
-            value={d.lifecycle?.active ?? 0}
-          />
-          <StatCard
-            href="/admin/clients?status=blocked"
-            label="Заблокировано"
-            value={d.lifecycle?.blocked ?? 0}
-          />
-        </Grid>
-      </Section>
+      {showPopulation ? (
+        <>
+          <Section label="Население">
+            <Grid>
+              <StatCard href="/admin/clients" label="Всего пользователей" value={d.total ?? 0} />
+              <StatCard
+                href="/admin/clients?status=active"
+                label="Активных"
+                value={d.lifecycle?.active ?? 0}
+              />
+              <StatCard
+                href="/admin/clients?status=blocked"
+                label="Заблокировано"
+                value={d.lifecycle?.blocked ?? 0}
+              />
+            </Grid>
+          </Section>
 
-      <Section label="Демография">
-        <Grid>
-          <StatCard href="/admin/clients?gender=m" label="Мужчин" value={d.gender?.m ?? 0} />
-          <StatCard href="/admin/clients?gender=f" label="Женщин" value={d.gender?.f ?? 0} />
-        </Grid>
-      </Section>
+          <Section label="Демография">
+            <Grid>
+              <StatCard href="/admin/clients?gender=m" label="Мужчин" value={d.gender?.m ?? 0} />
+              <StatCard href="/admin/clients?gender=f" label="Женщин" value={d.gender?.f ?? 0} />
+            </Grid>
+          </Section>
+        </>
+      ) : null}
     </OpsShell>
   );
 }

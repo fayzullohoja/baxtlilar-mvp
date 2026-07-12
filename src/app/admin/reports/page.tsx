@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { unwrapRows } from "@/lib/db/unwrap";
 import { OpsShell } from "@/components/admin-ops/OpsShell";
@@ -62,7 +63,7 @@ const th = {
  */
 export default async function ReportsModeration() {
   const session = await requireAdmin();
-  if (session.role !== "superadmin") notFound();
+  if (!can(session.role, "reports.triage")) notFound();
   const sb = supabaseAdmin();
 
   const { data: admin } = await sb

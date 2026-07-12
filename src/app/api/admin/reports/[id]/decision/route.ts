@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi, adminAudit } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { trustedIp } from "@/lib/http/ip";
 
@@ -19,7 +20,7 @@ export async function POST(
   if (res) return res;
   // C3 verdict-fix: /admin/reports страница уже notFound() для moderator
   // (F-120), но API эндпойнт принимал curl от moderator. Закрываем regression.
-  if (session.role !== "superadmin")
+  if (!can(session.role, "reports.triage"))
     return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   const { id } = await params;
   const { status, reason } = (await req.json().catch(() => ({}))) as { status?: Status; reason?: string };

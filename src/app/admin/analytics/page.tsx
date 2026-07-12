@@ -1,4 +1,6 @@
+import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { unwrapOne } from "@/lib/db/unwrap";
 import { OpsShell } from "@/components/admin-ops/OpsShell";
@@ -167,6 +169,9 @@ function noData() {
 
 export default async function AnalyticsPage() {
   const session = await requireAdmin();
+  // RBAC (Волна 7): аналитика — super-only (раньше sidebar прятал от модератора,
+  // но сама страница была any-admin → модератор мог зайти по прямой ссылке).
+  if (!can(session.role, "analytics.view")) notFound();
 
   const { data: admin } = await supabaseAdmin()
     .from("admin_users")

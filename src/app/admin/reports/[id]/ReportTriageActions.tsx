@@ -24,10 +24,14 @@ export function ReportTriageActions({
   reportId,
   targetId,
   targetBlocked,
+  canBan,
 }: {
   reportId: string;
   targetId: string;
   targetBlocked: boolean;
+  // Бан требует users.sanction (super). Модератор жалобу разбирает/эскалирует,
+  // но санкцию не накладывает → кнопка скрыта, ban-эндпоинт всё равно 403'ит.
+  canBan: boolean;
 }) {
   const router = useRouter();
   const [reason, setReason] = useState("");
@@ -141,7 +145,7 @@ export function ReportTriageActions({
             {a.label}
           </Button>
         ))}
-        {!targetBlocked ? (
+        {canBan && !targetBlocked ? (
           <Button variant="danger" size="sm" disabled={busy} onClick={banTarget}>
             Предложить бан нарушителю
           </Button>

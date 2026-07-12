@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { unwrapRows } from "@/lib/db/unwrap";
 import { OpsShell } from "@/components/admin-ops/OpsShell";
@@ -26,7 +27,7 @@ export default async function AuditPage() {
     .select("created_at, action, entity, entity_id, reason, admin_id")
     .order("created_at", { ascending: false })
     .limit(100);
-  if (session.role !== "superadmin") {
+  if (!can(session.role, "audit.viewAll")) {
     q = q.eq("admin_id", session.adminId);
   }
   const list = unwrapRows(await q);
@@ -40,10 +41,9 @@ export default async function AuditPage() {
     for (const a of admins) logins.set(a.id as string, a.login as string);
   }
 
-  const subtitle =
-    session.role === "superadmin"
-      ? "Последние 100 действий всех модераторов."
-      : "Твои последние 100 действий. Чужие — только super-admin.";
+  const subtitle = can(session.role, "audit.viewAll")
+    ? "Последние 100 действий всех модераторов."
+    : "Твои последние 100 действий. Чужие — только super-admin.";
 
   return (
     <OpsShell adminName={admin?.login ?? "—"} adminRole={session.role}>
