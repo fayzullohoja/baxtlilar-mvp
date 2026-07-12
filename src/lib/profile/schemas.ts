@@ -191,7 +191,8 @@ export const familySchema = z.object({
  *  оставлен в БД до миграции legacy данных. religion_partner_match переезжает
  *  в partner-extended (раздел «Кого ищу»). */
 export const valuesSchema = z.object({
-  religion: z.enum(tuple(vals(RELIGION))),
+  // Вера — спецкатегория ПД: опциональна (можно пропустить), «не хочу указывать» убран.
+  religion: z.enum(tuple(vals(RELIGION))).optional().nullable(),
   religion_practice: z.enum(tuple(vals(RELIGION_PRACTICE))).optional(),
   religion_partner_match: z.enum(tuple(vals(RELIGION_PARTNER_MATCH))).optional(),
   values: z.array(z.enum(tuple(vals(LIFE_VALUES)))).min(1).max(3),
@@ -291,7 +292,8 @@ export const familyChildrenSchema = z
  *  V4 2026-06-30 (Чат-2): religion_practice стал optional и удалён из формы;
  *  religion_partner_match переезжает в partner-extended (раздел «Кого ищу»). */
 export const valuesV3Schema = z.object({
-  religion: z.enum(tuple(vals(RELIGION))),
+  // Вера — спецкатегория ПД: опциональна (можно пропустить), «не хочу указывать» убран.
+  religion: z.enum(tuple(vals(RELIGION))).optional().nullable(),
   religion_practice: z.enum(tuple(vals(RELIGION_PRACTICE))).optional(),
   religion_partner_match: z.enum(tuple(vals(RELIGION_PARTNER_MATCH))).optional(),
   top_life_values: z.array(z.enum(tuple(vals(LIFE_VALUES_V3)))).min(1).max(3),
@@ -353,7 +355,8 @@ export const partnerExtendedSchema = z
  *  По умолчанию весь экран приватен; видимость регулируется per-block flags
  *  в extended.privacy либо глобально profile_visibility_mode. */
 export const financeSchema = z.object({
-  income_source_stability: z.enum(tuple(vals(INCOME_SOURCE_STABILITY))),
+  // Доход — чувствительное поле: опционально (можно пропустить), «не хочу указывать» убран.
+  income_source_stability: z.enum(tuple(vals(INCOME_SOURCE_STABILITY))).optional(),
   financial_stability_importance: z.coerce.number().int().min(1).max(5),
   family_finance_management: z.enum(tuple(vals(FAMILY_FINANCE_MANAGEMENT))),
   financial_priorities: z.array(z.enum(tuple(vals(FINANCIAL_PRIORITIES)))).min(1).max(3),

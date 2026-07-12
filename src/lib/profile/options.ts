@@ -26,7 +26,6 @@ export const MARITAL_STATUS_NEEDS_REVIEW = ["divorcing", "married_separate"] as 
 export const HAS_CHILDREN: Opt[] = [
   { value: "no", ru: "Нет", uz: "Yoʻq" },
   { value: "yes", ru: "Да", uz: "Ha" },
-  { value: "na", ru: "Не хочу указывать", uz: "Koʻrsatmayman" },
 ];
 
 export const CHILDREN_PLAN: Opt[] = [
@@ -35,7 +34,6 @@ export const CHILDREN_PLAN: Opt[] = [
   { value: "have_no_more", ru: "Есть дети, больше не планирую", uz: "Farzandlarim bor, koʻproq rejalashtirmayman" },
   { value: "unsure", ru: "Пока не знаю", uz: "Hozircha bilmayman" },
   { value: "open", ru: "Готов(а) обсудить", uz: "Muhokama qilishga tayyorman" },
-  { value: "na", ru: "Не хочу указывать", uz: "Koʻrsatmayman" },
 ];
 
 export const RELIGION: Opt[] = [
@@ -45,7 +43,6 @@ export const RELIGION: Opt[] = [
   { value: "buddhism", ru: "Буддизм", uz: "Buddizm" },
   { value: "other", ru: "Другая религия", uz: "Boshqa din" },
   { value: "none", ru: "Не исповедую религию", uz: "Dinga eʼtiqod qilmayman" },
-  { value: "na", ru: "Не хочу указывать", uz: "Koʻrsatmayman" },
 ];
 
 export const LIFE_VALUES: Opt[] = [
@@ -68,7 +65,6 @@ export const EDUCATION: Opt[] = [
   { value: "phd", ru: "PhD / учёная степень", uz: "PhD / ilmiy daraja" }, // V5 owner spec
   { value: "studying", ru: "Учусь сейчас", uz: "Hozir oʻqiyapman" },
   { value: "courses", ru: "Проф. курсы", uz: "Kasbiy kurslar" },
-  { value: "na", ru: "Не хочу указывать", uz: "Koʻrsatmayman" },
 ];
 
 export const EMPLOYMENT: Opt[] = [
@@ -79,7 +75,6 @@ export const EMPLOYMENT: Opt[] = [
   { value: "studying", ru: "Учусь", uz: "Oʻqiyapman" },
   { value: "home_family", ru: "Дом и семья", uz: "Uy va oila" },
   { value: "unemployed", ru: "Временно не работаю", uz: "Vaqtincha ishlamayapman" },
-  { value: "na", ru: "Не хочу указывать", uz: "Koʻrsatmayman" },
 ];
 
 export const GEO_PREFERENCE: Opt[] = [
@@ -235,11 +230,6 @@ export const POST_MARRIAGE_LIVING: Opt[] = [
     ru: "Пока не решил(а)",
     uz: "Hali qaror qilmaganman",
   },
-  {
-    value: "na",
-    ru: "Предпочитаю не отвечать",
-    uz: "Javob berishni xohlamayman",
-  },
 ];
 
 /** Когда рассматривает брак — сроки (ревью оунера Экран 11). Матчинг-сигнал темпа. */
@@ -249,7 +239,6 @@ export const MARRIAGE_READINESS: Opt[] = [
   { value: "within_2y", ru: "В течение 1–2 лет", uz: "1–2 yil ichida" },
   { value: "when_right", ru: "Когда встречу подходящего человека", uz: "Mos insonni uchratganimda" },
   { value: "not_ready", ru: "Пока не готов(а), хочу сначала познакомиться", uz: "Hozircha tayyor emasman, avval tanishishni xohlayman" },
-  { value: "na", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
 /** Готовность к переезду (ревью оунера — город/страна раздельно). ≠ geo_preference. */
@@ -259,7 +248,6 @@ export const RELOCATION_READINESS: Opt[] = [
   { value: "by_agreement", ru: "Готов(а) рассмотреть переезд по договорённости", uz: "Kelishuv asosida koʻchishni koʻrib chiqaman" },
   { value: "only_my_city", ru: "Хочу остаться в своём городе", uz: "Oʻz shahrimda qolishni xohlayman" },
   { value: "unsure", ru: "Пока не ясно", uz: "Hali aniq emas" },
-  { value: "na", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
 // ============================================================================
@@ -295,7 +283,6 @@ export const EMPLOYMENT_STATUS: Opt[] = [
   { value: "student", ru: "Студент / студентка", uz: "Talaba" },
   { value: "home_family", ru: "Занимаюсь домом / семьёй", uz: "Uy va oila bilan shugʻullanaman" },
   { value: "not_working", ru: "Сейчас не работаю", uz: "Hozircha ishlamayman" },
-  { value: "na", ru: "Не хочу указывать", uz: "Koʻrsatishni xohlamayman" },
 ];
 
 /** Экран 4 — Формат работы (условно: показывается при working/entrepreneur/freelancer). */
@@ -328,7 +315,6 @@ export const CHILDREN_LIVING: Opt[] = [
   { value: "with_other_parent", ru: "С другим родителем", uz: "Boshqa ota-ona bilan" },
   { value: "with_relatives", ru: "С родственниками", uz: "Qarindoshlar bilan" },
   { value: "separate", ru: "Отдельно / самостоятельно", uz: "Alohida / mustaqil" },
-  { value: "na", ru: "Предпочитаю не уточнять", uz: "Aniqlashtirishni xohlamayman" },
 ];
 
 // Ревью оунера Экран 5: количество детей — бакеты (не свободный ввод). Форма
@@ -338,7 +324,6 @@ export const CHILDREN_COUNT: Opt[] = [
   { value: "2", ru: "2", uz: "2" },
   { value: "3", ru: "3", uz: "3" },
   { value: "4plus", ru: "4 и более", uz: "4 va undan koʻp" },
-  { value: "na", ru: "Предпочитаю не уточнять", uz: "Aniqlashtirishni xohlamayman" },
 ];
 
 // Ревью оунера Экран 5: возраст детей — диапазоны (не точный возраст). COLD →
@@ -349,7 +334,6 @@ export const CHILDREN_AGE_RANGE: Opt[] = [
   { value: "7_12", ru: "7–12 лет", uz: "7–12 yosh" },
   { value: "13_17", ru: "13–17 лет", uz: "13–17 yosh" },
   { value: "18plus", ru: "18+", uz: "18+" },
-  { value: "na", ru: "Предпочитаю не уточнять", uz: "Aniqlashtirishni xohlamayman" },
 ];
 
 /** Экран 6 — Топ-ценности (1-3 выбора из 14). */
@@ -456,7 +440,6 @@ export const INCOME_SOURCE_STABILITY: Opt[] = [
   { value: "stable", ru: "Есть стабильный доход", uz: "Barqaror daromadim bor" },
   { value: "unstable", ru: "Доход бывает непостоянным", uz: "Daromadim oʻzgaruvchan" },
   { value: "none", ru: "Сейчас нет дохода", uz: "Hozircha daromadim yoʻq" },
-  { value: "na", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
 /** Управление финансами в семье (Чат-2 Экран 9 блок 3). */
@@ -483,7 +466,6 @@ export const FINANCIAL_PRIORITIES: Opt[] = [
 
 /** Примерный ежемесячный доход (UZS) — Optional. Hidden public. */
 export const MONTHLY_INCOME_RANGE: Opt[] = [
-  { value: "na", ru: "Не хочу указывать", uz: "Koʻrsatmayman" },
   { value: "below_5m", ru: "До 5 млн сум", uz: "5 mln soʻmgacha" },
   { value: "5_10m", ru: "5–10 млн сум", uz: "5–10 mln soʻm" },
   { value: "10_20m", ru: "10–20 млн сум", uz: "10–20 mln soʻm" },
@@ -497,7 +479,6 @@ export const FINANCIAL_OBLIGATIONS: Opt[] = [
   { value: "none", ru: "Нет существенных обязательств", uz: "Muhim majburiyatlarim yoʻq" },
   { value: "controlled", ru: "Есть обязательства, которые я контролирую", uz: "Nazoratimdagi majburiyatlarim bor" },
   { value: "significant", ru: "Есть значительные обязательства", uz: "Katta majburiyatlarim bor" },
-  { value: "na", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
 /** Жильё (owner spec §9). Cold в extended.finance, hidden public (без стигмы «нет дома»). */
@@ -506,7 +487,6 @@ export const HOUSING_STATUS: Opt[] = [
   { value: "rent", ru: "Аренда", uz: "Ijarada yashayman" },
   { value: "with_parents", ru: "С родителями / родственниками", uz: "Ota-onam / qarindoshlarim bilan yashayman" },
   { value: "none", ru: "Пока нет своего жилья", uz: "Hozircha shaxsiy uy-joyim yoʻq" },
-  { value: "na", ru: "Не хочу отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
 // ---------- Образ жизни и привычки (Чат-2 Экран 10) ----------
@@ -516,7 +496,6 @@ export const LIFESTYLE_PACE: Opt[] = [
   { value: "active", ru: "Активный", uz: "Faol" },
   { value: "calm", ru: "Спокойный", uz: "Tinch" },
   { value: "balanced", ru: "Сбалансированный", uz: "Muvozanatli" },
-  { value: "na", ru: "Затрудняюсь ответить", uz: "Javob berishga qiynalaman" },
 ];
 
 /** Свободное время (multi-select до 3). */
@@ -550,7 +529,6 @@ export const BAD_HABITS_LEVEL: Opt[] = [
   { value: "sometimes", ru: "Иногда", uz: "Baʼzan" },
   { value: "yes", ru: "Курю", uz: "Chekaman" },
   { value: "quit", ru: "Бросил(а)", uz: "Tashlaganman" },
-  { value: "na", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
 /** Питание. */
@@ -559,7 +537,6 @@ export const NUTRITION_STYLE: Opt[] = [
   { value: "regular", ru: "Обычное питание", uz: "Oddiy ovqatlanish" },
   { value: "national", ru: "Предпочитаю национальную кухню", uz: "Milliy taomlarni yoqtiraman" },
   { value: "restricted", ru: "Есть ограничения", uz: "Cheklovlar bor" },
-  { value: "na", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
 /** Отношение к алкоголю. Hidden public. */
@@ -568,14 +545,12 @@ export const ALCOHOL_LEVEL: Opt[] = [
   { value: "rare", ru: "Редко, по особым случаям", uz: "Kamdan-kam, alohida holatlarda" },
   { value: "sometimes", ru: "Иногда", uz: "Baʼzan" },
   { value: "regular", ru: "Регулярно", uz: "Muntazam" },
-  { value: "na", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
 /** Наркотические вещества. Hidden public. Чувствительно. */
 export const DRUGS_USE: Opt[] = [
   { value: "no", ru: "Нет", uz: "Yoʻq" },
   { value: "past", ru: "Было в прошлом, сейчас нет", uz: "Oʻtmishda boʻlgan, hozir yoʻq" },
-  { value: "na", ru: "Предпочитаю не отвечать", uz: "Javob bermaslikni afzal koʻraman" },
 ];
 
 // ---------- Кого ищу: страны партнёра (Чат-2: «не делать жёстким фильтром») ----------

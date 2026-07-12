@@ -50,7 +50,8 @@ export function V2AnketaValuesForm({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          religion,
+          // Вера опциональна — отправляем только если выбрана (пустую не шлём).
+          ...(religion ? { religion } : {}),
           top_life_values: values,
         }),
       });
@@ -67,11 +68,11 @@ export function V2AnketaValuesForm({
     }
   }
 
-  const valid = !!religion && values.length >= 1 && values.length <= 3;
+  const valid = values.length >= 1 && values.length <= 3;
 
   return (
     <div>
-      <Field label={t('religionLabel')} required>
+      <Field label={t('religionLabel')} hint={t('optionalHint')}>
         <Select options={RELIGION} value={religion} onChange={setReligion} locale={locale} />
       </Field>
 

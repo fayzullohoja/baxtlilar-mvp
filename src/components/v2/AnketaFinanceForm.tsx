@@ -86,7 +86,8 @@ export function V2AnketaFinanceForm({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          income_source_stability: incomeSource,
+          // Доход опционален — отправляем только если выбран (пустую не шлём).
+          ...(incomeSource ? { income_source_stability: incomeSource } : {}),
           financial_stability_importance: Number(importance),
           family_finance_management: management,
           financial_priorities: priorities,
@@ -113,7 +114,6 @@ export function V2AnketaFinanceForm({
 
   const importanceN = Number(importance);
   const valid =
-    !!incomeSource &&
     Number.isFinite(importanceN) &&
     importanceN >= 1 &&
     importanceN <= 5 &&
@@ -123,7 +123,7 @@ export function V2AnketaFinanceForm({
 
   return (
     <div>
-      <Field label={t("finance_income_source_question")} required>
+      <Field label={t("finance_income_source_question")} hint={t("optionalHint")}>
         <Select
           options={INCOME_SOURCE_STABILITY}
           value={incomeSource}

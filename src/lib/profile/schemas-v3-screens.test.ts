@@ -120,6 +120,17 @@ describe("V3 valuesV3Schema (Экран 6)", () => {
     expect(valuesV3Schema.safeParse(ok).success).toBe(true);
   });
 
+  it("принимает БЕЗ religion (вера опциональна — «не хочу указывать» убран)", () => {
+    const { religion: _r, ...noReligion } = ok;
+    void _r;
+    expect(valuesV3Schema.safeParse(noReligion).success).toBe(true);
+    expect(valuesV3Schema.safeParse({ ...noReligion, religion: null }).success).toBe(true);
+  });
+
+  it("отклоняет religion='na' (опция удалена)", () => {
+    expect(valuesV3Schema.safeParse({ ...ok, religion: "na" }).success).toBe(false);
+  });
+
   it("принимает с religion_partner_match опционально", () => {
     expect(
       valuesV3Schema.safeParse({
