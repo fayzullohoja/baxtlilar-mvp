@@ -155,18 +155,24 @@ function ParentSection({
         <Select options={statusOptions} value={value.status} onChange={(status) => onChange({ ...value, status })} locale={locale} />
       </Field>
 
+      {/* «Текущие» поля — возраст и профессия («где работает», наст. время):
+          не спрашиваем для умершего родителя (ревью оунера 2026-07-13) — только
+          живой / на связи. Для умершего оставляем лишь статус + родной регион. */}
       {showAliveOnly ? (
-        <Field label={t("parents_age_label")} hint={t("optionalHint")}>
-          <Select options={PARENT_AGE_RANGE} value={value.age_range} onChange={(age_range) => onChange({ ...value, age_range })} locale={locale} />
-        </Field>
-      ) : null}
-
-      {showDetails ? (
         <>
+          <Field label={t("parents_age_label")} hint={t("optionalHint")}>
+            <Select options={PARENT_AGE_RANGE} value={value.age_range} onChange={(age_range) => onChange({ ...value, age_range })} locale={locale} />
+          </Field>
           <Field label={t("parents_profession_label")} hint={t("optionalHint")}>
             <Select options={PARENT_PROFESSION} value={value.profession} onChange={(profession) => onChange({ ...value, profession })} locale={locale} />
           </Field>
+        </>
+      ) : null}
 
+      {/* Родной регион — исторический факт, показываем и для умершего
+          (оунер: «где родился — можем сказать»). Скрыт только при «не отвечать». */}
+      {showDetails ? (
+        <>
           <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-v2-ink-300)", fontFamily: "var(--font-v2-body)", margin: "6px 0 2px" }}>
             {t("parents_origin_heading")}
           </div>
@@ -209,22 +215,23 @@ export function V2AnketaParentsForm({
   function parentBody(p: ParentState, who: "father" | "mother"): Record<string, unknown> {
     const showDetails = !!p.status && p.status !== "prefer_not";
     const showAliveOnly = showDetails && p.status !== "deceased";
-    const b: Record<string, unknown> = { [`${who}_status`]: p.status };
-    if (showAliveOnly && p.age_range) b[`${who}_age_range`] = p.age_range;
-    if (showDetails) {
-      if (p.profession) b[`${who}_profession`] = p.profession;
-      if (p.origin.country) {
-        b[`${who}_origin_country`] = p.origin.country;
-        if (p.origin.region.trim()) b[`${who}_origin_region`] = p.origin.region.trim();
-        if (p.origin.city.trim()) b[`${who}_origin_city`] = p.origin.city.trim();
-      }
-    }
-    if (showAliveOnly && p.current.country) {
-      b[`${who}_current_country`] = p.current.country;
-      if (p.current.region.trim()) b[`${who}_current_region`] = p.current.region.trim();
-      if (p.current.city.trim()) b[`${who}_current_city`] = p.current.city.trim();
-    }
-    return b;
+    // Явно шлём null для неприменимых полей (умерший / «не отвечать») — иначе
+    // read-merge-write на бэке оставил бы прошлое значение (напр. профессию,
+    // введённую до смены статуса на «ушёл из жизни»).
+    const loc = (prefix: "origin" | "current", rv: RegionValue, show: boolean) => ({
+      [`${who}_${prefix}_country`]: show && rv.country ? rv.country : null,
+      [`${who}_${prefix}_region`]: show && rv.region.trim() ? rv.region.trim() : null,
+      [`${who}_${prefix}_city`]: show && rv.city.trim() ? rv.city.trim() : null,
+    });
+    return {
+      [`${who}_status`]: p.status,
+      // возраст + профессия («где работает») — только живой/на связи, не умерший
+      [`${who}_age_range`]: showAliveOnly && p.age_range ? p.age_range : null,
+      [`${who}_profession`]: showAliveOnly && p.profession ? p.profession : null,
+      // родной регион — и для умершего; текущее место — только живой/на связи
+      ...loc("origin", p.origin, showDetails),
+      ...loc("current", p.current, showAliveOnly),
+    };
   }
 
   async function submit() {
