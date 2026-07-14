@@ -10,7 +10,14 @@ export type EditorData = Record<Locale, LocaleBundle>;
 
 const LOCALE_LABEL: Record<Locale, string> = { ru: "RU", uz: "UZ", en: "EN", tr: "TR" };
 
-const nsOf = (key: string) => key.split(".")[0];
+// Группировка ключей в левом списке. Обычный ключ → первый сегмент (namespace).
+// Лейблы вариантов ответа (Tier 2) все лежат в namespace `Options` — 350+ ключей
+// одной кучей нечитаемы, поэтому режем по ВТОРОМУ сегменту (имя набора):
+// «Options.RELIGION», «Options.MARITAL_STATUS», …
+const nsOf = (key: string) => {
+  const p = key.split(".");
+  return p[0] === "Options" && p.length > 2 ? `Options.${p[1]}` : p[0];
+};
 
 export function ContentEditor({
   data,

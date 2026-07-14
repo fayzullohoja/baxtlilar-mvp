@@ -74,15 +74,19 @@ function ageInRange(age: number, min: number | null, max: number | null): boolea
   return age >= min && age <= max;
 }
 
-function reasonsFor(viewer: ProfileForMatch, cand: ProfileForMatch): string[] {
+function reasonsFor(
+  viewer: ProfileForMatch,
+  cand: ProfileForMatch,
+  label: LabelResolver,
+): string[] {
   const out: string[] = [];
 
   const shared = sharedValues(viewer, cand);
   if (shared.length >= 2) {
-    const labels = shared.slice(0, 3).map((v) => labelOf(LIFE_VALUES_V3, v, "ru"));
+    const labels = shared.slice(0, 3).map(label);
     out.push(`У Вас совпадают ключевые ценности — ${labels.join(", ").toLowerCase()}.`);
   } else if (shared.length === 1) {
-    const lab = labelOf(LIFE_VALUES_V3, shared[0], "ru");
+    const lab = label(shared[0]);
     out.push(`Вас обоих волнует одно — ${lab.toLowerCase()}.`);
   }
 
@@ -178,13 +182,22 @@ function adviceFor(viewer: ProfileForMatch, cand: ProfileForMatch): string | nul
 // Public API
 // =============================================================================
 
+/** Резолвер лейбла ценности. По умолчанию — базовый из options.ts; вызывающий
+ * (server-компонент) передаёт переводчик, чтобы отдать РЕДАКТИРУЕМЫЙ лейбл
+ * (Options.LIFE_VALUES_V3.*) — иначе правка в админке не доехала бы до
+ * match-story. Текст самих фраз захардкожен по-русски (как и был). */
+export type LabelResolver = (value: string) => string;
+
+const defaultLabel: LabelResolver = (v) => labelOf(LIFE_VALUES_V3, v, "ru");
+
 export function generateMatchStory(
   viewer: ProfileForMatch,
   cand: ProfileForMatch,
   relaxLevel = 0,
+  label: LabelResolver = defaultLabel,
 ): MatchStory {
   return {
-    reasons: reasonsFor(viewer, cand),
+    reasons: reasonsFor(viewer, cand, label),
     cautions: cautionsFor(viewer, cand, relaxLevel),
     advice: adviceFor(viewer, cand),
   };

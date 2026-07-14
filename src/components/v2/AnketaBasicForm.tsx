@@ -12,8 +12,8 @@ import {
   UZ_REGIONS,
   UZ_DISTRICTS_BY_REGION,
   hasDistrictList,
-  labelOf,
 } from "@/lib/profile/options";
+import { useOptLabel } from "./useOptLabel";
 
 /**
  * V2 Anketa Basic form (Blueprint §3.3 B1).
@@ -43,6 +43,8 @@ export function V2AnketaBasicForm({
 }) {
   const router = useRouter();
   const t = useTranslations("Anketa");
+  // Tier 2: редактируемые лейблы вариантов (fallback → options.ts)
+  const { labelOf: optLabelOf } = useOptLabel(locale);
   const errCopy: Record<string, string> = {
     bio_has_contacts: t("err_bio_has_contacts"),
     name_has_contacts: t("err_name_has_contacts"),
@@ -191,7 +193,7 @@ export function V2AnketaBasicForm({
             }}
           >
             <span aria-hidden>🔒</span>
-            {labelOf(GENDER, gender, locale)}
+            {optLabelOf(GENDER, gender)}
           </div>
         </Field>
       ) : (

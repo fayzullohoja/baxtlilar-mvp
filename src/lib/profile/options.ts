@@ -1,5 +1,13 @@
 // Списки опций лайт-анкеты (значение + ru/uz лейблы). Заземлено на Чат 2.
-export type Opt = { value: string; ru: string; uz: string };
+//
+// `group` проставляется автоматически внизу файла (см. OPTION_GROUPS) и служит
+// ключом редактируемого лейбла в i18n: `Options.<GROUP>.<value>` (конструктор
+// текстовок Tier 2). ru/uz здесь остаются БАЗОЙ (fallback) — не удалять: если
+// ключа в messages нет (новая опция / сбой генерации), рендер откатится сюда,
+// а не покажет юзеру сырой ключ.
+//
+// ⚠ `value` — это enum-ключи zod + DB CHECK. Лейблы менять можно, values НЕТ.
+export type Opt = { value: string; ru: string; uz: string; group?: string };
 
 export const GENDER: Opt[] = [
   { value: "f", ru: "Женщина", uz: "Ayol" },
@@ -685,5 +693,52 @@ export const FAMILY_INVOLVEMENT: Opt[] = [
 ];
 
 export const vals = (o: Opt[]): string[] => o.map((x) => x.value);
+
+/** БАЗОВЫЙ лейбл из кода (ru/uz). Fallback, когда переводчик недоступен
+ * (админка вне next-intl) или ключа нет в messages. DB-редактируемый лейбл —
+ * см. optLabel() в ./option-label. */
 export const labelOf = (o: Opt[], value: string, locale: string): string =>
   o.find((x) => x.value === value)?.[locale === "uz" ? "uz" : "ru"] ?? value;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Конструктор текстовок Tier 2: реестр групп + проставление `group`.
+//
+// Зачем реестр: лейбл варианта редактируется в админке как обычная i18n-строка
+// с ключом `Options.<GROUP>.<value>`. Чтобы рендер знал этот ключ, каждый Opt
+// носит имя своей группы.
+//
+// Почему ШТАМПУЕМ поле, а не ищем группу по ссылке на массив: формы строят
+// производные массивы (`MARITAL_STATUS.map((o) => ({ ...o, … }))` в
+// AnketaFamilyForm/AnketaFamilyModelForm) — спред СОХРАНЯЕТ `group`, но теряет
+// ссылочную идентичность массива. Штамп переживает производные массивы.
+//
+// COUNTRY_OF_RESIDENCE === CITIZENSHIP (тот же массив тех же объектов) →
+// намеренно делит ключи `Options.CITIZENSHIP.*`; лейблы идентичны.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const OPTION_GROUPS: Record<string, Opt[]> = {
+  GENDER, MARITAL_STATUS, HAS_CHILDREN, CHILDREN_PLAN, RELIGION, LIFE_VALUES,
+  EDUCATION, EMPLOYMENT, GEO_PREFERENCE, CITIZENSHIP, UZ_REGIONS, LANGUAGES_LIST,
+  RELIGION_PRACTICE, RELIGION_PARTNER_MATCH, POST_MARRIAGE_LIVING, MARRIAGE_READINESS,
+  RELOCATION_READINESS, ACTIVITY_FIELDS, EMPLOYMENT_STATUS, EMPLOYMENT_FORMAT,
+  FUTURE_CHILDREN_PLAN, CHILDREN_LIVING, CHILDREN_COUNT, CHILDREN_AGE_RANGE,
+  LIFE_VALUES_V3, FAMILY_ROLE_MODEL, WIFE_WORK_VIEW, FAMILY_DECISION_MODEL,
+  HOUSEHOLD_RESPONSIBILITY_MODEL, SEPARATE_FROM_PARENTS_IMPORTANCE, PARTNER_QUALITIES,
+  PROFILE_VISIBILITY_MODE, INCOME_SOURCE_STABILITY, FAMILY_FINANCE_MANAGEMENT,
+  FINANCIAL_PRIORITIES, MONTHLY_INCOME_RANGE, FINANCIAL_OBLIGATIONS, HOUSING_STATUS,
+  LIFESTYLE_PACE, FREE_TIME_ACTIVITIES, DAILY_ROUTINE, BAD_HABITS_LEVEL, NUTRITION_STYLE,
+  ALCOHOL_LEVEL, DRUGS_USE, PARTNER_PREFERRED_COUNTRIES, PARTNER_MARITAL_PREF,
+  PARTNER_CHILDREN_PREF, PARTNER_ORIGIN_REGION_PREF, PARTNER_HARD_CRITERIA, PHOTO_TYPE,
+  FATHER_STATUS, MOTHER_STATUS, PARENT_AGE_RANGE, PARENT_PROFESSION, PARENTS_MARITAL,
+  FAMILY_RELATIONS, FAMILY_INVOLVEMENT,
+};
+
+// Одноразовый штамп при импорте модуля. Идемпотентен (guard на !o.group), поэтому
+// алиас COUNTRY_OF_RESIDENCE не переписывает уже проставленный CITIZENSHIP.
+for (const [name, arr] of Object.entries(OPTION_GROUPS)) {
+  for (const o of arr) if (!o.group) o.group = name;
+}
+
+/** Ключ редактируемого лейбла внутри i18n-namespace `Options`. */
+export const optionLabelKey = (opt: Opt): string | null =>
+  opt.group ? `${opt.group}.${opt.value}` : null;

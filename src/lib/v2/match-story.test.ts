@@ -20,6 +20,33 @@ function profile(overrides: Partial<ProfileForMatch> = {}): ProfileForMatch {
     ...overrides };
 }
 
+describe("generateMatchStory — редактируемые лейблы ценностей (Tier 2)", () => {
+  // Лейблы ценностей в match-story должны браться из ПЕРЕДАННОГО резолвера
+  // (Options.LIFE_VALUES_V3.* — правится в админке). Без инъекции история
+  // молча показывала бы старый лейбл из кода.
+  it("использует переданный резолвер лейблов (2+ совпадения)", () => {
+    const v = profile({ top_life_values: ["family", "education", "honesty"] });
+    const c = profile({ top_life_values: ["family", "education", "independence"] });
+    const story = generateMatchStory(v, c, 0, (val) => `LBL_${val}`);
+    expect(story.reasons[0]).toContain("lbl_family");
+    expect(story.reasons[0]).toContain("lbl_education");
+  });
+
+  it("использует переданный резолвер и при единственном совпадении", () => {
+    const v = profile({ top_life_values: ["faith"] });
+    const c = profile({ top_life_values: ["faith"] });
+    const story = generateMatchStory(v, c, 0, (val) => `LBL_${val}`);
+    expect(story.reasons[0]).toContain("lbl_faith");
+  });
+
+  it("без резолвера — базовые лейблы из options.ts (обратная совместимость)", () => {
+    const v = profile({ top_life_values: ["family", "honesty"] });
+    const c = profile({ top_life_values: ["family", "honesty"] });
+    const story = generateMatchStory(v, c);
+    expect(story.reasons[0]).toContain("семья"); // базовый ru, lowercase-нут
+  });
+});
+
 describe("generateMatchStory — reasons (positive overlap)", () => {
   it("2+ общих top_life_values → reason про ключевые ценности", () => {
     const v = profile({ top_life_values: ["family", "education", "honesty"] });

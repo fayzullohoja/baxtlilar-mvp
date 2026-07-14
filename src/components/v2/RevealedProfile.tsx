@@ -14,6 +14,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useOptLabel } from "./useOptLabel";
 import { Headline, Lead } from "./Headline";
 import {
   EDUCATION,
@@ -22,7 +23,6 @@ import {
   HAS_CHILDREN,
   FUTURE_CHILDREN_PLAN,
   LIFE_VALUES_V3,
-  labelOf,
 } from "@/lib/profile/options";
 import { cityLabel } from "@/lib/profile/cities";
 import { ageFromDate } from "@/lib/profile/schemas";
@@ -89,11 +89,13 @@ const sectionLabelStyle: React.CSSProperties = {
 
 export function RevealedProfile({ profile, locale = "ru" }: Props) {
   const t = useTranslations("Profile");
+  // Tier 2: лейблы вариантов — редактируемые строки Options.* (fallback → options.ts)
+  const { labelOf: optLabelOf } = useOptLabel(locale);
   const age = profile.birth_date ? ageFromDate(profile.birth_date) : null;
   const photos = profile.photo_urls;
   const values = profile.top_life_values.map((v) => ({
     key: v,
-    label: labelOf(LIFE_VALUES_V3, v, locale),
+    label: optLabelOf(LIFE_VALUES_V3, v),
   }));
 
   return (
@@ -201,19 +203,19 @@ export function RevealedProfile({ profile, locale = "ru" }: Props) {
         <div style={{ ...sectionLabelStyle, marginBottom: "8px" }}>
           {t("detailsLabel")}
         </div>
-        {row(t("religionLabel"), profile.religion ? labelOf(RELIGION, profile.religion, locale) : null)}
+        {row(t("religionLabel"), profile.religion ? optLabelOf(RELIGION, profile.religion) : null)}
         {row(
           t("maritalStatusLabel"),
-          profile.marital_status ? labelOf(MARITAL_STATUS, profile.marital_status, locale) : null,
+          profile.marital_status ? optLabelOf(MARITAL_STATUS, profile.marital_status) : null,
         )}
-        {row(t("childrenLabel"), profile.has_children ? labelOf(HAS_CHILDREN, profile.has_children, locale) : null)}
+        {row(t("childrenLabel"), profile.has_children ? optLabelOf(HAS_CHILDREN, profile.has_children) : null)}
         {row(
           t("childrenPlansLabel"),
           profile.future_children_plan
-            ? labelOf(FUTURE_CHILDREN_PLAN, profile.future_children_plan, locale)
+            ? optLabelOf(FUTURE_CHILDREN_PLAN, profile.future_children_plan)
             : null,
         )}
-        {row(t("educationLabel"), profile.education ? labelOf(EDUCATION, profile.education, locale) : null)}
+        {row(t("educationLabel"), profile.education ? optLabelOf(EDUCATION, profile.education) : null)}
       </div>
 
       {/* Footnote */}

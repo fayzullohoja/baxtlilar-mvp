@@ -9,6 +9,8 @@ import {
 import { useTranslations } from "next-intl";
 import { CITY_GROUPS } from "@/lib/profile/cities";
 import type { Opt } from "@/lib/profile/options";
+import { useOptLabel } from "./useOptLabel";
+import type { Gender } from "@/lib/profile/gender-wording";
 
 /**
  * V2 Anketa Fields — form primitives.
@@ -154,20 +156,24 @@ export function Select({
   onChange,
   locale = "ru",
   placeholder,
+  gender,
 }: {
   options: Opt[];
   value: string;
   onChange: (v: string) => void;
   locale?: string;
   placeholder?: string;
+  /** Пол юзера — включает гендерный вариант лейбла (Options.<G>.<v>__m|f). */
+  gender?: Gender | null;
 }) {
+  const { label: optText } = useOptLabel(locale, gender);
   const useRadio = options.length <= 4;
 
   if (useRadio) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "4px" }}>
         {options.map((opt) => {
-          const label = locale === "uz" ? opt.uz : opt.ru;
+          const label = optText(opt);
           const selected = value === opt.value;
           return (
             <button
@@ -216,7 +222,7 @@ export function Select({
       </option>
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>
-          {locale === "uz" ? opt.uz : opt.ru}
+          {optText(opt)}
         </option>
       ))}
     </select>
@@ -233,13 +239,17 @@ export function Chips({
   onToggle,
   max,
   locale = "ru",
+  gender,
 }: {
   options: Opt[];
   selected: string[];
   onToggle: (v: string) => void;
   max?: number;
   locale?: string;
+  /** Пол юзера — включает гендерный вариант лейбла (Options.<G>.<v>__m|f). */
+  gender?: Gender | null;
 }) {
+  const { label: optText } = useOptLabel(locale, gender);
   return (
     <div
       style={{
@@ -252,7 +262,7 @@ export function Chips({
       {options.map((opt) => {
         const isSelected = selected.includes(opt.value);
         const atMax = max !== undefined && selected.length >= max && !isSelected;
-        const label = locale === "uz" ? opt.uz : opt.ru;
+        const label = optText(opt);
         return (
           <button
             key={opt.value}

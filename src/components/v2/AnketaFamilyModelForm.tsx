@@ -12,7 +12,6 @@ import {
   HOUSEHOLD_RESPONSIBILITY_MODEL,
 } from "@/lib/profile/options";
 import {
-  getGenderedOptionLabel,
   type Gender,
 } from "@/lib/profile/gender-wording";
 
@@ -137,25 +136,14 @@ export function V2AnketaFamilyModelForm({
         label={t('householdResponsibilityLabel')}
         hint={t('canSkipHint')}
       >
+        {/* Гендерный вариант лейбла — ключ Options.HOUSEHOLD_RESPONSIBILITY_MODEL.<v>__<m|f>
+            (редактируется в админке), с откатом на код-оверрайд. */}
         <Select
-          options={HOUSEHOLD_RESPONSIBILITY_MODEL.map((opt) => ({
-            value: opt.value,
-            ru: getGenderedOptionLabel(
-              "HOUSEHOLD_RESPONSIBILITY_MODEL",
-              opt.value,
-              gender,
-              "ru",
-            ),
-            uz: getGenderedOptionLabel(
-              "HOUSEHOLD_RESPONSIBILITY_MODEL",
-              opt.value,
-              gender,
-              "uz",
-            ),
-          }))}
+          options={HOUSEHOLD_RESPONSIBILITY_MODEL}
           value={householdModel}
           onChange={setHouseholdModel}
           locale={locale}
+          gender={gender}
         />
       </Field>
 

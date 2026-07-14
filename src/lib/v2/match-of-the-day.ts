@@ -20,9 +20,12 @@
  */
 
 import "server-only";
+import { getTranslations } from "next-intl/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getRecommendations } from "@/lib/matching/recommend";
-import { generateMatchStory, type ProfileForMatch, type MatchStory } from "./match-story";
+import { generateMatchStory, type ProfileForMatch, type MatchStory, type LabelResolver } from "./match-story";
+import { optLabelOf, type OptTranslator } from "@/lib/profile/option-label";
+import { LIFE_VALUES_V3 } from "@/lib/profile/options";
 
 export type MatchOfTheDay = {
   /** Полный профиль кандидата для прогрессивного раскрытия. */
@@ -84,9 +87,21 @@ export async function getMatchOfTheDay(viewerId: string): Promise<MatchOfTheDay 
   ]);
   if (!viewerProfile || !candidateProfile) return null;
 
+  // Tier 2: лейблы ценностей в story берём РЕДАКТИРУЕМЫЕ (Options.LIFE_VALUES_V3.*),
+  // иначе правка лейбла в админке не доехала бы до match-story. Фразы вокруг —
+  // захардкоженный русский (как и были), поэтому и лейблы просим на "ru".
+  // Вне request-контекста (крон/воркер) getTranslations бросает → базовые лейблы.
+  let label: LabelResolver | undefined;
+  try {
+    const t = (await getTranslations("Options")) as unknown as OptTranslator;
+    label = (v: string) => optLabelOf(t, LIFE_VALUES_V3, v, "ru");
+  } catch {
+    label = undefined; // generateMatchStory возьмёт дефолтный (базовый) резолвер
+  }
+
   // MATCH-3: relax-уровень кандидата прокидывается в story — если возрастной
   // диапазон был расширен, история честно об этом говорит.
-  const story = generateMatchStory(viewerProfile, candidateProfile, top.relaxLevel);
+  const story = generateMatchStory(viewerProfile, candidateProfile, top.relaxLevel, label);
 
   return {
     candidate: { user_id: top.user_id, profile: candidateProfile },

@@ -24,11 +24,11 @@
 
 "use client";
 import { useTranslations } from "next-intl";
+import { useOptLabel } from "./useOptLabel";
 import { Headline, Lead } from "./Headline";
 import {
   EDUCATION,
   LIFE_VALUES_V3,
-  labelOf,
 } from "@/lib/profile/options";
 import type { ProgressiveProfileView } from "@/lib/v2/progressive-view";
 
@@ -122,11 +122,13 @@ const sectionLabelStyle: React.CSSProperties = {
 export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
   const t = useTranslations("Profile");
   const tPersonality = useTranslations("Personality");
+  // Tier 2: редактируемые лейблы вариантов (fallback → options.ts)
+  const { labelOf: optLabelOf } = useOptLabel(locale);
   const name = profile.first_name;
   const traits = personalityTraits(profile.vector, tPersonality as (key: string) => string);
   const values = profile.top_life_values.map((v: string) => ({
     key: v,
-    label: labelOf(LIFE_VALUES_V3, v, locale),
+    label: optLabelOf(LIFE_VALUES_V3, v),
   }));
 
   return (
@@ -233,7 +235,7 @@ export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
           {profile.education && profile.education !== "na" ? (
             <span>
               {profile.city ? " · " : ""}
-              {labelOf(EDUCATION, profile.education, locale)}
+              {optLabelOf(EDUCATION, profile.education)}
             </span>
           ) : null}
           {/* Вероисповедание НЕ показываем в публичной карточке (спец-категория ПД,

@@ -49,7 +49,7 @@ const CONST_REGISTRY: Record<string, Opt[]> = {
  * Пока оставляем нейтральные лейблы из options.ts; если понадобится — добавляем
  * запись сюда, никаких изменений в вызывающем коде не требуется.
  */
-const GENDERED_OVERRIDES: Record<string, Record<string, OverrideEntry>> = {
+export const GENDERED_OVERRIDES: Record<string, Record<string, OverrideEntry>> = {
   HOUSEHOLD_RESPONSIBILITY_MODEL: {
     mostly_partner: {
       m: { ru: "В основном жена", uz: "Asosan xotin" },

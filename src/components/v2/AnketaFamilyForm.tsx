@@ -18,7 +18,6 @@ import {
   CHILDREN_LIVING,
 } from "@/lib/profile/options";
 import {
-  getGenderedOptionLabel,
   type Gender,
 } from "@/lib/profile/gender-wording";
 
@@ -77,13 +76,6 @@ export function V2AnketaFamilyForm({
 
   const showChildrenDetails = hasChildren === "yes";
 
-  // Ревью оунера Экран 5: семейное положение звучит по-разному для М/Ж.
-  const maritalOptions = MARITAL_STATUS.map((opt) => ({
-    value: opt.value,
-    ru: getGenderedOptionLabel("MARITAL_STATUS", opt.value, gender, "ru"),
-    uz: getGenderedOptionLabel("MARITAL_STATUS", opt.value, gender, "uz"),
-  }));
-
   async function submit() {
     if (busy) return;
     setBusy(true);
@@ -129,11 +121,15 @@ export function V2AnketaFamilyForm({
   return (
     <div>
       <Field label={t("marital_label")} required>
+        {/* Ревью оунера Экран 5: семейное положение звучит по-разному для М/Ж.
+            Гендерный вариант берётся по ключу Options.MARITAL_STATUS.<v>__<m|f>
+            (редактируется в админке), с откатом на код-оверрайд. */}
         <Select
-          options={maritalOptions}
+          options={MARITAL_STATUS}
           value={marital}
           onChange={setMarital}
           locale={locale}
+          gender={gender}
         />
       </Field>
 

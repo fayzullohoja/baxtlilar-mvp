@@ -965,5 +965,477 @@
     "minutesAgo": "{n} daqiqa oldin",
     "hoursAgo": "{n} soat oldin",
     "daysAgo": "{n} kun oldin"
+  },
+  "Options": {
+    "GENDER": {
+      "f": "Ayol",
+      "m": "Erkak"
+    },
+    "MARITAL_STATUS": {
+      "never": "Hech qachon turmush qurmagan",
+      "divorcing": "Ajrashish jarayonida",
+      "divorced": "Ajrashgan",
+      "widowed": "Beva",
+      "married_separate": "Nikohda, lekin alohida yashayman",
+      "other": "Boshqa",
+      "never__m": "Boʻydoq",
+      "never__f": "Turmush qurmagan",
+      "widowed__m": "Beva",
+      "widowed__f": "Beva"
+    },
+    "HAS_CHILDREN": {
+      "no": "Yoʻq",
+      "yes": "Ha"
+    },
+    "CHILDREN_PLAN": {
+      "want": "Kelajakda farzand xohlayman",
+      "have_maybe_more": "Farzandlarim bor, yana boʻlishi mumkin",
+      "have_no_more": "Farzandlarim bor, koʻproq rejalashtirmayman",
+      "unsure": "Hozircha bilmayman",
+      "open": "Muhokama qilishga tayyorman"
+    },
+    "RELIGION": {
+      "islam": "Islom",
+      "christianity": "Xristianlik",
+      "judaism": "Yahudiylik",
+      "buddhism": "Buddizm",
+      "other": "Boshqa din",
+      "none": "Dinga eʼtiqod qilmayman"
+    },
+    "LIFE_VALUES": {
+      "family": "Oila va munosabatlar",
+      "faith": "Maʼnaviyat va eʼtiqod",
+      "honesty": "Halollik va poklik",
+      "growth": "Rivojlanish va oʻrganish",
+      "health": "Sogʻliq",
+      "career": "Karyera va oʻzini namoyon qilish",
+      "finance": "Moliyaviy barqarorlik",
+      "helping": "Boshqalarga yordam",
+      "freedom": "Erkinlik va mustaqillik"
+    },
+    "EDUCATION": {
+      "secondary": "Oʻrta",
+      "vocational": "Oʻrta maxsus",
+      "higher": "Oliy / Bakalavr",
+      "master": "Magistr",
+      "phd": "PhD / ilmiy daraja",
+      "studying": "Hozir oʻqiyapman",
+      "courses": "Kasbiy kurslar"
+    },
+    "EMPLOYMENT": {
+      "full": "Toʻliq bandlik",
+      "part": "Qisman bandlik",
+      "business": "Oʻz biznesi",
+      "freelance": "Erkin jadval",
+      "studying": "Oʻqiyapman",
+      "home_family": "Uy va oila",
+      "unemployed": "Vaqtincha ishlamayapman"
+    },
+    "GEO_PREFERENCE": {
+      "my_city": "Mening shahrimda",
+      "country": "Butun mamlakat boʻylab"
+    },
+    "CITIZENSHIP": {
+      "UZ": "Oʻzbekiston",
+      "RU": "Rossiya",
+      "KZ": "Qozogʻiston",
+      "KG": "Qirgʻiziston",
+      "TJ": "Tojikiston",
+      "TM": "Turkmaniston",
+      "TR": "Turkiya",
+      "US": "AQSH",
+      "KR": "Janubiy Koreya",
+      "JP": "Yaponiya",
+      "SA": "Saudiya Arabistoni",
+      "AE": "BAA",
+      "QA": "Qatar",
+      "ID": "Indoneziya",
+      "MY": "Malayziya",
+      "OTHER": "Boshqa"
+    },
+    "UZ_REGIONS": {
+      "tashkent_city": "Toshkent sh.",
+      "tashkent_region": "Toshkent vil.",
+      "andijan": "Andijon vil.",
+      "bukhara": "Buxoro vil.",
+      "fergana": "Fargʻona vil.",
+      "jizzakh": "Jizzax vil.",
+      "kashkadarya": "Qashqadaryo vil.",
+      "khorezm": "Xorazm vil.",
+      "namangan": "Namangan vil.",
+      "navoiy": "Navoiy vil.",
+      "samarkand": "Samarqand vil.",
+      "sirdaryo": "Sirdaryo vil.",
+      "surkhandarya": "Surxondaryo vil.",
+      "karakalpakstan": "Qoraqalpogʻiston"
+    },
+    "LANGUAGES_LIST": {
+      "uz": "Oʻzbek",
+      "ru": "Rus",
+      "kaa": "Qoraqalpoq",
+      "kk": "Qozoq",
+      "ky": "Qirgʻiz",
+      "tg": "Tojik",
+      "tk": "Turkman",
+      "tr": "Turk",
+      "en": "Ingliz",
+      "ar": "Arab",
+      "other": "Boshqa"
+    },
+    "RELIGION_PRACTICE": {
+      "observant": "Barcha qonun-qoidalarga rioya qilaman — hayotimning asosi",
+      "striving": "Ishonaman va rioya qilishga harakat qilaman; baʼzan boʻlmaydi",
+      "cultural": "Madaniy mansublik; anʼanalarni hurmat qilaman",
+      "not_practicing": "Faol amal qilmayman"
+    },
+    "RELIGION_PARTNER_MATCH": {
+      "same_religion": "Muhim: bir xil din",
+      "same_religion_same_practice": "Muhim: bir xil din va muntazam diniy amal",
+      "close_values": "Diniy qadriyatlar yaqin boʻlishi muhim",
+      "mutual_respect": "Turli diniy qarashlarga hurmat bilan qarayman",
+      "not_decisive": "Bu men uchun hal qiluvchi mezon emas"
+    },
+    "POST_MARRIAGE_LIVING": {
+      "with_husband_family": "Erning oilasi bilan",
+      "with_wife_family": "Xotinning oilasi bilan",
+      "separate": "Ota-onadan alohida",
+      "temporary_then_separate": "Vaqtincha ota-ona bilan, keyin alohida",
+      "open_to_discuss": "Kelishuvga qarab",
+      "unsure": "Hali qaror qilmaganman"
+    },
+    "MARRIAGE_READINESS": {
+      "within_6m": "Yaqin 6 oy ichida",
+      "within_1y": "1 yil ichida",
+      "within_2y": "1–2 yil ichida",
+      "when_right": "Mos insonni uchratganimda",
+      "not_ready": "Hozircha tayyor emasman, avval tanishishni xohlayman"
+    },
+    "RELOCATION_READINESS": {
+      "city": "Boshqa shaharga koʻchishga tayyorman",
+      "country": "Boshqa mamlakatga koʻchishga tayyorman",
+      "by_agreement": "Kelishuv asosida koʻchishni koʻrib chiqaman",
+      "only_my_city": "Oʻz shahrimda qolishni xohlayman",
+      "unsure": "Hali aniq emas"
+    },
+    "ACTIVITY_FIELDS": {
+      "it_software": "IT / Dasturlash",
+      "finance_banking": "Moliya / Banklar",
+      "education_science": "Taʼlim / Fan",
+      "medicine_health": "Tibbiyot / Sogʻliq",
+      "state_service": "Davlat xizmati",
+      "law_legal": "Yuristlik",
+      "business_entrepreneurship": "Biznes / Tadbirkorlik",
+      "agriculture": "Qishloq xoʻjaligi",
+      "construction_realestate": "Qurilish / Koʻchmas mulk",
+      "manufacturing_industry": "Ishlab chiqarish",
+      "trade_retail": "Savdo / Chakana",
+      "transport_logistics": "Transport / Logistika",
+      "media_creative": "Media / Ijod",
+      "services": "Xizmatlar",
+      "religion_spiritual": "Din / Maʼnaviyat",
+      "household_homemaker": "Uy va oila",
+      "other": "Boshqa"
+    },
+    "EMPLOYMENT_STATUS": {
+      "working": "Ishlayman",
+      "entrepreneur": "Tadbirkor / oʻz biznesim bor",
+      "freelancer": "Frilanser",
+      "student": "Talaba",
+      "home_family": "Uy va oila bilan shugʻullanaman",
+      "not_working": "Hozircha ishlamayman"
+    },
+    "EMPLOYMENT_FORMAT": {
+      "office": "Ofis",
+      "remote": "Masofadan",
+      "hybrid": "Gibrid",
+      "own_business": "Oʻz biznesi",
+      "not_working": "Hozir ishlamayman"
+    },
+    "FUTURE_CHILDREN_PLAN": {
+      "yes_soon": "Ha, yaqin orada",
+      "yes_later": "Ha, kelajakda",
+      "maybe": "Balki",
+      "no": "Yoʻq",
+      "with_partner_decide": "Hamroh bilan birga qaror qilamiz",
+      "individual": "Alohida muhokama qilinadi"
+    },
+    "CHILDREN_LIVING": {
+      "with_me": "Men bilan",
+      "with_other_parent": "Boshqa ota-ona bilan",
+      "with_relatives": "Qarindoshlar bilan",
+      "separate": "Alohida / mustaqil"
+    },
+    "CHILDREN_COUNT": {
+      "1": "1",
+      "2": "2",
+      "3": "3",
+      "4plus": "4 va undan koʻp"
+    },
+    "CHILDREN_AGE_RANGE": {
+      "0_3": "3 yoshgacha",
+      "3_6": "3–6 yosh",
+      "7_12": "7–12 yosh",
+      "13_17": "13–17 yosh",
+      "18plus": "18+"
+    },
+    "LIFE_VALUES_V3": {
+      "family": "Oila",
+      "faith": "Eʼtiqod",
+      "honesty": "Halollik",
+      "respect": "Hurmat",
+      "kindness": "Mehribonlik",
+      "responsibility": "Masʼuliyat",
+      "tradition": "Anʼanalar",
+      "education": "Taʼlim",
+      "health": "Sogʻliq",
+      "career": "Karyera",
+      "financial_stability": "Moliyaviy barqarorlik",
+      "community": "Hamjamiyat / Mahalla",
+      "self_development": "Oʻzini rivojlantirish",
+      "independence": "Mustaqillik"
+    },
+    "FAMILY_ROLE_MODEL": {
+      "traditional": "Erkak yetakchiligidagi oila",
+      "woman_leads": "Ayol yetakchiligidagi oila",
+      "equal_partnership": "Oʻzaro teng sheriklik"
+    },
+    "WIFE_WORK_VIEW": {
+      "welcome": "Mamnuniyat bilan — ishlasin",
+      "ok_if_needed": "Kerak boʻlsa, mumkin",
+      "prefer_not": "Ishlamasligini afzal koʻraman",
+      "against": "Qatʼiy qarshi",
+      "discuss": "Muhokama qilishga tayyorman"
+    },
+    "FAMILY_DECISION_MODEL": {
+      "husband_main": "Asosiy qaror erda",
+      "wife_main": "Asosiy qaror xotinda",
+      "joint": "Birgalikda"
+    },
+    "HOUSEHOLD_RESPONSIBILITY_MODEL": {
+      "traditional": "Anʼanaviy (xotin uy ishlari, er taʼminlash)",
+      "shared_50_50": "Tengma-teng 50/50",
+      "by_skill": "Koʻnikma boʻyicha",
+      "mostly_partner": "Asosan hamroh",
+      "mostly_partner__m": "Asosan xotin",
+      "mostly_partner__f": "Asosan er"
+    },
+    "SEPARATE_FROM_PARENTS_IMPORTANCE": {
+      "must": "Albatta alohida",
+      "preferred": "Alohida boʻlgani yaxshi",
+      "neutral": "Farqi yoʻq",
+      "not_important": "Muhim emas"
+    },
+    "PARTNER_QUALITIES": {
+      "kindness": "Mehribonlik",
+      "honesty": "Halollik",
+      "responsibility": "Masʼuliyat",
+      "intelligence": "Aql-zakovat",
+      "sense_of_humor": "Hazil tuygʻusi",
+      "religiosity": "Diniylik",
+      "ambition": "Maqsadli",
+      "calmness": "Bosiqlik",
+      "loyalty": "Sadoqat",
+      "family_oriented": "Oilaga sadoqat",
+      "caring": "Gʻamxoʻrlik",
+      "independence": "Mustaqillik",
+      "generosity": "Saxiylik",
+      "patience": "Sabr"
+    },
+    "PROFILE_VISIBILITY_MODE": {
+      "public": "Ochiq profil",
+      "verified_only": "Faqat tasdiqlanganlarga",
+      "by_request": "Soʻrov boʻyicha"
+    },
+    "INCOME_SOURCE_STABILITY": {
+      "stable": "Barqaror daromadim bor",
+      "unstable": "Daromadim oʻzgaruvchan",
+      "none": "Hozircha daromadim yoʻq"
+    },
+    "FAMILY_FINANCE_MANAGEMENT": {
+      "joint": "Birgalikda rejalashtirish",
+      "mostly_man": "Asosan masʼuliyat erkakda",
+      "mostly_woman": "Asosan masʼuliyat ayolda",
+      "situational": "Vaziyatga qarab",
+      "later": "Keyinroq muhokama qilishni xohlayman"
+    },
+    "FINANCIAL_PRIORITIES": {
+      "no_debt": "Qarz va kreditlarga masʼuliyatli yondashuv",
+      "savings": "Jamgʻarma va moliyaviy yostiq",
+      "investments": "Investitsiyalar va kapital oʻsishi",
+      "budget_planning": "Byudjetni rejalashtirish",
+      "literacy": "Moliyaviy savodxonlik",
+      "generosity": "Saxiylik va xayriya",
+      "housing": "Uy-joy sotib olish",
+      "travel": "Sayohatlar va taassurotlar",
+      "independence": "Moliyaviy mustaqillik"
+    },
+    "MONTHLY_INCOME_RANGE": {
+      "below_5m": "5 mln soʻmgacha",
+      "5_10m": "5–10 mln soʻm",
+      "10_20m": "10–20 mln soʻm",
+      "20_40m": "20–40 mln soʻm",
+      "40m_plus": "40 mln+ soʻm",
+      "foreign": "Daromad boshqa valyutada / chet elda"
+    },
+    "FINANCIAL_OBLIGATIONS": {
+      "none": "Muhim majburiyatlarim yoʻq",
+      "controlled": "Nazoratimdagi majburiyatlarim bor",
+      "significant": "Katta majburiyatlarim bor"
+    },
+    "HOUSING_STATUS": {
+      "own": "Shaxsiy uy-joyim bor",
+      "rent": "Ijarada yashayman",
+      "with_parents": "Ota-onam / qarindoshlarim bilan yashayman",
+      "none": "Hozircha shaxsiy uy-joyim yoʻq"
+    },
+    "LIFESTYLE_PACE": {
+      "active": "Faol",
+      "calm": "Tinch",
+      "balanced": "Muvozanatli"
+    },
+    "FREE_TIME_ACTIVITIES": {
+      "sports": "Sport va mashqlar",
+      "reading": "Kitob oʻqish",
+      "travel": "Sayohatlar",
+      "family_time": "Oila bilan vaqt",
+      "music": "Musiqa",
+      "art": "Ijod",
+      "volunteering": "Koʻngillilik va yordam",
+      "games": "Oʻyinlar va dam olish",
+      "nature": "Tabiat va sayrlar",
+      "learning": "Oʻrganish va rivojlanish",
+      "spiritual": "Maʼnaviy amaliyot",
+      "other": "Boshqa"
+    },
+    "DAILY_ROUTINE": {
+      "early": "Erta rejim — odatda 22:30 gacha uxlayman",
+      "middle": "Oʻrtacha rejim — 22:30 dan 00:00 gacha uxlayman",
+      "late": "Kechki rejim — 00:00 dan keyin uxlayman",
+      "unstable": "Beqaror rejim"
+    },
+    "BAD_HABITS_LEVEL": {
+      "no": "Chekmayman",
+      "sometimes": "Baʼzan",
+      "yes": "Chekaman",
+      "quit": "Tashlaganman"
+    },
+    "NUTRITION_STYLE": {
+      "balanced": "Muvozanatli",
+      "regular": "Oddiy ovqatlanish",
+      "national": "Milliy taomlarni yoqtiraman",
+      "restricted": "Cheklovlar bor"
+    },
+    "ALCOHOL_LEVEL": {
+      "no": "Iste'mol qilmayman",
+      "rare": "Kamdan-kam, alohida holatlarda",
+      "sometimes": "Baʼzan",
+      "regular": "Muntazam"
+    },
+    "DRUGS_USE": {
+      "no": "Yoʻq",
+      "past": "Oʻtmishda boʻlgan, hozir yoʻq"
+    },
+    "PARTNER_PREFERRED_COUNTRIES": {
+      "any": "Muhim emas",
+      "UZ": "Oʻzbekiston",
+      "RU": "Rossiya",
+      "KZ": "Qozogʻiston",
+      "KG": "Qirgʻiziston",
+      "TJ": "Tojikiston",
+      "TM": "Turkmaniston",
+      "TR": "Turkiya",
+      "US": "AQSH",
+      "KR": "Janubiy Koreya",
+      "JP": "Yaponiya",
+      "SA": "Saudiya Arabistoni",
+      "AE": "BAA",
+      "QA": "Qatar",
+      "ID": "Indoneziya",
+      "MY": "Malayziya",
+      "OTHER": "Boshqa"
+    },
+    "PARTNER_MARITAL_PREF": {
+      "never_married": "Nikohda boʻlmagan",
+      "divorced": "Ajrashgan",
+      "widowed": "Beva",
+      "has_experience": "Shaxsiy tajribasi bor, muhokamaga tayyor",
+      "any": "Muhim emas"
+    },
+    "PARTNER_CHILDREN_PREF": {
+      "ok": "Qabul qilaman",
+      "discuss": "Alohida muhokamaga tayyorman",
+      "prefer_none": "Farzandsiz juftni afzal koʻraman",
+      "not_decisive": "Bu men uchun hal qiluvchi mezon emas"
+    },
+    "PARTNER_ORIGIN_REGION_PREF": {
+      "same_as_mine": "Mening kelib chiqish hududimdan boʻlsa yaxshi",
+      "any": "Hudud muhim emas",
+      "open": "Turli variantlarni koʻrib chiqishga tayyorman"
+    },
+    "PARTNER_HARD_CRITERIA": {
+      "age": "Yosh",
+      "religion": "Din va eʼtiqod",
+      "marital": "Oilaviy holat",
+      "children": "Farzandlar borligi",
+      "region": "Hudud va kelib chiqishi",
+      "height": "Boʻy"
+    },
+    "PHOTO_TYPE": {
+      "portrait": "Portret",
+      "full_body": "Toʻliq boʻy",
+      "family": "Oilaviy"
+    },
+    "FATHER_STATUS": {
+      "alive": "Hayotda",
+      "deceased": "Vafot etgan",
+      "no_contact": "Aloqa yoʻq / muloqot qilmaymiz",
+      "prefer_not": "Javob berishni xohlamayman"
+    },
+    "MOTHER_STATUS": {
+      "alive": "Hayotda",
+      "deceased": "Vafot etgan",
+      "no_contact": "Aloqa yoʻq / muloqot qilmaymiz",
+      "prefer_not": "Javob berishni xohlamayman"
+    },
+    "PARENT_AGE_RANGE": {
+      "under_45": "45 yoshgacha",
+      "45_54": "45–54",
+      "55_64": "55–64",
+      "65_plus": "65 va undan katta"
+    },
+    "PARENT_PROFESSION": {
+      "gov_service": "Davlat xizmati",
+      "business": "Biznes / tadbirkorlik",
+      "education_science": "Taʼlim / ilm-fan",
+      "medicine": "Tibbiyot / sogʻliqni saqlash",
+      "agriculture": "Qishloq xoʻjaligi",
+      "manufacturing": "Ishlab chiqarish / sanoat",
+      "trade_services": "Savdo / xizmat koʻrsatish",
+      "religious": "Diniy / maʼnaviy soha",
+      "home_family": "Uy va oila",
+      "retired": "Nafaqada",
+      "other": "Boshqa"
+    },
+    "PARENTS_MARITAL": {
+      "together": "Ota-onam birga",
+      "divorced": "Ota-onam ajrashgan",
+      "father_deceased": "Otam vafot etgan",
+      "mother_deceased": "Onam vafot etgan",
+      "both_deceased": "Ikkalasi ham vafot etgan",
+      "other": "Boshqa"
+    },
+    "FAMILY_RELATIONS": {
+      "close": "Yaqin",
+      "normal": "Oddiy",
+      "rare": "Kam muloqot qilamiz",
+      "separate_connected": "Alohida yashayman, lekin aloqadamiz"
+    },
+    "FAMILY_INVOLVEMENT": {
+      "family_aware": "Oilam xabardor boʻlishi men uchun muhim",
+      "family_consultation": "Oilam bilan maslahatlashishni xohlayman",
+      "independent": "Qarorni mustaqil qabul qilaman",
+      "depends": "Vaziyatga bogʻliq",
+      "prefer_not": "Javob berishni xohlamayman"
+    }
   }
 }
