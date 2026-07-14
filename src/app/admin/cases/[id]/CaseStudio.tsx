@@ -6,6 +6,7 @@ import { PassportViewer, PassportImagePanel } from "@/components/admin-ops/case/
 import { PassportDataEntryForm } from "@/components/admin-ops/case/PassportDataEntryForm";
 import { FaceMatchStep, type FaceMatchResult } from "@/components/admin-ops/case/FaceMatchStep";
 import { DecisionPanel } from "@/components/admin-ops/case/DecisionPanel";
+import { SendBackForRework } from "@/components/admin-ops/case/SendBackForRework";
 import { CaseHistory } from "./CaseHistory";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 import { Button } from "@/components/admin-ops/Button";
@@ -141,6 +142,16 @@ export function CaseStudio({
 
       {loadedCase.assignee_id === currentAdminId ? (
         <ReleaseBar caseId={loadedCase.case_id} />
+      ) : null}
+
+      {/* Возврат на доработку с любого шага (шаг 4 уже имеет needs_changes в
+          DecisionPanel). Для случая «плохое фото / не тот документ» на шаге 1-3. */}
+      {loadedCase.assignee_id === currentAdminId && step < 4 ? (
+        <SendBackForRework
+          caseId={loadedCase.case_id}
+          expectedUpdatedAt={currentUpdatedAt}
+          reasonTemplates={reasonTemplates}
+        />
       ) : null}
 
       {step === 1 ? (
