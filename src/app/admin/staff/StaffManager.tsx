@@ -52,6 +52,11 @@ export function StaffManager({
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<"superadmin" | "moderator">("moderator");
+  const [showPw, setShowPw] = useState(true);
+  // Креды последнего созданного аккаунта — показываем для передачи сотруднику
+  // (на сервере пароль хешируется, повторно его увидеть уже нельзя).
+  const [created, setCreated] = useState<{ login: string; password: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   async function post(url: string, body: unknown, busyKey: string): Promise<boolean> {
     setBusyId(busyKey);
@@ -77,9 +82,30 @@ export function StaffManager({
     }
   }
 
+  function genPassword() {
+    // читаемый набор без похожих символов (0/O, 1/l/I) — легче продиктовать
+    const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const buf = new Uint32Array(14);
+    crypto.getRandomValues(buf);
+    setPassword(Array.from(buf, (n) => chars[n % chars.length]).join(""));
+    setShowPw(true);
+  }
+
+  async function copy(text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* clipboard недоступен — пароль всё равно виден на экране, можно скопировать вручную */
+    }
+  }
+
   async function create() {
+    const cred = { login: login.trim().toLowerCase(), password };
     const ok = await post("/api/admin/staff", { login, password, role }, "create");
     if (ok) {
+      setCreated(cred);
       setLogin("");
       setPassword("");
       setRole("moderator");
@@ -91,25 +117,43 @@ export function StaffManager({
       {/* Создание */}
       <div style={card}>
         <div style={cardLabel}>Создать аккаунт</div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
           <Field label="Логин">
             <input
               value={login}
               onChange={(e) => setLogin(e.target.value)}
-              style={input}
-              placeholder="логин"
+              style={{ ...input, width: 160 }}
+              placeholder="напр. dilnoza"
               autoComplete="off"
             />
           </Field>
           <Field label="Пароль (мин. 8)">
-            <input
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={input}
-              type="password"
-              placeholder="временный пароль"
-              autoComplete="new-password"
-            />
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ ...input, width: 190, fontFamily: ADMIN.fontMono }}
+                type={showPw ? "text" : "password"}
+                placeholder="пароль"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw((v) => !v)}
+                style={iconBtn}
+                title={showPw ? "Скрыть пароль" : "Показать пароль"}
+              >
+                {showPw ? "Скрыть" : "Показать"}
+              </button>
+              <button
+                type="button"
+                onClick={genPassword}
+                style={iconBtn}
+                title="Сгенерировать надёжный пароль"
+              >
+                Сгенерировать
+              </button>
+            </div>
           </Field>
           <Field label="Роль">
             <select
@@ -126,13 +170,57 @@ export function StaffManager({
             disabled={busyId === "create" || login.trim().length < 3 || password.length < 8}
             onClick={create}
           >
-            {busyId === "create" ? "…" : "Создать"}
+            {busyId === "create" ? "…" : "Создать аккаунт"}
           </Button>
         </div>
         <div style={{ fontSize: 12, color: ADMIN.ink500, marginTop: 8 }}>
-          Пароль передайте сотруднику лично. TOTP он подключит сам после первого входа.
+          Пароль показан, чтобы Вы могли передать его сотруднику. TOTP он подключит сам после первого входа.
         </div>
       </div>
+
+      {/* Успех — креды для передачи (пароль на сервере хешируется, повторно не увидеть) */}
+      {created ? (
+        <div
+          style={{
+            padding: 14,
+            border: `1px solid ${ADMIN.success}`,
+            borderRadius: 8,
+            background: "rgba(47, 122, 78, 0.06)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 10,
+            }}
+          >
+            <div style={{ fontSize: 13, fontWeight: 600, color: ADMIN.ink900 }}>
+              ✓ Аккаунт «{created.login}» создан
+            </div>
+            <button type="button" onClick={() => setCreated(null)} style={iconBtn} title="Скрыть">
+              ✕
+            </button>
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <code style={credBox}>
+              {created.login} / {created.password}
+            </code>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => copy(`Логин: ${created.login}\nПароль: ${created.password}`)}
+            >
+              {copied ? "Скопировано ✓" : "Копировать"}
+            </Button>
+          </div>
+          <div style={{ fontSize: 12, color: ADMIN.ink500, marginTop: 10 }}>
+            Передайте эти данные сотруднику лично. Пароль больше нигде не отобразится — сохраните
+            его сейчас.
+          </div>
+        </div>
+      ) : null}
 
       {error ? (
         <div style={{ fontSize: 13, color: ADMIN.danger }}>Ошибка: {error}</div>
@@ -260,4 +348,26 @@ const input: React.CSSProperties = {
   border: `1px solid ${ADMIN.border}`,
   borderRadius: 4,
   outline: "none",
+};
+const iconBtn: React.CSSProperties = {
+  height: 32,
+  padding: "0 10px",
+  fontSize: 12,
+  fontFamily: ADMIN.fontSans,
+  color: ADMIN.ink700,
+  background: ADMIN.surface2,
+  border: `1px solid ${ADMIN.border}`,
+  borderRadius: 4,
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+};
+const credBox: React.CSSProperties = {
+  padding: "6px 10px",
+  fontSize: 13,
+  fontFamily: ADMIN.fontMono,
+  color: ADMIN.ink900,
+  background: ADMIN.surface,
+  border: `1px solid ${ADMIN.border}`,
+  borderRadius: 4,
+  userSelect: "all",
 };
