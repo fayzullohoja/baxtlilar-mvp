@@ -91,7 +91,9 @@ export default async function Page({
       <ClientHero client={c} />
       <ClientTabs clientId={id} active={tab} />
       {tab === "identity" ? <IdentityTab identity={c.identity} /> : null}
-      {tab === "profile" ? <ProfileTab userId={id} /> : null}
+      {tab === "profile" ? (
+        <ProfileTab userId={id} canEdit={can(session.role, "profiles.edit")} />
+      ) : null}
       {tab === "photos" ? <PhotosTab userId={id} /> : null}
       {tab === "activity" ? <ActivityTab userId={id} /> : null}
       {tab === "moderation" ? <ModerationTab userId={id} /> : null}

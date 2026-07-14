@@ -11,6 +11,7 @@ const MODERATOR_EXPECTED: Permission[] = [
   "photos.moderate",
   "reports.triage", // ← НАМЕРЕННО открыто модератору в Волне 7
   "users.moderate",
+  "profiles.edit", // ← 2026-07-14: правка анкет открыта модераторам (ревью оунера)
 ];
 
 // Права, которых у модератора быть НЕ должно (super-only). Явно, чтобы случайное

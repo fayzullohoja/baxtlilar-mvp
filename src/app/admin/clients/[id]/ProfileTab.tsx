@@ -6,6 +6,8 @@ import { loadFullProfile } from "@/lib/admin/load-profile-full";
 import { districtLabel } from "@/lib/profile/uz-districts";
 import { cityLabel } from "@/lib/profile/cities";
 import { MaritalReviewAction } from "./MaritalReviewAction";
+import { PROFILE_EDIT_SECTIONS } from "@/lib/admin/profile-edit-schema";
+import { ProfileEditGate } from "./ProfileEditGate";
 import {
   labelOf,
   GENDER,
@@ -62,7 +64,7 @@ const BIG_FIVE: { key: string; label: string }[] = [
   { key: "ES", label: "Эмоц. устойчивость" },
 ];
 
-export async function ProfileTab({ userId }: { userId: string }) {
+export async function ProfileTab({ userId, canEdit = false }: { userId: string; canEdit?: boolean }) {
   const full = await loadFullProfile(userId);
   if (!full) {
     return (
@@ -77,6 +79,15 @@ export async function ProfileTab({ userId }: { userId: string }) {
   const living = ext.living ?? {};
   const bio = ext.bio ?? {};
   const partner = (ext.partner ?? {}) as { location_preference?: { scope?: string } };
+
+  // Текущие значения редактируемых полей для формы редактора
+  // (hot → p.<key>, cold → ext.<section>.<key>).
+  const pRec = p as unknown as Record<string, unknown>;
+  const extRec = ext as unknown as Record<string, Record<string, unknown> | undefined>;
+  const editableValues: Record<string, unknown> = {};
+  for (const sec of PROFILE_EDIT_SECTIONS)
+    for (const f of sec.fields)
+      editableValues[f.key] = f.cold ? (extRec[f.cold]?.[f.key] ?? null) : (pRec[f.key] ?? null);
 
   // v — значение из анкеты; L — по словарю опций; raw — как есть; scale — «N/5».
   const L = (group: Opt[], v: unknown) =>
@@ -113,6 +124,7 @@ export async function ProfileTab({ userId }: { userId: string }) {
       : "—";
 
   return (
+    <ProfileEditGate userId={userId} canEdit={canEdit} values={editableValues}>
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* F4: контент-ревью семейного положения — профиль скрыт из мэтчинга до одобрения */}
       {p.needs_marital_review === true ? (
@@ -267,6 +279,7 @@ export async function ProfileTab({ userId }: { userId: string }) {
         )}
       </div>
     </div>
+    </ProfileEditGate>
   );
 }
 
