@@ -568,7 +568,12 @@ export const DRUGS_USE: Opt[] = [
 export const PARTNER_ANY_COUNTRY = "any";
 export const PARTNER_PREFERRED_COUNTRIES: Opt[] = [
   { value: PARTNER_ANY_COUNTRY, ru: "Не имеет значения", uz: "Muhim emas" },
-  ...CITIZENSHIP,
+  // КЛОНИРУЕМ, а не шарим объекты: `...CITIZENSHIP` копировал бы ССЫЛКИ, и штамп
+  // группы (см. OPTION_GROUPS внизу) достался бы этим опциям от CITIZENSHIP —
+  // чипы «страны партнёра» читали бы ключи Options.CITIZENSHIP.*, правка
+  // Options.PARTNER_PREFERRED_COUNTRIES.* была бы no-op, а правка гражданства
+  // молча меняла бы и этот список. Клон = свои ключи и независимое редактирование.
+  ...CITIZENSHIP.map((o) => ({ ...o })),
 ];
 
 // ---------- Кого ищу: доп. ожидания (ревью оунера Экран 12). Cold в extended.partner ----------

@@ -93,7 +93,14 @@ export async function getMatchOfTheDay(viewerId: string): Promise<MatchOfTheDay 
   // Вне request-контекста (крон/воркер) getTranslations бросает → базовые лейблы.
   let label: LabelResolver | undefined;
   try {
-    const t = (await getTranslations("Options")) as unknown as OptTranslator;
+    // ЯВНО locale:"ru": getTranslations БЕЗ locale резолвит по локали запроса,
+    // и uz-юзер получил бы узбекские слова, вклеенные в захардкоженную русскую
+    // фразу («…совпадают ключевые ценности — oila, halollik»). Раньше labelOf
+    // всегда отдавал ru — сохраняем это поведение.
+    const t = (await getTranslations({
+      locale: "ru",
+      namespace: "Options",
+    })) as unknown as OptTranslator;
     label = (v: string) => optLabelOf(t, LIFE_VALUES_V3, v, "ru");
   } catch {
     label = undefined; // generateMatchStory возьмёт дефолтный (базовый) резолвер
