@@ -20,6 +20,7 @@ export const PERMISSIONS = [
   "staff.manage", // управление аккаунтами админов (Фаза 2)
   "settings.edit", // системные настройки (Фаза 3)
   "profiles.edit", // правка полей анкеты юзера из карточки (кроме паспортных пол/ДР)
+  "i18n.edit", // конструктор текстовок: правка строк локализации мини-аппа (глобальный blast-radius)
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -34,6 +35,7 @@ const MODERATOR_CAPS: readonly Permission[] = [
   "reports.triage",
   "users.moderate",
   "profiles.edit", // ревью оунера 2026-07-14: правка анкет открыта и модераторам (всё в аудите)
+  "i18n.edit", // конструктор текстовок: оунер просил «под ролями супер админа и модератора»; всё в аудите
 ];
 
 const ROLE_CAPS: Record<AdminRole, ReadonlySet<Permission>> = {
