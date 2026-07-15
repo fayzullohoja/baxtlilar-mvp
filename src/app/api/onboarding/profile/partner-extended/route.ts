@@ -59,12 +59,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       ...partnerSection,
       // Ревью оунера 1.13/1.14: вес + национальность партнёра — COLD, soft (в
       // matching НЕ энфорсятся). Вес держим cold (в отличие от hot-роста) — без миграции.
-      ...(parsed.data.partner_weight_min != null
-        ? { partner_weight_min: parsed.data.partner_weight_min }
-        : {}),
-      ...(parsed.data.partner_weight_max != null
-        ? { partner_weight_max: parsed.data.partner_weight_max }
-        : {}),
+      // Пишем БЕЗУСЛОВНО (null при сбросе, как hot-рост) — иначе `...partnerSection`
+      // сохранил бы старое значение и очистка ползунка не сработала бы (adversarial-ревью).
+      partner_weight_min: parsed.data.partner_weight_min ?? null,
+      partner_weight_max: parsed.data.partner_weight_max ?? null,
       ...(parsed.data.partner_nationality_pref
         ? { partner_nationality_pref: parsed.data.partner_nationality_pref }
         : {}),

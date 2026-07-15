@@ -203,10 +203,10 @@ export function V2AnketaPartnerExtendedForm({
         body.partner_height_min = heightLo;
         body.partner_height_max = heightHi;
       }
-      if (weightSet) {
-        body.partner_weight_min = weightLo;
-        body.partner_weight_max = weightHi;
-      }
+      // Всегда шлём (null при сбросе) — иначе очистка не удалит cold-значение:
+      // route мержит `...partnerSection`, и опущенный вес сохранил бы старое.
+      body.partner_weight_min = weightSet ? weightLo : null;
+      body.partner_weight_max = weightSet ? weightHi : null;
       if (nationalityPref !== "") body.partner_nationality_pref = nationalityPref;
       if (nationalityPref === "specific" && nationality.length > 0)
         body.partner_nationality = nationality;
