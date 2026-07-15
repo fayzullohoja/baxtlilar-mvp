@@ -602,6 +602,43 @@ export const PARTNER_ORIGIN_REGION_PREF: Opt[] = [
   { value: "open", ru: "Готов(а) рассмотреть разные варианты", uz: "Turli variantlarni koʻrib chiqishga tayyorman" },
 ];
 
+/** Ревью оунера 1.14: предпочтение по национальности партнёра (single).
+ *  «Выбрать конкретно» → показать список PARTNER_NATIONALITY. Soft-фильтр,
+ *  cold (extended.partner), в matching НЕ энфорсится. */
+export const PARTNER_NATIONALITY_PREF: Opt[] = [
+  { value: "any", ru: "Не имеет значения", uz: "Muhim emas" },
+  { value: "preferably_mine", ru: "Желательно моя национальность", uz: "Mening millatim boʻlsa yaxshi" },
+  { value: "open_to_different", ru: "Готов(а) рассмотреть разные варианты", uz: "Turli variantlarni koʻrib chiqishga tayyorman" },
+  { value: "specific", ru: "Выбрать конкретно", uz: "Aniq tanlash" },
+  { value: "prefer_not", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
+];
+
+/** Ревью оунера 1.14: список национальностей (multi-select, показывается при
+ *  partner_nationality_pref = specific). Значения — ровно как в спеке оунера. */
+export const PARTNER_NATIONALITY: Opt[] = [
+  { value: "uzbek", ru: "Узбекская", uz: "Oʻzbek" },
+  { value: "karakalpak", ru: "Каракалпакская", uz: "Qoraqalpoq" },
+  { value: "tajik", ru: "Таджикская", uz: "Tojik" },
+  { value: "kazakh", ru: "Казахская", uz: "Qozoq" },
+  { value: "kyrgyz", ru: "Киргизская", uz: "Qirgʻiz" },
+  { value: "turkmen", ru: "Туркменская", uz: "Turkman" },
+  { value: "russian", ru: "Русская", uz: "Rus" },
+  { value: "tatar", ru: "Татарская", uz: "Tatar" },
+  { value: "korean", ru: "Корейская", uz: "Koreys" },
+  { value: "turkish", ru: "Турецкая", uz: "Turk" },
+  { value: "arab", ru: "Арабская", uz: "Arab" },
+  { value: "uyghur", ru: "Уйгурская", uz: "Uygʻur" },
+  { value: "azeri", ru: "Азербайджанская", uz: "Ozarbayjon" },
+  { value: "afghan", ru: "Афганская", uz: "Afgʻon" },
+  { value: "iranian", ru: "Иранская", uz: "Eronlik" },
+  { value: "indian", ru: "Индийская", uz: "Hind" },
+  { value: "pakistani", ru: "Пакистанская", uz: "Pokistonlik" },
+  { value: "european", ru: "Европейская", uz: "Yevropalik" },
+  { value: "mixed", ru: "Смешанное происхождение", uz: "Aralash kelib chiqish" },
+  { value: "other", ru: "Другое", uz: "Boshqa" },
+  { value: "prefer_not_to_answer", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
+];
+
 /** Экран 12: hard/soft-переключатель (ревью оунера). Какие из ожиданий к партнёру
  *  для пользователя ПРИНЦИПИАЛЬНЫ (не обсуждаются). Multi-select, cold (extended.partner),
  *  пусто = все критерии гибкие. Пока ИНФОРМАЦИОННОЕ поле (для match-story/кураторства),
@@ -746,7 +783,8 @@ export const OPTION_GROUPS: Record<string, Opt[]> = {
   FINANCIAL_PRIORITIES, MONTHLY_INCOME_RANGE, FINANCIAL_OBLIGATIONS, HOUSING_STATUS,
   LIFESTYLE_PACE, FREE_TIME_ACTIVITIES, DAILY_ROUTINE, BAD_HABITS_LEVEL, NUTRITION_STYLE,
   ALCOHOL_LEVEL, DRUGS_USE, PARTNER_PREFERRED_COUNTRIES, PARTNER_MARITAL_PREF,
-  PARTNER_CHILDREN_PREF, PARTNER_ORIGIN_REGION_PREF, PARTNER_HARD_CRITERIA, PHOTO_TYPE,
+  PARTNER_CHILDREN_PREF, PARTNER_ORIGIN_REGION_PREF, PARTNER_NATIONALITY_PREF,
+  PARTNER_NATIONALITY, PARTNER_HARD_CRITERIA, PHOTO_TYPE,
   FATHER_STATUS, MOTHER_STATUS, PARENT_AGE_RANGE, PARENT_PROFESSION, PARENTS_MARITAL,
   PARENTS_YEARS_TOGETHER, FAMILY_RELATIONS, FAMILY_INVOLVEMENT,
 };

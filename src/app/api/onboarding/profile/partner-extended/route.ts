@@ -57,6 +57,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ...ext,
     partner: {
       ...partnerSection,
+      // Ревью оунера 1.13/1.14: вес + национальность партнёра — COLD, soft (в
+      // matching НЕ энфорсятся). Вес держим cold (в отличие от hot-роста) — без миграции.
+      ...(parsed.data.partner_weight_min != null
+        ? { partner_weight_min: parsed.data.partner_weight_min }
+        : {}),
+      ...(parsed.data.partner_weight_max != null
+        ? { partner_weight_max: parsed.data.partner_weight_max }
+        : {}),
+      ...(parsed.data.partner_nationality_pref
+        ? { partner_nationality_pref: parsed.data.partner_nationality_pref }
+        : {}),
+      ...(parsed.data.partner_nationality?.length
+        ? { partner_nationality: parsed.data.partner_nationality }
+        : {}),
       ...(parsed.data.partner_marital_pref?.length
         ? { partner_marital_pref: parsed.data.partner_marital_pref }
         : {}),

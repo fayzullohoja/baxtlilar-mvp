@@ -508,7 +508,12 @@
     "legalNameVerifiedLabel": "ФИО по документу (приватно)",
     "displayNamePublicHint": "Публичное имя — так вас увидят другие. ФИО из документа остаётся приватным.",
     "childrenAgeRangeLabel": "Возраст детей",
-    "parents_years_together_label": "Сколько лет родители вместе?"
+    "parents_years_together_label": "Сколько лет родители вместе?",
+    "partnerWeightLabel": "Вес партнёра, кг",
+    "partnerWeightHint": "Можно пропустить. Это не главный критерий подбора.",
+    "partnerNationalityLabel": "Национальность партнёра",
+    "partnerNationalityListLabel": "Выберите национальности",
+    "partnerNationalityListHint": "Можно выбрать несколько."
   },
   "Quiz": {
     "intro_title": "10 вопросов о вас",
@@ -1376,6 +1381,36 @@
       "same_as_mine": "Желательно из моего родного региона",
       "any": "Регион не имеет значения",
       "open": "Готов(а) рассмотреть разные варианты"
+    },
+    "PARTNER_NATIONALITY_PREF": {
+      "any": "Не имеет значения",
+      "preferably_mine": "Желательно моя национальность",
+      "open_to_different": "Готов(а) рассмотреть разные варианты",
+      "specific": "Выбрать конкретно",
+      "prefer_not": "Предпочитаю не отвечать"
+    },
+    "PARTNER_NATIONALITY": {
+      "uzbek": "Узбекская",
+      "karakalpak": "Каракалпакская",
+      "tajik": "Таджикская",
+      "kazakh": "Казахская",
+      "kyrgyz": "Киргизская",
+      "turkmen": "Туркменская",
+      "russian": "Русская",
+      "tatar": "Татарская",
+      "korean": "Корейская",
+      "turkish": "Турецкая",
+      "arab": "Арабская",
+      "uyghur": "Уйгурская",
+      "azeri": "Азербайджанская",
+      "afghan": "Афганская",
+      "iranian": "Иранская",
+      "indian": "Индийская",
+      "pakistani": "Пакистанская",
+      "european": "Европейская",
+      "mixed": "Смешанное происхождение",
+      "other": "Другое",
+      "prefer_not_to_answer": "Предпочитаю не отвечать"
     },
     "PARTNER_HARD_CRITERIA": {
       "age": "Возраст",

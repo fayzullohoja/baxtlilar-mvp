@@ -13,6 +13,8 @@ import {
   PARTNER_MARITAL_PREF,
   PARTNER_CHILDREN_PREF,
   PARTNER_ORIGIN_REGION_PREF,
+  PARTNER_NATIONALITY_PREF,
+  PARTNER_NATIONALITY,
   PARTNER_HARD_CRITERIA,
 } from "@/lib/profile/options";
 
@@ -41,6 +43,10 @@ const HEIGHT_MIN = 140;
 const HEIGHT_MAX = 220;
 const HEIGHT_DEF_LO = 160;
 const HEIGHT_DEF_HI = 185;
+const WEIGHT_MIN = 35;
+const WEIGHT_MAX = 200;
+const WEIGHT_DEF_LO = 55;
+const WEIGHT_DEF_HI = 90;
 
 function parseRange(
   minStr: string | undefined,
@@ -67,6 +73,10 @@ export function V2AnketaPartnerExtendedForm({
     partner_age_max?: string;
     partner_height_min?: string;
     partner_height_max?: string;
+    partner_weight_min?: string;
+    partner_weight_max?: string;
+    partner_nationality_pref?: string;
+    partner_nationality?: string[];
     partner_top_qualities?: string[];
     partner_religion_match?: string;
     partner_preferred_countries?: string[];
@@ -97,6 +107,21 @@ export function V2AnketaPartnerExtendedForm({
   const [heightLo, setHeightLo] = useState(initHeight.lo);
   const [heightHi, setHeightHi] = useState(initHeight.hi);
   const [heightSet, setHeightSet] = useState(initHeight.set);
+  const initWeight = parseRange(
+    initial?.partner_weight_min,
+    initial?.partner_weight_max,
+    WEIGHT_DEF_LO,
+    WEIGHT_DEF_HI,
+  );
+  const [weightLo, setWeightLo] = useState(initWeight.lo);
+  const [weightHi, setWeightHi] = useState(initWeight.hi);
+  const [weightSet, setWeightSet] = useState(initWeight.set);
+  const [nationalityPref, setNationalityPref] = useState(
+    initial?.partner_nationality_pref ?? "",
+  );
+  const [nationality, setNationality] = useState<string[]>(
+    initial?.partner_nationality ?? [],
+  );
   const [qualities, setQualities] = useState<string[]>(
     initial?.partner_top_qualities ?? [],
   );
@@ -125,6 +150,19 @@ export function V2AnketaPartnerExtendedForm({
     setQualities((cur) =>
       cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v],
     );
+  }
+
+  function toggleNationality(v: string) {
+    setNationality((cur) =>
+      cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v],
+    );
+  }
+
+  // Смена предпочтения: список конкретных национальностей нужен только при "specific",
+  // иначе чистим — иначе персистился бы «any» со стейл-списком.
+  function changeNationalityPref(v: string) {
+    setNationalityPref(v);
+    if (v !== "specific") setNationality([]);
   }
 
   function toggleMarital(v: string) {
@@ -165,6 +203,13 @@ export function V2AnketaPartnerExtendedForm({
         body.partner_height_min = heightLo;
         body.partner_height_max = heightHi;
       }
+      if (weightSet) {
+        body.partner_weight_min = weightLo;
+        body.partner_weight_max = weightHi;
+      }
+      if (nationalityPref !== "") body.partner_nationality_pref = nationalityPref;
+      if (nationalityPref === "specific" && nationality.length > 0)
+        body.partner_nationality = nationality;
       if (religionMatch !== "") body.partner_religion_match = religionMatch;
       if (countries.length > 0) body.partner_preferred_countries = countries;
       if (maritalPref.length > 0) body.partner_marital_pref = maritalPref;
@@ -198,7 +243,9 @@ export function V2AnketaPartnerExtendedForm({
   const ageOk = ageSet;
   const qOk = qualities.length >= 1 && qualities.length <= 5;
   const countriesOk = countries.length <= 3;
-  const valid = ageOk && qOk && countriesOk;
+  // «Выбрать конкретно» требует ≥1 национальности (совпадает с refine схемы).
+  const nationalityOk = nationalityPref !== "specific" || nationality.length >= 1;
+  const valid = ageOk && qOk && countriesOk && nationalityOk;
 
   return (
     <div>
@@ -252,19 +299,44 @@ export function V2AnketaPartnerExtendedForm({
         />
       </Field>
 
-      <Field
-        label={t("partnerQualitiesLabel")}
-        required
-        hint={t("partner_qualities_hint", { count: qualities.length })}
-      >
-        <Chips
-          options={PARTNER_QUALITIES}
-          selected={qualities}
-          onToggle={toggleQ}
-          max={5}
+      {/* 1.13: вес партнёра — optional, soft (не главный критерий подбора). */}
+      <Field label={t("partnerWeightLabel")} hint={t("partnerWeightHint")}>
+        <DualRangeSlider
+          min={WEIGHT_MIN}
+          max={WEIGHT_MAX}
+          minValue={weightLo}
+          maxValue={weightHi}
+          isSet={weightSet}
+          onChange={(lo, hi, set) => {
+            setWeightLo(lo);
+            setWeightHi(hi);
+            setWeightSet(set);
+          }}
+          unit={t("unitKg")}
+          notSetLabel={t("notSpecified")}
+          clearLabel={t("clearValue")}
+        />
+      </Field>
+
+      {/* 1.14: национальность партнёра — предпочтение + (при «выбрать конкретно») список. */}
+      <Field label={t("partnerNationalityLabel")} hint={t("optionalHint")}>
+        <Select
+          options={PARTNER_NATIONALITY_PREF}
+          value={nationalityPref}
+          onChange={changeNationalityPref}
           locale={locale}
         />
       </Field>
+      {nationalityPref === "specific" ? (
+        <Field label={t("partnerNationalityListLabel")} required hint={t("partnerNationalityListHint")}>
+          <Chips
+            options={PARTNER_NATIONALITY}
+            selected={nationality}
+            onToggle={toggleNationality}
+            locale={locale}
+          />
+        </Field>
+      ) : null}
 
       <Field
         label={t("religion_partner_match_question")}
@@ -276,19 +348,6 @@ export function V2AnketaPartnerExtendedForm({
           onChange={setReligionMatch}
           locale={locale}
           placeholder="—"
-        />
-      </Field>
-
-      <Field
-        label={t("partner_preferred_countries_question")}
-        hint={t("partner_preferred_countries_hint")}
-      >
-        <Chips
-          options={PARTNER_PREFERRED_COUNTRIES}
-          selected={countries}
-          onToggle={toggleCountry}
-          max={3}
-          locale={locale}
         />
       </Field>
 
@@ -311,11 +370,38 @@ export function V2AnketaPartnerExtendedForm({
         />
       </Field>
 
+      <Field
+        label={t("partner_preferred_countries_question")}
+        hint={t("partner_preferred_countries_hint")}
+      >
+        <Chips
+          options={PARTNER_PREFERRED_COUNTRIES}
+          selected={countries}
+          onToggle={toggleCountry}
+          max={3}
+          locale={locale}
+        />
+      </Field>
+
       <Field label={t("partner_origin_region_pref_question")} hint={t("optionalHint")}>
         <Select
           options={PARTNER_ORIGIN_REGION_PREF}
           value={regionPref}
           onChange={setRegionPref}
+          locale={locale}
+        />
+      </Field>
+
+      <Field
+        label={t("partnerQualitiesLabel")}
+        required
+        hint={t("partner_qualities_hint", { count: qualities.length })}
+      >
+        <Chips
+          options={PARTNER_QUALITIES}
+          selected={qualities}
+          onToggle={toggleQ}
+          max={5}
           locale={locale}
         />
       </Field>

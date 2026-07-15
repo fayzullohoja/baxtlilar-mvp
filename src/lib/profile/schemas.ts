@@ -53,6 +53,8 @@ import {
   PARTNER_MARITAL_PREF,
   PARTNER_CHILDREN_PREF,
   PARTNER_ORIGIN_REGION_PREF,
+  PARTNER_NATIONALITY_PREF,
+  PARTNER_NATIONALITY,
   PARTNER_HARD_CRITERIA,
   // Экран 6 «Родители» 2026-07-12:
   FATHER_STATUS,
@@ -379,6 +381,13 @@ export const partnerExtendedSchema = z
     partner_age_max: z.coerce.number().int().min(18).max(100),
     partner_height_min: z.coerce.number().int().min(140).max(220).optional().nullable(),
     partner_height_max: z.coerce.number().int().min(140).max(220).optional().nullable(),
+    // Ревью оунера 1.13: вес партнёра — optional, SOFT (не жёсткий фильтр), COLD.
+    partner_weight_min: z.coerce.number().int().min(35).max(200).optional().nullable(),
+    partner_weight_max: z.coerce.number().int().min(35).max(200).optional().nullable(),
+    // Ревью оунера 1.14: национальность партнёра. pref — предпочтение; при specific —
+    // конкретный список. Soft, COLD (extended.partner), в matching НЕ энфорсится.
+    partner_nationality_pref: z.enum(tuple(vals(PARTNER_NATIONALITY_PREF))).optional(),
+    partner_nationality: z.array(z.enum(tuple(vals(PARTNER_NATIONALITY)))).max(21).optional(),
     partner_top_qualities: z.array(z.enum(tuple(vals(PARTNER_QUALITIES)))).min(1).max(5),
     // V4 — религия партнёра. Это требование к партнёру, не к себе. Корректно
     // живёт в «Кого ищу», а не в «О себе».
@@ -405,6 +414,19 @@ export const partnerExtendedSchema = z
       d.partner_height_max == null ||
       d.partner_height_max >= d.partner_height_min,
     { message: "height_range_invalid" },
+  )
+  .refine(
+    (d) =>
+      d.partner_weight_min == null ||
+      d.partner_weight_max == null ||
+      d.partner_weight_max >= d.partner_weight_min,
+    { message: "weight_range_invalid" },
+  )
+  // Ревью-совет: «выбрать конкретно» без единой национальности бессмысленно —
+  // либо ≥1 значение, либо это не specific. Иначе персистится пустой specific.
+  .refine(
+    (d) => d.partner_nationality_pref !== "specific" || (d.partner_nationality?.length ?? 0) >= 1,
+    { message: "nationality_required_if_specific", path: ["partner_nationality"] },
   );
 
 // ============================================================================

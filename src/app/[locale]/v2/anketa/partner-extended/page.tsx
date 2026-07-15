@@ -48,6 +48,19 @@ export default async function V2AnketaPartnerExtendedPage({
               draft.partner_height_max != null
                 ? String(draft.partner_height_max)
                 : "",
+            // Вес + национальность — COLD (extended.partner), гидрация для «Назад».
+            partner_weight_min:
+              partner.partner_weight_min != null
+                ? String(partner.partner_weight_min)
+                : "",
+            partner_weight_max:
+              partner.partner_weight_max != null
+                ? String(partner.partner_weight_max)
+                : "",
+            partner_nationality_pref:
+              (partner.partner_nationality_pref as string) ?? "",
+            partner_nationality:
+              (partner.partner_nationality as string[]) ?? [],
             partner_top_qualities:
               (draft.partner_top_qualities as string[]) ?? [],
             partner_religion_match:

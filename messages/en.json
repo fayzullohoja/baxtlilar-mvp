@@ -508,7 +508,12 @@
     "legalNameVerifiedLabel": "Full name from document (private)",
     "displayNamePublicHint": "Public name — this is how others see you. Your legal name from the document stays private.",
     "childrenAgeRangeLabel": "Children’s age",
-    "parents_years_together_label": "How many years have your parents been together?"
+    "parents_years_together_label": "How many years have your parents been together?",
+    "partnerWeightLabel": "Partner’s weight, kg",
+    "partnerWeightHint": "Optional. Not a key matching criterion.",
+    "partnerNationalityLabel": "Partner’s nationality",
+    "partnerNationalityListLabel": "Choose nationalities",
+    "partnerNationalityListHint": "You can select several."
   },
   "Quiz": {
     "intro_title": "10 questions about you",
@@ -1376,6 +1381,36 @@
       "same_as_mine": "Желательно из моего родного региона",
       "any": "Регион не имеет значения",
       "open": "Готов(а) рассмотреть разные варианты"
+    },
+    "PARTNER_NATIONALITY_PREF": {
+      "any": "Не имеет значения",
+      "preferably_mine": "Желательно моя национальность",
+      "open_to_different": "Готов(а) рассмотреть разные варианты",
+      "specific": "Выбрать конкретно",
+      "prefer_not": "Предпочитаю не отвечать"
+    },
+    "PARTNER_NATIONALITY": {
+      "uzbek": "Узбекская",
+      "karakalpak": "Каракалпакская",
+      "tajik": "Таджикская",
+      "kazakh": "Казахская",
+      "kyrgyz": "Киргизская",
+      "turkmen": "Туркменская",
+      "russian": "Русская",
+      "tatar": "Татарская",
+      "korean": "Корейская",
+      "turkish": "Турецкая",
+      "arab": "Арабская",
+      "uyghur": "Уйгурская",
+      "azeri": "Азербайджанская",
+      "afghan": "Афганская",
+      "iranian": "Иранская",
+      "indian": "Индийская",
+      "pakistani": "Пакистанская",
+      "european": "Европейская",
+      "mixed": "Смешанное происхождение",
+      "other": "Другое",
+      "prefer_not_to_answer": "Предпочитаю не отвечать"
     },
     "PARTNER_HARD_CRITERIA": {
       "age": "Возраст",

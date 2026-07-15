@@ -508,7 +508,12 @@
     "legalNameVerifiedLabel": "Hujjat boʻyicha FISH (maxfiy)",
     "displayNamePublicHint": "Ommaviy ism — sizni shunday koʻrishadi. Hujjatdagi FISH maxfiy qoladi.",
     "childrenAgeRangeLabel": "Farzandlar yoshi",
-    "parents_years_together_label": "Ota-onangiz necha yildan beri birga?"
+    "parents_years_together_label": "Ota-onangiz necha yildan beri birga?",
+    "partnerWeightLabel": "Juftning vazni, kg",
+    "partnerWeightHint": "O‘tkazib yuborish mumkin. Bu moslikning asosiy mezoni emas.",
+    "partnerNationalityLabel": "Juftning millati",
+    "partnerNationalityListLabel": "Millatlarni tanlang",
+    "partnerNationalityListHint": "Bir nechtasini tanlashingiz mumkin."
   },
   "Quiz": {
     "intro_title": "Siz haqingizda 10 ta savol",
@@ -1376,6 +1381,36 @@
       "same_as_mine": "Mening kelib chiqish hududimdan boʻlsa yaxshi",
       "any": "Hudud muhim emas",
       "open": "Turli variantlarni koʻrib chiqishga tayyorman"
+    },
+    "PARTNER_NATIONALITY_PREF": {
+      "any": "Muhim emas",
+      "preferably_mine": "Mening millatim boʻlsa yaxshi",
+      "open_to_different": "Turli variantlarni koʻrib chiqishga tayyorman",
+      "specific": "Aniq tanlash",
+      "prefer_not": "Javob berishni xohlamayman"
+    },
+    "PARTNER_NATIONALITY": {
+      "uzbek": "Oʻzbek",
+      "karakalpak": "Qoraqalpoq",
+      "tajik": "Tojik",
+      "kazakh": "Qozoq",
+      "kyrgyz": "Qirgʻiz",
+      "turkmen": "Turkman",
+      "russian": "Rus",
+      "tatar": "Tatar",
+      "korean": "Koreys",
+      "turkish": "Turk",
+      "arab": "Arab",
+      "uyghur": "Uygʻur",
+      "azeri": "Ozarbayjon",
+      "afghan": "Afgʻon",
+      "iranian": "Eronlik",
+      "indian": "Hind",
+      "pakistani": "Pokistonlik",
+      "european": "Yevropalik",
+      "mixed": "Aralash kelib chiqish",
+      "other": "Boshqa",
+      "prefer_not_to_answer": "Javob berishni xohlamayman"
     },
     "PARTNER_HARD_CRITERIA": {
       "age": "Yosh",

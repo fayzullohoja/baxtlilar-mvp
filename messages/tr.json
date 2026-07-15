@@ -508,7 +508,12 @@
     "legalNameVerifiedLabel": "Belgeye göre ad soyad (gizli)",
     "displayNamePublicHint": "Herkese açık ad — başkaları sizi böyle görür. Belgedeki ad soyad gizli kalır.",
     "childrenAgeRangeLabel": "Çocukların yaşı",
-    "parents_years_together_label": "Anne babanız kaç yıldır birlikte?"
+    "parents_years_together_label": "Anne babanız kaç yıldır birlikte?",
+    "partnerWeightLabel": "Eşin kilosu, kg",
+    "partnerWeightHint": "İsteğe bağlı. Eşleştirmenin ana kriteri değil.",
+    "partnerNationalityLabel": "Eşin milliyeti",
+    "partnerNationalityListLabel": "Milliyetleri seçin",
+    "partnerNationalityListHint": "Birkaç tane seçebilirsiniz."
   },
   "Quiz": {
     "intro_title": "Uyum anketi",
@@ -1376,6 +1381,36 @@
       "same_as_mine": "Желательно из моего родного региона",
       "any": "Регион не имеет значения",
       "open": "Готов(а) рассмотреть разные варианты"
+    },
+    "PARTNER_NATIONALITY_PREF": {
+      "any": "Не имеет значения",
+      "preferably_mine": "Желательно моя национальность",
+      "open_to_different": "Готов(а) рассмотреть разные варианты",
+      "specific": "Выбрать конкретно",
+      "prefer_not": "Предпочитаю не отвечать"
+    },
+    "PARTNER_NATIONALITY": {
+      "uzbek": "Узбекская",
+      "karakalpak": "Каракалпакская",
+      "tajik": "Таджикская",
+      "kazakh": "Казахская",
+      "kyrgyz": "Киргизская",
+      "turkmen": "Туркменская",
+      "russian": "Русская",
+      "tatar": "Татарская",
+      "korean": "Корейская",
+      "turkish": "Турецкая",
+      "arab": "Арабская",
+      "uyghur": "Уйгурская",
+      "azeri": "Азербайджанская",
+      "afghan": "Афганская",
+      "iranian": "Иранская",
+      "indian": "Индийская",
+      "pakistani": "Пакистанская",
+      "european": "Европейская",
+      "mixed": "Смешанное происхождение",
+      "other": "Другое",
+      "prefer_not_to_answer": "Предпочитаю не отвечать"
     },
     "PARTNER_HARD_CRITERIA": {
       "age": "Возраст",
