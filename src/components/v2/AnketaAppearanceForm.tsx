@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
-import { Field, Select, Chips, TextInput, RangeSlider } from "./AnketaFields";
+import { Field, Select, Chips, TextInput, RangeSlider, scrollToFirstError } from "./AnketaFields";
 import { LANGUAGES_LIST } from "@/lib/profile/options";
 
 /**
@@ -55,6 +55,12 @@ export function V2AnketaAppearanceForm({
   );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
+
+  // §2 P0: эквивалент прежнего valid (nativeLang + spokenLangs 1-6; рост/вес опц.).
+  const errors: Record<string, string> = {};
+  if (!nativeLang) errors.native_language = t("err_select_required");
+  if (spokenLangs.length < 1) errors.languages = t("err_select_required");
 
   function toggleLang(v: string) {
     setSpokenLangs((cur) =>
@@ -66,6 +72,11 @@ export function V2AnketaAppearanceForm({
 
   async function submit() {
     if (busy) return;
+    if (Object.keys(errors).length) {
+      setShowErrors(true);
+      requestAnimationFrame(scrollToFirstError);
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -100,17 +111,13 @@ export function V2AnketaAppearanceForm({
     }
   }
 
-  // Рост/вес необязательны и всегда в диапазоне ползунка — валидность
-  // определяется только языками.
-  const valid =
-    !!nativeLang && spokenLangs.length >= 1 && spokenLangs.length <= 6;
-
   return (
     <div>
       <Field
         label={t("nativeLanguageLabel")}
         required
         hint={t("nativeLanguageHint")}
+        error={showErrors ? errors.native_language : undefined}
       >
         <Select
           options={LANGUAGES_LIST}
@@ -124,6 +131,7 @@ export function V2AnketaAppearanceForm({
         label={t("spokenLanguagesLabel")}
         required
         hint={t("spokenLanguagesHint", { count: spokenLangs.length })}
+        error={showErrors ? errors.languages : undefined}
       >
         <Chips
           options={LANGUAGES_LIST}
@@ -222,7 +230,7 @@ export function V2AnketaAppearanceForm({
       <Button
         variant="primary"
         onClick={submit}
-        disabled={!valid || busy}
+        disabled={busy}
         style={{ width: "100%" }}
       >
         {busy ? t("btn_saving") : t("btn_next")}

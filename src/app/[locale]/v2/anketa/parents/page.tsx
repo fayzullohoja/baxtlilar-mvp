@@ -8,6 +8,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { loadAnketaDraft, draftSection } from "@/lib/onboarding/load-draft";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
+import { anketaProgress } from "@/lib/onboarding/anketa-progress";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { V2AnketaParentsForm } from "@/components/v2/AnketaParentsForm";
 
@@ -27,7 +28,7 @@ export default async function V2AnketaParentsPage({
   const parents = draftSection(draft, "parents");
 
   return (
-    <MiniAppShell eyebrow={t("parents_eyebrow")} align="top" showBack>
+    <MiniAppShell progress={anketaProgress("profile_parents")} eyebrow={t("parents_eyebrow")} align="top" showBack>
       <Headline size="lg" as="h1">{t("parents_headline")}</Headline>
       <Lead>{t("parents_lead")}</Lead>
 

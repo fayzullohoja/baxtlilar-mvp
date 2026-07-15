@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
-import { Field, Select, TextInput } from "./AnketaFields";
+import { Field, Select, TextInput, scrollToFirstError } from "./AnketaFields";
 import { COUNTRY_OF_RESIDENCE, UZ_REGIONS } from "@/lib/profile/options";
 import { UZ_DISTRICTS_BY_REGION, hasDistrictList } from "@/lib/profile/uz-districts";
 import { citiesForRegion, hasCityList } from "@/lib/profile/cities";
@@ -36,6 +36,7 @@ export function V2AnketaBirthPlaceForm({
   const [city, setCity] = useState(initial?.birth_city ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
 
   const showUzRegions = country === "UZ";
   // Район/город — дропдауны, если для выбранного региона есть справочник
@@ -43,8 +44,19 @@ export function V2AnketaBirthPlaceForm({
   const districtFromDict = showUzRegions && !!region && hasDistrictList(region);
   const cityFromDict = showUzRegions && !!region && hasCityList(region);
 
+  // §2 P0: эквивалент прежнего гейта (страна всегда; регион — только для UZ,
+  // где он Select; в non-UZ регион — freeform и опционален).
+  const errors: Record<string, string> = {};
+  if (!country) errors.birth_country = t("err_select_required");
+  if (showUzRegions && !region) errors.birth_region = t("err_select_required");
+
   async function submit() {
     if (busy) return;
+    if (Object.keys(errors).length) {
+      setShowErrors(true);
+      requestAnimationFrame(scrollToFirstError);
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -80,6 +92,7 @@ export function V2AnketaBirthPlaceForm({
         label={t('birth_place_country_label')}
         required
         hint={t('birth_place_country_hint')}
+        error={showErrors ? errors.birth_country : undefined}
       >
         <Select
           options={COUNTRY_OF_RESIDENCE}
@@ -99,7 +112,7 @@ export function V2AnketaBirthPlaceForm({
       </Field>
 
       {showUzRegions ? (
-        <Field label={t('birth_place_region_label')} required>
+        <Field label={t('birth_place_region_label')} required error={showErrors ? errors.birth_region : undefined}>
           <Select
             options={UZ_REGIONS}
             value={region}
@@ -185,7 +198,7 @@ export function V2AnketaBirthPlaceForm({
       <Button
         variant="primary"
         onClick={submit}
-        disabled={!country || (showUzRegions && !region) || busy}
+        disabled={busy}
         style={{ width: "100%" }}
       >
         {busy ? t('birth_place_saving') : t('birth_place_next')}

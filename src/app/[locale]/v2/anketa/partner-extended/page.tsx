@@ -10,6 +10,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { loadAnketaDraft, draftSection } from "@/lib/onboarding/load-draft";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
+import { anketaProgress } from "@/lib/onboarding/anketa-progress";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { V2AnketaPartnerExtendedForm } from "@/components/v2/AnketaPartnerExtendedForm";
 
@@ -28,7 +29,7 @@ export default async function V2AnketaPartnerExtendedPage({
   const partner = draftSection(draft, "partner");
 
   return (
-    <MiniAppShell eyebrow={t("partner_extended_eyebrow")} align="top" showBack>
+    <MiniAppShell progress={anketaProgress("profile_partner_extended")} eyebrow={t("partner_extended_eyebrow")} align="top" showBack>
       <Headline size="lg" as="h1">{t("partner_extended_headline")}</Headline>
       <Lead>{t("partner_extended_lead")}</Lead>
 

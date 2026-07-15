@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
-import { Field, Select } from "./AnketaFields";
+import { Field, Select, scrollToFirstError } from "./AnketaFields";
 import { POST_MARRIAGE_LIVING, MARRIAGE_READINESS, RELOCATION_READINESS } from "@/lib/profile/options";
 import type { Gender } from "@/lib/profile/gender-wording";
 import { useTranslations } from 'next-intl';
@@ -36,9 +36,19 @@ export function V2AnketaMarriageForm({
   const [relocation, setRelocation] = useState(initial?.relocation_readiness ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
+
+  // §2 P0: эквивалент прежнего `!living`-гейта (readiness/relocation опциональны).
+  const errors: Record<string, string> = {};
+  if (!living) errors.post_marriage_living = t("err_select_required");
 
   async function submit() {
     if (busy) return;
+    if (Object.keys(errors).length) {
+      setShowErrors(true);
+      requestAnimationFrame(scrollToFirstError);
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -73,6 +83,7 @@ export function V2AnketaMarriageForm({
         label={t('marriage_format_label')}
         required
         hint={t('marriage_format_hint')}
+        error={showErrors ? errors.post_marriage_living : undefined}
       >
         <Select
           options={POST_MARRIAGE_LIVING}
@@ -121,7 +132,7 @@ export function V2AnketaMarriageForm({
       <Button
         variant="primary"
         onClick={submit}
-        disabled={!living || busy}
+        disabled={busy}
         style={{ width: "100%" }}
       >
         {busy ? t('marriage_format_saving') : t('marriage_format_next')}

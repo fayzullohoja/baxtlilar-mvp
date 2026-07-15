@@ -10,6 +10,7 @@ import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { signedPhotoUrls } from "@/lib/uploads/storage";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
+import { anketaProgress } from "@/lib/onboarding/anketa-progress";
 import { Headline, Lead } from "@/components/v2/Headline";
 import {
   V2AnketaPhotosForm,
@@ -43,7 +44,7 @@ export default async function V2AnketaPhotosPage({
   }));
 
   return (
-    <MiniAppShell eyebrow={t("photos_eyebrow")} align="top" showBack>
+    <MiniAppShell progress={anketaProgress("profile_photos")} eyebrow={t("photos_eyebrow")} align="top" showBack>
       <Headline size="lg" as="h1">{t("photos_headline")}</Headline>
       <Lead>{t("photos_lead")}</Lead>
 

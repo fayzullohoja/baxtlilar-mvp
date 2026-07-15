@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
-import { Field, TextInput, Select } from "./AnketaFields";
+import { Field, TextInput, Select, scrollToFirstError } from "./AnketaFields";
 import { useTranslations } from "next-intl";
 import {
   GENDER,
@@ -75,6 +75,7 @@ export function V2AnketaBasicForm({
   const [districtVisiblePublic, setDistrictVisiblePublic] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
 
   // Region виден только если выбрано проживание в UZ.
   const showRegion = country === "UZ";
@@ -82,8 +83,23 @@ export function V2AnketaBasicForm({
   const showDistrict = showRegion && !!region;
   const districtFromDict = showDistrict && hasDistrictList(region);
 
+  // §2 P0: эквивалент прежнего valid (имя ≥2, пол, дата, гражданство, страна,
+  // регион для UZ). Пол при genderLocked уже задан — ошибки не будет.
+  const errors: Record<string, string> = {};
+  if (name.trim().length < 2) errors.display_name = t("err_field_required");
+  if (!gender) errors.gender = t("err_select_required");
+  if (!birth) errors.birth_date = t("err_field_required");
+  if (!citizenship) errors.citizenship = t("err_select_required");
+  if (!country) errors.country_of_residence = t("err_select_required");
+  if (showRegion && !region) errors.region = t("err_select_required");
+
   async function submit() {
     if (busy) return;
+    if (Object.keys(errors).length) {
+      setShowErrors(true);
+      requestAnimationFrame(scrollToFirstError);
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -123,14 +139,6 @@ export function V2AnketaBasicForm({
     }
   }
 
-  const valid =
-    name.trim().length >= 2 &&
-    !!gender &&
-    !!birth &&
-    !!citizenship &&
-    !!country &&
-    (!showRegion || !!region);
-
   return (
     <div>
       {/* Ревью оунера (name-split): ФИО по документу — read-only приватный
@@ -168,7 +176,7 @@ export function V2AnketaBasicForm({
         </div>
       ) : null}
 
-      <Field label={t("name_label")} hint={t("displayNamePublicHint")}>
+      <Field label={t("name_label")} hint={t("displayNamePublicHint")} error={showErrors ? errors.display_name : undefined}>
         <TextInput
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -197,16 +205,17 @@ export function V2AnketaBasicForm({
           </div>
         </Field>
       ) : (
-        <Field label={t("gender_label")}>
+        <Field label={t("gender_label")} error={showErrors ? errors.gender : undefined}>
           <Select options={GENDER} value={gender} onChange={setGender} locale={locale} />
         </Field>
       )}
-      <Field label={t("birth_label")}>
+      <Field label={t("birth_label")} error={showErrors ? errors.birth_date : undefined}>
         <TextInput type="date" value={birth} onChange={(e) => setBirth(e.target.value)} />
       </Field>
       <Field
         label={t("citizenship_label")}
         hint={t("citizenship_hint")}
+        error={showErrors ? errors.citizenship : undefined}
       >
         <Select
           options={CITIZENSHIP}
@@ -218,6 +227,7 @@ export function V2AnketaBasicForm({
       <Field
         label={t("residence_label")}
         hint={t("residence_hint")}
+        error={showErrors ? errors.country_of_residence : undefined}
       >
         <Select
           options={COUNTRY_OF_RESIDENCE}
@@ -237,6 +247,7 @@ export function V2AnketaBasicForm({
         <Field
           label={t("region_label")}
           hint={t("region_hint")}
+          error={showErrors ? errors.region : undefined}
         >
           <Select
             options={UZ_REGIONS}
@@ -344,7 +355,7 @@ export function V2AnketaBasicForm({
         </div>
       ) : null}
 
-      <Button onClick={submit} disabled={busy || !valid} variant="primary">
+      <Button onClick={submit} disabled={busy} variant="primary">
         {busy ? t("btn_saving") : t("btn_next")}
       </Button>
     </div>

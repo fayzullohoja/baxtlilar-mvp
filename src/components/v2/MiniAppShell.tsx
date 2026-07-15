@@ -12,6 +12,8 @@
 
 import type { ReactNode } from "react";
 import { BackButton } from "./BackButton";
+import { AnketaProgress } from "./AnketaProgress";
+import type { AnketaProgress as Progress } from "@/lib/onboarding/anketa-progress";
 
 type Props = {
   children: ReactNode;
@@ -23,6 +25,8 @@ type Props = {
   align?: "top" | "center";
   /** Показать кнопку «Назад» сверху (шаги онбординга/анкеты, кроме первого) */
   showBack?: boolean;
+  /** Фаза 6 (§3): прогресс-бар анкеты под eyebrow (null/undef → не показываем) */
+  progress?: Progress | null;
 };
 
 export function MiniAppShell({
@@ -31,6 +35,7 @@ export function MiniAppShell({
   footer,
   align = "center",
   showBack = false,
+  progress,
 }: Props) {
   return (
     <div
@@ -58,6 +63,7 @@ export function MiniAppShell({
             <BackButton />
           </div>
         ) : null}
+        {progress ? <AnketaProgress progress={progress} /> : null}
         {eyebrow ? (
           <div
             className="mb-6"

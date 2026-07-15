@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
-import { Field, Select, NumberScale } from "./AnketaFields";
+import { Field, Select, NumberScale, scrollToFirstError } from "./AnketaFields";
 import {
   INCOME_SOURCE_STABILITY,
   FAMILY_FINANCE_MANAGEMENT,
@@ -59,9 +59,22 @@ export function V2AnketaFinanceForm({
   const [housing, setHousing] = useState(initial?.housing_status ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
+
+  // §2 P0: эквивалент прежнего valid (importance 1-5 + management; прочее опц.).
+  const importanceN = Number(importance);
+  const errors: Record<string, string> = {};
+  if (!(Number.isFinite(importanceN) && importanceN >= 1 && importanceN <= 5))
+    errors.financial_stability_importance = t("err_select_required");
+  if (!management) errors.family_finance_management = t("err_select_required");
 
   async function submit() {
     if (busy) return;
+    if (Object.keys(errors).length) {
+      setShowErrors(true);
+      requestAnimationFrame(scrollToFirstError);
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -93,13 +106,6 @@ export function V2AnketaFinanceForm({
     }
   }
 
-  const importanceN = Number(importance);
-  const valid =
-    Number.isFinite(importanceN) &&
-    importanceN >= 1 &&
-    importanceN <= 5 &&
-    !!management;
-
   return (
     <div>
       <Field label={t("finance_income_source_question")} hint={t("optionalHint")}>
@@ -111,7 +117,11 @@ export function V2AnketaFinanceForm({
         />
       </Field>
 
-      <Field label={t("finance_stability_importance_question")} required>
+      <Field
+        label={t("finance_stability_importance_question")}
+        required
+        error={showErrors ? errors.financial_stability_importance : undefined}
+      >
         <NumberScale
           min={1}
           max={5}
@@ -120,7 +130,11 @@ export function V2AnketaFinanceForm({
         />
       </Field>
 
-      <Field label={t("finance_management_question")} required>
+      <Field
+        label={t("finance_management_question")}
+        required
+        error={showErrors ? errors.family_finance_management : undefined}
+      >
         <Select
           options={FAMILY_FINANCE_MANAGEMENT}
           value={management}
@@ -183,7 +197,7 @@ export function V2AnketaFinanceForm({
         </div>
       ) : null}
 
-      <Button onClick={submit} disabled={busy || !valid} variant="primary">
+      <Button onClick={submit} disabled={busy} variant="primary">
         {busy ? t("btn_saving") : t("btn_next")}
       </Button>
     </div>

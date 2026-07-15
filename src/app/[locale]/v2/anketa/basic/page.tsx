@@ -9,6 +9,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
+import { anketaProgress } from "@/lib/onboarding/anketa-progress";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { V2AnketaBasicForm } from "@/components/v2/AnketaBasicForm";
 
@@ -44,7 +45,7 @@ export default async function V2AnketaBasicPage({
     : null;
 
   return (
-    <MiniAppShell eyebrow={t("basic_eyebrow")} align="top">
+    <MiniAppShell progress={anketaProgress("profile_basic")} eyebrow={t("basic_eyebrow")} align="top">
       <Headline size="lg" as="h1">
         {t("basic_headline")}
       </Headline>

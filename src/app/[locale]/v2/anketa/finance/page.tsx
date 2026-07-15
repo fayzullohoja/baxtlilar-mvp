@@ -8,6 +8,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { loadAnketaDraft, draftSection } from "@/lib/onboarding/load-draft";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
+import { anketaProgress } from "@/lib/onboarding/anketa-progress";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { V2AnketaFinanceForm } from "@/components/v2/AnketaFinanceForm";
 
@@ -26,7 +27,7 @@ export default async function V2AnketaFinancePage({
   const finance = draftSection(draft, "finance");
 
   return (
-    <MiniAppShell eyebrow={t("finance_eyebrow")} align="top" showBack>
+    <MiniAppShell progress={anketaProgress("profile_finance")} eyebrow={t("finance_eyebrow")} align="top" showBack>
       <Headline size="lg" as="h1">
         {t("finance_title")}
       </Headline>

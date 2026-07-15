@@ -8,6 +8,7 @@ import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { loadAnketaDraft, draftSection } from "@/lib/onboarding/load-draft";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
+import { anketaProgress } from "@/lib/onboarding/anketa-progress";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { V2AnketaFamilyModelForm } from "@/components/v2/AnketaFamilyModelForm";
 import type { Gender } from "@/lib/profile/gender-wording";
@@ -38,7 +39,7 @@ export default async function V2AnketaFamilyModelPage({
   const family = draftSection(draft, "family");
 
   return (
-    <MiniAppShell eyebrow={t("family_model_eyebrow")} align="top" showBack>
+    <MiniAppShell progress={anketaProgress("profile_family_model")} eyebrow={t("family_model_eyebrow")} align="top" showBack>
       <Headline size="lg" as="h1">{t("family_model_headline")}</Headline>
       <Lead>{t("family_model_lead")}</Lead>
 

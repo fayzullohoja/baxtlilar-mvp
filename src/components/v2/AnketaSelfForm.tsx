@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
-import { Field, Select, TextArea, TextInput } from "./AnketaFields";
+import { Field, Select, TextArea, TextInput, scrollToFirstError } from "./AnketaFields";
 import {
   EMPLOYMENT_STATUS,
   EMPLOYMENT_WORKING_STATUSES,
@@ -59,9 +59,25 @@ export function V2AnketaSelfForm({
   );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
+
+  // §2 P0: карта ошибок по полям (эквивалентна прежнему `valid`-гейту — не строже,
+  // не слабее). Красная рамка + текст под полем показываем после первой попытки submit.
+  const errors: Record<string, string> = {};
+  if (!bio.trim()) errors.bio = t("err_field_required");
+  else if (bio.trim().length < 30) errors.bio = t("err_bio_too_short");
+  else if (bio.trim().length > 1000) errors.bio = t("err_bio_too_long");
+  if (!education) errors.education = t("err_select_required");
+  if (!activityField) errors.activity_field = t("err_select_required");
+  if (!employmentStatus) errors.employment_status = t("err_select_required");
 
   async function submit() {
     if (busy) return;
+    if (Object.keys(errors).length) {
+      setShowErrors(true);
+      requestAnimationFrame(scrollToFirstError);
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -103,12 +119,6 @@ export function V2AnketaSelfForm({
   );
   // Ревью оунера Экран 4: специальность показываем при высшем/среднем-спец/магистр/PhD/учусь.
   const showSpecialty = ["vocational", "higher", "master", "phd", "studying"].includes(education);
-  const valid =
-    bio.trim().length >= 30 &&
-    bio.trim().length <= 1000 &&
-    !!education &&
-    !!activityField &&
-    !!employmentStatus;
 
   return (
     <div>
@@ -116,6 +126,7 @@ export function V2AnketaSelfForm({
         label={t('bioLabel')}
         required
         hint={t('bioHint')}
+        error={showErrors ? errors.bio : undefined}
       >
         <TextArea
           value={bio}
@@ -126,7 +137,7 @@ export function V2AnketaSelfForm({
         />
       </Field>
 
-      <Field label={t('educationLabel')} required>
+      <Field label={t('educationLabel')} required error={showErrors ? errors.education : undefined}>
         <Select
           options={EDUCATION}
           value={education}
@@ -150,6 +161,7 @@ export function V2AnketaSelfForm({
         label={t('activityFieldLabel')}
         required
         hint={t('activityFieldHint')}
+        error={showErrors ? errors.activity_field : undefined}
       >
         <Select
           options={ACTIVITY_FIELDS}
@@ -170,7 +182,7 @@ export function V2AnketaSelfForm({
         </Field>
       ) : null}
 
-      <Field label={t('employmentStatusLabel')} required>
+      <Field label={t('employmentStatusLabel')} required error={showErrors ? errors.employment_status : undefined}>
         <Select
           options={EMPLOYMENT_STATUS}
           value={employmentStatus}
@@ -211,7 +223,7 @@ export function V2AnketaSelfForm({
       <Button
         variant="primary"
         onClick={submit}
-        disabled={!valid || busy}
+        disabled={busy}
         style={{ width: "100%" }}
       >
         {busy ? t('btn_saving') : t('btn_next')}

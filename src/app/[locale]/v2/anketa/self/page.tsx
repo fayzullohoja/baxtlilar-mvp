@@ -10,6 +10,7 @@ import { loadAnketaDraft, draftSection } from "@/lib/onboarding/load-draft";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { V2AnketaSelfForm } from "@/components/v2/AnketaSelfForm";
+import { anketaProgress } from "@/lib/onboarding/anketa-progress";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export default async function V2AnketaSelfPage({
   const self = draftSection(draft, "self");
 
   return (
-    <MiniAppShell eyebrow={t("self_eyebrow")} align="top" showBack>
+    <MiniAppShell eyebrow={t("self_eyebrow")} align="top" showBack progress={anketaProgress("profile_self")}>
       <Headline size="lg" as="h1">{t("self_headline")}</Headline>
       <Lead>{t("self_lead")}</Lead>
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
-import { Field, Select } from "./AnketaFields";
+import { Field, Select, scrollToFirstError } from "./AnketaFields";
 import {
   FAMILY_ROLE_MODEL,
   WIFE_WORK_VIEW,
@@ -51,9 +51,20 @@ export function V2AnketaFamilyModelForm({
   );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
+
+  // §2 P0: эквивалент прежнего `!!roleModel && !!wifeWork` (household опционален).
+  const errors: Record<string, string> = {};
+  if (!roleModel) errors.family_role_model = t("err_select_required");
+  if (!wifeWork) errors.wife_work_after_marriage_view = t("err_select_required");
 
   async function submit() {
     if (busy) return;
+    if (Object.keys(errors).length) {
+      setShowErrors(true);
+      requestAnimationFrame(scrollToFirstError);
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -84,14 +95,13 @@ export function V2AnketaFamilyModelForm({
     }
   }
 
-  const valid = !!roleModel && !!wifeWork;
-
   return (
     <div>
       <Field
         label={t('familyRoleModelLabel')}
         required
         hint={t('familyRoleModelHint')}
+        error={showErrors ? errors.family_role_model : undefined}
       >
         <Select
           options={FAMILY_ROLE_MODEL}
@@ -104,6 +114,7 @@ export function V2AnketaFamilyModelForm({
       <Field
         label={t(gender === 'f' ? 'husbandWorkLabel' : 'wifeWorkLabel')}
         required
+        error={showErrors ? errors.wife_work_after_marriage_view : undefined}
       >
         <Select
           options={WIFE_WORK_VIEW}
@@ -145,7 +156,7 @@ export function V2AnketaFamilyModelForm({
         </div>
       ) : null}
 
-      <Button onClick={submit} disabled={busy || !valid} variant="primary">
+      <Button onClick={submit} disabled={busy} variant="primary">
         {busy ? t('btn_saving') : t('btn_next')}
       </Button>
     </div>

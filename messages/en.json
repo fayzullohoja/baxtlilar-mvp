@@ -522,7 +522,11 @@
     "medical_check_hint": "The check can only be voluntary, separate from the profile, and at a medical institution. Results are not uploaded to Baxtlilar.",
     "substance_question": "Is there currently any dependency or use of prohibited substances that could affect family life and safety?",
     "substance_hint": "The answer is used only for safety and is not shown to other users.",
-    "partnerHealthAttitudeLabel": "Attitude to partner’s health"
+    "partnerHealthAttitudeLabel": "Attitude to partner’s health",
+    "err_field_required": "Please fill in this field",
+    "err_select_required": "Please choose an option",
+    "progress_step": "Step {current} of {total}",
+    "progress_almost_done": "Almost done!"
   },
   "Quiz": {
     "intro_title": "10 questions about you",

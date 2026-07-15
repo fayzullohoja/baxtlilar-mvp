@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
-import { Field, Select } from "./AnketaFields";
+import { Field, Select, scrollToFirstError } from "./AnketaFields";
 import { RegionPicker, type RegionValue } from "./RegionPicker";
 import {
   FATHER_STATUS,
@@ -133,12 +133,14 @@ function ParentSection({
   onChange,
   statusOptions,
   statusLabel,
+  statusError,
 }: {
   locale: string;
   value: ParentState;
   onChange: (v: ParentState) => void;
   statusOptions: Opt[];
   statusLabel: string;
+  statusError?: string;
 }) {
   const t = useTranslations("Anketa");
   const showDetails = !!value.status && value.status !== "prefer_not";
@@ -152,7 +154,7 @@ function ParentSection({
 
   return (
     <div>
-      <Field label={statusLabel} required>
+      <Field label={statusLabel} required error={statusError}>
         <Select options={statusOptions} value={value.status} onChange={(status) => onChange({ ...value, status })} locale={locale} />
       </Field>
 
@@ -211,6 +213,13 @@ export function V2AnketaParentsForm({
   const [open, setOpen] = useState<"father" | "mother" | "family" | null>("father");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
+
+  // §2 P0: эквивалент прежнего valid (статус отца/матери + участие семьи).
+  const errors: Record<string, string> = {};
+  if (!father.status) errors.father_status = t("err_select_required");
+  if (!mother.status) errors.mother_status = t("err_select_required");
+  if (!familyInvolvement) errors.family_involvement = t("err_select_required");
 
   const toggle = (s: "father" | "mother" | "family") => setOpen((cur) => (cur === s ? null : s));
 
@@ -238,6 +247,14 @@ export function V2AnketaParentsForm({
 
   async function submit() {
     if (busy) return;
+    if (Object.keys(errors).length) {
+      setShowErrors(true);
+      // Раскрываем аккордеон с первой ошибкой, иначе поле не отрендерено и
+      // scrollToFirstError не найдёт маркер.
+      setOpen(errors.father_status ? "father" : errors.mother_status ? "mother" : "family");
+      requestAnimationFrame(scrollToFirstError);
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -269,16 +286,14 @@ export function V2AnketaParentsForm({
     }
   }
 
-  const valid = !!father.status && !!mother.status && !!familyInvolvement;
-
   return (
     <div>
       <AccordionSection title={t("parents_father_title")} open={open === "father"} complete={!!father.status} onToggle={() => toggle("father")}>
-        <ParentSection locale={locale} value={father} onChange={setFather} statusOptions={FATHER_STATUS} statusLabel={t("father_status_label")} />
+        <ParentSection locale={locale} value={father} onChange={setFather} statusOptions={FATHER_STATUS} statusLabel={t("father_status_label")} statusError={showErrors ? errors.father_status : undefined} />
       </AccordionSection>
 
       <AccordionSection title={t("parents_mother_title")} open={open === "mother"} complete={!!mother.status} onToggle={() => toggle("mother")}>
-        <ParentSection locale={locale} value={mother} onChange={setMother} statusOptions={MOTHER_STATUS} statusLabel={t("mother_status_label")} />
+        <ParentSection locale={locale} value={mother} onChange={setMother} statusOptions={MOTHER_STATUS} statusLabel={t("mother_status_label")} statusError={showErrors ? errors.mother_status : undefined} />
       </AccordionSection>
 
       <AccordionSection title={t("parents_family_title")} open={open === "family"} complete={!!familyInvolvement} onToggle={() => toggle("family")}>
@@ -293,7 +308,7 @@ export function V2AnketaParentsForm({
         <Field label={t("family_relations_label")} hint={t("optionalHint")}>
           <Select options={FAMILY_RELATIONS} value={familyRelations} onChange={setFamilyRelations} locale={locale} />
         </Field>
-        <Field label={t("family_involvement_label")} required>
+        <Field label={t("family_involvement_label")} required error={showErrors ? errors.family_involvement : undefined}>
           <Select options={FAMILY_INVOLVEMENT} value={familyInvolvement} onChange={setFamilyInvolvement} locale={locale} />
         </Field>
       </AccordionSection>
@@ -304,13 +319,13 @@ export function V2AnketaParentsForm({
         </div>
       ) : null}
 
-      {!valid ? (
+      {Object.keys(errors).length ? (
         <div style={{ fontSize: "12px", color: "var(--color-v2-ink-400)", fontFamily: "var(--font-v2-body)", marginBottom: "12px", lineHeight: 1.45 }}>
           {t("parents_required_hint")}
         </div>
       ) : null}
 
-      <Button onClick={submit} disabled={busy || !valid} variant="primary" style={{ width: "100%" }}>
+      <Button onClick={submit} disabled={busy} variant="primary" style={{ width: "100%" }}>
         {busy ? t("btn_saving") : t("btn_next")}
       </Button>
     </div>

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
-import { Field, Select } from "./AnketaFields";
+import { Field, Select, scrollToFirstError } from "./AnketaFields";
 import {
   ChildrenDetails,
   childrenComplete,
@@ -73,11 +73,26 @@ export function V2AnketaFamilyForm({
   const [plan, setPlan] = useState(initial?.future_children_plan ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
 
   const showChildrenDetails = hasChildren === "yes";
 
+  // §2 P0: эквивалент прежнего valid (marital + hasChildren + plan; при «есть дети» —
+  // у каждого указан возраст через childrenComplete).
+  const errors: Record<string, string> = {};
+  if (!marital) errors.marital_status = t("err_select_required");
+  if (!hasChildren) errors.has_children = t("err_select_required");
+  if (showChildrenDetails && !childrenComplete(children))
+    errors.children = t("err_field_required");
+  if (!plan) errors.future_children_plan = t("err_select_required");
+
   async function submit() {
     if (busy) return;
+    if (Object.keys(errors).length) {
+      setShowErrors(true);
+      requestAnimationFrame(scrollToFirstError);
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -113,14 +128,9 @@ export function V2AnketaFamilyForm({
     }
   }
 
-  // У каждого ребёнка должен быть указан возраст (пол опционален).
-  const childrenDetailsOk = !showChildrenDetails || childrenComplete(children);
-
-  const valid = !!marital && !!hasChildren && !!plan && childrenDetailsOk;
-
   return (
     <div>
-      <Field label={t("marital_label")} required>
+      <Field label={t("marital_label")} required error={showErrors ? errors.marital_status : undefined}>
         {/* Ревью оунера Экран 5: семейное положение звучит по-разному для М/Ж.
             Гендерный вариант берётся по ключу Options.MARITAL_STATUS.<v>__<m|f>
             (редактируется в админке), с откатом на код-оверрайд. */}
@@ -133,7 +143,7 @@ export function V2AnketaFamilyForm({
         />
       </Field>
 
-      <Field label={t("children_label")} required>
+      <Field label={t("children_label")} required error={showErrors ? errors.has_children : undefined}>
         <Select
           options={HAS_CHILDREN}
           value={hasChildren}
@@ -157,6 +167,7 @@ export function V2AnketaFamilyForm({
             label={t("childrenCountLabel")}
             required
             hint={t("childrenCountHint")}
+            error={showErrors ? errors.children : undefined}
           >
             <ChildrenDetails items={children} onChange={setChildren} />
           </Field>
@@ -177,6 +188,7 @@ export function V2AnketaFamilyForm({
         label={t("futureChildrenPlansLabel")}
         required
         hint={t("futureChildrenPlansHint")}
+        error={showErrors ? errors.future_children_plan : undefined}
       >
         <Select
           options={FUTURE_CHILDREN_PLAN}
@@ -203,7 +215,7 @@ export function V2AnketaFamilyForm({
         </div>
       ) : null}
 
-      <Button onClick={submit} disabled={busy || !valid} variant="primary">
+      <Button onClick={submit} disabled={busy} variant="primary">
         {busy ? t("btn_saving") : t("btn_next")}
       </Button>
     </div>

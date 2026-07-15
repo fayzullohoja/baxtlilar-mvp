@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
-import { Field, Chips, Select, DualRangeSlider } from "./AnketaFields";
+import { Field, Chips, Select, DualRangeSlider, scrollToFirstError } from "./AnketaFields";
 import {
   PARTNER_QUALITIES,
   RELIGION_PARTNER_MATCH,
@@ -150,6 +150,15 @@ export function V2AnketaPartnerExtendedForm({
   );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
+
+  // §2 P0: эквивалент прежнего valid (возраст задан; качества 1-5; при «выбрать
+  // конкретно» ≥1 национальность). Рост/вес/страны опц. (Chips сам ≤ max).
+  const errors: Record<string, string> = {};
+  if (!ageSet) errors.partner_age = t("err_field_required");
+  if (qualities.length < 1) errors.partner_top_qualities = t("err_select_required");
+  if (nationalityPref === "specific" && nationality.length < 1)
+    errors.partner_nationality = t("err_select_required");
 
   function toggleQ(v: string) {
     setQualities((cur) =>
@@ -196,6 +205,11 @@ export function V2AnketaPartnerExtendedForm({
 
   async function submit() {
     if (busy) return;
+    if (Object.keys(errors).length) {
+      setShowErrors(true);
+      requestAnimationFrame(scrollToFirstError);
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -244,18 +258,9 @@ export function V2AnketaPartnerExtendedForm({
     }
   }
 
-  // Возраст обязателен (нужно задать диапазон); рост опционален. Ползунок сам
-  // гарантирует lo<=hi и границы, так что валидность — просто «задан ли возраст».
-  const ageOk = ageSet;
-  const qOk = qualities.length >= 1 && qualities.length <= 5;
-  const countriesOk = countries.length <= 3;
-  // «Выбрать конкретно» требует ≥1 национальности (совпадает с refine схемы).
-  const nationalityOk = nationalityPref !== "specific" || nationality.length >= 1;
-  const valid = ageOk && qOk && countriesOk && nationalityOk;
-
   return (
     <div>
-      <Field label={t("partnerAgeLabel")} required hint={t("partnerAgeHint")}>
+      <Field label={t("partnerAgeLabel")} required hint={t("partnerAgeHint")} error={showErrors ? errors.partner_age : undefined}>
         <DualRangeSlider
           min={AGE_MIN}
           max={AGE_MAX}
@@ -334,7 +339,7 @@ export function V2AnketaPartnerExtendedForm({
         />
       </Field>
       {nationalityPref === "specific" ? (
-        <Field label={t("partnerNationalityListLabel")} required hint={t("partnerNationalityListHint")}>
+        <Field label={t("partnerNationalityListLabel")} required hint={t("partnerNationalityListHint")} error={showErrors ? errors.partner_nationality : undefined}>
           <Chips
             options={PARTNER_NATIONALITY}
             selected={nationality}
@@ -413,6 +418,7 @@ export function V2AnketaPartnerExtendedForm({
         label={t("partnerQualitiesLabel")}
         required
         hint={t("partner_qualities_hint", { count: qualities.length })}
+        error={showErrors ? errors.partner_top_qualities : undefined}
       >
         <Chips
           options={PARTNER_QUALITIES}
@@ -453,7 +459,7 @@ export function V2AnketaPartnerExtendedForm({
         </div>
       ) : null}
 
-      <Button onClick={submit} disabled={busy || !valid} variant="primary">
+      <Button onClick={submit} disabled={busy} variant="primary">
         {busy ? t("btn_saving") : t("btn_next")}
       </Button>
     </div>

@@ -7,6 +7,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { loadAnketaDraft } from "@/lib/onboarding/load-draft";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
+import { anketaProgress } from "@/lib/onboarding/anketa-progress";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { V2AnketaValuesForm } from "@/components/v2/AnketaValuesForm";
 
@@ -24,7 +25,7 @@ export default async function V2AnketaValuesPage({
   const draft = await loadAnketaDraft(user.id);
 
   return (
-    <MiniAppShell eyebrow={t("values_eyebrow")} align="top" showBack>
+    <MiniAppShell progress={anketaProgress("profile_values")} eyebrow={t("values_eyebrow")} align="top" showBack>
       <Headline size="lg" as="h1">{t("values_headline")}</Headline>
       <Lead>{t("values_lead")}</Lead>
 

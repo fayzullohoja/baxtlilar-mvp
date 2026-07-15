@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
-import { Field, Select, Chips } from "./AnketaFields";
+import { Field, Select, Chips, scrollToFirstError } from "./AnketaFields";
 import {
   LIFESTYLE_PACE,
   FREE_TIME_ACTIVITIES,
@@ -59,6 +59,13 @@ export function V2AnketaLifestyleForm({
   const [alcohol, setAlcohol] = useState(initial?.alcohol_level ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
+
+  // §2 P0: эквивалент прежнего valid (pace + routine + freeTime 1-3; прочее опц.).
+  const errors: Record<string, string> = {};
+  if (!pace) errors.lifestyle_pace = t("err_select_required");
+  if (freeTime.length < 1) errors.free_time_activities = t("err_select_required");
+  if (!routine) errors.daily_routine = t("err_select_required");
 
   function toggleFreeTime(v: string) {
     setFreeTime((cur) =>
@@ -68,6 +75,11 @@ export function V2AnketaLifestyleForm({
 
   async function submit() {
     if (busy) return;
+    if (Object.keys(errors).length) {
+      setShowErrors(true);
+      requestAnimationFrame(scrollToFirstError);
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -100,15 +112,9 @@ export function V2AnketaLifestyleForm({
     }
   }
 
-  const valid =
-    !!pace &&
-    !!routine &&
-    freeTime.length >= 1 &&
-    freeTime.length <= 3;
-
   return (
     <div>
-      <Field label={t("lifestyle_pace_question")} required>
+      <Field label={t("lifestyle_pace_question")} required error={showErrors ? errors.lifestyle_pace : undefined}>
         <Select
           options={LIFESTYLE_PACE}
           value={pace}
@@ -121,6 +127,7 @@ export function V2AnketaLifestyleForm({
         label={t("lifestyle_freetime_question")}
         required
         hint={`${t("lifestyle_freetime_hint")} ${freeTime.length}/3`}
+        error={showErrors ? errors.free_time_activities : undefined}
       >
         <Chips
           options={FREE_TIME_ACTIVITIES}
@@ -131,7 +138,7 @@ export function V2AnketaLifestyleForm({
         />
       </Field>
 
-      <Field label={t("lifestyle_daily_routine_question")} required>
+      <Field label={t("lifestyle_daily_routine_question")} required error={showErrors ? errors.daily_routine : undefined}>
         <Select
           options={DAILY_ROUTINE}
           value={routine}
@@ -197,7 +204,7 @@ export function V2AnketaLifestyleForm({
         </div>
       ) : null}
 
-      <Button onClick={submit} disabled={busy || !valid} variant="primary">
+      <Button onClick={submit} disabled={busy} variant="primary">
         {busy ? t("btn_saving") : t("btn_next")}
       </Button>
     </div>

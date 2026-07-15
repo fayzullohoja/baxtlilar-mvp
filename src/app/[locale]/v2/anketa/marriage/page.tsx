@@ -10,6 +10,7 @@ import { loadAnketaDraft } from "@/lib/onboarding/load-draft";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Gender } from "@/lib/profile/gender-wording";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
+import { anketaProgress } from "@/lib/onboarding/anketa-progress";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { V2AnketaMarriageForm } from "@/components/v2/AnketaMarriageForm";
 
@@ -36,7 +37,7 @@ export default async function V2AnketaMarriagePage({
     prof?.gender === "m" || prof?.gender === "f" ? (prof.gender as Gender) : null;
 
   return (
-    <MiniAppShell eyebrow={t("marriage_eyebrow")} align="top" showBack>
+    <MiniAppShell progress={anketaProgress("profile_marriage")} eyebrow={t("marriage_eyebrow")} align="top" showBack>
       <Headline size="lg" as="h1">{t("marriage_headline")}</Headline>
       <Lead>{t("marriage_lead")}</Lead>
 

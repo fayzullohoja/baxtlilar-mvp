@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
-import { Field, Select, Chips } from "./AnketaFields";
+import { Field, Select, Chips, scrollToFirstError } from "./AnketaFields";
 import {
   RELIGION,
   LIFE_VALUES_V3,
@@ -36,6 +36,11 @@ export function V2AnketaValuesForm({
   const [values, setValues] = useState<string[]>(initial?.top_life_values ?? []);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
+
+  // §2 P0: эквивалент прежнего `valid` (values 1-3; max=3 обеспечивает Chips).
+  const errors: Record<string, string> = {};
+  if (values.length < 1) errors.top_life_values = t("err_select_required");
 
   function toggle(v: string) {
     setValues((cur) => (cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v]));
@@ -43,6 +48,11 @@ export function V2AnketaValuesForm({
 
   async function submit() {
     if (busy) return;
+    if (Object.keys(errors).length) {
+      setShowErrors(true);
+      requestAnimationFrame(scrollToFirstError);
+      return;
+    }
     setBusy(true);
     setErr(null);
     try {
@@ -68,8 +78,6 @@ export function V2AnketaValuesForm({
     }
   }
 
-  const valid = values.length >= 1 && values.length <= 3;
-
   return (
     <div>
       <Field label={t('religionLabel')} hint={t('optionalHint')}>
@@ -80,6 +88,7 @@ export function V2AnketaValuesForm({
         label={t('lifeValuesLabel')}
         required
         hint={t('lifeValuesHint')! + ` ${values.length}/3`}
+        error={showErrors ? errors.top_life_values : undefined}
       >
         <Chips options={LIFE_VALUES_V3} selected={values} onToggle={toggle} max={3} locale={locale} />
       </Field>
@@ -101,7 +110,7 @@ export function V2AnketaValuesForm({
         </div>
       ) : null}
 
-      <Button onClick={submit} disabled={busy || !valid} variant="primary">
+      <Button onClick={submit} disabled={busy} variant="primary">
         {busy ? t('btn_saving') : t('btn_next')}
       </Button>
     </div>

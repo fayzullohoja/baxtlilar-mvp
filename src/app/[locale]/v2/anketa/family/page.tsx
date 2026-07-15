@@ -8,6 +8,7 @@ import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { loadAnketaDraft, draftSection } from "@/lib/onboarding/load-draft";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
+import { anketaProgress } from "@/lib/onboarding/anketa-progress";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { V2AnketaFamilyForm } from "@/components/v2/AnketaFamilyForm";
 import type { ChildInfo } from "@/components/v2/ChildrenDetails";
@@ -46,7 +47,7 @@ export default async function V2AnketaFamilyPage({
     typeof draft.children_count === "number" ? String(draft.children_count) : "";
 
   return (
-    <MiniAppShell eyebrow={t("family_eyebrow")} align="top" showBack>
+    <MiniAppShell progress={anketaProgress("profile_family")} eyebrow={t("family_eyebrow")} align="top" showBack>
       <Headline size="lg" as="h1">{t("family_headline")}</Headline>
       <Lead>{t("family_lead")}</Lead>
 

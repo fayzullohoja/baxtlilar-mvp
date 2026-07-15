@@ -522,7 +522,11 @@
     "medical_check_hint": "Tekshiruv faqat ixtiyoriy ravishda, anketadan alohida va tibbiyot muassasasida oʻtkazilishi mumkin. Natijalar Baxtlilar platformasiga yuklanmaydi.",
     "substance_question": "Hozir oilaviy hayot va xavfsizlikka taʼsir qilishi mumkin boʻlgan qaramlik yoki taqiqlangan moddalarni isteʼmol qilish holati bormi?",
     "substance_hint": "Javob faqat xavfsizlik uchun ishlatiladi va boshqa foydalanuvchilarga koʻrsatilmaydi.",
-    "partnerHealthAttitudeLabel": "Juftning sogʻligʻiga munosabat"
+    "partnerHealthAttitudeLabel": "Juftning sogʻligʻiga munosabat",
+    "err_field_required": "Bu maydonni to'ldiring",
+    "err_select_required": "Variantni tanlang",
+    "progress_step": "{total} dan {current}-qadam",
+    "progress_almost_done": "Deyarli tayyor!"
   },
   "Quiz": {
     "intro_title": "Siz haqingizda 10 ta savol",

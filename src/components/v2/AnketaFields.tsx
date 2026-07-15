@@ -25,21 +25,42 @@ import type { Gender } from "@/lib/profile/gender-wording";
 // Field wrapper
 // =============================================================================
 
+/**
+ * Атрибут-маркер поля с ошибкой — по нему scrollToFirstError() находит первую
+ * невалидную секцию (без per-field ref'ов). Ставится на внешний div Field при error.
+ */
+export const ANKETA_ERROR_ATTR = "data-anketa-error";
+
+/** Прокрутить к первому полю с ошибкой + сфокусировать его контрол. Вызывать
+ *  ПОСЛЕ setState (в requestAnimationFrame), чтобы data-атрибут уже отрендерился. */
+export function scrollToFirstError(): void {
+  if (typeof document === "undefined") return;
+  const el = document.querySelector(`[${ANKETA_ERROR_ATTR}="1"]`);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  const ctrl = el.querySelector<HTMLElement>("input, textarea, select, button");
+  ctrl?.focus({ preventScroll: true });
+}
+
 export function Field({
   label,
   hint,
   required,
+  error,
   children,
 }: {
   label: string;
   hint?: string;
   required?: boolean;
+  /** §2 P0: текст ошибки под полем + красная рамка (ring) вокруг контрола. */
+  error?: string;
   children: ReactNode;
 }) {
   // Bug #34 (loop pass 10): a11y — связь label↔input через htmlFor/id.
   const id = useId();
+  const hasError = !!error;
   return (
-    <div style={{ marginBottom: "22px" }}>
+    <div style={{ marginBottom: "22px" }} {...(hasError ? { [ANKETA_ERROR_ATTR]: "1" } : {})}>
       <label
         htmlFor={id}
         style={{
@@ -54,9 +75,37 @@ export function Field({
         {label}
         {required ? <span style={{ color: "var(--color-v2-accent)", marginLeft: "4px" }}>*</span> : null}
       </label>
-      {/* Wrap children в div с id чтобы native screen reader увидел label→control. */}
-      <div id={id}>{children}</div>
-      {hint ? (
+      {/* Wrap children в div с id чтобы native screen reader увидел label→control.
+          §2 P0: красная рамка = ring вокруг wrapper'а (child-type-agnostic — работает
+          для input/textarea/select-пилюль/chips/слайдеров одинаково). */}
+      <div
+        id={id}
+        style={
+          hasError
+            ? {
+                borderRadius: "var(--v2-radius-md)",
+                boxShadow: "0 0 0 2px var(--color-v2-danger)",
+              }
+            : undefined
+        }
+      >
+        {children}
+      </div>
+      {hasError ? (
+        <div
+          role="alert"
+          style={{
+            fontSize: "12.5px",
+            color: "var(--color-v2-danger)",
+            fontWeight: 600,
+            fontFamily: "var(--font-v2-body)",
+            marginTop: "7px",
+            lineHeight: "1.45",
+          }}
+        >
+          {error}
+        </div>
+      ) : hint ? (
         <div
           style={{
             fontSize: "12px",
@@ -129,20 +178,39 @@ export function TextArea({
   maxLength?: number;
   placeholder?: string;
 }) {
+  // §2 P0: счётчик символов. Рендерит сама примитива из maxLength — нулевой churn
+  // по формам. Краснеет у лимита (осталось ≤10) как мягкий сигнал.
+  const near = maxLength !== undefined && maxLength - value.length <= 10;
   return (
-    <textarea
-      value={value}
-      onChange={onChange}
-      rows={rows}
-      maxLength={maxLength}
-      placeholder={placeholder}
-      style={{
-        ...inputBaseStyle,
-        resize: "vertical",
-        minHeight: "96px",
-        lineHeight: "1.5",
-      }}
-    />
+    <div>
+      <textarea
+        value={value}
+        onChange={onChange}
+        rows={rows}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        style={{
+          ...inputBaseStyle,
+          resize: "vertical",
+          minHeight: "96px",
+          lineHeight: "1.5",
+        }}
+      />
+      {maxLength !== undefined ? (
+        <div
+          style={{
+            fontSize: "11.5px",
+            textAlign: "right",
+            marginTop: "4px",
+            fontVariantNumeric: "tabular-nums",
+            color: near ? "var(--color-v2-danger)" : "var(--color-v2-ink-400)",
+            fontFamily: "var(--font-v2-body)",
+          }}
+        >
+          {value.length}/{maxLength}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

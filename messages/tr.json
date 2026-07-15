@@ -522,7 +522,11 @@
     "medical_check_hint": "Kontrol yalnızca gönüllü olarak, anketten ayrı ve bir sağlık kuruluşunda yapılabilir. Sonuçlar Baxtlilar’a yüklenmez.",
     "substance_question": "Şu anda aile hayatını ve güvenliği etkileyebilecek bir bağımlılık veya yasaklı madde kullanımı var mı?",
     "substance_hint": "Cevap yalnızca güvenlik için kullanılır ve diğer kullanıcılara gösterilmez.",
-    "partnerHealthAttitudeLabel": "Eşin sağlığına yaklaşım"
+    "partnerHealthAttitudeLabel": "Eşin sağlığına yaklaşım",
+    "err_field_required": "Lütfen bu alanı doldurun",
+    "err_select_required": "Lütfen bir seçenek seçin",
+    "progress_step": "Adım {current} / {total}",
+    "progress_almost_done": "Neredeyse bitti!"
   },
   "Quiz": {
     "intro_title": "Uyum anketi",

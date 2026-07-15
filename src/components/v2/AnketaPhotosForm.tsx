@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
+import { scrollToFirstError, ANKETA_ERROR_ATTR } from "./AnketaFields";
 
 /**
  * V2 Anketa Photos (Blueprint §3.3 B5 · ревью оунера Экран 13).
@@ -49,6 +50,7 @@ export function V2AnketaPhotosForm({ initial = [] }: { initial?: InitialPhoto[] 
   );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
 
   const ERR_COPY: Record<string, string> = {
     max_photos: t("photos_err_max"),
@@ -104,7 +106,10 @@ export function V2AnketaPhotosForm({ initial = [] }: { initial?: InitialPhoto[] 
   async function done() {
     if (busy) return;
     if (!hasPortrait) {
+      // §2 P0: красная рамка на слоте портрета + скролл к нему (не только баннер).
       setErr("no_photo");
+      setShowErrors(true);
+      requestAnimationFrame(scrollToFirstError);
       return;
     }
     setBusy(true);
@@ -137,8 +142,9 @@ export function V2AnketaPhotosForm({ initial = [] }: { initial?: InitialPhoto[] 
         {SLOTS.map((ty) => {
           const photo = byType(ty);
           const required = ty === "portrait";
+          const slotError = required && showErrors && !hasPortrait;
           return (
-            <div key={ty}>
+            <div key={ty} {...(slotError ? { [ANKETA_ERROR_ATTR]: "1" } : {})}>
               <div
                 style={{
                   display: "flex",
@@ -230,7 +236,9 @@ export function V2AnketaPhotosForm({ initial = [] }: { initial?: InitialPhoto[] 
                       width: "96px",
                       flexShrink: 0,
                       aspectRatio: "3 / 4",
-                      border: "1.5px dashed var(--color-v2-ink-500)",
+                      border: slotError
+                        ? "1.5px solid var(--color-v2-danger)"
+                        : "1.5px dashed var(--color-v2-ink-500)",
                       borderRadius: "var(--v2-radius-md)",
                       background: "#ffffff",
                       fontFamily: "var(--font-v2-body)",
@@ -314,7 +322,7 @@ export function V2AnketaPhotosForm({ initial = [] }: { initial?: InitialPhoto[] 
         </div>
       ) : null}
 
-      <Button onClick={done} disabled={busy || !hasPortrait} variant="primary">
+      <Button onClick={done} disabled={busy} variant="primary">
         {busy ? t("photos_loading") : t("photos_continue")}
       </Button>
     </div>
