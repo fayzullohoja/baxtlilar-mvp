@@ -152,7 +152,7 @@ export async function dispatchBanAction(
   const { data: user, error: selErr } = await sb
     .from("users")
     .select(
-      "id, telegram_id, updated_at, lifecycle_state, quiz_completion, pending_ban_at, pending_ban_by_admin_id, pending_ban_reason",
+      "id, telegram_id, updated_at, lifecycle_state, quiz_completion, profile_completion, pending_ban_at, pending_ban_by_admin_id, pending_ban_reason",
     )
     .eq("id", userId)
     .maybeSingle();
@@ -226,7 +226,12 @@ export async function dispatchBanAction(
   }
 
   if (action === "cancel") {
-    const restored: "active" | "onboarding" = user.quiz_completion === "completed" ? "active" : "onboarding";
+    // Фаза 4 (§1.20): восстанавливаем в active ТОЛЬКО если юзер опубликовался
+    // (profile_completion=completed ⟺ прошёл publish-гейт: gender-check/фото/полнота).
+    // Раньше по quiz_completion — но после переноса preview опрос идёт ДО публикации,
+    // и такой юзер мог бы попасть в active мимо гейта. profile_completion устойчив.
+    const restored: "active" | "onboarding" =
+      user.profile_completion === "completed" ? "active" : "onboarding";
     const { data, error } = await sb.rpc("admin_ban_cancel", {
       p_user_id: userId,
       p_admin_id: session.adminId,

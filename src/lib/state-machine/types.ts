@@ -143,8 +143,18 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   profile_partner_extended: ["profile_photos"],
   profile_privacy: ["profile_photos"], // legacy pass-through: застрявший юзер → photos
   profile_looking_for: ["profile_photos"], // legacy back-compat only
-  profile_photos: ["profile_preview"],
-  // V4: preview позволяет вернуться в любой anketa-шаг (для правок).
+  // Фаза 4 (ревью оунера §1.20): preview переехал В КОНЕЦ, ПОСЛЕ quiz+attribution,
+  // чтобы карточка предпросмотра включала Big Five. photos ведёт на quiz (первый
+  // проход) ИЛИ сразу на preview (re-walk после back-правки — quiz уже пройден,
+  // route ветвит по quiz_completion, минуя повторный опрос+атрибуцию).
+  profile_photos: ["quiz", "profile_preview"],
+  quiz: ["attribution"],
+  // Фаза 4: attribution → preview (был tutorial_intro). Legacy-edge "active" убран —
+  // единственный путь в tutorial теперь через preview→publish (там gender-check/
+  // фото/полнота — иначе можно было бы выйти в active мимо гейта публикации).
+  attribution: ["profile_preview"],
+  // Фаза 4: preview — ФИНАЛЬНЫЙ шаг. Позволяет вернуться в любой anketa-шаг (правки)
+  // ИЛИ опубликоваться → tutorial_intro (через /api/onboarding/profile/publish).
   profile_preview: [
     "profile_basic",
     "profile_appearance",
@@ -160,12 +170,8 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
     "profile_marriage",
     "profile_partner_extended",
     // profile_privacy убран (2026-07-12) — экран больше не редактируется из preview.
-    "quiz",
+    "tutorial_intro",
   ],
-  quiz: ["attribution"],
-  // V2: attribution ведёт в tutorial_intro (а не сразу в active как было в V1).
-  // V1 fallback: attribution → active оставлен для legacy users.
-  attribution: ["tutorial_intro", "active"],
   // V2 tutorial — 4 шага. Skip разрешён для returning users (default decision #4).
   tutorial_intro: ["tutorial_swipe", "ready"],
   tutorial_swipe: ["tutorial_chat", "ready"],

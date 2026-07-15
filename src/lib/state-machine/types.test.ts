@@ -83,9 +83,23 @@ describe("ALLOWED_TRANSITIONS", () => {
 
   it("MAJOR #3: quiz → attribution", () => {
     expect(ALLOWED_TRANSITIONS.quiz).toEqual(["attribution"]);
-    // V2 (2026-06-25): attribution ведёт в tutorial_intro (новый путь)
-    // ИЛИ active (legacy fallback для уже зарегистрированных).
-    expect(ALLOWED_TRANSITIONS.attribution).toEqual(["tutorial_intro", "active"]);
+  });
+
+  it("Фаза 4 (§1.20): хвост photos → quiz → attribution → preview → tutorial", () => {
+    // photos ведёт на опрос (первый проход) ИЛИ сразу на preview (re-walk после
+    // back-правки: quiz_completion=completed — route минует опрос+атрибуцию).
+    expect(ALLOWED_TRANSITIONS.profile_photos).toEqual(["quiz", "profile_preview"]);
+    // attribution → preview (был tutorial_intro). Legacy-edge "active" убран,
+    // чтобы в tutorial/active нельзя было попасть мимо preview→publish-гейта.
+    expect(ALLOWED_TRANSITIONS.attribution).toEqual(["profile_preview"]);
+    // preview — финальный шаг: правки в любой anketa-шаг ИЛИ publish → tutorial_intro.
+    expect(ALLOWED_TRANSITIONS.profile_preview).toContain("tutorial_intro");
+    expect(ALLOWED_TRANSITIONS.profile_preview).not.toContain("quiz");
+    // Единственный вход в tutorial_intro — из preview (гейт публикации).
+    const intoTutorial = ALL_STEPS.filter((s) =>
+      ALLOWED_TRANSITIONS[s].includes("tutorial_intro"),
+    );
+    expect(intoTutorial).toEqual(["profile_preview"]);
   });
 
   it("V2 tutorial tour: 4 шага + ready как терминал onboarding", () => {

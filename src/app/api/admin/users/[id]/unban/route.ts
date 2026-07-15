@@ -21,7 +21,7 @@ export async function POST(
 
   const { data: u } = await supabaseAdmin()
     .from("users")
-    .select("quiz_completion, lifecycle_state, pending_ban_prev_lifecycle")
+    .select("profile_completion, lifecycle_state, pending_ban_prev_lifecycle")
     .eq("id", id)
     .maybeSingle();
   if (!u) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
@@ -33,12 +33,15 @@ export async function POST(
   // AUTH-1 parity: восстанавливаем ИСТИННОЕ pre-ban состояние (propose пишет его в
   // pending_ban_prev_lifecycle; ban_cancel/expire уже используют его, а blocked→unban
   // путь раньше — нет). Иначе self-paused юзер после ban→unban воскресал active и
-  // снова становился видим в ленте вопреки своей паузе. Fallback на quiz-derive,
+  // снова становился видим в ленте вопреки своей паузе. Fallback на publish-derive,
   // если prev пуст/невалиден (blocked/deleted).
+  // Фаза 4 (§1.20): fallback по profile_completion (⟺ прошёл publish-гейт), а не
+  // quiz_completion — после переноса preview опрос идёт ДО публикации, иначе
+  // не-опубликованный юзер мог бы воскреснуть active мимо gender-check/фото.
   const prev = u.pending_ban_prev_lifecycle as LifecycleState | null;
   const safePrev = prev && prev !== "blocked" && prev !== "deleted" ? prev : null;
   const restored: LifecycleState =
-    safePrev ?? (u.quiz_completion === "completed" ? "active" : "onboarding");
+    safePrev ?? (u.profile_completion === "completed" ? "active" : "onboarding");
 
   // M18: снимаем blocked_at/blocked_reason в том же атомарном переходе
   const tr = await tryTransition(

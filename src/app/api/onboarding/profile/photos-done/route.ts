@@ -24,10 +24,16 @@ export async function POST(): Promise<NextResponse> {
   if (error) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
   if (!count) return NextResponse.json({ ok: false, error: "no_photo" }, { status: 400 });
 
-  const tr = await tryTransition(user.id, { onboarding_step: "profile_preview" }, "photos done", {
+  // Фаза 4 (§1.20): preview переехал в конец (после quiz+attribution). Первый проход
+  // ведёт на опрос Big Five; но если юзер уже прошёл опрос и вернулся из preview
+  // править анкету (re-walk), опрос+атрибуцию НЕ повторяем — сразу на preview.
+  // Сигнал устойчив к циклу правки (quiz_completion пишется один раз в quiz/complete).
+  const done = user.quiz_completion === "completed";
+  const nextStep = done ? "profile_preview" : "quiz";
+  const tr = await tryTransition(user.id, { onboarding_step: nextStep }, "photos done", {
     kind: "user",
     id: user.id,
   });
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_preview });
+  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS[nextStep] });
 }

@@ -90,12 +90,16 @@ export async function POST(): Promise<NextResponse> {
     .eq("user_id", user.id);
   if (pubErr) return NextResponse.json({ ok: false, error: "publish_failed" }, { status: 500 });
 
+  // Фаза 4 (§1.20): preview стал финальным шагом (после Big Five+attribution), поэтому
+  // публикация ведёт СРАЗУ в tutorial_intro (был quiz — теперь опрос уже позади).
+  // Публикация — единственный вход в tutorial → ready → active, значит gender-check/
+  // фото/полнота выше по коду остаются обязательным гейтом перед выходом в матчинг.
   const tr = await tryTransition(
     user.id,
-    { onboarding_step: "quiz", profile_completion: "completed" },
+    { onboarding_step: "tutorial_intro", profile_completion: "completed" },
     "profile published",
     { kind: "user", id: user.id },
   );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.quiz });
+  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.tutorial_intro });
 }

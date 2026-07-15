@@ -85,10 +85,11 @@ export const ONBOARDING_BACK: Partial<Record<OnboardingStep, OnboardingStep>> = 
   // profile_privacy оставлен как back-цель для легаси-юзеров, застрявших на нём.
   profile_privacy: "profile_partner_extended",
   profile_photos: "profile_partner_extended",
-  profile_preview: "profile_photos",
-  quiz: "profile_preview",
+  // Фаза 4 (§1.20): порядок хвоста photos → quiz → attribution → preview → tutorial.
+  quiz: "profile_photos",
   attribution: "quiz",
-  tutorial_intro: "attribution",
+  profile_preview: "attribution",
+  tutorial_intro: "profile_preview",
   tutorial_swipe: "tutorial_intro",
   tutorial_chat: "tutorial_swipe",
   tutorial_safety: "tutorial_chat",

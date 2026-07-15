@@ -59,12 +59,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
   }
 
+  // Фаза 4 (§1.20): attribution → preview (был tutorial_intro). Предпросмотр стал
+  // финальным шагом после Big Five, чтобы карточка включала психопортрет.
   const tr = await tryTransition(
     user.id,
-    { onboarding_step: "tutorial_intro" },
-    source ? `attribution: ${source} → tutorial` : "attribution: skip → tutorial",
+    { onboarding_step: "profile_preview" },
+    source ? `attribution: ${source} → preview` : "attribution: skip → preview",
     { kind: "user", id: user.id },
   );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.tutorial_intro });
+  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.profile_preview });
 }
