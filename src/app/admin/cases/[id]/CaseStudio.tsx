@@ -12,16 +12,19 @@ import { ADMIN } from "@/lib/admin/admin-tokens";
 import { Button } from "@/components/admin-ops/Button";
 import type { LoadedCase } from "@/lib/admin/load-case";
 import type { PassportPayload } from "@/lib/admin/passport-validation";
-import { labelOf, GENDER, CITIZENSHIP } from "@/lib/profile/options";
 
 export function CaseStudio({
   loadedCase,
   currentAdminId,
   reasonTemplates,
+  selfDeclaredLabels,
 }: {
   loadedCase: LoadedCase;
   currentAdminId: string;
   reasonTemplates: { code: string; text: string }[];
+  // Лейблы пол/гражданство, уже отрезолвленные сервером через оверлей
+  // (конструктор Tier 2). Клиентский компонент их только отображает.
+  selfDeclaredLabels: { gender: string | null; citizenship: string | null };
 }) {
   const router = useRouter();
   const initialDraft = loadedCase.draft_payload as Partial<PassportPayload>;
@@ -177,7 +180,7 @@ export function CaseStudio({
             <PassportImagePanel title="Паспорт" url={loadedCase.passport_image_url} />
           </div>
           <div>
-            <SelfDeclared sd={loadedCase.self_declared} />
+            <SelfDeclared sd={loadedCase.self_declared} labels={selfDeclaredLabels} />
             <PassportDataEntryForm
               caseId={loadedCase.case_id}
               initialPayload={initialDraft}
@@ -282,7 +285,13 @@ function ReleaseBar({ caseId }: { caseId: string }) {
 
 // QZ-6: то, что юзер сам указал в анкете — рядом с вводом паспорта, чтобы
 // поймать расхождение (напр. «в анкете 1995, в паспорте 2005») до approve.
-function SelfDeclared({ sd }: { sd: LoadedCase["self_declared"] }) {
+function SelfDeclared({
+  sd,
+  labels,
+}: {
+  sd: LoadedCase["self_declared"];
+  labels: { gender: string | null; citizenship: string | null };
+}) {
   return (
     <div
       style={{
@@ -308,8 +317,8 @@ function SelfDeclared({ sd }: { sd: LoadedCase["self_declared"] }) {
         style={{ display: "flex", flexWrap: "wrap", gap: "4px 18px", fontSize: 13, color: ADMIN.ink700 }}
       >
         <span>ДР: {sd.birth_date ?? "—"}</span>
-        <span>Пол: {sd.gender ? labelOf(GENDER, sd.gender, "ru") : "—"}</span>
-        <span>Гражданство: {sd.citizenship ? labelOf(CITIZENSHIP, sd.citizenship, "ru") : "—"}</span>
+        <span>Пол: {labels.gender ?? "—"}</span>
+        <span>Гражданство: {labels.citizenship ?? "—"}</span>
         <span>Место рожд.: {sd.birth_place ?? "—"}</span>
       </div>
       <div style={{ marginTop: 8, fontSize: 12, color: ADMIN.ink500 }}>

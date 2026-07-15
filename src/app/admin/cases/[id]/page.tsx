@@ -5,6 +5,9 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { OpsShell } from "@/components/admin-ops/OpsShell";
 import { loadCase } from "@/lib/admin/load-case";
 import { loadReasonTemplates } from "@/lib/admin/load-reason-templates";
+import { getMergedMessages } from "@/lib/i18n/overrides";
+import { optLabelOf, optTranslatorFromMessages } from "@/lib/profile/option-label";
+import { GENDER, CITIZENSHIP } from "@/lib/profile/options";
 import { CaseStudio } from "./CaseStudio";
 
 export const dynamic = "force-dynamic";
@@ -53,6 +56,16 @@ export default async function Page({
     loadReasonTemplates("verification", "ru"),
   ]);
 
+  // Self-declared лейблы (пол/гражданство) — через тот же оверлей, что и мини-апп
+  // (конструктор Tier 2), иначе экран сверки показывал бы БАЗУ мимо правок оунера.
+  // CaseStudio клиентский → резолвим здесь (сервер) и прокидываем строками.
+  const tOpt = optTranslatorFromMessages((await getMergedMessages("ru")).Options);
+  const sd = c.self_declared;
+  const selfDeclaredLabels = {
+    gender: sd.gender ? optLabelOf(tOpt, GENDER, sd.gender, "ru") : null,
+    citizenship: sd.citizenship ? optLabelOf(tOpt, CITIZENSHIP, sd.citizenship, "ru") : null,
+  };
+
   return (
     <OpsShell
       adminName={admin?.login ?? "—"}
@@ -62,6 +75,7 @@ export default async function Page({
         loadedCase={c}
         currentAdminId={session.adminId}
         reasonTemplates={reasonTemplates}
+        selfDeclaredLabels={selfDeclaredLabels}
       />
     </OpsShell>
   );
