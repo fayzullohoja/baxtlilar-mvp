@@ -42,6 +42,9 @@ export type ProfileForMatch = {
   partner_age_max: number | null;
   geo_preference: string | null;
   vector: Record<string, number>;
+  // Спек 1.18/1.20: подписанный URL портрета для pre-mutual карточки (optional —
+  // скоринг им не пользуется). Только портрет; full_body/family остаются post-mutual.
+  photo_url?: string | null;
 };
 
 export type MatchStory = {

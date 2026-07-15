@@ -1,5 +1,6 @@
 import { test, expect } from "vitest";
 import { toProgressiveView } from "./progressive-view";
+import { ageFromDate } from "@/lib/profile/schemas";
 import type { ProfileForMatch } from "./match-story";
 
 const full: ProfileForMatch = {
@@ -25,9 +26,23 @@ test("first_name — только первое слово (фамилия скр
 
 test("payload содержит РОВНО разрешённые pre-mutual поля — ничего лишнего", () => {
   const view = toProgressiveView(full);
+  // Спек 1.18/1.20 (оунер 2026-07-16): + age (лет) + photo_url (портрет). Точная
+  // дата рождения и прочие чувствительные поля по-прежнему НЕ в payload.
   expect(Object.keys(view).sort()).toEqual(
-    ["bio", "city", "education", "first_name", "is_verified", "top_life_values", "vector"].sort(),
+    ["age", "bio", "city", "education", "first_name", "is_verified", "photo_url", "top_life_values", "vector"].sort(),
   );
+});
+
+test("возраст — производный (лет), точная дата НЕ утекает; photo_url — только переданный портрет", () => {
+  const view = toProgressiveView({ ...full, birth_date: "1990-05-15", photo_url: "https://cdn/portrait.jpg" });
+  expect(view.age).toBe(ageFromDate("1990-05-15")); // число, не строка-дата
+  expect(typeof view.age).toBe("number");
+  expect(JSON.stringify(view)).not.toContain("1990-05-15"); // сырая дата не в payload
+  expect(view.photo_url).toBe("https://cdn/portrait.jpg");
+  // Без birth_date/photo_url → null (не падаем, не выдумываем).
+  const bare = toProgressiveView({ ...full, birth_date: null });
+  expect(bare.age).toBeNull();
+  expect(bare.photo_url).toBeNull();
 });
 
 test("is_verified — derived boolean; сырой verification_status НЕ утекает", () => {

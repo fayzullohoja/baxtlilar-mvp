@@ -15,7 +15,8 @@ import {
 
 describe("V3 selfSchema (Экран 3)", () => {
   const ok = {
-    bio: "Я спокойный человек, ценю семью и честность. Люблю готовить и путешествовать.",
+    // Спек §2: минимум 30 СЛОВ.
+    bio: "Я спокойный и надёжный человек, ценю семью, честность и взаимное уважение в отношениях. Люблю читать книги, готовить для близких и путешествовать по новым местам. Хочу построить крепкую семью с человеком, который разделяет мои ценности и серьёзно относится к будущему.",
     education: "higher",
     activity_field: "it_software",
     employment_status: "working",
@@ -26,9 +27,9 @@ describe("V3 selfSchema (Экран 3)", () => {
     expect(selfSchema.safeParse(ok).success).toBe(true);
   });
 
-  it("отклоняет bio < 20 символов", () => {
+  it("отклоняет bio < 30 слов", () => {
     expect(
-      selfSchema.safeParse({ ...ok, bio: "коротко" }).success,
+      selfSchema.safeParse({ ...ok, bio: "коротко и мало слов" }).success,
     ).toBe(false);
   });
 

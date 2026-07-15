@@ -39,6 +39,7 @@ export function V2AnketaSelfForm({
   const errCopy: Record<string, string> = {
     bio_has_contacts: t("err_bio_has_contacts"),
     bio_too_short: t("err_bio_too_short"),
+    bio_too_few_words: t("err_bio_too_few_words"),
     bio_too_long: t("err_bio_too_long"),
     validation: t("err_validation"),
     failed: t("err_failed"),
@@ -61,11 +62,11 @@ export function V2AnketaSelfForm({
   const [err, setErr] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
-  // §2 P0: карта ошибок по полям (эквивалентна прежнему `valid`-гейту — не строже,
-  // не слабее). Красная рамка + текст под полем показываем после первой попытки submit.
+  // §2 P0 + спек §2: «О себе» — минимум 30 СЛОВ (не символов), максимум 1000 симв.
+  const bioWords = bio.trim() ? bio.trim().split(/\s+/).length : 0;
   const errors: Record<string, string> = {};
   if (!bio.trim()) errors.bio = t("err_field_required");
-  else if (bio.trim().length < 30) errors.bio = t("err_bio_too_short");
+  else if (bioWords < 30) errors.bio = t("err_bio_too_few_words");
   else if (bio.trim().length > 1000) errors.bio = t("err_bio_too_long");
   if (!education) errors.education = t("err_select_required");
   if (!activityField) errors.activity_field = t("err_select_required");
@@ -125,7 +126,7 @@ export function V2AnketaSelfForm({
       <Field
         label={t('bioLabel')}
         required
-        hint={t('bioHint')}
+        hint={bioWords < 30 ? t('bio_word_counter', { current: bioWords }) : t('bioHint')}
         error={showErrors ? errors.bio : undefined}
       >
         <TextArea

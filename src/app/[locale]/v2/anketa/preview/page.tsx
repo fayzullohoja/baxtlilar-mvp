@@ -11,6 +11,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { requireUserAtStep } from "@/lib/state-machine/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { signedPhotoUrls } from "@/lib/uploads/storage";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { ProgressiveProfile } from "@/components/v2/ProgressiveProfile";
@@ -39,6 +40,22 @@ async function loadOwnProfile(userId: string): Promise<ProfileForMatch | null> {
     .eq("user_id", userId)
     .maybeSingle();
 
+  // Спек 1.18/1.20: показываем собственнику, как его портрет + возраст видны в
+  // карточке. Это СВОЁ фото → допускаем и under_review (не только approved), чтобы
+  // на шаге preview (портрет ещё на модерации) юзер видел свой снимок, а не монограмму.
+  // Лента и чужой профиль требуют approved (там это чужое фото). Подпись 10 мин.
+  const { data: portrait } = await sb
+    .from("profile_photos")
+    .select("path")
+    .eq("user_id", userId)
+    .eq("photo_type", "portrait")
+    .neq("status", "rejected")
+    .maybeSingle();
+  const portraitPath = portrait?.path as string | undefined;
+  const photo_url = portraitPath
+    ? (await signedPhotoUrls([portraitPath], 600))[portraitPath] ?? null
+    : null;
+
   return {
     display_name: (p.display_name as string) ?? "",
     city: (p.city as string) ?? null,
@@ -54,6 +71,7 @@ async function loadOwnProfile(userId: string): Promise<ProfileForMatch | null> {
     partner_age_max: (p.partner_age_max as number) ?? null,
     geo_preference: (p.geo_preference as string) ?? null,
     vector: (q?.vector as Record<string, number>) ?? {},
+    photo_url,
   };
 }
 

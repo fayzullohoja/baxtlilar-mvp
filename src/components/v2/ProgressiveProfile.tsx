@@ -158,26 +158,44 @@ export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
             marginBottom: "16px",
           }}
         >
-          <div
-            aria-hidden
-            style={{
-              width: "56px",
-              height: "56px",
-              borderRadius: "999px",
-              background: "rgba(255, 247, 240, 0.18)",
-              border: "1.5px solid rgba(255, 247, 240, 0.45)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: "var(--font-v2-display)",
-              fontSize: "26px",
-              fontWeight: 800,
-              color: "#FFF7F0",
-              flexShrink: 0,
-            }}
-          >
-            {(name || "?").charAt(0).toUpperCase()}
-          </div>
+          {/* Спек 1.18/1.20: портрет виден в карточке (short-TTL подпись). Без фото —
+              монограмма-фолбэк. full_body/family остаются post-mutual. */}
+          {profile.photo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.photo_url}
+              alt=""
+              style={{
+                width: "64px",
+                height: "64px",
+                borderRadius: "999px",
+                objectFit: "cover",
+                border: "1.5px solid rgba(255, 247, 240, 0.55)",
+                flexShrink: 0,
+              }}
+            />
+          ) : (
+            <div
+              aria-hidden
+              style={{
+                width: "56px",
+                height: "56px",
+                borderRadius: "999px",
+                background: "rgba(255, 247, 240, 0.18)",
+                border: "1.5px solid rgba(255, 247, 240, 0.45)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontFamily: "var(--font-v2-display)",
+                fontSize: "26px",
+                fontWeight: 800,
+                color: "#FFF7F0",
+                flexShrink: 0,
+              }}
+            >
+              {(name || "?").charAt(0).toUpperCase()}
+            </div>
+          )}
 
           {profile.is_verified ? (
             <div
@@ -231,10 +249,17 @@ export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
             fontFamily: "var(--font-v2-body)",
           }}
         >
-          {profile.city ? <span>{profile.city}</span> : null}
+          {/* Спек 1.20: возраст (лет) виден; точная дата рождения — нет. */}
+          {profile.age ? <span>{profile.age}</span> : null}
+          {profile.city ? (
+            <span>
+              {profile.age ? " · " : ""}
+              {profile.city}
+            </span>
+          ) : null}
           {profile.education && profile.education !== "na" ? (
             <span>
-              {profile.city ? " · " : ""}
+              {profile.age || profile.city ? " · " : ""}
               {optLabelOf(EDUCATION, profile.education)}
             </span>
           ) : null}

@@ -337,7 +337,7 @@
     "nativeLanguageHint": "Bittasi — oilangizning asosiy tili.",
     "spokenLanguagesLabel": "Qaysi tillarda gaplashasiz",
     "bioLabel": "O'zimiz haqida",
-    "bioHint": "Sizning haqingizda nima muhim. Rekvizit emas — tabiat, odatlar, qanday yashaysiz. Minimal 30 ta belgi.",
+    "bioHint": "Sizning haqingizda nima muhim. Rekvizit emas — tabiat, odatlar, qanday yashaysiz. Kamida 30 ta soʻz.",
     "bioPlaceholder": "Misol: shoq, oilani va halollikni qiymatlang, pishirishni va sayohatni yoqtiraman. Oila tutatishga jiddiy yondashuvchi odamning bilan tanishmoqchiman.",
     "educationLabel": "Ta'lim",
     "activityFieldLabel": "Faoliyat sohasi",
@@ -475,7 +475,7 @@
     "partner_age_narrow_warning": "Juda tor yosh oraligʻi mos anketalar sonini kamaytirishi mumkin.",
     "employmentStatusLabel": "Hozirgi bandlik holati",
     "preview_privacy_heading": "Anketa maxfiyligi",
-    "preview_privacy_body": "Anketangizni tavsiyalarda faqat tekshiruvdan oʻtgan Baxtlilar foydalanuvchilari koʻradi. Oʻzaro qiziqishgacha koʻrinadi: ism (familiyasiz), shahar, maʼlumot, qadriyatlar, xarakter va «oʻzim haqimda». Yashirin: foto, yosh va aniq tugʻilgan sana, familiya, din, telefon, Telegram, hujjatlar, selfi va geolokatsiya — ular faqat oʻzaro qiziqishdan keyin ochiladi.",
+    "preview_privacy_body": "Anketangizni tavsiyalarda faqat tasdiqlangan Baxtlilar foydalanuvchilari koʻradi. Oʻzaro qiziqishgacha koʻrinadi: portret, ism (familiyasiz), yosh, shahar, taʼlim, qadriyatlar, xarakter xususiyatlari va «oʻzim haqimda». Yashirin: aniq tugʻilgan sana, familiya, eʼtiqod, telefon, Telegram, hujjatlar, selfi, toʻliq boʻy va oilaviy fotolar, geolokatsiya — ular faqat oʻzaro qiziqishdan keyin ochiladi.",
     "photos_slot_portrait_label": "Portret",
     "photos_slot_portrait_hint": "Yuzingiz aniq va filtrsiz. Bu foto tavsiyalarda koʻrinadi.",
     "photos_slot_full_body_label": "Toʻliq boʻy",
@@ -526,7 +526,11 @@
     "err_field_required": "Bu maydonni to'ldiring",
     "err_select_required": "Variantni tanlang",
     "progress_step": "{total} dan {current}-qadam",
-    "progress_almost_done": "Deyarli tayyor!"
+    "progress_almost_done": "Deyarli tayyor!",
+    "finance_scale_hint": "1 — asosiy mezon emas, 5 — juda muhim.",
+    "err_bio_too_few_words": "Kamida 30 ta soʻz.",
+    "bio_word_counter": "Kamida 30 ta soʻz. Hozir: {current}/30.",
+    "progress_halfway": "Anketaning yarmidan koʻpi ortda qoldi. Yana ozgina qoldi."
   },
   "Quiz": {
     "intro_title": "Siz haqingizda 10 ta savol",
@@ -1272,7 +1276,8 @@
     "INCOME_SOURCE_STABILITY": {
       "stable": "Barqaror daromadim bor",
       "unstable": "Daromadim oʻzgaruvchan",
-      "none": "Hozircha daromadim yoʻq"
+      "none": "Hozircha daromadim yoʻq",
+      "prefer_not": "Javob berishni xohlamayman"
     },
     "FAMILY_FINANCE_MANAGEMENT": {
       "joint": "Birgalikda rejalashtirish",

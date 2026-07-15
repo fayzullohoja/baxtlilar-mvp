@@ -261,11 +261,12 @@ export const birthPlaceSchema = z
 
 /** Экран 3 — О себе + образование + деятельность + формат занятости. */
 export const selfSchema = z.object({
+  // Спек §2: «О себе» — минимум 30 СЛОВ (не символов), максимум 1000 символов.
   bio: z
     .string()
     .trim()
-    .min(30, { message: "bio_too_short" })
     .max(1000, { message: "bio_too_long" })
+    .refine((s) => s.split(/\s+/).filter(Boolean).length >= 30, { message: "bio_too_few_words" })
     .refine((s) => !containsContact(s), { message: "bio_has_contacts" }),
   education: z.enum(tuple(vals(EDUCATION))),
   // Ревью оунера Экран 4: условное поле «специальность / направление» (показывается

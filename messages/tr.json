@@ -337,7 +337,7 @@
     "nativeLanguageHint": "Bir tane — ailenizin temel dili.",
     "spokenLanguagesLabel": "Hangi dillerde konuşuyorsunuz",
     "bioLabel": "Kendiniz hakkında",
-    "bioHint": "Sizin hakkınızda bilinmesi gerekenler. Künye değil — karakter, alışkanlıklar, nasıl yaşadığınız. En az 30 karakter.",
+    "bioHint": "Sizin hakkınızda bilinmesi gerekenler. Künye değil — karakter, alışkanlıklar, nasıl yaşadığınız. En az 30 kelime.",
     "bioPlaceholder": "Örneğin: sakin biriyim, aileye ve dürüstlüğe değer veririm, yemek yapmayı ve seyahati severim. Aile kurmaya ciddi yaklaşan biriyle tanışmak istiyorum.",
     "educationLabel": "Eğitim",
     "activityFieldLabel": "Çalışma alanı",
@@ -475,7 +475,7 @@
     "partner_age_narrow_warning": "Çok dar bir aralık, uygun anket sayısını azaltabilir.",
     "employmentStatusLabel": "Mevcut istihdam durumu",
     "preview_privacy_heading": "Anket gizliliği",
-    "preview_privacy_body": "Anketinizi önerilerde yalnızca doğrulanmış Baxtlilar kullanıcıları görür. Karşılıklı ilgiye kadar şunlar görünür: isim (soyadı olmadan), şehir, eğitim, değerler, karakter özellikleri ve «hakkımda». Gizli olanlar: fotoğraflar, yaş ve tam doğum tarihi, soyadı, inanç, telefon, Telegram, belgeler, selfie ve konum — bunlar yalnızca karşılıklı ilgiden sonra açılır.",
+    "preview_privacy_body": "Profilinizi önerilerde yalnızca doğrulanmış Baxtlilar kullanıcıları görür. Karşılıklı ilgiden önce görünür: portre, ad (soyad yok), yaş, şehir, eğitim, değerler, karakter özellikleri ve \"hakkımda\". Gizli: tam doğum tarihi, soyad, inanç, telefon, Telegram, belgeler, selfie, boy fotoğrafı ve aile fotoğrafları, konum — yalnızca karşılıklı ilgiden sonra açılır.",
     "photos_slot_portrait_label": "Portre",
     "photos_slot_portrait_hint": "Yüzünüz net ve filtresiz. Bu fotoğraf önerilerde görünür.",
     "photos_slot_full_body_label": "Boydan",
@@ -526,7 +526,11 @@
     "err_field_required": "Lütfen bu alanı doldurun",
     "err_select_required": "Lütfen bir seçenek seçin",
     "progress_step": "Adım {current} / {total}",
-    "progress_almost_done": "Neredeyse bitti!"
+    "progress_almost_done": "Neredeyse bitti!",
+    "finance_scale_hint": "1 — temel kriter değil, 5 — çok önemli.",
+    "err_bio_too_few_words": "En az 30 kelime.",
+    "bio_word_counter": "En az 30 kelime. Şimdi: {current}/30.",
+    "progress_halfway": "Anketin yarısından fazlası bitti. Az kaldı."
   },
   "Quiz": {
     "intro_title": "Uyum anketi",
@@ -1272,7 +1276,8 @@
     "INCOME_SOURCE_STABILITY": {
       "stable": "Есть стабильный доход",
       "unstable": "Доход бывает непостоянным",
-      "none": "Сейчас нет дохода"
+      "none": "Сейчас нет дохода",
+      "prefer_not": "Предпочитаю не отвечать"
     },
     "FAMILY_FINANCE_MANAGEMENT": {
       "joint": "Совместное планирование",

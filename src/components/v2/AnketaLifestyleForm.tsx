@@ -159,18 +159,7 @@ export function V2AnketaLifestyleForm({
         />
       </Field>
 
-      <Field
-        label={t("lifestyle_nutrition_question")}
-        hint={t("canSkipHint")}
-      >
-        <Select
-          options={NUTRITION_STYLE}
-          value={nutrition}
-          onChange={setNutrition}
-          locale={locale}
-        />
-      </Field>
-
+      {/* Спек 1.9: порядок курение → алкоголь → питание. */}
       <Field
         label={t("lifestyle_alcohol_question")}
         hint={t("canSkipHint")}
@@ -179,6 +168,18 @@ export function V2AnketaLifestyleForm({
           options={ALCOHOL_LEVEL}
           value={alcohol}
           onChange={setAlcohol}
+          locale={locale}
+        />
+      </Field>
+
+      <Field
+        label={t("lifestyle_nutrition_question")}
+        hint={t("canSkipHint")}
+      >
+        <Select
+          options={NUTRITION_STYLE}
+          value={nutrition}
+          onChange={setNutrition}
           locale={locale}
         />
       </Field>

@@ -337,7 +337,7 @@
     "nativeLanguageHint": "One — the main language of your family.",
     "spokenLanguagesLabel": "Languages you speak",
     "bioLabel": "About you",
-    "bioHint": "What's important to know about you. Not credentials — your character, habits, what you're about. At least 30 characters.",
+    "bioHint": "What's important to know about you. Not credentials — your character, habits, what you're about. At least 30 words.",
     "bioPlaceholder": "For example: calm, I value family and honesty, I love cooking and traveling. I want to meet someone who takes building a family seriously.",
     "educationLabel": "Education",
     "activityFieldLabel": "Field of work",
@@ -475,7 +475,7 @@
     "partner_age_narrow_warning": "Too narrow a range may reduce the number of matching profiles.",
     "employmentStatusLabel": "Current employment status",
     "preview_privacy_heading": "Profile privacy",
-    "preview_privacy_body": "Only verified Baxtlilar users see your profile in recommendations. Before mutual interest, what's visible: first name (no surname), city, education, values, personality traits, and \"about me\". Hidden: photos, age and exact date of birth, surname, religion, phone, Telegram, documents, selfie, and location — these are revealed only after mutual interest.",
+    "preview_privacy_body": "Only verified Baxtlilar users see your profile in recommendations. Before mutual interest, visible: portrait, first name (no surname), age, city, education, values, personality traits, and \"about me\". Hidden: exact date of birth, surname, religion, phone, Telegram, documents, selfie, full-length and family photos, and location — revealed only after mutual interest.",
     "photos_slot_portrait_label": "Portrait",
     "photos_slot_portrait_hint": "Your face, clear and without filters. This photo is shown in recommendations.",
     "photos_slot_full_body_label": "Full-length",
@@ -526,7 +526,11 @@
     "err_field_required": "Please fill in this field",
     "err_select_required": "Please choose an option",
     "progress_step": "Step {current} of {total}",
-    "progress_almost_done": "Almost done!"
+    "progress_almost_done": "Almost done!",
+    "finance_scale_hint": "1 — not a key criterion, 5 — very important.",
+    "err_bio_too_few_words": "At least 30 words.",
+    "bio_word_counter": "At least 30 words. Now: {current}/30.",
+    "progress_halfway": "More than half of the form is done. Almost there."
   },
   "Quiz": {
     "intro_title": "10 questions about you",
@@ -1272,7 +1276,8 @@
     "INCOME_SOURCE_STABILITY": {
       "stable": "Есть стабильный доход",
       "unstable": "Доход бывает непостоянным",
-      "none": "Сейчас нет дохода"
+      "none": "Сейчас нет дохода",
+      "prefer_not": "Предпочитаю не отвечать"
     },
     "FAMILY_FINANCE_MANAGEMENT": {
       "joint": "Совместное планирование",

@@ -22,6 +22,7 @@
 import "server-only";
 import { getTranslations } from "next-intl/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { signedPhotoUrls } from "@/lib/uploads/storage";
 import { getRecommendations } from "@/lib/matching/recommend";
 import { generateMatchStory, type ProfileForMatch, type MatchStory, type LabelResolver } from "./match-story";
 import { optLabelOf, type OptTranslator } from "@/lib/profile/option-label";
@@ -57,6 +58,21 @@ async function loadFullProfile(userId: string): Promise<ProfileForMatch | null> 
     .eq("user_id", userId)
     .maybeSingle();
 
+  // Спек 1.18/1.20: подписываем ТОЛЬКО портрет (short-TTL). full_body/family
+  // остаются post-mutual — их сюда не тянем.
+  const { data: portrait } = await sb
+    .from("profile_photos")
+    .select("path")
+    .eq("user_id", userId)
+    .eq("photo_type", "portrait")
+    .eq("status", "approved")
+    .maybeSingle();
+  const portraitPath = portrait?.path as string | undefined;
+  // 10-мин подпись: лента перечислима — короткий TTL сужает окно хотлинка.
+  const photo_url = portraitPath
+    ? (await signedPhotoUrls([portraitPath], 600))[portraitPath] ?? null
+    : null;
+
   return {
     display_name: (p.display_name as string) ?? "",
     city: (p.city as string) ?? null,
@@ -72,6 +88,7 @@ async function loadFullProfile(userId: string): Promise<ProfileForMatch | null> 
     partner_age_max: (p.partner_age_max as number) ?? null,
     geo_preference: (p.geo_preference as string) ?? null,
     vector: (q?.vector as Record<string, number>) ?? {},
+    photo_url,
   };
 }
 

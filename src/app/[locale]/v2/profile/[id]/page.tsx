@@ -128,6 +128,21 @@ export default async function V2ProfileDetailPage({
     .eq("user_id", id)
     .maybeSingle();
 
+  // Спек 1.18/1.20: портрет + возраст видны pre-mutual (гейт вьюера — active+approved
+  // — выше по коду сохранён). Только портрет; точную дату НЕ отдаём (age в toProgressiveView).
+  const { data: portrait } = await sb
+    .from("profile_photos")
+    .select("path")
+    .eq("user_id", id)
+    .eq("photo_type", "portrait")
+    .eq("status", "approved")
+    .maybeSingle();
+  const portraitPath = portrait?.path as string | undefined;
+  // 10-мин подпись портрета (короткий TTL против хотлинка чужого фото).
+  const photoUrl = portraitPath
+    ? (await signedPhotoUrls([portraitPath], 600))[portraitPath] ?? null
+    : null;
+
   const progressiveData = toProgressiveView({
     display_name: (p!.display_name as string) ?? "",
     city: (p!.city as string) ?? null,
@@ -137,6 +152,8 @@ export default async function V2ProfileDetailPage({
     bio: (p!.bio as string) ?? null,
     vector: (q?.vector as Record<string, number>) ?? {},
     verification_status: (u!.verification_status as string) ?? null,
+    birth_date: (p!.birth_date as string) ?? null,
+    photo_url: photoUrl,
   });
 
   return (

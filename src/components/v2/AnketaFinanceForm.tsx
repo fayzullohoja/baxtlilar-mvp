@@ -64,6 +64,8 @@ export function V2AnketaFinanceForm({
   // §2 P0: эквивалент прежнего valid (importance 1-5 + management; прочее опц.).
   const importanceN = Number(importance);
   const errors: Record<string, string> = {};
+  // Спек 1.6: «ситуация с доходом» — required (с вариантом «не отвечать»).
+  if (!incomeSource) errors.income_source_stability = t("err_select_required");
   if (!(Number.isFinite(importanceN) && importanceN >= 1 && importanceN <= 5))
     errors.financial_stability_importance = t("err_select_required");
   if (!management) errors.family_finance_management = t("err_select_required");
@@ -108,7 +110,11 @@ export function V2AnketaFinanceForm({
 
   return (
     <div>
-      <Field label={t("finance_income_source_question")} hint={t("optionalHint")}>
+      <Field
+        label={t("finance_income_source_question")}
+        required
+        error={showErrors ? errors.income_source_stability : undefined}
+      >
         <Select
           options={INCOME_SOURCE_STABILITY}
           value={incomeSource}
@@ -120,6 +126,7 @@ export function V2AnketaFinanceForm({
       <Field
         label={t("finance_stability_importance_question")}
         required
+        hint={t("finance_scale_hint")}
         error={showErrors ? errors.financial_stability_importance : undefined}
       >
         <NumberScale

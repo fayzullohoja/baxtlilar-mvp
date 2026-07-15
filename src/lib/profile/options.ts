@@ -448,6 +448,8 @@ export const INCOME_SOURCE_STABILITY: Opt[] = [
   { value: "stable", ru: "Есть стабильный доход", uz: "Barqaror daromadim bor" },
   { value: "unstable", ru: "Доход бывает непостоянным", uz: "Daromadim oʻzgaruvchan" },
   { value: "none", ru: "Сейчас нет дохода", uz: "Hozircha daromadim yoʻq" },
+  // Спек 1.6: поле required, но с escape-вариантом «не отвечать».
+  { value: "prefer_not", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
 /** Управление финансами в семье (Чат-2 Экран 9 блок 3). */

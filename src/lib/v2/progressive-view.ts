@@ -18,6 +18,8 @@
  * УБРАНА из pre-mutual view type — иначе она сериализовалась бы в RSC/Flight-payload
  * клиента (видна в Network) и противоречила бы privacy-обещанию «вероисповедание скрыто».
  */
+import { ageFromDate } from "@/lib/profile/schemas";
+
 export type ProgressiveProfileView = {
   first_name: string;
   city: string | null;
@@ -25,6 +27,10 @@ export type ProgressiveProfileView = {
   top_life_values: string[];
   bio: string | null;
   vector: Record<string, number>;
+  // Спек 1.18/1.20 (решение оунера 2026-07-16): портрет + ВОЗРАСТ (лет, НЕ точная
+  // дата) видны в pre-mutual карточке. Точная дата рождения по-прежнему скрыта.
+  age: number | null;
+  photo_url: string | null;
   // Ревью оунера: бейдж «Проверен» показываем ТОЛЬКО для approved-профилей.
   // verification_status не ПД (уже гейтит выдачу на сервере) → безопасно в pre-mutual.
   is_verified: boolean;
@@ -42,11 +48,22 @@ export type ProgressiveViewInput = {
   vector: Record<string, number>;
   // Опционально: если loader не передал — is_verified=false (бейдж не покажем).
   verification_status?: string | null;
+  // Спек 1.20: точную дату НЕ отдаём клиенту — конвертируем в возраст (лет) здесь.
+  // photo_url — уже подписанный (short-TTL) URL ТОЛЬКО портрета (не full_body/family).
+  birth_date?: string | null;
+  photo_url?: string | null;
 };
 
 /** Первое слово — фамилия скрыта pre-mutual. */
 function firstWord(s: string): string {
   return s.trim().split(/\s+/)[0] ?? s;
+}
+
+/** Возраст в годах или null (пустая/невалидная дата → null, не -1). */
+function computeAge(birthDate: string | null | undefined): number | null {
+  if (!birthDate) return null;
+  const a = ageFromDate(birthDate);
+  return a > 0 ? a : null;
 }
 
 export function toProgressiveView(p: ProgressiveViewInput): ProgressiveProfileView {
@@ -58,5 +75,9 @@ export function toProgressiveView(p: ProgressiveViewInput): ProgressiveProfileVi
     bio: p.bio ?? null,
     vector: p.vector ?? {},
     is_verified: p.verification_status === "approved",
+    // birth_date НЕ попадает в output — только производный возраст (лет). ageFromDate
+    // на непарсируемой дате вернёт -1 → отдаём null (не рендерим «-1»).
+    age: computeAge(p.birth_date),
+    photo_url: p.photo_url ?? null,
   };
 }

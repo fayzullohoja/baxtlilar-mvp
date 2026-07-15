@@ -68,6 +68,20 @@ export async function AnketaProgress({ progress }: { progress: Progress }) {
           }}
         />
       </div>
+      {/* Спек §3: мягкая мотивашка на середине пути (у финиша показываем almostDone). */}
+      {!almostDone && percent >= 45 ? (
+        <div
+          style={{
+            marginTop: "9px",
+            fontSize: "12px",
+            lineHeight: 1.45,
+            color: "var(--color-v2-ink-400)",
+            fontFamily: "var(--font-v2-body)",
+          }}
+        >
+          {t("progress_halfway")}
+        </div>
+      ) : null}
     </div>
   );
 }
