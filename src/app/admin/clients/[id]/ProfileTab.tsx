@@ -36,6 +36,8 @@ import {
   PARTNER_QUALITIES,
   RELIGION_PARTNER_MATCH,
   PARTNER_PREFERRED_COUNTRIES,
+  PARTNER_NATIONALITY_PREF,
+  PARTNER_NATIONALITY,
   GEO_PREFERENCE,
   INCOME_SOURCE_STABILITY,
   FAMILY_FINANCE_MANAGEMENT,
@@ -50,6 +52,8 @@ import {
   NUTRITION_STYLE,
   ALCOHOL_LEVEL,
   DRUGS_USE,
+  HEALTH_OPENNESS,
+  MEDICAL_CHECK_WILLINGNESS,
   FAMILY_DECISION_MODEL,
   HOUSEHOLD_RESPONSIBILITY_MODEL,
   SEPARATE_FROM_PARENTS_IMPORTANCE,
@@ -76,10 +80,18 @@ export async function ProfileTab({ userId, canEdit = false }: { userId: string; 
   const ext = full.extended;
   const fin = ext.finance ?? {};
   const life = ext.lifestyle ?? {};
+  const health = ext.health ?? {};
   const fam = ext.family ?? {};
   const living = ext.living ?? {};
   const bio = ext.bio ?? {};
-  const partner = (ext.partner ?? {}) as { location_preference?: { scope?: string } };
+  const partner = (ext.partner ?? {}) as {
+    location_preference?: { scope?: string };
+    partner_weight_min?: number | null;
+    partner_weight_max?: number | null;
+    partner_nationality_pref?: string;
+    partner_nationality?: string[];
+    partner_health_attitude?: string;
+  };
 
   // Текущие значения редактируемых полей для формы редактора
   // (hot → p.<key>, cold → ext.<section>.<key>).
@@ -231,8 +243,18 @@ export async function ProfileTab({ userId, canEdit = false }: { userId: string; 
         <Field label="Вредные привычки" value={L(BAD_HABITS_LEVEL, life.bad_habits_level)} />
         <Field label="Питание" value={L(NUTRITION_STYLE, life.nutrition_style)} />
         <Field label="Алкоголь" value={L(ALCOHOL_LEVEL, life.alcohol_level)} />
-        <Field label="Наркотики" value={L(DRUGS_USE, life.drugs_use)} />
         <Field label="Досуг" value={chips(FREE_TIME_ACTIVITIES, life.free_time_activities).join(", ") || "—"} />
+      </Section>
+
+      {/* §11 «Здоровье» (ревью оунера 2026-07-14) — safety_only, только модератор.
+          substance переехал сюда из lifestyle; legacy life.drugs_use как fallback. */}
+      <Section title="Здоровье" sensitive>
+        <Field label="Открытость к здоровью" value={L(HEALTH_OPENNESS, health.health_openness)} />
+        <Field label="Медосмотр перед браком" value={L(MEDICAL_CHECK_WILLINGNESS, health.medical_check_willingness)} />
+        <Field
+          label="Зависимости / вещества"
+          value={L(DRUGS_USE, health.substance_dependency_status ?? life.drugs_use)}
+        />
       </Section>
 
       <Section title="Кого ищет">
@@ -253,7 +275,18 @@ export async function ProfileTab({ userId, canEdit = false }: { userId: string; 
               : "—"
           }
         />
+        <Field
+          label="Вес партнёра"
+          value={
+            partner.partner_weight_min || partner.partner_weight_max
+              ? `${num(partner.partner_weight_min)}–${num(partner.partner_weight_max)} кг`
+              : "—"
+          }
+        />
+        <Field label="Национальность (предпочтение)" value={L(PARTNER_NATIONALITY_PREF, partner.partner_nationality_pref)} />
+        <Field label="Национальность партнёра" value={chips(PARTNER_NATIONALITY, partner.partner_nationality).join(", ") || "—"} />
         <Field label="Религия партнёра" value={L(RELIGION_PARTNER_MATCH, p.partner_religion_match)} />
+        <Field label="Отношение к здоровью партнёра" value={L(HEALTH_OPENNESS, partner.partner_health_attitude)} />
         <Field label="География (legacy)" value={L(GEO_PREFERENCE, p.geo_preference)} />
         <Field label="Предпочтение локации" value={raw(partner.location_preference?.scope)} />
         <Field label="Качества партнёра" value={chips(PARTNER_QUALITIES, p.partner_top_qualities).join(", ") || "—"} />

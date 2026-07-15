@@ -25,7 +25,7 @@ describe("profile-edit registry (admin anketa editor)", () => {
   });
 
   it("cold-поля ссылаются на известную секцию extended", () => {
-    const known = new Set(["finance", "lifestyle", "family", "living", "bio", "partner"]);
+    const known = new Set(["finance", "lifestyle", "health", "family", "living", "bio", "partner"]);
     for (const f of allFields) {
       if (f.cold) expect(known.has(f.cold), `${f.key}: неизвестная cold-секция ${f.cold}`).toBe(true);
     }

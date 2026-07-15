@@ -50,6 +50,8 @@ import {
   NUTRITION_STYLE,
   ALCOHOL_LEVEL,
   DRUGS_USE,
+  HEALTH_OPENNESS,
+  MEDICAL_CHECK_WILLINGNESS,
   FREE_TIME_ACTIVITIES,
   PARTNER_QUALITIES,
   RELIGION_PARTNER_MATCH,
@@ -169,8 +171,18 @@ export const PROFILE_EDIT_SECTIONS: readonly EditSection[] = [
       { key: "bad_habits_level", label: "Вредные привычки", kind: "select", options: BAD_HABITS_LEVEL, cold: "lifestyle" },
       { key: "nutrition_style", label: "Питание", kind: "select", options: NUTRITION_STYLE, cold: "lifestyle" },
       { key: "alcohol_level", label: "Алкоголь", kind: "select", options: ALCOHOL_LEVEL, cold: "lifestyle" },
-      { key: "drugs_use", label: "Наркотики", kind: "select", options: DRUGS_USE, cold: "lifestyle" },
       { key: "free_time_activities", label: "Досуг", kind: "multiselect", options: FREE_TIME_ACTIVITIES, maxItems: 3, cold: "lifestyle" },
+    ],
+  },
+  {
+    // §11 «Здоровье» (ревью оунера 2026-07-14) — substance переехал сюда из
+    // lifestyle. safety_only: не видно другим юзерам, только модератор.
+    title: "Здоровье",
+    sensitive: true,
+    fields: [
+      { key: "health_openness", label: "Открытость к здоровью", kind: "select", options: HEALTH_OPENNESS, cold: "health" },
+      { key: "medical_check_willingness", label: "Медосмотр перед браком", kind: "select", options: MEDICAL_CHECK_WILLINGNESS, cold: "health" },
+      { key: "substance_dependency_status", label: "Зависимости / вещества", kind: "select", options: DRUGS_USE, cold: "health" },
     ],
   },
   {

@@ -11,6 +11,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 export type ExtendedShape = {
   finance?: Record<string, unknown>;
   lifestyle?: Record<string, unknown>;
+  health?: Record<string, unknown>;
   family?: Record<string, unknown>;
   living?: Record<string, unknown>;
   bio?: Record<string, unknown>;
