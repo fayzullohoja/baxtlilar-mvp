@@ -27,10 +27,10 @@ const ALLOWED_SOURCES = new Set<string>([
  * skip. attribution_source enum-валидно через CHECK constraint, NULL=skip
  * также валидно.
  *
- * V2 (2026-06-25): после attribution идём не в active, а в tutorial_intro.
- * Lifecycle_state остаётся 'onboarding' до окончания тура (см. tutorial route).
- * ALLOWED_TRANSITIONS.attribution позволяет ["tutorial_intro", "active"] —
- * "active" сохранён для legacy fallback, но новые регистрации идут в тур.
+ * Фаза 4 (§1.20, 2026-07-15): attribution → profile_preview (был tutorial_intro).
+ * Предпросмотр стал финальным шагом после Big Five, поэтому attribution ведёт в него.
+ * ALLOWED_TRANSITIONS.attribution === ["profile_preview"] (legacy-edge "active" убран).
+ * Lifecycle_state остаётся 'onboarding' до publish → tutorial → ready → active.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const { user, res } = await loadUserForStep("attribution");
