@@ -45,6 +45,7 @@ export type OnboardingStep =
   // V4 (2026-06-30) — новые экраны из Чат 2 — Анкета.md:
   | "profile_finance" // Экран 9 — Финансы и материальная стабильность
   | "profile_lifestyle" // Экран 10 — Образ жизни и привычки
+  | "profile_health" // §11 — Здоровье и особые обстоятельства (ревью оунера 2026-07-14)
   | "profile_partner_extended" // Экран 8 расширение (Sprint 2)
   | "profile_privacy" // Экран 16 — LEGACY с 2026-07-12: экран убран из потока; видимость живёт дефолтом 'verified_only'
   | "profile_looking_for"
@@ -134,7 +135,9 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   profile_values: ["profile_family_model"],
   profile_family_model: ["profile_finance", "profile_marriage"],
   profile_finance: ["profile_lifestyle"],
-  profile_lifestyle: ["profile_marriage"],
+  // §11 вставлен между lifestyle и marriage (ревью оунера 2026-07-14).
+  profile_lifestyle: ["profile_health"],
+  profile_health: ["profile_marriage"],
   profile_marriage: ["profile_partner_extended"],
   // 2026-07-12: экран privacy убран из потока — partner_extended → photos напрямую.
   profile_partner_extended: ["profile_photos"],
@@ -153,6 +156,7 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
     "profile_family_model",
     "profile_finance",
     "profile_lifestyle",
+    "profile_health",
     "profile_marriage",
     "profile_partner_extended",
     // profile_privacy убран (2026-07-12) — экран больше не редактируется из preview.

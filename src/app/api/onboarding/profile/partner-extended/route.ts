@@ -69,6 +69,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       ...(parsed.data.partner_nationality?.length
         ? { partner_nationality: parsed.data.partner_nationality }
         : {}),
+      // §13 п.6: отношение к здоровью партнёра (общий набор HEALTH_OPENNESS), COLD.
+      ...(parsed.data.partner_health_attitude
+        ? { partner_health_attitude: parsed.data.partner_health_attitude }
+        : {}),
       ...(parsed.data.partner_marital_pref?.length
         ? { partner_marital_pref: parsed.data.partner_marital_pref }
         : {}),

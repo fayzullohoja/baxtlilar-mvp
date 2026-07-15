@@ -557,8 +557,31 @@ export const ALCOHOL_LEVEL: Opt[] = [
 
 /** Наркотические вещества. Hidden public. Чувствительно. */
 export const DRUGS_USE: Opt[] = [
+  // Ревью оунера 1.10 (substance): расширено до 4 значений (safety_only). Значение
+  // `past` СОХРАНЕНО (у старых юзеров есть drugs_use='past') — не орфаним данные.
   { value: "no", ru: "Нет", uz: "Yoʻq" },
   { value: "past", ru: "Было в прошлом, сейчас нет", uz: "Oʻtmishda boʻlgan, hozir yoʻq" },
+  { value: "ready_to_discuss", ru: "Есть личная ситуация, готов(а) обсудить со специалистом", uz: "Shaxsiy holat bor, mutaxassis bilan muhokamaga tayyorman" },
+  { value: "prefer_not", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
+];
+
+/** Ревью оунера 1.15 (§11 Здоровье): важность открытости в вопросах здоровья.
+ *  Также переиспользуется для «отношения к здоровью партнёра» (§13 п.6). */
+export const HEALTH_OPENNESS: Opt[] = [
+  { value: "discuss_before", ru: "Важно обсудить до серьёзного решения", uz: "Jiddiy qarordan oldin muhokama qilish muhim" },
+  { value: "discuss_later", ru: "Готов(а) обсудить позже", uz: "Keyinroq muhokama qilishga tayyorman" },
+  { value: "not_key", ru: "Для меня это не главный критерий", uz: "Bu men uchun asosiy mezon emas" },
+  { value: "prefer_not", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
+];
+
+/** Ревью оунера 1.15 (§11): готовность к добровольной совместной медпроверке
+ *  перед серьёзным решением о браке. Baxtlilar НЕ собирает результаты. */
+export const MEDICAL_CHECK_WILLINGNESS: Opt[] = [
+  { value: "yes", ru: "Да, готов(а)", uz: "Ha, tayyorman" },
+  { value: "discuss", ru: "Готов(а) обсудить", uz: "Muhokama qilishga tayyorman" },
+  { value: "unsure", ru: "Пока не уверен(а)", uz: "Hozircha ishonchim komil emas" },
+  { value: "no", ru: "Нет", uz: "Yoʻq" },
+  { value: "prefer_not", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
 // ---------- Кого ищу: страны партнёра (Чат-2: «не делать жёстким фильтром») ----------
@@ -782,7 +805,8 @@ export const OPTION_GROUPS: Record<string, Opt[]> = {
   PROFILE_VISIBILITY_MODE, INCOME_SOURCE_STABILITY, FAMILY_FINANCE_MANAGEMENT,
   FINANCIAL_PRIORITIES, MONTHLY_INCOME_RANGE, FINANCIAL_OBLIGATIONS, HOUSING_STATUS,
   LIFESTYLE_PACE, FREE_TIME_ACTIVITIES, DAILY_ROUTINE, BAD_HABITS_LEVEL, NUTRITION_STYLE,
-  ALCOHOL_LEVEL, DRUGS_USE, PARTNER_PREFERRED_COUNTRIES, PARTNER_MARITAL_PREF,
+  ALCOHOL_LEVEL, DRUGS_USE, HEALTH_OPENNESS, MEDICAL_CHECK_WILLINGNESS,
+  PARTNER_PREFERRED_COUNTRIES, PARTNER_MARITAL_PREF,
   PARTNER_CHILDREN_PREF, PARTNER_ORIGIN_REGION_PREF, PARTNER_NATIONALITY_PREF,
   PARTNER_NATIONALITY, PARTNER_HARD_CRITERIA, PHOTO_TYPE,
   FATHER_STATUS, MOTHER_STATUS, PARENT_AGE_RANGE, PARENT_PROFESSION, PARENTS_MARITAL,

@@ -15,6 +15,7 @@ import {
   PARTNER_ORIGIN_REGION_PREF,
   PARTNER_NATIONALITY_PREF,
   PARTNER_NATIONALITY,
+  HEALTH_OPENNESS,
   PARTNER_HARD_CRITERIA,
 } from "@/lib/profile/options";
 
@@ -79,6 +80,7 @@ export function V2AnketaPartnerExtendedForm({
     partner_nationality?: string[];
     partner_top_qualities?: string[];
     partner_religion_match?: string;
+    partner_health_attitude?: string;
     partner_preferred_countries?: string[];
     partner_marital_pref?: string[];
     partner_children_pref?: string;
@@ -127,6 +129,9 @@ export function V2AnketaPartnerExtendedForm({
   );
   const [religionMatch, setReligionMatch] = useState(
     initial?.partner_religion_match ?? "",
+  );
+  const [healthAttitude, setHealthAttitude] = useState(
+    initial?.partner_health_attitude ?? "",
   );
   const [countries, setCountries] = useState<string[]>(
     initial?.partner_preferred_countries ?? [],
@@ -211,6 +216,7 @@ export function V2AnketaPartnerExtendedForm({
       if (nationalityPref === "specific" && nationality.length > 0)
         body.partner_nationality = nationality;
       if (religionMatch !== "") body.partner_religion_match = religionMatch;
+      if (healthAttitude !== "") body.partner_health_attitude = healthAttitude;
       if (countries.length > 0) body.partner_preferred_countries = countries;
       if (maritalPref.length > 0) body.partner_marital_pref = maritalPref;
       if (childrenPref !== "") body.partner_children_pref = childrenPref;
@@ -346,6 +352,17 @@ export function V2AnketaPartnerExtendedForm({
           options={RELIGION_PARTNER_MATCH}
           value={religionMatch}
           onChange={setReligionMatch}
+          locale={locale}
+          placeholder="—"
+        />
+      </Field>
+
+      {/* §13 п.6: отношение к здоровью партнёра — общий набор HEALTH_OPENNESS. */}
+      <Field label={t("partnerHealthAttitudeLabel")} hint={t("optionalHint")}>
+        <Select
+          options={HEALTH_OPENNESS}
+          value={healthAttitude}
+          onChange={setHealthAttitude}
           locale={locale}
           placeholder="—"
         />

@@ -44,8 +44,12 @@ describe("V4 anketa transitions", () => {
     expect(ALLOWED_TRANSITIONS.profile_finance).toContain("profile_lifestyle");
   });
 
-  it("profile_lifestyle → profile_marriage (NEW V4)", () => {
-    expect(ALLOWED_TRANSITIONS.profile_lifestyle).toContain("profile_marriage");
+  it("profile_lifestyle → profile_health (§11 вставлен 2026-07-14)", () => {
+    expect(ALLOWED_TRANSITIONS.profile_lifestyle).toContain("profile_health");
+  });
+
+  it("profile_health → profile_marriage (§11)", () => {
+    expect(ALLOWED_TRANSITIONS.profile_health).toContain("profile_marriage");
   });
 
   it("profile_marriage → profile_partner_extended", () => {

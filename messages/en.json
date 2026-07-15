@@ -513,7 +513,16 @@
     "partnerWeightHint": "Optional. Not a key matching criterion.",
     "partnerNationalityLabel": "Partner’s nationality",
     "partnerNationalityListLabel": "Choose nationalities",
-    "partnerNationalityListHint": "You can select several."
+    "partnerNationalityListHint": "You can select several.",
+    "health_eyebrow": "Anketa · Health",
+    "health_title": "Health and special circumstances",
+    "health_intro": "These questions help understand readiness to discuss health openly and responsibly before a serious decision. Baxtlilar does not collect diagnoses, certificates or test results.",
+    "health_openness_question": "How important is openness about health to you?",
+    "medical_check_question": "Before a serious decision about marriage, are you ready to undergo a voluntary medical check together?",
+    "medical_check_hint": "The check can only be voluntary, separate from the profile, and at a medical institution. Results are not uploaded to Baxtlilar.",
+    "substance_question": "Is there currently any dependency or use of prohibited substances that could affect family life and safety?",
+    "substance_hint": "The answer is used only for safety and is not shown to other users.",
+    "partnerHealthAttitudeLabel": "Attitude to partner’s health"
   },
   "Quiz": {
     "intro_title": "10 questions about you",
@@ -1343,7 +1352,22 @@
     },
     "DRUGS_USE": {
       "no": "Нет",
-      "past": "Было в прошлом, сейчас нет"
+      "past": "Было в прошлом, сейчас нет",
+      "ready_to_discuss": "Есть личная ситуация, готов(а) обсудить со специалистом",
+      "prefer_not": "Предпочитаю не отвечать"
+    },
+    "HEALTH_OPENNESS": {
+      "discuss_before": "Важно обсудить до серьёзного решения",
+      "discuss_later": "Готов(а) обсудить позже",
+      "not_key": "Для меня это не главный критерий",
+      "prefer_not": "Предпочитаю не отвечать"
+    },
+    "MEDICAL_CHECK_WILLINGNESS": {
+      "yes": "Да, готов(а)",
+      "discuss": "Готов(а) обсудить",
+      "unsure": "Пока не уверен(а)",
+      "no": "Нет",
+      "prefer_not": "Предпочитаю не отвечать"
     },
     "PARTNER_PREFERRED_COUNTRIES": {
       "any": "Не имеет значения",

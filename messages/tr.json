@@ -513,7 +513,16 @@
     "partnerWeightHint": "İsteğe bağlı. Eşleştirmenin ana kriteri değil.",
     "partnerNationalityLabel": "Eşin milliyeti",
     "partnerNationalityListLabel": "Milliyetleri seçin",
-    "partnerNationalityListHint": "Birkaç tane seçebilirsiniz."
+    "partnerNationalityListHint": "Birkaç tane seçebilirsiniz.",
+    "health_eyebrow": "Anket · Sağlık",
+    "health_title": "Sağlık ve özel durumlar",
+    "health_intro": "Bu sorular, ciddi bir karardan önce sağlık konusunu açık ve sorumlu şekilde konuşmaya hazır olmayı anlamaya yardımcı olur. Baxtlilar teşhis, belge veya tahlil sonuçlarını toplamaz.",
+    "health_openness_question": "Sağlık konusunda açıklık sizin için ne kadar önemli?",
+    "medical_check_question": "Evlilik konusunda ciddi bir karardan önce birlikte gönüllü tıbbi kontrolden geçmeye hazır mısınız?",
+    "medical_check_hint": "Kontrol yalnızca gönüllü olarak, anketten ayrı ve bir sağlık kuruluşunda yapılabilir. Sonuçlar Baxtlilar’a yüklenmez.",
+    "substance_question": "Şu anda aile hayatını ve güvenliği etkileyebilecek bir bağımlılık veya yasaklı madde kullanımı var mı?",
+    "substance_hint": "Cevap yalnızca güvenlik için kullanılır ve diğer kullanıcılara gösterilmez.",
+    "partnerHealthAttitudeLabel": "Eşin sağlığına yaklaşım"
   },
   "Quiz": {
     "intro_title": "Uyum anketi",
@@ -1343,7 +1352,22 @@
     },
     "DRUGS_USE": {
       "no": "Нет",
-      "past": "Было в прошлом, сейчас нет"
+      "past": "Было в прошлом, сейчас нет",
+      "ready_to_discuss": "Есть личная ситуация, готов(а) обсудить со специалистом",
+      "prefer_not": "Предпочитаю не отвечать"
+    },
+    "HEALTH_OPENNESS": {
+      "discuss_before": "Важно обсудить до серьёзного решения",
+      "discuss_later": "Готов(а) обсудить позже",
+      "not_key": "Для меня это не главный критерий",
+      "prefer_not": "Предпочитаю не отвечать"
+    },
+    "MEDICAL_CHECK_WILLINGNESS": {
+      "yes": "Да, готов(а)",
+      "discuss": "Готов(а) обсудить",
+      "unsure": "Пока не уверен(а)",
+      "no": "Нет",
+      "prefer_not": "Предпочитаю не отвечать"
     },
     "PARTNER_PREFERRED_COUNTRIES": {
       "any": "Не имеет значения",

@@ -44,6 +44,8 @@ import {
   NUTRITION_STYLE,
   ALCOHOL_LEVEL,
   DRUGS_USE,
+  HEALTH_OPENNESS,
+  MEDICAL_CHECK_WILLINGNESS,
   PARTNER_PREFERRED_COUNTRIES,
   // V5 owner spec 2026-07-07:
   MARRIAGE_READINESS,
@@ -392,6 +394,9 @@ export const partnerExtendedSchema = z
     // V4 — религия партнёра. Это требование к партнёру, не к себе. Корректно
     // живёт в «Кого ищу», а не в «О себе».
     partner_religion_match: z.enum(tuple(vals(RELIGION_PARTNER_MATCH))).optional(),
+    // Ревью оунера §13 п.6: отношение к здоровью партнёра. Переиспользует набор
+    // HEALTH_OPENNESS (self-health). COLD → extended.partner, soft.
+    partner_health_attitude: z.enum(tuple(vals(HEALTH_OPENNESS))).optional(),
     // V4 — список приоритетных стран партнёра. Soft filter (matching weight),
     // НЕ жёсткий отсев — учредитель явно сказал «не делать жёстким фильтром».
     // Источник опций — существующий CITIZENSHIP (8 значений). Max 3.
@@ -461,7 +466,21 @@ export const lifestyleSchema = z.object({
   bad_habits_level: z.enum(tuple(vals(BAD_HABITS_LEVEL))).optional(),
   nutrition_style: z.enum(tuple(vals(NUTRITION_STYLE))).optional(),
   alcohol_level: z.enum(tuple(vals(ALCOHOL_LEVEL))).optional(),
+  // Ревью оунера 1.10 (substance): 4 значения, safety_only. Остаётся в lifestyle
+  // (порядок 1.9 п.7). Значение `past` сохранено для обратной совместимости.
   drugs_use: z.enum(tuple(vals(DRUGS_USE))).optional(),
+});
+
+/** Ревью оунера 1.15 (§11 «Здоровье и особые обстоятельства»). Оба поля optional
+ *  (чувствительные — можно пропустить). COLD → extended.health. Baxtlilar НЕ
+ *  собирает диагнозы/справки/результаты — только готовность к обсуждению. */
+export const healthSchema = z.object({
+  health_openness: z.enum(tuple(vals(HEALTH_OPENNESS))).optional(),
+  medical_check_willingness: z.enum(tuple(vals(MEDICAL_CHECK_WILLINGNESS))).optional(),
+  // Ревью оунера 1.10 (substance): «особые обстоятельства» — safety_only. Раньше
+  // жил в lifestyle (drugs_use), убран оттуда прошлым ревью → теперь в §11. Тот же
+  // набор DRUGS_USE (4 значения, `past` сохранён для обратной совместимости).
+  substance_dependency_status: z.enum(tuple(vals(DRUGS_USE))).optional(),
 });
 
 /** Экран 12 — Будущая семья и формат проживания (расширение marriageSchema). */

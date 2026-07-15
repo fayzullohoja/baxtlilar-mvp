@@ -39,6 +39,7 @@ export const ONBOARDING_PATHS: Record<OnboardingStep, string> = {
   // V4 (2026-06-30) — Чат 2 — Анкета.md: Экраны 9 и 10.
   profile_finance: "/v2/anketa/finance",
   profile_lifestyle: "/v2/anketa/lifestyle",
+  profile_health: "/v2/anketa/health",
   profile_partner_extended: "/v2/anketa/partner-extended",
   profile_privacy: "/v2/anketa/privacy",
   profile_family: "/v2/anketa/family",
@@ -77,7 +78,8 @@ export const ONBOARDING_BACK: Partial<Record<OnboardingStep, OnboardingStep>> = 
   profile_family_model: "profile_values",
   profile_finance: "profile_family_model",
   profile_lifestyle: "profile_finance",
-  profile_marriage: "profile_lifestyle",
+  profile_health: "profile_lifestyle",
+  profile_marriage: "profile_health",
   profile_partner_extended: "profile_marriage",
   // Экран privacy убран из потока (2026-07-12) — фото сразу после partner_extended.
   // profile_privacy оставлен как back-цель для легаси-юзеров, застрявших на нём.

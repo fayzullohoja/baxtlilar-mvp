@@ -513,7 +513,16 @@
     "partnerWeightHint": "O‘tkazib yuborish mumkin. Bu moslikning asosiy mezoni emas.",
     "partnerNationalityLabel": "Juftning millati",
     "partnerNationalityListLabel": "Millatlarni tanlang",
-    "partnerNationalityListHint": "Bir nechtasini tanlashingiz mumkin."
+    "partnerNationalityListHint": "Bir nechtasini tanlashingiz mumkin.",
+    "health_eyebrow": "Anketa · Sogʻliq",
+    "health_title": "Sogʻliq va alohida holatlar",
+    "health_intro": "Bu savollar jiddiy qaror oldidan sogʻliq masalasini ochiq va masʼuliyat bilan muhokama qilishga tayyorlikni tushunishga yordam beradi. Baxtlilar tashxislar, maʼlumotnomalar va tahlil natijalarini yigʻmaydi.",
+    "health_openness_question": "Sogʻliq masalasida ochiqlik siz uchun qanchalik muhim?",
+    "medical_check_question": "Nikoh boʻyicha jiddiy qaror oldidan birgalikda ixtiyoriy tibbiy tekshiruvdan oʻtishga tayyormisiz?",
+    "medical_check_hint": "Tekshiruv faqat ixtiyoriy ravishda, anketadan alohida va tibbiyot muassasasida oʻtkazilishi mumkin. Natijalar Baxtlilar platformasiga yuklanmaydi.",
+    "substance_question": "Hozir oilaviy hayot va xavfsizlikka taʼsir qilishi mumkin boʻlgan qaramlik yoki taqiqlangan moddalarni isteʼmol qilish holati bormi?",
+    "substance_hint": "Javob faqat xavfsizlik uchun ishlatiladi va boshqa foydalanuvchilarga koʻrsatilmaydi.",
+    "partnerHealthAttitudeLabel": "Juftning sogʻligʻiga munosabat"
   },
   "Quiz": {
     "intro_title": "Siz haqingizda 10 ta savol",
@@ -1343,7 +1352,22 @@
     },
     "DRUGS_USE": {
       "no": "Yoʻq",
-      "past": "Oʻtmishda boʻlgan, hozir yoʻq"
+      "past": "Oʻtmishda boʻlgan, hozir yoʻq",
+      "ready_to_discuss": "Shaxsiy holat bor, mutaxassis bilan muhokamaga tayyorman",
+      "prefer_not": "Javob berishni xohlamayman"
+    },
+    "HEALTH_OPENNESS": {
+      "discuss_before": "Jiddiy qarordan oldin muhokama qilish muhim",
+      "discuss_later": "Keyinroq muhokama qilishga tayyorman",
+      "not_key": "Bu men uchun asosiy mezon emas",
+      "prefer_not": "Javob berishni xohlamayman"
+    },
+    "MEDICAL_CHECK_WILLINGNESS": {
+      "yes": "Ha, tayyorman",
+      "discuss": "Muhokama qilishga tayyorman",
+      "unsure": "Hozircha ishonchim komil emas",
+      "no": "Yoʻq",
+      "prefer_not": "Javob berishni xohlamayman"
     },
     "PARTNER_PREFERRED_COUNTRIES": {
       "any": "Muhim emas",

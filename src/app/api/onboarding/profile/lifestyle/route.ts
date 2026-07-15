@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
  * секцию, upsert обратно — чтобы не затереть соседние секции (finance,
  * family, privacy и т.д.).
  *
- * После lifestyle → profile_marriage.
+ * После lifestyle → profile_health (§11 вставлен ревью оунера 2026-07-14).
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const { user, res } = await loadUserForStep("profile_lifestyle");
@@ -73,16 +73,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (saveErr)
     return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
+  // §11 вставлен: lifestyle → profile_health (ревью оунера 2026-07-14).
   const tr = await tryTransition(
     user.id,
-    { onboarding_step: "profile_marriage" },
-    "anketa v4: lifestyle",
+    { onboarding_step: "profile_health" },
+    "anketa v4: lifestyle → health",
     { kind: "user", id: user.id },
   );
   if (!tr.ok)
     return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
   return NextResponse.json({
     ok: true,
-    next: ONBOARDING_PATHS.profile_marriage,
+    next: ONBOARDING_PATHS.profile_health,
   });
 }

@@ -65,6 +65,8 @@ export default async function V2AnketaPartnerExtendedPage({
               (draft.partner_top_qualities as string[]) ?? [],
             partner_religion_match:
               (draft.partner_religion_match as string) ?? "",
+            partner_health_attitude:
+              (partner.partner_health_attitude as string) ?? "",
             partner_preferred_countries:
               (draft.partner_preferred_countries as string[]) ?? [],
             partner_marital_pref:
