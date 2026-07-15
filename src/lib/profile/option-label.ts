@@ -68,3 +68,25 @@ export function optLabelOf(
 /** Суффикс гендерного ключа — общий для рендера и генератора. */
 export const genderedKey = (group: string, value: string, g: Gender): string =>
   `${group}.${value}__${g}`;
+
+/**
+ * `OptTranslator` поверх ПЛОСКОГО объекта namespace `Options`
+ * (`{ RELIGION: { islam: "Ислам" }, … }`), напр. из getMergedMessages("ru").Options.
+ * Нужен там, где нет next-intl-контекста, но есть merged-словарь — например
+ * серверная карточка клиента в админке (она вне [locale]/next-intl, поэтому
+ * useTranslations недоступен, но лейблы должны отражать правки конструктора).
+ */
+export function optTranslatorFromMessages(options: unknown): OptTranslator {
+  const ns = (options ?? {}) as Record<string, Record<string, unknown>>;
+  const lookup = (key: string): unknown => {
+    const dot = key.indexOf(".");
+    if (dot < 0) return undefined; // ключ опции всегда GROUP.value
+    return ns[key.slice(0, dot)]?.[key.slice(dot + 1)];
+  };
+  const t = ((key: string) => {
+    const v = lookup(key);
+    return typeof v === "string" ? v : key;
+  }) as OptTranslator;
+  t.has = (key: string) => typeof lookup(key) === "string";
+  return t;
+}

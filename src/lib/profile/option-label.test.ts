@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { optLabel, optLabelOf, type OptTranslator } from "./option-label";
+import { optLabel, optLabelOf, optTranslatorFromMessages, type OptTranslator } from "./option-label";
 import { MARITAL_STATUS, RELIGION } from "./options";
 import type { Opt } from "./options";
 
@@ -54,6 +54,29 @@ describe("optLabel — порядок разрешения лейбла вари
     const orphan: Opt = { value: "x", ru: "Икс", uz: "Iks" };
     const t = fakeT({ "X.x": "не должно примениться" });
     expect(optLabel(t, orphan, "ru")).toBe("Икс");
+  });
+});
+
+describe("optTranslatorFromMessages — OptTranslator из merged-словаря (админ-карточка)", () => {
+  const ns = { RELIGION: { islam: "Ислам (правл.)" }, MARITAL_STATUS: { never__m: "Х" } };
+  it("t(key) отдаёт строку, has(key) верно определяет наличие", () => {
+    const t = optTranslatorFromMessages(ns);
+    expect(t.has("RELIGION.islam")).toBe(true);
+    expect(t("RELIGION.islam")).toBe("Ислам (правл.)");
+    expect(t.has("RELIGION.nope")).toBe(false);
+    expect(t.has("MARITAL_STATUS.never__m")).toBe(true); // ключ с суффиксом (точка одна)
+  });
+  it("резолвит правку через optLabel (карточка показывает правку, не базу)", () => {
+    const t = optTranslatorFromMessages(ns);
+    expect(optLabelOf(t, RELIGION, "islam", "ru")).toBe("Ислам (правл.)");
+  });
+  it("нет ключа → базовый лейбл (карточка не покажет сырой ключ)", () => {
+    const t = optTranslatorFromMessages({});
+    expect(optLabelOf(t, RELIGION, "islam", "ru")).toBe(islam.ru);
+  });
+  it("пустой/битый вход не роняет", () => {
+    expect(optTranslatorFromMessages(undefined).has("A.b")).toBe(false);
+    expect(optTranslatorFromMessages(null)("A.b")).toBe("A.b");
   });
 });
 

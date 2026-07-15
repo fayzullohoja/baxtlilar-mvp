@@ -8,8 +8,9 @@ import { cityLabel } from "@/lib/profile/cities";
 import { MaritalReviewAction } from "./MaritalReviewAction";
 import { PROFILE_EDIT_SECTIONS } from "@/lib/admin/profile-edit-schema";
 import { ProfileEditGate } from "./ProfileEditGate";
+import { getMergedMessages } from "@/lib/i18n/overrides";
+import { optLabelOf, optTranslatorFromMessages } from "@/lib/profile/option-label";
 import {
-  labelOf,
   GENDER,
   CITIZENSHIP,
   COUNTRY_OF_RESIDENCE,
@@ -89,13 +90,20 @@ export async function ProfileTab({ userId, canEdit = false }: { userId: string; 
     for (const f of sec.fields)
       editableValues[f.key] = f.cold ? (extRec[f.cold]?.[f.key] ?? null) : (pRec[f.key] ?? null);
 
+  // Лейблы опций — через тот же оверлей, что и мини-апп (конструктор текстовок
+  // Tier 2), иначе карточка показывала бы БАЗУ, игнорируя правки оунера. Админка
+  // вне [locale]/next-intl → строим OptTranslator из merged-словаря "ru" вручную.
+  // Гендерный вариант не запрашиваем: карточка показывает КАНОНИЧЕСКИЙ (нейтральный)
+  // лейбл (как и раньше через labelOf), теперь просто с учётом правок.
+  const tOpt = optTranslatorFromMessages((await getMergedMessages("ru")).Options);
+
   // v — значение из анкеты; L — по словарю опций; raw — как есть; scale — «N/5».
   const L = (group: Opt[], v: unknown) =>
-    v != null && v !== "" ? labelOf(group, String(v), "ru") : "—";
+    v != null && v !== "" ? optLabelOf(tOpt, group, String(v), "ru") : "—";
   const raw = (v: unknown) => (v != null && v !== "" ? String(v) : "—");
   const num = (v: unknown) => (typeof v === "number" ? String(v) : "—");
   const chips = (group: Opt[], v: unknown) =>
-    Array.isArray(v) && v.length ? (v as string[]).map((x) => labelOf(group, x, "ru")) : [];
+    Array.isArray(v) && v.length ? (v as string[]).map((x) => optLabelOf(tOpt, group, x, "ru")) : [];
 
   const age = p.birth_date ? ageFromDate(String(p.birth_date)) : null;
   const status = p.status as string | null;
