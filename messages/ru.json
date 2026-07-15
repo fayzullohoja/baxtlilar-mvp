@@ -149,7 +149,7 @@
     "parents_family_title": "Семья и участие в браке",
     "father_status_label": "Статус отца",
     "mother_status_label": "Статус матери",
-    "parents_age_label": "Возрастной диапазон",
+    "parents_age_label": "Возраст",
     "parents_profession_label": "Профессия / деятельность",
     "parents_origin_heading": "Родной регион",
     "parents_current_heading": "Где сейчас проживает?",
@@ -276,13 +276,13 @@
     "birthplace_headline": "Откуда Вы родом.",
     "birthplace_lead": "Родной регион — про культурный и семейный контекст. Точный адрес не нужен.",
     "self_eyebrow": "Анкета · О себе и деятельности",
-    "self_headline": "О Вас вживую.",
+    "self_headline": "О себе и деятельности",
     "self_lead": "Расскажите о себе, образовании и текущей деятельности. Это поможет другим лучше понять Ваш образ жизни, ценности и серьёзность намерений.",
     "appearance_eyebrow": "Шаг 2 · Анкета",
     "appearance_headline": "О Ваших параметрах.",
     "appearance_lead": "Эти поля помогают подобрать тех, кто понимает Вас без перевода и живёт в похожем темпе.",
     "family_eyebrow": "Анкета · Семья и планы",
-    "family_headline": "Где Вы сейчас в жизни.",
+    "family_headline": "Семейное положение, дети и планы",
     "family_lead": "Эти вопросы помогают учитывать важные ожидания о семье, детях и будущем. Ответы используются для более подходящих рекомендаций.",
     "values_eyebrow": "Анкета · Ценности и вера",
     "values_headline": "Ценности и вера.",
@@ -374,7 +374,7 @@
     "finance_income_source_unstable": "Есть, но он непостоянный",
     "finance_income_source_none": "Пока нет дохода",
     "finance_stability_importance_question": "Насколько для Вас важна финансовая стабильность в семье?",
-    "finance_stability_importance_hint": "Оцените по шкале: 1 — не главный критерий, 5 — очень важно.",
+    "finance_stability_importance_hint": "1 — не является главным критерием, 5 — очень важно.",
     "finance_management_question": "Как должны приниматься финансовые решения в семье?",
     "finance_management_joint": "Совместное планирование и обсуждение",
     "finance_management_mostly_man": "В основном управляет мужчина",
@@ -507,7 +507,8 @@
     "genderVerifiedNote": "Пол подтверждён по документу — редактировать нельзя.",
     "legalNameVerifiedLabel": "ФИО по документу (приватно)",
     "displayNamePublicHint": "Публичное имя — так вас увидят другие. ФИО из документа остаётся приватным.",
-    "childrenAgeRangeLabel": "Возраст детей"
+    "childrenAgeRangeLabel": "Возраст детей",
+    "parents_years_together_label": "Сколько лет родители вместе?"
   },
   "Quiz": {
     "intro_title": "10 вопросов о вас",
@@ -1101,7 +1102,11 @@
       "separate": "Отдельно от родителей",
       "temporary_then_separate": "Временно с родителями, потом отдельно",
       "open_to_discuss": "По договорённости",
-      "unsure": "Пока не решил(а)"
+      "unsure": "Пока не решил(а)",
+      "with_husband_family__m": "Жить с моей семьёй",
+      "with_husband_family__f": "Жить с семьёй супруга",
+      "with_wife_family__m": "Жить с семьёй супруги",
+      "with_wife_family__f": "Жить с моей семьёй"
     },
     "MARRIAGE_READINESS": {
       "within_6m": "В ближайшие 6 месяцев",
@@ -1423,6 +1428,14 @@
       "mother_deceased": "Мать ушла из жизни",
       "both_deceased": "Оба родителя ушли из жизни",
       "other": "Другое"
+    },
+    "PARENTS_YEARS_TOGETHER": {
+      "under_5": "До 5 лет",
+      "5_10": "5–10 лет",
+      "11_20": "11–20 лет",
+      "21_30": "21–30 лет",
+      "over_30": "Более 30 лет",
+      "prefer_not": "Предпочитаю не отвечать"
     },
     "FAMILY_RELATIONS": {
       "close": "Близкие",

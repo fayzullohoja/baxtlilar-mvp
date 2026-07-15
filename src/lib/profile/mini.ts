@@ -2,6 +2,7 @@ import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { signedPhotoUrls } from "@/lib/uploads/storage";
 import { ageFromDate } from "@/lib/profile/schemas";
+import { PHOTO_TYPES_PRE_MUTUAL } from "@/lib/profile/options";
 
 export type Mini = { id: string; name: string; age: number | null; city: string; photoUrl: string | null };
 
@@ -15,14 +16,14 @@ export async function getMiniProfiles(ids: string[]): Promise<Record<string, Min
     .from("user_profiles")
     .select("user_id, display_name, birth_date, city")
     .in("user_id", unique);
-  // Исключаем family: мини-карточка (thumbnail) может показываться ДО взаимного
-  // интереса (напр. входящий pending-запрос), а family-фото — только post-mutual.
-  // Полная галерея с family раскрывается через RevealedProfile (profile/[id]).
+  // Мини-карточка (thumbnail) может показываться ДО взаимного интереса (напр.
+  // входящий pending-запрос), поэтому только PRE-MUTUAL типы (портрет). Полный
+  // рост + family раскрываются post-mutual через RevealedProfile (ревью оунера 1.18).
   const { data: photos } = await sb
     .from("profile_photos")
     .select("user_id, path, is_main, ord")
     .eq("status", "approved")
-    .neq("photo_type", "family")
+    .in("photo_type", [...PHOTO_TYPES_PRE_MUTUAL])
     .in("user_id", unique)
     .order("is_main", { ascending: false })
     .order("ord", { ascending: true });

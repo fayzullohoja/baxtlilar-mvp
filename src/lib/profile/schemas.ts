@@ -36,9 +36,7 @@ import {
   // V4 2026-06-30 — Чат 2 — Анкета:
   INCOME_SOURCE_STABILITY,
   FAMILY_FINANCE_MANAGEMENT,
-  FINANCIAL_PRIORITIES,
   MONTHLY_INCOME_RANGE,
-  FINANCIAL_OBLIGATIONS,
   LIFESTYLE_PACE,
   FREE_TIME_ACTIVITIES,
   DAILY_ROUTINE,
@@ -62,6 +60,7 @@ import {
   PARENT_AGE_RANGE,
   PARENT_PROFESSION,
   PARENTS_MARITAL,
+  PARENTS_YEARS_TOGETHER,
   FAMILY_RELATIONS,
   FAMILY_INVOLVEMENT,
 } from "./options";
@@ -344,6 +343,9 @@ export const parentsSchema = z.object({
   mother_current_city: parentLocation.city,
   // Семейный контекст
   parents_marital: z.enum(tuple(vals(PARENTS_MARITAL))).optional().nullable(),
+  // Ревью оунера 1.5: сколько лет родители вместе — показывается, только если
+  // parents_marital = together. Optional, cold (extended.parents).
+  parents_years_together: z.enum(tuple(vals(PARENTS_YEARS_TOGETHER))).optional().nullable(),
   family_relations: z.enum(tuple(vals(FAMILY_RELATIONS))).optional().nullable(),
   family_involvement: z.enum(tuple(vals(FAMILY_INVOLVEMENT))),
 });
@@ -419,9 +421,9 @@ export const financeSchema = z.object({
   income_source_stability: z.enum(tuple(vals(INCOME_SOURCE_STABILITY))).optional(),
   financial_stability_importance: z.coerce.number().int().min(1).max(5),
   family_finance_management: z.enum(tuple(vals(FAMILY_FINANCE_MANAGEMENT))),
-  financial_priorities: z.array(z.enum(tuple(vals(FINANCIAL_PRIORITIES)))).min(1).max(3),
+  // Ревью оунера 1.6: убраны financial_priorities + financial_obligations (перегружали
+  // блок). Option-группы и админ-отображение сохранены для уже собранных данных.
   monthly_income_range: z.enum(tuple(vals(MONTHLY_INCOME_RANGE))).optional(),
-  financial_obligations: z.enum(tuple(vals(FINANCIAL_OBLIGATIONS))).optional(),
   // V5 owner spec §9: жильё. Optional, cold (extended.finance), hidden public.
   housing_status: z.enum(tuple(vals(HOUSING_STATUS))).optional(),
 });

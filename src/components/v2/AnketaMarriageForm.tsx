@@ -5,18 +5,24 @@ import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 import { Field, Select } from "./AnketaFields";
 import { POST_MARRIAGE_LIVING, MARRIAGE_READINESS, RELOCATION_READINESS } from "@/lib/profile/options";
+import type { Gender } from "@/lib/profile/gender-wording";
 import { useTranslations } from 'next-intl';
 
 /**
  * V2 ext 2026-06-28: новый шаг анкеты — формат проживания после брака.
  * Между values и looking-for. Ключевой матчинг-сигнал для serious-marriage
  * платформы. API: /api/onboarding/profile/marriage.
+ *
+ * gender (ревью оунера 1.11): «С семьёй мужа/жены» звучит по-разному для М/Ж —
+ * лейблы POST_MARRIAGE_LIVING адаптируются по полу (см. gender-wording.ts).
  */
 export function V2AnketaMarriageForm({
   locale,
+  gender,
   initial,
 }: {
   locale: string;
+  gender: Gender | null;
   initial?: {
     post_marriage_living?: string;
     marriage_readiness?: string;
@@ -73,6 +79,7 @@ export function V2AnketaMarriageForm({
           value={living}
           onChange={setLiving}
           locale={locale}
+          gender={gender}
         />
       </Field>
 

@@ -8,7 +8,6 @@ import { Field, Select } from "./AnketaFields";
 import {
   FAMILY_ROLE_MODEL,
   WIFE_WORK_VIEW,
-  FAMILY_DECISION_MODEL,
   HOUSEHOLD_RESPONSIBILITY_MODEL,
 } from "@/lib/profile/options";
 import {
@@ -18,10 +17,9 @@ import {
 /**
  * V3 Sprint 2 — Экран 7 «Семейная модель» (NEW).
  *
- * Поля:
+ * Поля (ревью оунера 1.4 — убран family_decision_model, дублировал модель семьи):
  * - family_role_model (hot, required) — традиционная / равное / др.
  * - wife_work_after_marriage_view (hot, required) — взгляд на работу жены
- * - family_decision_model (cold → extended, optional)
  * - household_responsibility_model (cold → extended, optional)
  *
  * gender (2026-06-30): используется для gender-wording — М-юзер видит
@@ -39,7 +37,6 @@ export function V2AnketaFamilyModelForm({
   initial?: {
     family_role_model?: string;
     wife_work_after_marriage_view?: string;
-    decision_model?: string;
     household_responsibility_model?: string;
   };
 }) {
@@ -48,9 +45,6 @@ export function V2AnketaFamilyModelForm({
   const [roleModel, setRoleModel] = useState(initial?.family_role_model ?? "");
   const [wifeWork, setWifeWork] = useState(
     initial?.wife_work_after_marriage_view ?? "",
-  );
-  const [decisionModel, setDecisionModel] = useState(
-    initial?.decision_model ?? "",
   );
   const [householdModel, setHouseholdModel] = useState(
     initial?.household_responsibility_model ?? "",
@@ -69,7 +63,6 @@ export function V2AnketaFamilyModelForm({
         body: JSON.stringify({
           family_role_model: roleModel,
           wife_work_after_marriage_view: wifeWork,
-          ...(decisionModel ? { family_decision_model: decisionModel } : {}),
           ...(householdModel
             ? { household_responsibility_model: householdModel }
             : {}),
@@ -116,18 +109,6 @@ export function V2AnketaFamilyModelForm({
           options={WIFE_WORK_VIEW}
           value={wifeWork}
           onChange={setWifeWork}
-          locale={locale}
-        />
-      </Field>
-
-      <Field
-        label={t('familyDecisionLabel')}
-        hint={t('optionalHint')}
-      >
-        <Select
-          options={FAMILY_DECISION_MODEL}
-          value={decisionModel}
-          onChange={setDecisionModel}
           locale={locale}
         />
       </Field>

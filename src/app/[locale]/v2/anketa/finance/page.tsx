@@ -42,12 +42,8 @@ export default async function V2AnketaFinancePage({
               (finance.financial_stability_importance as number | null) ?? null,
             family_finance_management:
               (finance.family_finance_management as string) ?? "",
-            financial_priorities:
-              (finance.financial_priorities as string[]) ?? [],
             monthly_income_range:
               (finance.monthly_income_range as string) ?? "",
-            financial_obligations:
-              (finance.financial_obligations as string) ?? "",
             housing_status: (finance.housing_status as string) ?? "",
           }}
         />

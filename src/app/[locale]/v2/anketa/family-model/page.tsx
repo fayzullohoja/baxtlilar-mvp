@@ -50,7 +50,6 @@ export default async function V2AnketaFamilyModelPage({
             family_role_model: (draft.family_role_model as string) ?? "",
             wife_work_after_marriage_view:
               (draft.wife_work_after_marriage_view as string) ?? "",
-            decision_model: (family.decision_model as string) ?? "",
             household_responsibility_model:
               (family.household_responsibility_model as string) ?? "",
           }}

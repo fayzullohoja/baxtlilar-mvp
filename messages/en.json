@@ -149,7 +149,7 @@
     "parents_family_title": "Family & involvement in marriage",
     "father_status_label": "Father's status",
     "mother_status_label": "Mother's status",
-    "parents_age_label": "Age range",
+    "parents_age_label": "Age",
     "parents_profession_label": "Profession / occupation",
     "parents_origin_heading": "Home region",
     "parents_current_heading": "Where do they live now?",
@@ -276,13 +276,13 @@
     "birthplace_headline": "Where you're from.",
     "birthplace_lead": "Your home region is about cultural and family context. No exact address needed.",
     "self_eyebrow": "Profile · About you and what you do",
-    "self_headline": "You, for real.",
+    "self_headline": "About yourself and your work",
     "self_lead": "Tell us about yourself, your education and what you do now. This helps others better understand your lifestyle, values and how serious your intentions are.",
     "appearance_eyebrow": "Step 2 · Profile",
     "appearance_headline": "About your details.",
     "appearance_lead": "These fields help us find people who understand you without translation and live at a similar pace.",
     "family_eyebrow": "Profile · Family and plans",
-    "family_headline": "Where you are in life right now.",
+    "family_headline": "Marital status, children and plans",
     "family_lead": "These questions help us account for important expectations about family, children and the future. Your answers are used for more suitable recommendations.",
     "values_eyebrow": "Profile · Values and faith",
     "values_headline": "Values and faith.",
@@ -374,7 +374,7 @@
     "finance_income_source_unstable": "I do, but it's irregular",
     "finance_income_source_none": "No income yet",
     "finance_stability_importance_question": "How important is financial stability in a family to you?",
-    "finance_stability_importance_hint": "Rate on a scale: 1 — not a main criterion, 5 — very important.",
+    "finance_stability_importance_hint": "1 — not a key criterion, 5 — very important.",
     "finance_management_question": "How should financial decisions be made in a family?",
     "finance_management_joint": "Joint planning and discussion",
     "finance_management_mostly_man": "Mostly managed by the man",
@@ -507,7 +507,8 @@
     "genderVerifiedNote": "Gender is verified from your document and cannot be changed.",
     "legalNameVerifiedLabel": "Full name from document (private)",
     "displayNamePublicHint": "Public name — this is how others see you. Your legal name from the document stays private.",
-    "childrenAgeRangeLabel": "Children’s age"
+    "childrenAgeRangeLabel": "Children’s age",
+    "parents_years_together_label": "How many years have your parents been together?"
   },
   "Quiz": {
     "intro_title": "10 questions about you",
@@ -1101,7 +1102,11 @@
       "separate": "Отдельно от родителей",
       "temporary_then_separate": "Временно с родителями, потом отдельно",
       "open_to_discuss": "По договорённости",
-      "unsure": "Пока не решил(а)"
+      "unsure": "Пока не решил(а)",
+      "with_husband_family__m": "Жить с моей семьёй",
+      "with_husband_family__f": "Жить с семьёй супруга",
+      "with_wife_family__m": "Жить с семьёй супруги",
+      "with_wife_family__f": "Жить с моей семьёй"
     },
     "MARRIAGE_READINESS": {
       "within_6m": "В ближайшие 6 месяцев",
@@ -1423,6 +1428,14 @@
       "mother_deceased": "Мать ушла из жизни",
       "both_deceased": "Оба родителя ушли из жизни",
       "other": "Другое"
+    },
+    "PARENTS_YEARS_TOGETHER": {
+      "under_5": "До 5 лет",
+      "5_10": "5–10 лет",
+      "11_20": "11–20 лет",
+      "21_30": "21–30 лет",
+      "over_30": "Более 30 лет",
+      "prefer_not": "Предпочитаю не отвечать"
     },
     "FAMILY_RELATIONS": {
       "close": "Близкие",

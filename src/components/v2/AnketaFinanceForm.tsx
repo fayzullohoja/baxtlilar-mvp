@@ -4,13 +4,11 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
-import { Field, Select, Chips, NumberScale } from "./AnketaFields";
+import { Field, Select, NumberScale } from "./AnketaFields";
 import {
   INCOME_SOURCE_STABILITY,
   FAMILY_FINANCE_MANAGEMENT,
-  FINANCIAL_PRIORITIES,
   MONTHLY_INCOME_RANGE,
-  FINANCIAL_OBLIGATIONS,
   HOUSING_STATUS,
 } from "@/lib/profile/options";
 
@@ -20,13 +18,12 @@ import {
  * Все 6 полей — cold (extended.finance). Экран hidden public по спеке;
  * видимость профиля — глобальный дефолт 'verified_only' (экран privacy убран 2026-07-12).
  *
- * Блоки:
- * 1. income_source_stability   — Select (required)
+ * Блоки (ревью оунера 1.6 — упрощён, убраны priorities + obligations):
+ * 1. income_source_stability   — Select (optional)
  * 2. financial_stability_importance — NumberScale 1..5 (required)
  * 3. family_finance_management — Select (required)
- * 4. financial_priorities      — Chips multi-select, 1-3 (required)
- * 5. monthly_income_range      — Select (optional)
- * 6. financial_obligations     — Select (optional)
+ * 4. monthly_income_range      — Select (optional)
+ * 5. housing_status            — Select (optional)
  *
  * API: /api/onboarding/profile/finance → profile_lifestyle.
  */
@@ -39,9 +36,7 @@ export function V2AnketaFinanceForm({
     income_source_stability?: string;
     financial_stability_importance?: number | null;
     family_finance_management?: string;
-    financial_priorities?: string[];
     monthly_income_range?: string;
-    financial_obligations?: string;
     housing_status?: string;
   };
 }) {
@@ -58,24 +53,12 @@ export function V2AnketaFinanceForm({
   const [management, setManagement] = useState(
     initial?.family_finance_management ?? "",
   );
-  const [priorities, setPriorities] = useState<string[]>(
-    initial?.financial_priorities ?? [],
-  );
   const [incomeRange, setIncomeRange] = useState(
     initial?.monthly_income_range ?? "",
-  );
-  const [obligations, setObligations] = useState(
-    initial?.financial_obligations ?? "",
   );
   const [housing, setHousing] = useState(initial?.housing_status ?? "");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-
-  function togglePriority(v: string) {
-    setPriorities((cur) =>
-      cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v],
-    );
-  }
 
   async function submit() {
     if (busy) return;
@@ -90,9 +73,7 @@ export function V2AnketaFinanceForm({
           ...(incomeSource ? { income_source_stability: incomeSource } : {}),
           financial_stability_importance: Number(importance),
           family_finance_management: management,
-          financial_priorities: priorities,
           ...(incomeRange ? { monthly_income_range: incomeRange } : {}),
-          ...(obligations ? { financial_obligations: obligations } : {}),
           ...(housing ? { housing_status: housing } : {}),
         }),
       });
@@ -117,9 +98,7 @@ export function V2AnketaFinanceForm({
     Number.isFinite(importanceN) &&
     importanceN >= 1 &&
     importanceN <= 5 &&
-    !!management &&
-    priorities.length >= 1 &&
-    priorities.length <= 3;
+    !!management;
 
   return (
     <div>
@@ -151,20 +130,6 @@ export function V2AnketaFinanceForm({
       </Field>
 
       <Field
-        label={t("finance_priorities_question")}
-        required
-        hint={`${priorities.length}/3`}
-      >
-        <Chips
-          options={FINANCIAL_PRIORITIES}
-          selected={priorities}
-          onToggle={togglePriority}
-          max={3}
-          locale={locale}
-        />
-      </Field>
-
-      <Field
         label={t("finance_income_range_question")}
         hint={t("optionalHint")}
       >
@@ -172,18 +137,6 @@ export function V2AnketaFinanceForm({
           options={MONTHLY_INCOME_RANGE}
           value={incomeRange}
           onChange={setIncomeRange}
-          locale={locale}
-        />
-      </Field>
-
-      <Field
-        label={t("finance_obligations_question")}
-        hint={t("optionalHint")}
-      >
-        <Select
-          options={FINANCIAL_OBLIGATIONS}
-          value={obligations}
-          onChange={setObligations}
           locale={locale}
         />
       </Field>

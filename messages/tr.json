@@ -149,7 +149,7 @@
     "parents_family_title": "Aile ve evlilikteki katılım",
     "father_status_label": "Babanızın durumu",
     "mother_status_label": "Annenizin durumu",
-    "parents_age_label": "Yaş aralığı",
+    "parents_age_label": "Yaş",
     "parents_profession_label": "Meslek / faaliyet",
     "parents_origin_heading": "Memleket bölgesi",
     "parents_current_heading": "Şu anda nerede yaşıyor?",
@@ -276,13 +276,13 @@
     "birthplace_headline": "Nereli olduğunuz.",
     "birthplace_lead": "Memleket, kültürel ve ailevi arka planla ilgilidir. Kesin adres gerekmez.",
     "self_eyebrow": "Adım 4 · Anket",
-    "self_headline": "Sizin hakkınızda, gerçek haliyle.",
+    "self_headline": "Kendiniz ve faaliyetiniz hakkında",
     "self_lead": "Kendinizden bahsedin, eğitiminizi ve çalışma alanınızı belirtin. Bu, diğerlerinin karakterinizi ve niyetinizin ciddiyetini anlamasına yardımcı olur.",
     "appearance_eyebrow": "Adım 2 · Anket",
     "appearance_headline": "Fiziksel özellikleriniz.",
     "appearance_lead": "Bu alanlar, sizi çeviriye gerek kalmadan anlayan ve benzer bir tempoda yaşayan kişileri bulmaya yardımcı olur.",
     "family_eyebrow": "Adım 5 · Anket",
-    "family_headline": "Hayatınızda şu an neredesiniz.",
+    "family_headline": "Medeni durum, çocuklar ve planlar",
     "family_lead": "Bu, eşleştirmeyi etkiler. Çocuk konusundaki planlarınız uyuşmuyorsa algoritma bunu hemen söyler — sonradansa, ilk anketten öğrenmek daha iyidir.",
     "values_eyebrow": "Adım 6 · Anket",
     "values_headline": "Değerler ve inanç.",
@@ -374,7 +374,7 @@
     "finance_income_source_unstable": "Var, ama düzensiz",
     "finance_income_source_none": "Henüz gelirim yok",
     "finance_stability_importance_question": "Ailede finansal istikrar sizin için ne kadar önemli?",
-    "finance_stability_importance_hint": "1 (önemli değil) ile 5 (çok önemli) arasında bir ölçekte değerlendirin.",
+    "finance_stability_importance_hint": "1 — temel kriter değil, 5 — çok önemli.",
     "finance_management_question": "Ailede finans yönetimine nasıl bakıyorsunuz?",
     "finance_management_joint": "Birlikte planlama ve istişare",
     "finance_management_mostly_man": "Çoğunlukla erkek yönetir",
@@ -507,7 +507,8 @@
     "genderVerifiedNote": "Cinsiyet belgeye göre doğrulandı — değiştirilemez.",
     "legalNameVerifiedLabel": "Belgeye göre ad soyad (gizli)",
     "displayNamePublicHint": "Herkese açık ad — başkaları sizi böyle görür. Belgedeki ad soyad gizli kalır.",
-    "childrenAgeRangeLabel": "Çocukların yaşı"
+    "childrenAgeRangeLabel": "Çocukların yaşı",
+    "parents_years_together_label": "Anne babanız kaç yıldır birlikte?"
   },
   "Quiz": {
     "intro_title": "Uyum anketi",
@@ -1101,7 +1102,11 @@
       "separate": "Отдельно от родителей",
       "temporary_then_separate": "Временно с родителями, потом отдельно",
       "open_to_discuss": "По договорённости",
-      "unsure": "Пока не решил(а)"
+      "unsure": "Пока не решил(а)",
+      "with_husband_family__m": "Жить с моей семьёй",
+      "with_husband_family__f": "Жить с семьёй супруга",
+      "with_wife_family__m": "Жить с семьёй супруги",
+      "with_wife_family__f": "Жить с моей семьёй"
     },
     "MARRIAGE_READINESS": {
       "within_6m": "В ближайшие 6 месяцев",
@@ -1423,6 +1428,14 @@
       "mother_deceased": "Мать ушла из жизни",
       "both_deceased": "Оба родителя ушли из жизни",
       "other": "Другое"
+    },
+    "PARENTS_YEARS_TOGETHER": {
+      "under_5": "До 5 лет",
+      "5_10": "5–10 лет",
+      "11_20": "11–20 лет",
+      "21_30": "21–30 лет",
+      "over_30": "Более 30 лет",
+      "prefer_not": "Предпочитаю не отвечать"
     },
     "FAMILY_RELATIONS": {
       "close": "Близкие",

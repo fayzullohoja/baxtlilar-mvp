@@ -13,12 +13,13 @@ describe("PHOTO_TYPE (Экран 13)", () => {
     expect(vals(PHOTO_TYPE)).toEqual(["portrait", "full_body", "family"]);
   });
 
-  it("family НЕ входит в pre-mutual типы (только post-mutual)", () => {
+  it("family + full_body НЕ входят в pre-mutual (только post-mutual, ревью 1.18)", () => {
     expect(PHOTO_TYPES_PRE_MUTUAL).not.toContain("family");
+    expect(PHOTO_TYPES_PRE_MUTUAL).not.toContain("full_body");
   });
 
-  it("portrait входит в pre-mutual типы (главное фото ленты)", () => {
-    expect(PHOTO_TYPES_PRE_MUTUAL).toContain("portrait");
+  it("pre-mutual = ровно portrait (единственное фото до взаимного интереса)", () => {
+    expect([...PHOTO_TYPES_PRE_MUTUAL]).toEqual(["portrait"]);
   });
 
   it("каждый тип имеет ru+uz лейбл", () => {

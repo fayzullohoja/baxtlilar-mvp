@@ -51,12 +51,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     income_source_stability: parsed.data.income_source_stability,
     financial_stability_importance: parsed.data.financial_stability_importance,
     family_finance_management: parsed.data.family_finance_management,
-    financial_priorities: parsed.data.financial_priorities,
+    // Ревью оунера 1.6: financial_priorities + financial_obligations больше не
+    // собираются. `...prevFinance` сохраняет уже собранные значения у старых юзеров.
     ...(parsed.data.monthly_income_range
       ? { monthly_income_range: parsed.data.monthly_income_range }
-      : {}),
-    ...(parsed.data.financial_obligations
-      ? { financial_obligations: parsed.data.financial_obligations }
       : {}),
     ...(parsed.data.housing_status
       ? { housing_status: parsed.data.housing_status }

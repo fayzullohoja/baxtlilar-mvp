@@ -67,6 +67,18 @@ export const GENDERED_OVERRIDES: Record<string, Record<string, OverrideEntry>> =
       f: { ru: "Вдова", uz: "Beva" },
     },
   },
+  // Ревью оунера 1.11: план проживания после брака звучит по-разному для М/Ж.
+  // «С семьёй мужа/жены» → «моя семья» vs «семья супруга/и» в зависимости от пола.
+  POST_MARRIAGE_LIVING: {
+    with_husband_family: {
+      m: { ru: "Жить с моей семьёй", uz: "O‘z oilam bilan yashash" },
+      f: { ru: "Жить с семьёй супруга", uz: "Turmush o‘rtog‘im oilasi bilan" },
+    },
+    with_wife_family: {
+      m: { ru: "Жить с семьёй супруги", uz: "Turmush o‘rtog‘im oilasi bilan" },
+      f: { ru: "Жить с моей семьёй", uz: "O‘z oilam bilan yashash" },
+    },
+  },
   // Extension points (MVP: не заполнены — используются нейтральные лейблы):
   // FAMILY_ROLE_MODEL: { ... },
   // WIFE_WORK_VIEW: { ... },

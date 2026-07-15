@@ -625,7 +625,9 @@ export const PHOTO_TYPE: Opt[] = [
   { value: "family", ru: "Семейное", uz: "Oilaviy" },
 ];
 /** Типы, которые видны в ленте рекомендаций ДО взаимного интереса. */
-export const PHOTO_TYPES_PRE_MUTUAL = ["portrait", "full_body"] as const;
+// Ревью оунера 1.18: полный рост — только ПОСЛЕ взаимного интереса (как и family).
+// До взаимного интереса виден только портрет; полная галерея — в RevealedProfile.
+export const PHOTO_TYPES_PRE_MUTUAL = ["portrait"] as const;
 
 // ---------- Районы УЗ (cascading per region) ----------
 // Реэкспорт из src/lib/profile/uz-districts.ts, где живут ~98 записей
@@ -679,6 +681,17 @@ export const PARENTS_MARITAL: Opt[] = [
   { value: "mother_deceased", ru: "Мать ушла из жизни", uz: "Onam vafot etgan" },
   { value: "both_deceased", ru: "Оба родителя ушли из жизни", uz: "Ikkalasi ham vafot etgan" },
   { value: "other", ru: "Другое", uz: "Boshqa" },
+];
+
+/** Ревью оунера 1.5: «Сколько лет родители вместе?» — показывать, только если
+ *  parents_marital = together. COLD (extended.parents), optional. */
+export const PARENTS_YEARS_TOGETHER: Opt[] = [
+  { value: "under_5", ru: "До 5 лет", uz: "5 yildan kam" },
+  { value: "5_10", ru: "5–10 лет", uz: "5–10 yil" },
+  { value: "11_20", ru: "11–20 лет", uz: "11–20 yil" },
+  { value: "21_30", ru: "21–30 лет", uz: "21–30 yil" },
+  { value: "over_30", ru: "Более 30 лет", uz: "30 yildan ortiq" },
+  { value: "prefer_not", ru: "Предпочитаю не отвечать", uz: "Javob berishni xohlamayman" },
 ];
 
 export const FAMILY_RELATIONS: Opt[] = [
@@ -735,7 +748,7 @@ export const OPTION_GROUPS: Record<string, Opt[]> = {
   ALCOHOL_LEVEL, DRUGS_USE, PARTNER_PREFERRED_COUNTRIES, PARTNER_MARITAL_PREF,
   PARTNER_CHILDREN_PREF, PARTNER_ORIGIN_REGION_PREF, PARTNER_HARD_CRITERIA, PHOTO_TYPE,
   FATHER_STATUS, MOTHER_STATUS, PARENT_AGE_RANGE, PARENT_PROFESSION, PARENTS_MARITAL,
-  FAMILY_RELATIONS, FAMILY_INVOLVEMENT,
+  PARENTS_YEARS_TOGETHER, FAMILY_RELATIONS, FAMILY_INVOLVEMENT,
 };
 
 // Одноразовый штамп при импорте модуля. Идемпотентен (guard на !o.group), поэтому

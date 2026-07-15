@@ -12,6 +12,7 @@ import {
   PARENT_AGE_RANGE,
   PARENT_PROFESSION,
   PARENTS_MARITAL,
+  PARENTS_YEARS_TOGETHER,
   FAMILY_RELATIONS,
   FAMILY_INVOLVEMENT,
   type Opt,
@@ -204,6 +205,7 @@ export function V2AnketaParentsForm({
   const [father, setFather] = useState<ParentState>(() => initialParent(initial, "father"));
   const [mother, setMother] = useState<ParentState>(() => initialParent(initial, "mother"));
   const [parentsMarital, setParentsMarital] = useState((initial?.parents_marital as string) ?? "");
+  const [yearsTogether, setYearsTogether] = useState((initial?.parents_years_together as string) ?? "");
   const [familyRelations, setFamilyRelations] = useState((initial?.family_relations as string) ?? "");
   const [familyInvolvement, setFamilyInvolvement] = useState((initial?.family_involvement as string) ?? "");
   const [open, setOpen] = useState<"father" | "mother" | "family" | null>("father");
@@ -245,6 +247,8 @@ export function V2AnketaParentsForm({
         family_involvement: familyInvolvement,
       };
       if (parentsMarital) body.parents_marital = parentsMarital;
+      // Ревью оунера 1.5: «сколько лет вместе» шлём, только если родители вместе.
+      if (parentsMarital === "together" && yearsTogether) body.parents_years_together = yearsTogether;
       if (familyRelations) body.family_relations = familyRelations;
 
       const res = await fetch("/api/onboarding/profile/parents", {
@@ -281,6 +285,11 @@ export function V2AnketaParentsForm({
         <Field label={t("parents_marital_label")} hint={t("optionalHint")}>
           <Select options={PARENTS_MARITAL} value={parentsMarital} onChange={setParentsMarital} locale={locale} />
         </Field>
+        {parentsMarital === "together" ? (
+          <Field label={t("parents_years_together_label")} hint={t("optionalHint")}>
+            <Select options={PARENTS_YEARS_TOGETHER} value={yearsTogether} onChange={setYearsTogether} locale={locale} />
+          </Field>
+        ) : null}
         <Field label={t("family_relations_label")} hint={t("optionalHint")}>
           <Select options={FAMILY_RELATIONS} value={familyRelations} onChange={setFamilyRelations} locale={locale} />
         </Field>

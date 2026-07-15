@@ -149,7 +149,7 @@
     "parents_family_title": "Oila va nikoh masalasi",
     "father_status_label": "Otangizning holati",
     "mother_status_label": "Onangizning holati",
-    "parents_age_label": "Yosh oraligʻi",
+    "parents_age_label": "Yosh",
     "parents_profession_label": "Kasbi / faoliyati",
     "parents_origin_heading": "Kelib chiqish hududi",
     "parents_current_heading": "Hozir qayerda yashaydi?",
@@ -276,13 +276,13 @@
     "birthplace_headline": "Qayerda tugʻilgansiz?",
     "birthplace_lead": "Tugʻilgan mintaqangiz — madaniy va oilaviy kontekst haqida. Aniq manzil kerak emas.",
     "self_eyebrow": "Anketa · Oʻzim va faoliyatim",
-    "self_headline": "Sening haqiqiy yuzingiz.",
+    "self_headline": "O‘zim va faoliyatim haqida",
     "self_lead": "Oʻzingiz, taʼlimingiz va hozirgi faoliyatingiz haqida qisqacha yozing. Bu boshqalarga hayot tarzingiz, qadriyatlaringiz va jiddiy niyatingizni yaxshiroq tushunishga yordam beradi.",
     "appearance_eyebrow": "2-qadam · Anketa",
     "appearance_headline": "Parametrlaringiz haqida.",
     "appearance_lead": "Bu maydonlar sizi tarjima qilmasdan tushunadi va shunga o'xshash tezlikda yashaydiganlarni topishga yordam beradi.",
     "family_eyebrow": "Anketa · Oila va rejalar",
-    "family_headline": "Siz hayotda qayerddasiz.",
+    "family_headline": "Oilaviy holat, farzandlar va rejalar",
     "family_lead": "Bu savollar oila, farzand va kelajak haqidagi muhim kutuvlarni hisobga olishga yordam beradi. Javoblaringiz mos tavsiyalar uchun ishlatiladi.",
     "values_eyebrow": "Anketa · Qadriyatlar va eʼtiqod",
     "values_headline": "Qadriyatlar va ishlonch.",
@@ -374,7 +374,7 @@
     "finance_income_source_unstable": "Bor, lekin barqaror emas",
     "finance_income_source_none": "Hozircha daromad yoʻq",
     "finance_stability_importance_question": "Oilada moliyaviy barqarorlik siz uchun qanchalik muhim?",
-    "finance_stability_importance_hint": "Baholang: 1 — asosiy mezon emas, 5 — juda muhim.",
+    "finance_stability_importance_hint": "1 — asosiy mezon emas, 5 — juda muhim.",
     "finance_management_question": "Oilada moliyaviy qarorlar qanday qabul qilinishi kerak?",
     "finance_management_joint": "Birgalikda rejalashtirish va muhokama",
     "finance_management_mostly_man": "Asosan erkak boshqaradi",
@@ -507,7 +507,8 @@
     "genderVerifiedNote": "Jins hujjat boʻyicha tasdiqlangan — oʻzgartirib boʻlmaydi.",
     "legalNameVerifiedLabel": "Hujjat boʻyicha FISH (maxfiy)",
     "displayNamePublicHint": "Ommaviy ism — sizni shunday koʻrishadi. Hujjatdagi FISH maxfiy qoladi.",
-    "childrenAgeRangeLabel": "Farzandlar yoshi"
+    "childrenAgeRangeLabel": "Farzandlar yoshi",
+    "parents_years_together_label": "Ota-onangiz necha yildan beri birga?"
   },
   "Quiz": {
     "intro_title": "Siz haqingizda 10 ta savol",
@@ -1101,7 +1102,11 @@
       "separate": "Ota-onadan alohida",
       "temporary_then_separate": "Vaqtincha ota-ona bilan, keyin alohida",
       "open_to_discuss": "Kelishuvga qarab",
-      "unsure": "Hali qaror qilmaganman"
+      "unsure": "Hali qaror qilmaganman",
+      "with_husband_family__m": "O‘z oilam bilan yashash",
+      "with_husband_family__f": "Turmush o‘rtog‘im oilasi bilan",
+      "with_wife_family__m": "Turmush o‘rtog‘im oilasi bilan",
+      "with_wife_family__f": "O‘z oilam bilan yashash"
     },
     "MARRIAGE_READINESS": {
       "within_6m": "Yaqin 6 oy ichida",
@@ -1423,6 +1428,14 @@
       "mother_deceased": "Onam vafot etgan",
       "both_deceased": "Ikkalasi ham vafot etgan",
       "other": "Boshqa"
+    },
+    "PARENTS_YEARS_TOGETHER": {
+      "under_5": "5 yildan kam",
+      "5_10": "5–10 yil",
+      "11_20": "11–20 yil",
+      "21_30": "21–30 yil",
+      "over_30": "30 yildan ortiq",
+      "prefer_not": "Javob berishni xohlamayman"
     },
     "FAMILY_RELATIONS": {
       "close": "Yaqin",
