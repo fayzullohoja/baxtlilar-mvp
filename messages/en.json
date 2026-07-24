@@ -224,8 +224,8 @@
     "back": "Back",
     "err_bio_has_contacts": "We found a contact in the text (phone number, username, link). Remove it — it doesn't work here.",
     "err_name_has_contacts": "We found a contact in the name. Just your name, no links.",
-    "err_bio_too_short": "Tell us a bit more — at least 30 characters.",
-    "err_bio_too_long": "Too long — 1000 characters maximum.",
+    "err_bio_too_short": "Tell us more — at least 50 characters.",
+    "err_bio_too_long": "Too long — maximum 500 characters.",
     "err_must_be_18": "You must be 18 or older.",
     "err_invalid_age": "Check your date of birth.",
     "err_region_required_for_uz": "If you live in Uzbekistan, select a region or city.",
@@ -340,7 +340,7 @@
     "nativeLanguageHint": "One — the main language of your family.",
     "spokenLanguagesLabel": "Languages you speak",
     "bioLabel": "About you",
-    "bioHint": "What's important to know about you. Not credentials — your character, habits, what you're about. At least 30 words.",
+    "bioHint": "What matters about you — character, habits, how you live. 50–500 characters.",
     "bioPlaceholder": "For example: calm, I value family and honesty, I love cooking and traveling. I want to meet someone who takes building a family seriously.",
     "educationLabel": "Education",
     "activityFieldLabel": "Field of work",
@@ -533,6 +533,7 @@
     "finance_scale_hint": "1 — not a key criterion, 5 — very important.",
     "err_bio_too_few_words": "At least 30 words.",
     "bio_word_counter": "At least 30 words. Now: {current}/30.",
+    "bio_char_counter": "Characters: {current}/500 (min 50).",
     "progress_halfway": "More than half of the form is done. Almost there."
   },
   "Quiz": {
@@ -1130,6 +1131,7 @@
       "with_wife_family": "С семьёй жены",
       "separate": "Отдельно от родителей",
       "temporary_then_separate": "Временно с родителями, потом отдельно",
+      "separate_then_parents": "Сначала отдельно, затем с родителями",
       "open_to_discuss": "По договорённости",
       "unsure": "Пока не решил(а)",
       "with_husband_family__m": "Жить с моей семьёй",
@@ -1250,6 +1252,7 @@
       "shared_50_50": "Поровну 50/50",
       "by_skill": "По навыкам",
       "mostly_partner": "В основном партнёр",
+      "hire_help": "При необходимости готовы нанимать помощницу по дому",
       "mostly_partner__m": "В основном жена",
       "mostly_partner__f": "В основном муж"
     },
@@ -1282,6 +1285,7 @@
     },
     "INCOME_SOURCE_STABILITY": {
       "stable": "Есть стабильный доход",
+      "high": "Высокий доход",
       "unstable": "Доход бывает непостоянным",
       "none": "Сейчас нет дохода",
       "prefer_not": "Предпочитаю не отвечать"
