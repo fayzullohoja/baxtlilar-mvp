@@ -342,7 +342,7 @@ export class Query implements PromiseLike<RowsResult> {
 
 // Функции, возвращающие набор строк (returns table/setof) — для них .rpc отдаёт массив,
 // как делал supabase-js. Остальные (returns int/boolean/jsonb) — скалярное значение.
-const SET_RETURNING = new Set([
+export const SET_RETURNING = new Set([
   "process_interest",
   "get_recommendations",
   "get_chat_list",
@@ -352,6 +352,13 @@ const SET_RETURNING = new Set([
   "claim_tg_outbox_one",
   "accept_interest",
   "send_chat_message",
+  // Найдено guard-тестом set-returning-guard.test.ts (тот же баг-класс, что
+  // accept_interest): обе returns table, вызываются, но читались скаляром.
+  // admin_ban_expire_sweep — РЕАЛЬНЫЙ баг: guard.ts итерирует data с доступом к
+  // полям (row.proposer_id) → на скаляр-строке ломался аудит истечения бана.
+  // admin_sla_reclaim_stale_cases — результат только логировался (безобидно, но форма неверна).
+  "admin_ban_expire_sweep",
+  "admin_sla_reclaim_stale_cases",
 ]);
 const FN_NAME = /^[a-z_][a-z0-9_]*$/;
 
