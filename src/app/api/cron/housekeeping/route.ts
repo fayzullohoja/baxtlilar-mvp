@@ -14,8 +14,9 @@ export const dynamic = "force-dynamic";
  * Задачи:
  *  1. gc_start_token_uses (Bug #12) — чистит истёкшие start tokens (TTL=600s).
  *  2. admin_sla_reclaim_stale_cases (Bug #11) — снимает 7d-старые claim'ы.
+ *  3. gc_expire_interests (T-109) — pending-интересы старше 72ч → expired.
  *
- * Обе задачи independent: одна падает — другая выполняется.
+ * Все задачи independent: одна падает — другие выполняются.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const cronSecret = env().CRON_SECRET;
@@ -55,6 +56,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   } catch (err) {
     results.push({
       task: "admin_sla_reclaim_stale_cases",
+      ok: false,
+      error: err instanceof Error ? err.message : "unknown",
+    });
+  }
+
+  // Task 3 (T-109): проактивно истекаем pending-интересы старше 72ч.
+  try {
+    const { data, error } = await sb.rpc("gc_expire_interests");
+    if (error) throw error;
+    results.push({ task: "gc_expire_interests", ok: true, result: data });
+  } catch (err) {
+    results.push({
+      task: "gc_expire_interests",
       ok: false,
       error: err instanceof Error ? err.message : "unknown",
     });
