@@ -4,6 +4,7 @@ import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { selfSchema } from "@/lib/profile/schemas";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
+import { stampExtended } from "@/lib/profile/extended";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         activity_field: parsed.data.activity_field,
         employment_status: parsed.data.employment_status,
         employment_format: parsed.data.employment_format ?? null,
-        extended: newExtended,
+        extended: stampExtended(newExtended),
       },
       { onConflict: "user_id" },
     );

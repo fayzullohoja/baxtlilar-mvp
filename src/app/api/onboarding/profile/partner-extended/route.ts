@@ -4,6 +4,7 @@ import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { partnerExtendedSchema } from "@/lib/profile/schemas";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
+import { stampExtended } from "@/lib/profile/extended";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         looking_for_gender,
         // V2-compat: legacy geo_preference дефолт
         geo_preference: "my_city",
-        extended: newExtended,
+        extended: stampExtended(newExtended),
       },
       { onConflict: "user_id" },
     );

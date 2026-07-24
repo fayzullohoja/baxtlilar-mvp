@@ -4,6 +4,7 @@ import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { appearanceSchema } from "@/lib/profile/schemas";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
+import { stampExtended } from "@/lib/profile/extended";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         weight_kg: parsed.data.weight_kg ?? null,
         native_language: parsed.data.native_language,
         languages: parsed.data.languages,
-        extended: newExtended,
+        extended: stampExtended(newExtended),
       },
       { onConflict: "user_id" },
     );

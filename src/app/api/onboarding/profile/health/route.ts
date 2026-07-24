@@ -4,6 +4,7 @@ import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { healthSchema } from "@/lib/profile/schemas";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
+import { stampExtended } from "@/lib/profile/extended";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const { error: saveErr } = await supabaseAdmin()
     .from("user_profiles")
     .upsert(
-      { user_id: user.id, extended: { ...ext, health: newHealth } },
+      { user_id: user.id, extended: stampExtended({ ...ext, health: newHealth }) },
       { onConflict: "user_id" },
     );
   if (saveErr)
