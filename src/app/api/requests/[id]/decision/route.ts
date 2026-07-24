@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { ensureChat } from "@/lib/matching/chat";
-import { enqueueAndDeliver } from "@/lib/v2/tg-outbox-worker";
+import { tryDeliverNow } from "@/lib/v2/tg-outbox-worker";
 import { requirePermissionForRequest } from "@/lib/v2/with-permission";
 
 export const runtime = "nodejs";
@@ -70,35 +69,33 @@ export async function POST(
     return NextResponse.json({ ok: true }); // отправителя НЕ уведомляем (бережём)
   }
 
-  // accept — чат и уведомление ТОЛЬКО если условный UPDATE реально применился
-  // (иначе при гонке/сбое мог бы создаться чат, а заявка осталась бы pending).
-  const { data: acc, error: accErr } = await sb
-    .from("match_requests")
-    .update({ status: "accepted" })
-    .eq("id", id)
-    .eq("status", "pending")
-    .select("id");
+  // C-026: accept атомарно ОДНОЙ RPC — статус + чат + enqueue уведомления в одной
+  // транзакции (устраняет неатомарный accept с рукописным откатом и dual-write
+  // потерю уведомления). Лок пары внутри RPC сериализует со встречным
+  // process_interest → без второго чата.
+  const { data: accData, error: accErr } = await sb.rpc("accept_interest", {
+    p_request: id,
+    p_receiver: user.id,
+  });
   if (accErr) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
-  if (!acc?.length) return NextResponse.json({ ok: false, error: "not_pending" }, { status: 409 });
+  const acc = (Array.isArray(accData) ? accData[0] : accData) as
+    | { result?: string; chat_id?: string; outbox_id?: string }
+    | undefined;
 
-  // MATCH-2: accept и создание чата не атомарны. Если ensureChat падает
-  // (transient/гонка), заявка уже 'accepted' → пара застревает без чата и без
-  // восстановления (повторный process_interest упрётся в already_sent).
-  // Откатываем accept обратно в pending, чтобы заявку можно было принять снова.
-  let chatId: string;
-  try {
-    chatId = await ensureChat(r.sender_id as string, r.receiver_id as string);
-  } catch {
-    await sb
-      .from("match_requests")
-      .update({ status: "pending" })
-      .eq("id", id)
-      .eq("status", "accepted");
-    return NextResponse.json({ ok: false, error: "chat_failed" }, { status: 500 });
+  switch (acc?.result) {
+    case "accepted":
+      // outbox-строка уже зафиксирована в транзакции RPC; здесь только
+      // best-effort мгновенная доставка. Cron tg-outbox — retry-safe фолбэк.
+      await tryDeliverNow(acc.outbox_id ?? null);
+      return NextResponse.json({ ok: true, next: `/chats/${acc.chat_id}` });
+    case "expired":
+      return NextResponse.json({ ok: false, error: "expired" }, { status: 409 });
+    case "forbidden":
+      return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+    case "not_found":
+      return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
+    case "not_pending":
+    default:
+      return NextResponse.json({ ok: false, error: "not_pending" }, { status: 409 });
   }
-
-  // F1: уведомление о принятии — через retry-safe outbox (worker сам найдёт
-  // telegram_id и пропустит deleted), а не fire-and-forget notifyUser.
-  await enqueueAndDeliver(r.sender_id as string, "interest_accepted");
-  return NextResponse.json({ ok: true, next: `/chats/${chatId}` });
 }
