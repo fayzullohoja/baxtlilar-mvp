@@ -30,7 +30,7 @@ export default async function V2SelfiePage({
   const t = await getTranslations('Verify');
 
   return (
-    <MiniAppShell eyebrow={t('eyebrow')} align="top">
+    <MiniAppShell eyebrow={t('eyebrow')} align="top" showBack>
       <div className="v2-screen-in">
       <Headline size="lg" as="h1">
         {t('title')}

@@ -25,7 +25,7 @@ export default async function V2DocPage({
   const t = await getTranslations("Verify");
 
   return (
-    <MiniAppShell eyebrow={t('step_eyebrow')} align="top">
+    <MiniAppShell eyebrow={t('step_eyebrow')} align="top" showBack>
       <div className="v2-screen-in">
       <Headline size="lg" as="h1">
         {t('page_title')}
