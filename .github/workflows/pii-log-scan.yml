@@ -1,0 +1,32 @@
+name: Gate · no PII in logs
+
+# C-012: гейт «без PII в логах и аналитике». Падает, если в вызовах логирования/
+# аналитики (console.*, Sentry capture*, track/logEvent/analytics.*) появляется
+# ссылка на PII-поле (phone/telegram_id/passport/selfie/ФИО/ДР/религия/здоровье/
+# доход/чат/жалобы). Сканер: src/lib/security/pii-log-scan.ts.
+#
+# Escape-hatch для заведомо безопасного случая: `// pii-ok: <причина>` на строке.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  pii-scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Scan for PII in logs/analytics
+        run: pnpm check:pii

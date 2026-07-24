@@ -13,6 +13,7 @@
     "lint": "eslint",
     "test": "vitest",
     "test:run": "vitest run",
+    "check:pii": "vitest run src/lib/security/pii-log-scan.test.ts",
     "typecheck": "tsc --noEmit",
     "webhook:set": "node scripts/set-webhook.mjs",
     "bot:meta": "node scripts/set-bot-meta.mjs"
