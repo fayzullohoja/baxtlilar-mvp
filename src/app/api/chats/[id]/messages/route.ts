@@ -5,6 +5,7 @@ import { enqueueAndDeliver } from "@/lib/v2/tg-outbox-worker";
 import { loadChatRow, getLiveState } from "@/lib/chat/live";
 import { areBlocked } from "@/lib/safety/blocks";
 import { requirePermissionForRequest } from "@/lib/v2/with-permission";
+import { assertFeatureEnabledForRequest } from "@/lib/features/flags";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,6 +40,11 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
+  // C-033 kill switch: отправку сообщений можно выключить без деплоя. Гейтим
+  // только POST (отправку) — GET (чтение живого состояния) остаётся доступным.
+  const off = await assertFeatureEnabledForRequest("chat");
+  if (off) return off;
+
   const gate = await requirePermissionForRequest("send_message");
   if ("response" in gate) return gate.response;
   const { user } = gate;

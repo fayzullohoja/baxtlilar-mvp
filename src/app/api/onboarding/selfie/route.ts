@@ -6,6 +6,7 @@ import { uploadDocumentImage } from "@/lib/uploads/storage";
 import { isDocumentBlacklisted } from "@/lib/uploads/blacklist";
 import { hasActiveBiometricConsent } from "@/lib/consent/biometric";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
+import { assertFeatureEnabledForRequest } from "@/lib/features/flags";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,6 +16,11 @@ export const dynamic = "force-dynamic";
  * verification_status → pending_review, selfie_upload → moderation_pending.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // C-033 kill switch: тот же гейт verification, что и на документе — селфи это
+  // второй шаг того же потока, выключаем их вместе.
+  const off = await assertFeatureEnabledForRequest("verification");
+  if (off) return off;
+
   const { user, res } = await loadUserForStep("selfie_upload");
   if (res) return res;
 

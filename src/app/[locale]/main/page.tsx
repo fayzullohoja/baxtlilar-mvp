@@ -12,6 +12,7 @@ import { MatchStoryCard } from "@/components/v2/MatchStoryCard";
 import { InterestActions } from "@/components/v2/InterestActions";
 import { PausedResume } from "@/components/v2/PausedResume";
 import { getMatchOfTheDay } from "@/lib/v2/match-of-the-day";
+import { isFeatureEnabled } from "@/lib/features/flags";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -91,6 +92,24 @@ export default async function MainPage({ params }: { params: Promise<{ locale: s
             {t("review_title")}
           </Headline>
           <Lead>{t("review_body")}</Lead>
+        </MiniAppShell>
+        <BottomNav active="feed" unread={unread} />
+      </>
+    );
+  }
+
+  // C-033 kill switch: матчинг можно выключить без деплоя. Отдельная ЧЕСТНАЯ
+  // ветка — не genuine-empty («нет кандидатов») и не error («попробуйте позже»),
+  // а «на паузе на время техработ». Иначе выключение читалось бы как «нет пары»
+  // (обман) и прятало бы факт админ-выключения (нарушая DB-6 дух «не маскируй»).
+  if (!(await isFeatureEnabled("matching"))) {
+    return (
+      <>
+        <MiniAppShell eyebrow={t("eyebrow_today")} align="top" footer={null}>
+          <Headline size="lg" as="h1">
+            {t("maint_title")}
+          </Headline>
+          <Lead>{t("maint_body")}</Lead>
         </MiniAppShell>
         <BottomNav active="feed" unread={unread} />
       </>

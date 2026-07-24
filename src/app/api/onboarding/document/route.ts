@@ -6,12 +6,18 @@ import { uploadDocumentImage } from "@/lib/uploads/storage";
 import { isDocumentBlacklisted } from "@/lib/uploads/blacklist";
 import { hasActiveBiometricConsent } from "@/lib/consent/biometric";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
+import { assertFeatureEnabledForRequest } from "@/lib/features/flags";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** Загрузка документа: upload в приватный бакет, doc_upload → selfie_upload. */
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // C-033 kill switch: приём новых документов на верификацию можно выключить без
+  // деплоя (напр. очередь модерации перегружена / инцидент у провайдера).
+  const off = await assertFeatureEnabledForRequest("verification");
+  if (off) return off;
+
   const { user, res } = await loadUserForStep("doc_upload");
   if (res) return res;
 
