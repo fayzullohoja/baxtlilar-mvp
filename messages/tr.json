@@ -184,6 +184,7 @@
     "err_age": "Yaş aralığını kontrol edin (18+, «başlangıç» ≤ «bitiş»)",
     "family_title": "Aile",
     "marital_label": "Medeni durum",
+    "prevMarriagesLabel": "Kaç kez resmî nikâh yaptınız?",
     "children_label": "Çocuklar",
     "children_plan_label": "Çocuk planları",
     "values_title": "Değerler ve inanç",
@@ -1005,6 +1006,10 @@
       "never__f": "Не была в браке",
       "widowed__m": "Вдовец",
       "widowed__f": "Вдова"
+    },
+    "PREVIOUS_MARRIAGES": {
+      "one": "1 раз",
+      "two_plus": "2 раза и более"
     },
     "HAS_CHILDREN": {
       "no": "Нет",

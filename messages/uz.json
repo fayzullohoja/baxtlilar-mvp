@@ -184,6 +184,7 @@
     "err_age": "Yosh oraligʻini tekshiring (18+, «dan» ≤ «gacha»)",
     "family_title": "Oila",
     "marital_label": "Oilaviy holat",
+    "prevMarriagesLabel": "Necha marta rasmiy nikohda boʻlgansiz?",
     "children_label": "Farzandlar",
     "children_plan_label": "Farzand rejalari",
     "values_title": "Qadriyatlar va eʼtiqod",
@@ -1005,6 +1006,10 @@
       "never__f": "Turmush qurmagan",
       "widowed__m": "Beva",
       "widowed__f": "Beva"
+    },
+    "PREVIOUS_MARRIAGES": {
+      "one": "1 marta",
+      "two_plus": "2 marta va undan koʻp"
     },
     "HAS_CHILDREN": {
       "no": "Yoʻq",

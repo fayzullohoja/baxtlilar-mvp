@@ -31,6 +31,14 @@ export const MARITAL_STATUS: Opt[] = [
  *  (ревью оунера: спорный статус — не выпускать в matching автоматически). */
 export const MARITAL_STATUS_NEEDS_REVIEW = ["divorcing", "married_separate"] as const;
 
+/** Сколько раз состоял(а) в официальном браке — показывается только при
+ *  marital_status='divorced' (ревью оунера, T-101). COLD/приватно (extended.family),
+ *  в публичной анкете не отображается. Работает одинаково для М и Ж. */
+export const PREVIOUS_MARRIAGES: Opt[] = [
+  { value: "one", ru: "1 раз", uz: "1 marta" },
+  { value: "two_plus", ru: "2 раза и более", uz: "2 marta va undan koʻp" },
+];
+
 export const HAS_CHILDREN: Opt[] = [
   { value: "no", ru: "Нет", uz: "Yoʻq" },
   { value: "yes", ru: "Да", uz: "Ha" },
@@ -797,7 +805,7 @@ export const labelOf = (o: Opt[], value: string, locale: string): string =>
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const OPTION_GROUPS: Record<string, Opt[]> = {
-  GENDER, MARITAL_STATUS, HAS_CHILDREN, CHILDREN_PLAN, RELIGION, LIFE_VALUES,
+  GENDER, MARITAL_STATUS, PREVIOUS_MARRIAGES, HAS_CHILDREN, CHILDREN_PLAN, RELIGION, LIFE_VALUES,
   EDUCATION, EMPLOYMENT, GEO_PREFERENCE, CITIZENSHIP, UZ_REGIONS, LANGUAGES_LIST,
   RELIGION_PRACTICE, RELIGION_PARTNER_MATCH, POST_MARRIAGE_LIVING, MARRIAGE_READINESS,
   RELOCATION_READINESS, ACTIVITY_FIELDS, EMPLOYMENT_STATUS, EMPLOYMENT_FORMAT,

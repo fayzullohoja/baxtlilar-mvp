@@ -184,6 +184,7 @@
     "err_age": "Check the age range (18+, \"from\" ≤ \"to\")",
     "family_title": "Family",
     "marital_label": "Marital status",
+    "prevMarriagesLabel": "How many times have you been officially married?",
     "children_label": "Children",
     "children_plan_label": "Plans for children",
     "values_title": "Values and faith",
@@ -1005,6 +1006,10 @@
       "never__f": "Не была в браке",
       "widowed__m": "Вдовец",
       "widowed__f": "Вдова"
+    },
+    "PREVIOUS_MARRIAGES": {
+      "one": "1 раз",
+      "two_plus": "2 раза и более"
     },
     "HAS_CHILDREN": {
       "no": "Нет",

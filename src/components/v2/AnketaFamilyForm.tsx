@@ -13,6 +13,7 @@ import {
 } from "./ChildrenDetails";
 import {
   MARITAL_STATUS,
+  PREVIOUS_MARRIAGES,
   HAS_CHILDREN,
   FUTURE_CHILDREN_PLAN,
   CHILDREN_LIVING,
@@ -53,6 +54,7 @@ export function V2AnketaFamilyForm({
   gender: Gender | null;
   initial?: {
     marital_status?: string;
+    previous_marriages?: string;
     has_children?: string;
     future_children_plan?: string;
     children_count?: string;
@@ -63,6 +65,9 @@ export function V2AnketaFamilyForm({
   const router = useRouter();
   const t = useTranslations("Anketa");
   const [marital, setMarital] = useState(initial?.marital_status ?? "");
+  const [prevMarriages, setPrevMarriages] = useState(
+    initial?.previous_marriages ?? "",
+  );
   const [hasChildren, setHasChildren] = useState(initial?.has_children ?? "");
   const [children, setChildren] = useState<ChildInfo[]>(() =>
     initialChildren(initial ?? {}),
@@ -76,11 +81,15 @@ export function V2AnketaFamilyForm({
   const [showErrors, setShowErrors] = useState(false);
 
   const showChildrenDetails = hasChildren === "yes";
+  // T-101: при «В разводе» — обязательный вопрос о числе прошлых браков.
+  const showPrevMarriages = marital === "divorced";
 
   // §2 P0: эквивалент прежнего valid (marital + hasChildren + plan; при «есть дети» —
   // у каждого указан возраст через childrenComplete).
   const errors: Record<string, string> = {};
   if (!marital) errors.marital_status = t("err_select_required");
+  if (showPrevMarriages && !prevMarriages)
+    errors.previous_marriages = t("err_select_required");
   if (!hasChildren) errors.has_children = t("err_select_required");
   if (showChildrenDetails && !childrenComplete(children))
     errors.children = t("err_field_required");
@@ -101,6 +110,8 @@ export function V2AnketaFamilyForm({
         has_children: hasChildren,
         future_children_plan: plan,
       };
+      if (showPrevMarriages && prevMarriages)
+        body.previous_marriages = prevMarriages;
       if (showChildrenDetails) {
         body.children_count = children.length; // hot int = длина массива
         body.children = children; // COLD extended.family.children (пол + возраст)
@@ -137,11 +148,30 @@ export function V2AnketaFamilyForm({
         <Select
           options={MARITAL_STATUS}
           value={marital}
-          onChange={setMarital}
+          onChange={(v) => {
+            setMarital(v);
+            // T-101/T-102: при смене статуса скрытое поле очищается.
+            if (v !== "divorced") setPrevMarriages("");
+          }}
           locale={locale}
           gender={gender}
         />
       </Field>
+
+      {showPrevMarriages ? (
+        <Field
+          label={t("prevMarriagesLabel")}
+          required
+          error={showErrors ? errors.previous_marriages : undefined}
+        >
+          <Select
+            options={PREVIOUS_MARRIAGES}
+            value={prevMarriages}
+            onChange={setPrevMarriages}
+            locale={locale}
+          />
+        </Field>
+      ) : null}
 
       <Field label={t("children_label")} required error={showErrors ? errors.has_children : undefined}>
         <Select

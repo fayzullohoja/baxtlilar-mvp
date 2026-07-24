@@ -3,6 +3,7 @@ import {
   vals,
   GENDER,
   MARITAL_STATUS,
+  PREVIOUS_MARRIAGES,
   HAS_CHILDREN,
   CHILDREN_LIVING,
   CHILDREN_AGE_RANGE,
@@ -304,6 +305,9 @@ export const familyChildrenSchema = z
     children_age_range: z.enum(tuple(vals(CHILDREN_AGE_RANGE))).optional().nullable(),
     // С кем проживают дети (COLD → extended.family, опц.).
     children_living: z.enum(tuple(vals(CHILDREN_LIVING))).optional().nullable(),
+    // Сколько раз состоял(а) в браке — только при marital='divorced' (T-101).
+    // COLD/приватно (extended.family), в публичной анкете не показывается.
+    previous_marriages: z.enum(tuple(vals(PREVIOUS_MARRIAGES))).optional().nullable(),
     future_children_plan: z.enum(tuple(vals(FUTURE_CHILDREN_PLAN))),
   });
 // Ревью оунера Экран 5: жёсткий refine убран. У количества детей появился вариант
