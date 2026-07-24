@@ -1,5 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { renderTemplate, type OutboxEventType, type OutboxPayload } from "./tg-outbox-worker";
+import { renderTemplate, backoffMs, type OutboxEventType, type OutboxPayload } from "./tg-outbox-worker";
+
+// C-032: экспоненциальный backoff между ретраями доставки.
+describe("backoffMs — экспоненциальный backoff с потолком", () => {
+  it("удваивается: 1,2,4,8,16 минут по attempts", () => {
+    expect(backoffMs(0)).toBe(1 * 60_000);
+    expect(backoffMs(1)).toBe(2 * 60_000);
+    expect(backoffMs(2)).toBe(4 * 60_000);
+    expect(backoffMs(3)).toBe(8 * 60_000);
+    expect(backoffMs(4)).toBe(16 * 60_000);
+  });
+  it("упирается в потолок 30 минут", () => {
+    expect(backoffMs(5)).toBe(30 * 60_000); // min(32,30)
+    expect(backoffMs(10)).toBe(30 * 60_000);
+  });
+  it("монотонно не убывает", () => {
+    for (let a = 0; a < 10; a++) expect(backoffMs(a + 1)).toBeGreaterThanOrEqual(backoffMs(a));
+  });
+});
 
 describe("renderTemplate — verification_approved", () => {
   it("RU template", () => {

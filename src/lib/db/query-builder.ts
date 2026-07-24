@@ -342,7 +342,17 @@ export class Query implements PromiseLike<RowsResult> {
 
 // Функции, возвращающие набор строк (returns table/setof) — для них .rpc отдаёт массив,
 // как делал supabase-js. Остальные (returns int/boolean/jsonb) — скалярное значение.
-const SET_RETURNING = new Set(["process_interest", "get_recommendations", "get_chat_list"]);
+const SET_RETURNING = new Set([
+  "process_interest",
+  "get_recommendations",
+  "get_chat_list",
+  // C-032: outbox claim (returns setof tg_outbox) + accept_interest/send_chat_message
+  // (returns table) — .rpc должен отдавать массив, а не скаляр.
+  "claim_tg_outbox",
+  "claim_tg_outbox_one",
+  "accept_interest",
+  "send_chat_message",
+]);
 const FN_NAME = /^[a-z_][a-z0-9_]*$/;
 
 export function createDbClient(runner: Runner) {

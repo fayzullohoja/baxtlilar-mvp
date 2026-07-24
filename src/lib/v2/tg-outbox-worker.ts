@@ -149,84 +149,96 @@ async function loadUserForOutbox(userId: string): Promise<TgUser | null> {
   return { telegram_id: data.telegram_id as number | null, language: data.language as "ru" | "uz" | null };
 }
 
+// C-032: строка «занята» этим воркером на время попытки (claim_tg_outbox ставит
+// locked_until = now + LOCK_SECONDS). Достаточно на один HTTP-запрос к Bot API.
+const LOCK_SECONDS = 60;
+
+/** Экспоненциальный backoff с потолком 30 мин: 1,2,4,8,16,30 мин по attempts. */
+export function backoffMs(attempts: number): number {
+  return Math.min(2 ** attempts, 30) * 60_000;
+}
+
 async function markSent(id: string): Promise<void> {
   await supabaseAdmin()
     .from("tg_outbox")
-    .update({ sent_at: new Date().toISOString() })
+    .update({ sent_at: new Date().toISOString(), locked_until: null })
     .eq("id", id);
 }
 
 async function markFailed(id: string, error: string, attempts: number): Promise<void> {
+  // Освобождаем лок и откладываем следующую попытку (backoff) — иначе строка
+  // ретраилась бы каждый тик крона до attempts=5.
   await supabaseAdmin()
     .from("tg_outbox")
-    .update({ last_error: error.slice(0, 500), attempts: attempts + 1 })
+    .update({
+      last_error: error.slice(0, 500),
+      attempts: attempts + 1,
+      next_attempt_at: new Date(Date.now() + backoffMs(attempts)).toISOString(),
+      locked_until: null,
+    })
     .eq("id", id);
 }
 
-/**
- * Обработать одну запись по id. Идемпотентно: если уже sent_at != null —
- * скипает. Возвращает true при успехе доставки.
- */
-export async function processOutboxEvent(id: string): Promise<boolean> {
-  const { data: row } = await supabaseAdmin()
-    .from("tg_outbox")
-    .select("id, user_id, event_type, payload, attempts, sent_at")
-    .eq("id", id)
-    .maybeSingle();
-  if (!row) return false;
-  if (row.sent_at) return true; // уже доставлено
-
-  const r = row as OutboxRow & { sent_at: string | null };
-  const user = await loadUserForOutbox(r.user_id);
+/** Доставить одну ЗАКЛЕЙМЛЕННУЮ строку (данные уже получены из claim). */
+async function deliverRow(row: OutboxRow): Promise<boolean> {
+  const user = await loadUserForOutbox(row.user_id);
   if (!user || !user.telegram_id) {
-    // Нет telegram_id (или deleted) — отметим sent_at чтобы не ретраить вечно.
-    // last_error фиксирует причину для аудита.
+    // Нет telegram_id (или deleted) — sent_at чтобы не ретраить вечно; last_error для аудита.
     await supabaseAdmin()
       .from("tg_outbox")
-      .update({ sent_at: new Date().toISOString(), last_error: "no_telegram_id" })
-      .eq("id", r.id);
+      .update({ sent_at: new Date().toISOString(), last_error: "no_telegram_id", locked_until: null })
+      .eq("id", row.id);
     return false;
   }
-
-  const locale = r.payload.locale ?? user.language ?? "ru";
-  const text = renderTemplate(r.event_type, r.payload, locale);
+  const locale = row.payload.locale ?? user.language ?? "ru";
+  const text = renderTemplate(row.event_type, row.payload, locale);
   const ok = await sendBotMessage(user.telegram_id, text);
   if (ok) {
-    await markSent(r.id);
+    await markSent(row.id);
     return true;
   }
-  await markFailed(r.id, "tg_send_failed", r.attempts);
+  await markFailed(row.id, "tg_send_failed", row.attempts);
   return false;
 }
 
 /**
- * Drain pending events (sent_at IS NULL) FIFO, max=limit штук.
- * Возвращает stats для логирования / cron мониторинга.
- *
- * Skip: attempts > 5 — exponential backoff не делаем для MVP, просто бросаем.
- * Такие записи в админке руками можно ресэтнуть (attempts=0).
+ * Обработать одну запись по id (sync-путь tryDeliverNow). Клеймит строку через
+ * claim_tg_outbox_one (FOR UPDATE SKIP LOCKED + locked_until): если её уже держит
+ * cron или она отправлена/исчерпана — пропускает (нет двойной доставки).
+ */
+export async function processOutboxEvent(id: string): Promise<boolean> {
+  const { data: claimed } = await supabaseAdmin().rpc("claim_tg_outbox_one", {
+    p_id: id,
+    p_lock_seconds: LOCK_SECONDS,
+  });
+  const row = (Array.isArray(claimed) ? claimed[0] : claimed) as OutboxRow | undefined;
+  if (!row) return false; // занята другим воркером / уже sent / attempts исчерпаны
+  return deliverRow(row);
+}
+
+/**
+ * Drain готовых к доставке событий (claim FOR UPDATE SKIP LOCKED + locked_until).
+ * Конкурентные воркеры (cron + sync tryDeliverNow) не берут одну строку дважды.
+ * Отложенные (next_attempt_at в будущем, backoff) и заблокированные пропускаются.
  */
 export async function processOutboxBatch(
   limit = 50,
 ): Promise<{ processed: number; sent: number; failed: number }> {
-  const { data: rows } = await supabaseAdmin()
-    .from("tg_outbox")
-    .select("id, attempts")
-    .is("sent_at", null)
-    .lt("attempts", 5)
-    .order("created_at", { ascending: true })
-    .limit(limit);
-
-  if (!rows?.length) return { processed: 0, sent: 0, failed: 0 };
+  const { data: rows } = await supabaseAdmin().rpc("claim_tg_outbox", {
+    p_limit: limit,
+    p_lock_seconds: LOCK_SECONDS,
+  });
+  const claimed = (rows as OutboxRow[] | null) ?? [];
+  if (!claimed.length) return { processed: 0, sent: 0, failed: 0 };
 
   let sent = 0;
   let failed = 0;
-  for (const row of rows) {
-    const ok = await processOutboxEvent((row as { id: string }).id);
+  for (const row of claimed) {
+    const ok = await deliverRow(row);
     if (ok) sent++;
     else failed++;
   }
-  return { processed: rows.length, sent, failed };
+  return { processed: claimed.length, sent, failed };
 }
 
 /**
