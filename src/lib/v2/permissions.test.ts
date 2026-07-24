@@ -122,6 +122,11 @@ describe("Permission matrix invariants", () => {
     expect(granted).toEqual(["verified"]);
   });
 
+  it("только verified получает view_received_interests (REQ-1: страница и API сходятся на одном праве)", () => {
+    const granted = ALL_ROLES.filter((r) => hasPermission(r, "view_received_interests"));
+    expect(granted).toEqual(["verified"]);
+  });
+
   it("только verified виден в feed (Shadow Active core constraint)", () => {
     const granted = ALL_ROLES.filter((r) => hasPermission(r, "be_visible_in_feed"));
     expect(granted).toEqual(["verified"]);

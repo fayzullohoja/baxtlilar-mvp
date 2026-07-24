@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Link } from "@/i18n/navigation";
+import { Link, redirect } from "@/i18n/navigation";
 import { requireActiveUser } from "@/lib/auth/active-guard";
+import { deriveRole, hasPermission } from "@/lib/v2/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { getMiniProfiles } from "@/lib/profile/mini";
 import { cityLabel } from "@/lib/profile/cities";
@@ -60,6 +61,13 @@ export default async function RequestsPage({
   const { tab } = await searchParams;
   setRequestLocale(locale);
   const user = await requireActiveUser(locale, { allowPaused: true });
+  // REQ-1: тот же view_received_interests-гейт, что и в api/requests/[id]/decision.
+  // Иначе shadow-юзер (lifecycle=active, verification_status=needs_changes/rejected)
+  // видел входящие заявки и мини-профили отправителей, хотя любое действие по ним
+  // API отдаёт 403. Гейт стоит ДО supabaseAdmin() — без права не читаем БД вовсе.
+  if (!hasPermission(deriveRole(user.lifecycle_state, user.verification_status), "view_received_interests")) {
+    redirect({ href: "/main", locale });
+  }
   const t = await getTranslations("Requests");
   const sb = supabaseAdmin();
   const isOut = tab === "outgoing";
