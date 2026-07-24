@@ -308,6 +308,9 @@ export const familyChildrenSchema = z
     // Сколько раз состоял(а) в браке — только при marital='divorced' (T-101).
     // COLD/приватно (extended.family), в публичной анкете не показывается.
     previous_marriages: z.enum(tuple(vals(PREVIOUS_MARRIAGES))).optional().nullable(),
+    // Пояснение к статусу «Другое» — только при marital='other' (T-102).
+    // COLD/приватно (extended.family).
+    marital_other: z.string().trim().max(120).optional().nullable(),
     future_children_plan: z.enum(tuple(vals(FUTURE_CHILDREN_PLAN))),
   });
 // Ревью оунера Экран 5: жёсткий refine убран. У количества детей появился вариант

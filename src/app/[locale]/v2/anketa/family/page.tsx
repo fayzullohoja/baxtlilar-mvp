@@ -58,6 +58,7 @@ export default async function V2AnketaFamilyPage({
           initial={{
             marital_status: (draft.marital_status as string) ?? "",
             previous_marriages: (family.previous_marriages as string) ?? "",
+            marital_other: (family.marital_other as string) ?? "",
             has_children: (draft.has_children as string) ?? "",
             future_children_plan: (draft.future_children_plan as string) ?? "",
             children_count: legacyCount,

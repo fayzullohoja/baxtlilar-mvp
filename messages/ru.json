@@ -185,6 +185,8 @@
     "family_title": "Семья",
     "marital_label": "Семейное положение",
     "prevMarriagesLabel": "Сколько раз Вы состояли в официальном браке?",
+    "maritalOtherLabel": "Уточните семейное положение",
+    "maritalOtherPlaceholder": "Кратко опишите",
     "children_label": "Дети",
     "children_plan_label": "Планы на детей",
     "values_title": "Ценности и вера",

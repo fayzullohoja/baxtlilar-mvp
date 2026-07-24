@@ -185,6 +185,8 @@
     "family_title": "Family",
     "marital_label": "Marital status",
     "prevMarriagesLabel": "How many times have you been officially married?",
+    "maritalOtherLabel": "Please specify your marital status",
+    "maritalOtherPlaceholder": "Briefly describe",
     "children_label": "Children",
     "children_plan_label": "Plans for children",
     "values_title": "Values and faith",

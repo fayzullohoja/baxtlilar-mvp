@@ -59,6 +59,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     parsed.data.marital_status === "divorced"
       ? (parsed.data.previous_marriages ?? null)
       : null;
+  // T-102: пояснение к «Другое» — только при marital='other'; при смене статуса чистим.
+  familyUpdates.marital_other =
+    parsed.data.marital_status === "other"
+      ? (parsed.data.marital_other?.trim() || null)
+      : null;
   const newExtended = { ...ext, family: { ...familySection, ...familyUpdates } };
 
   const { error: saveErr } = await sb

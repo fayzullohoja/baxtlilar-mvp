@@ -185,6 +185,8 @@
     "family_title": "Aile",
     "marital_label": "Medeni durum",
     "prevMarriagesLabel": "Kaç kez resmî nikâh yaptınız?",
+    "maritalOtherLabel": "Medeni durumunuzu belirtin",
+    "maritalOtherPlaceholder": "Kısaca açıklayın",
     "children_label": "Çocuklar",
     "children_plan_label": "Çocuk planları",
     "values_title": "Değerler ve inanç",
