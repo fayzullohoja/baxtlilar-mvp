@@ -4,6 +4,7 @@ import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { familyChildrenSchema } from "@/lib/profile/schemas";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
+import { stampExtended } from "@/lib/profile/extended";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         // youngest_child_age устарел (заменён на children_age_range диапазон) —
         // чистим hot-колонку, чтобы не осталось легаси-значения.
         youngest_child_age: null,
-        extended: newExtended,
+        extended: stampExtended(newExtended),
       },
       { onConflict: "user_id" },
     );

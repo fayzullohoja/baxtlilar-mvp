@@ -4,6 +4,7 @@ import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { parentsSchema } from "@/lib/profile/schemas";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
+import { stampExtended } from "@/lib/profile/extended";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const { error: saveErr } = await sb
     .from("user_profiles")
-    .upsert({ user_id: user.id, extended: newExtended }, { onConflict: "user_id" });
+    .upsert({ user_id: user.id, extended: stampExtended(newExtended) }, { onConflict: "user_id" });
   if (saveErr)
     return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 

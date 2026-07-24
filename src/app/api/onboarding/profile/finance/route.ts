@@ -4,6 +4,7 @@ import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { financeSchema } from "@/lib/profile/schemas";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
+import { stampExtended } from "@/lib/profile/extended";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .upsert(
       {
         user_id: user.id,
-        extended: { ...ext, finance: newFinance },
+        extended: stampExtended({ ...ext, finance: newFinance }),
       },
       { onConflict: "user_id" },
     );
