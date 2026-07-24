@@ -184,6 +184,9 @@
     "err_age": "Yosh oraligʻini tekshiring (18+, «dan» ≤ «gacha»)",
     "family_title": "Oila",
     "marital_label": "Oilaviy holat",
+    "prevMarriagesLabel": "Necha marta rasmiy nikohda boʻlgansiz?",
+    "maritalOtherLabel": "Oilaviy holatni aniqlashtiring",
+    "maritalOtherPlaceholder": "Qisqacha yozing",
     "children_label": "Farzandlar",
     "children_plan_label": "Farzand rejalari",
     "values_title": "Qadriyatlar va eʼtiqod",
@@ -221,8 +224,8 @@
     "back": "Orqaga",
     "err_bio_has_contacts": "Matnda kontakt (telefon, username, havola) topildi. Oʻchiring — bu yerda u ishlamaydi.",
     "err_name_has_contacts": "Ismda kontakt topildi. Faqat ism, havolasiz.",
-    "err_bio_too_short": "Koʻproq yozing — kamida 30 ta belgi.",
-    "err_bio_too_long": "Juda uzun — maksimum 1000 ta belgi.",
+    "err_bio_too_short": "Koʻproq yozing — kamida 50 belgi.",
+    "err_bio_too_long": "Juda uzun — koʻpi bilan 500 belgi.",
     "err_must_be_18": "Yosh 18 yosh yoki undan koʻp boʻlishi kerak.",
     "err_invalid_age": "Tugʻilgan sanani tekshiring.",
     "err_region_required_for_uz": "Oʻzbekistonda yashash uchun viloyat yoki shaharni tanlang.",
@@ -337,7 +340,7 @@
     "nativeLanguageHint": "Bittasi — oilangizning asosiy tili.",
     "spokenLanguagesLabel": "Qaysi tillarda gaplashasiz",
     "bioLabel": "O'zimiz haqida",
-    "bioHint": "Sizning haqingizda nima muhim. Rekvizit emas — tabiat, odatlar, qanday yashaysiz. Kamida 30 ta soʻz.",
+    "bioHint": "Siz haqingizda muhim narsalar — xarakter, odatlar. 50–500 belgi.",
     "bioPlaceholder": "Misol: shoq, oilani va halollikni qiymatlang, pishirishni va sayohatni yoqtiraman. Oila tutatishga jiddiy yondashuvchi odamning bilan tanishmoqchiman.",
     "educationLabel": "Ta'lim",
     "activityFieldLabel": "Faoliyat sohasi",
@@ -530,6 +533,7 @@
     "finance_scale_hint": "1 — asosiy mezon emas, 5 — juda muhim.",
     "err_bio_too_few_words": "Kamida 30 ta soʻz.",
     "bio_word_counter": "Kamida 30 ta soʻz. Hozir: {current}/30.",
+    "bio_char_counter": "Belgilar: {current}/500 (kamida 50).",
     "progress_halfway": "Anketaning yarmidan koʻpi ortda qoldi. Yana ozgina qoldi."
   },
   "Quiz": {
@@ -1006,6 +1010,10 @@
       "widowed__m": "Beva",
       "widowed__f": "Beva"
     },
+    "PREVIOUS_MARRIAGES": {
+      "one": "1 marta",
+      "two_plus": "2 marta va undan koʻp"
+    },
     "HAS_CHILDREN": {
       "no": "Yoʻq",
       "yes": "Ha"
@@ -1123,6 +1131,7 @@
       "with_wife_family": "Xotinning oilasi bilan",
       "separate": "Ota-onadan alohida",
       "temporary_then_separate": "Vaqtincha ota-ona bilan, keyin alohida",
+      "separate_then_parents": "Avval alohida, keyin ota-ona bilan",
       "open_to_discuss": "Kelishuvga qarab",
       "unsure": "Hali qaror qilmaganman",
       "with_husband_family__m": "O‘z oilam bilan yashash",
@@ -1243,6 +1252,7 @@
       "shared_50_50": "Tengma-teng 50/50",
       "by_skill": "Koʻnikma boʻyicha",
       "mostly_partner": "Asosan hamroh",
+      "hire_help": "Zarur boʻlsa, uy yordamchisini yollashga tayyormiz",
       "mostly_partner__m": "Asosan xotin",
       "mostly_partner__f": "Asosan er"
     },
@@ -1275,6 +1285,7 @@
     },
     "INCOME_SOURCE_STABILITY": {
       "stable": "Barqaror daromadim bor",
+      "high": "Yuqori daromad",
       "unstable": "Daromadim oʻzgaruvchan",
       "none": "Hozircha daromadim yoʻq",
       "prefer_not": "Javob berishni xohlamayman"

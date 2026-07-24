@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
-import { Field, Select, scrollToFirstError } from "./AnketaFields";
+import { Field, Select, TextInput, scrollToFirstError } from "./AnketaFields";
 import {
   ChildrenDetails,
   childrenComplete,
@@ -13,6 +13,7 @@ import {
 } from "./ChildrenDetails";
 import {
   MARITAL_STATUS,
+  PREVIOUS_MARRIAGES,
   HAS_CHILDREN,
   FUTURE_CHILDREN_PLAN,
   CHILDREN_LIVING,
@@ -53,6 +54,8 @@ export function V2AnketaFamilyForm({
   gender: Gender | null;
   initial?: {
     marital_status?: string;
+    previous_marriages?: string;
+    marital_other?: string;
     has_children?: string;
     future_children_plan?: string;
     children_count?: string;
@@ -63,6 +66,12 @@ export function V2AnketaFamilyForm({
   const router = useRouter();
   const t = useTranslations("Anketa");
   const [marital, setMarital] = useState(initial?.marital_status ?? "");
+  const [prevMarriages, setPrevMarriages] = useState(
+    initial?.previous_marriages ?? "",
+  );
+  const [maritalOther, setMaritalOther] = useState(
+    initial?.marital_other ?? "",
+  );
   const [hasChildren, setHasChildren] = useState(initial?.has_children ?? "");
   const [children, setChildren] = useState<ChildInfo[]>(() =>
     initialChildren(initial ?? {}),
@@ -76,11 +85,19 @@ export function V2AnketaFamilyForm({
   const [showErrors, setShowErrors] = useState(false);
 
   const showChildrenDetails = hasChildren === "yes";
+  // T-101: при «В разводе» — обязательный вопрос о числе прошлых браков.
+  const showPrevMarriages = marital === "divorced";
+  // T-102: при «Другое» — обязательное поле пояснения.
+  const showMaritalOther = marital === "other";
 
   // §2 P0: эквивалент прежнего valid (marital + hasChildren + plan; при «есть дети» —
   // у каждого указан возраст через childrenComplete).
   const errors: Record<string, string> = {};
   if (!marital) errors.marital_status = t("err_select_required");
+  if (showPrevMarriages && !prevMarriages)
+    errors.previous_marriages = t("err_select_required");
+  if (showMaritalOther && !maritalOther.trim())
+    errors.marital_other = t("err_field_required");
   if (!hasChildren) errors.has_children = t("err_select_required");
   if (showChildrenDetails && !childrenComplete(children))
     errors.children = t("err_field_required");
@@ -101,6 +118,10 @@ export function V2AnketaFamilyForm({
         has_children: hasChildren,
         future_children_plan: plan,
       };
+      if (showPrevMarriages && prevMarriages)
+        body.previous_marriages = prevMarriages;
+      if (showMaritalOther && maritalOther.trim())
+        body.marital_other = maritalOther.trim();
       if (showChildrenDetails) {
         body.children_count = children.length; // hot int = длина массива
         body.children = children; // COLD extended.family.children (пол + возраст)
@@ -137,11 +158,46 @@ export function V2AnketaFamilyForm({
         <Select
           options={MARITAL_STATUS}
           value={marital}
-          onChange={setMarital}
+          onChange={(v) => {
+            setMarital(v);
+            // T-101/T-102: при смене статуса скрытые поля очищаются.
+            if (v !== "divorced") setPrevMarriages("");
+            if (v !== "other") setMaritalOther("");
+          }}
           locale={locale}
           gender={gender}
         />
       </Field>
+
+      {showPrevMarriages ? (
+        <Field
+          label={t("prevMarriagesLabel")}
+          required
+          error={showErrors ? errors.previous_marriages : undefined}
+        >
+          <Select
+            options={PREVIOUS_MARRIAGES}
+            value={prevMarriages}
+            onChange={setPrevMarriages}
+            locale={locale}
+          />
+        </Field>
+      ) : null}
+
+      {showMaritalOther ? (
+        <Field
+          label={t("maritalOtherLabel")}
+          required
+          error={showErrors ? errors.marital_other : undefined}
+        >
+          <TextInput
+            value={maritalOther}
+            onChange={(e) => setMaritalOther(e.target.value)}
+            maxLength={120}
+            placeholder={t("maritalOtherPlaceholder")}
+          />
+        </Field>
+      ) : null}
 
       <Field label={t("children_label")} required error={showErrors ? errors.has_children : undefined}>
         <Select

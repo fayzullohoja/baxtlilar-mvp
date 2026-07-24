@@ -3,6 +3,7 @@ import {
   vals,
   GENDER,
   MARITAL_STATUS,
+  PREVIOUS_MARRIAGES,
   HAS_CHILDREN,
   CHILDREN_LIVING,
   CHILDREN_AGE_RANGE,
@@ -261,12 +262,12 @@ export const birthPlaceSchema = z
 
 /** Экран 3 — О себе + образование + деятельность + формат занятости. */
 export const selfSchema = z.object({
-  // Спек §2: «О себе» — минимум 30 СЛОВ (не символов), максимум 1000 символов.
+  // T-104 (правки оунера): «О себе» — от 50 до 500 СИМВОЛОВ (было 30 слов / 1000 симв).
   bio: z
     .string()
     .trim()
-    .max(1000, { message: "bio_too_long" })
-    .refine((s) => s.split(/\s+/).filter(Boolean).length >= 30, { message: "bio_too_few_words" })
+    .min(50, { message: "bio_too_short" })
+    .max(500, { message: "bio_too_long" })
     .refine((s) => !containsContact(s), { message: "bio_has_contacts" }),
   education: z.enum(tuple(vals(EDUCATION))),
   // Ревью оунера Экран 4: условное поле «специальность / направление» (показывается
@@ -304,6 +305,12 @@ export const familyChildrenSchema = z
     children_age_range: z.enum(tuple(vals(CHILDREN_AGE_RANGE))).optional().nullable(),
     // С кем проживают дети (COLD → extended.family, опц.).
     children_living: z.enum(tuple(vals(CHILDREN_LIVING))).optional().nullable(),
+    // Сколько раз состоял(а) в браке — только при marital='divorced' (T-101).
+    // COLD/приватно (extended.family), в публичной анкете не показывается.
+    previous_marriages: z.enum(tuple(vals(PREVIOUS_MARRIAGES))).optional().nullable(),
+    // Пояснение к статусу «Другое» — только при marital='other' (T-102).
+    // COLD/приватно (extended.family).
+    marital_other: z.string().trim().max(120).optional().nullable(),
     future_children_plan: z.enum(tuple(vals(FUTURE_CHILDREN_PLAN))),
   });
 // Ревью оунера Экран 5: жёсткий refine убран. У количества детей появился вариант
@@ -462,7 +469,7 @@ export const financeSchema = z.object({
  *  взаимного интереса даже после публикации профиля. */
 export const lifestyleSchema = z.object({
   lifestyle_pace: z.enum(tuple(vals(LIFESTYLE_PACE))),
-  free_time_activities: z.array(z.enum(tuple(vals(FREE_TIME_ACTIVITIES)))).min(1).max(3),
+  free_time_activities: z.array(z.enum(tuple(vals(FREE_TIME_ACTIVITIES)))).min(1).max(5),
   daily_routine: z.enum(tuple(vals(DAILY_ROUTINE))),
   bad_habits_level: z.enum(tuple(vals(BAD_HABITS_LEVEL))).optional(),
   nutrition_style: z.enum(tuple(vals(NUTRITION_STYLE))).optional(),
@@ -583,7 +590,7 @@ export const extendedSchema = z
     lifestyle: z
       .object({
         lifestyle_pace: z.string().max(40).optional(),
-        free_time_activities: z.array(z.string().max(40)).max(3).optional(),
+        free_time_activities: z.array(z.string().max(40)).max(5).optional(),
         daily_routine: z.string().max(40).optional(),
         bad_habits_level: z.string().max(40).optional(),
         nutrition_style: z.string().max(40).optional(),

@@ -62,12 +62,12 @@ export function V2AnketaSelfForm({
   const [err, setErr] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
-  // §2 P0 + спек §2: «О себе» — минимум 30 СЛОВ (не символов), максимум 1000 симв.
-  const bioWords = bio.trim() ? bio.trim().split(/\s+/).length : 0;
+  // T-104 (правки оунера): «О себе» — от 50 до 500 СИМВОЛОВ, со счётчиком.
+  const bioLen = bio.trim().length;
   const errors: Record<string, string> = {};
   if (!bio.trim()) errors.bio = t("err_field_required");
-  else if (bioWords < 30) errors.bio = t("err_bio_too_few_words");
-  else if (bio.trim().length > 1000) errors.bio = t("err_bio_too_long");
+  else if (bioLen < 50) errors.bio = t("err_bio_too_short");
+  else if (bioLen > 500) errors.bio = t("err_bio_too_long");
   if (!education) errors.education = t("err_select_required");
   if (!activityField) errors.activity_field = t("err_select_required");
   if (!employmentStatus) errors.employment_status = t("err_select_required");
@@ -126,7 +126,7 @@ export function V2AnketaSelfForm({
       <Field
         label={t('bioLabel')}
         required
-        hint={bioWords < 30 ? t('bio_word_counter', { current: bioWords }) : t('bioHint')}
+        hint={t('bio_char_counter', { current: bioLen })}
         error={showErrors ? errors.bio : undefined}
       >
         <TextArea

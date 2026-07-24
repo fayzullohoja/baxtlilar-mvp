@@ -68,6 +68,12 @@ export const ONBOARDING_PATHS: Record<OnboardingStep, string> = {
  * Используется /api/onboarding/back и transition() (разрешает ровно один back-шаг).
  */
 export const ONBOARDING_BACK: Partial<Record<OnboardingStep, OnboardingStep>> = {
+  // Верификация (2026-07-24, T-100): с экрана паспорта — назад к intro
+  // (согласие на биометрию), с селфи — назад к паспорту, чтобы перезалить документ.
+  // verification_intro back-цели не имеет (первый экран верификации). После анкеты
+  // назад в верификацию нельзя — profile_basic без back (одобренную личность не пере-сверяют).
+  doc_upload: "verification_intro",
+  selfie_upload: "doc_upload",
   profile_appearance: "profile_basic",
   profile_birth_place: "profile_appearance",
   profile_self: "profile_birth_place",

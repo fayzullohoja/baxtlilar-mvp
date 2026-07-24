@@ -31,6 +31,14 @@ export const MARITAL_STATUS: Opt[] = [
  *  (ревью оунера: спорный статус — не выпускать в matching автоматически). */
 export const MARITAL_STATUS_NEEDS_REVIEW = ["divorcing", "married_separate"] as const;
 
+/** Сколько раз состоял(а) в официальном браке — показывается только при
+ *  marital_status='divorced' (ревью оунера, T-101). COLD/приватно (extended.family),
+ *  в публичной анкете не отображается. Работает одинаково для М и Ж. */
+export const PREVIOUS_MARRIAGES: Opt[] = [
+  { value: "one", ru: "1 раз", uz: "1 marta" },
+  { value: "two_plus", ru: "2 раза и более", uz: "2 marta va undan koʻp" },
+];
+
 export const HAS_CHILDREN: Opt[] = [
   { value: "no", ru: "Нет", uz: "Yoʻq" },
   { value: "yes", ru: "Да", uz: "Ha" },
@@ -228,6 +236,12 @@ export const POST_MARRIAGE_LIVING: Opt[] = [
     ru: "Временно с родителями, потом отдельно",
     uz: "Vaqtincha ota-ona bilan, keyin alohida",
   },
+  // T-104 (правки оунера): обратный переходный вариант.
+  {
+    value: "separate_then_parents",
+    ru: "Сначала отдельно, затем с родителями",
+    uz: "Avval alohida, keyin ota-ona bilan",
+  },
   {
     value: "open_to_discuss",
     ru: "По договорённости",
@@ -399,6 +413,8 @@ export const HOUSEHOLD_RESPONSIBILITY_MODEL: Opt[] = [
   { value: "shared_50_50", ru: "Поровну 50/50", uz: "Tengma-teng 50/50" },
   { value: "by_skill", ru: "По навыкам", uz: "Koʻnikma boʻyicha" },
   { value: "mostly_partner", ru: "В основном партнёр", uz: "Asosan hamroh" },
+  // T-104 (правки оунера): +готовность нанимать помощь по дому.
+  { value: "hire_help", ru: "При необходимости готовы нанимать помощницу по дому", uz: "Zarur boʻlsa, uy yordamchisini yollashga tayyormiz" },
 ];
 
 /** Экран 12 — Важность жить отдельно от родителей (в extended.living). */
@@ -446,6 +462,8 @@ export const DISTRICT_VISIBLE_DEFAULT = false;
 /** Стабильность источника дохода. */
 export const INCOME_SOURCE_STABILITY: Opt[] = [
   { value: "stable", ru: "Есть стабильный доход", uz: "Barqaror daromadim bor" },
+  // T-104 (правки оунера): +«Высокий доход».
+  { value: "high", ru: "Высокий доход", uz: "Yuqori daromad" },
   { value: "unstable", ru: "Доход бывает непостоянным", uz: "Daromadim oʻzgaruvchan" },
   { value: "none", ru: "Сейчас нет дохода", uz: "Hozircha daromadim yoʻq" },
   // Спек 1.6: поле required, но с escape-вариантом «не отвечать».
@@ -797,7 +815,7 @@ export const labelOf = (o: Opt[], value: string, locale: string): string =>
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const OPTION_GROUPS: Record<string, Opt[]> = {
-  GENDER, MARITAL_STATUS, HAS_CHILDREN, CHILDREN_PLAN, RELIGION, LIFE_VALUES,
+  GENDER, MARITAL_STATUS, PREVIOUS_MARRIAGES, HAS_CHILDREN, CHILDREN_PLAN, RELIGION, LIFE_VALUES,
   EDUCATION, EMPLOYMENT, GEO_PREFERENCE, CITIZENSHIP, UZ_REGIONS, LANGUAGES_LIST,
   RELIGION_PRACTICE, RELIGION_PARTNER_MATCH, POST_MARRIAGE_LIVING, MARRIAGE_READINESS,
   RELOCATION_READINESS, ACTIVITY_FIELDS, EMPLOYMENT_STATUS, EMPLOYMENT_FORMAT,

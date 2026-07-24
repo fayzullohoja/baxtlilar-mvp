@@ -53,6 +53,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
   // Легаси-диапазон возраста заменён на children[].age — всегда чистим.
   familyUpdates.children_age_range = null;
+  // T-101: сколько раз в браке — только при 'divorced'; при смене статуса чистим
+  // (скрытые данные не сохраняются). COLD/приватно, не в публичной анкете.
+  familyUpdates.previous_marriages =
+    parsed.data.marital_status === "divorced"
+      ? (parsed.data.previous_marriages ?? null)
+      : null;
+  // T-102: пояснение к «Другое» — только при marital='other'; при смене статуса чистим.
+  familyUpdates.marital_other =
+    parsed.data.marital_status === "other"
+      ? (parsed.data.marital_other?.trim() || null)
+      : null;
   const newExtended = { ...ext, family: { ...familySection, ...familyUpdates } };
 
   const { error: saveErr } = await sb

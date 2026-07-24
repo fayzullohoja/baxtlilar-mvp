@@ -131,9 +131,10 @@ export function V2AnketaLifestyleForm({
       >
         <Chips
           options={FREE_TIME_ACTIVITIES}
+          /* T-104: макс. выбор увеличен с 3 до 5 */
           selected={freeTime}
           onToggle={toggleFreeTime}
-          max={3}
+          max={5}
           locale={locale}
         />
       </Field>

@@ -29,6 +29,14 @@ describe("ONBOARDING_BACK — кнопка «Назад»", () => {
     expect(step).toBe("profile_basic");
   });
 
+  it("верификация: паспорт → intro, селфи → паспорт (T-100)", () => {
+    expect(ONBOARDING_BACK.doc_upload).toBe("verification_intro");
+    expect(ONBOARDING_BACK.selfie_upload).toBe("doc_upload");
+    // intro — первый экран верификации, back нет; из анкеты назад в верификацию нельзя
+    expect(ONBOARDING_BACK.verification_intro).toBeUndefined();
+    expect(ONBOARDING_BACK.profile_basic).toBeUndefined();
+  });
+
   it("покрывает весь V4-поток анкеты (appearance…preview) + quiz/attribution/tutorial", () => {
     const mustHaveBack: OnboardingStep[] = [
       "profile_appearance",
