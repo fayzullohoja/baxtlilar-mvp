@@ -5,6 +5,7 @@ import { enqueueAndDeliver } from "@/lib/v2/tg-outbox-worker";
 import { areBlocked } from "@/lib/safety/blocks";
 import { containsContact } from "@/lib/profile/schemas";
 import { requirePermissionForRequest } from "@/lib/v2/with-permission";
+import { assertFeatureEnabledForRequest } from "@/lib/features/flags";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,12 @@ export const dynamic = "force-dynamic";
 const AUTO_DECLINE_HOURS = 72;
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // C-033 kill switch: отправка интересов выключается без деплоя. Гейтим только
+  // ОТПРАВКУ — приём/резолв уже отправленных (/requests/[id]/decision) не трогаем,
+  // чтобы in-flight интересы могли завершиться.
+  const off = await assertFeatureEnabledForRequest("interests");
+  if (off) return off;
+
   // V2 Phase A: единый permission gate (вместо ручной проверки роли).
   const gate = await requirePermissionForRequest("send_interest");
   if ("response" in gate) return gate.response;

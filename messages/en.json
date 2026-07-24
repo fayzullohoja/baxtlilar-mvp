@@ -566,7 +566,9 @@
     "error_body": "A temporary technical hiccup on our side. Refresh the page in a minute — your data is safe.",
     "empty_title": "The algorithm is looking for the right person.",
     "empty_body": "There's no profile yet that matches yours closely enough. That's normal — we don't show just anyone. New people appear every day: as soon as we find the right person, they'll be here.",
-    "empty_body_2": "In the meantime, you can widen your preferred age range in the profile or complete your psycho-portrait. The more precise your data, the broader and more accurate the matching."
+    "empty_body_2": "In the meantime, you can widen your preferred age range in the profile or complete your psycho-portrait. The more precise your data, the broader and more accurate the matching.",
+    "maint_title": "Matching is paused for maintenance.",
+    "maint_body": "We've temporarily paused new matches while we do some upkeep. Nothing is lost — check back a little later and today's match will be here."
   },
   "Nav": {
     "feed": "Feed",

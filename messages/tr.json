@@ -566,7 +566,9 @@
     "error_body": "Bizim tarafımızda geçici bir teknik aksaklık. Bir dakika sonra sayfayı yenileyin — verileriniz güvende.",
     "empty_title": "Algoritma doğru kişiyi arıyor.",
     "empty_body": "Henüz sizinkiyle yeterince eşleşen bir profil yok. Bu normal — herkesi göstermiyoruz. Her gün yeni insanlar geliyor: doğru kişiyi bulur bulmaz burada olacak.",
-    "empty_body_2": "Bu arada — profilde tercih ettiğiniz yaş aralığını genişletebilir veya psiko-portrenizi tamamlayabilirsiniz. Verileriniz ne kadar kesin olursa, eşleştirme o kadar geniş ve isabetli olur."
+    "empty_body_2": "Bu arada — profilde tercih ettiğiniz yaş aralığını genişletebilir veya psiko-portrenizi tamamlayabilirsiniz. Verileriniz ne kadar kesin olursa, eşleştirme o kadar geniş ve isabetli olur.",
+    "maint_title": "Eşleştirme bakım için duraklatıldı.",
+    "maint_body": "Bakım süresince yeni eşleşmeleri geçici olarak duraklattık. Hiçbir şey kaybolmadı — biraz sonra tekrar bakın, bugünün eşleşmesi burada olacak."
   },
   "Nav": {
     "feed": "Akış",
