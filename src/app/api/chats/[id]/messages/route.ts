@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { containsContact } from "@/lib/profile/schemas";
-import { enqueueAndDeliver } from "@/lib/v2/tg-outbox-worker";
+import { tryDeliverNow } from "@/lib/v2/tg-outbox-worker";
 import { loadChatRow, getLiveState } from "@/lib/chat/live";
 import { areBlocked } from "@/lib/safety/blocks";
 import { requirePermissionForRequest } from "@/lib/v2/with-permission";
@@ -77,32 +77,31 @@ export async function POST(
   if ((recent ?? 0) >= RATE_MAX)
     return NextResponse.json({ ok: false, error: "too_fast" }, { status: 429 });
 
-  // дебаунс пуша: уведомляем только если у получателя ещё НЕТ непрочитанных от меня (первое в серии)
-  const { count: unreadFromMe } = await sb
-    .from("chat_messages")
-    .select("id", { count: "exact", head: true })
-    .eq("chat_id", id)
-    .eq("sender_id", user.id)
-    .is("read_at", null);
-  const shouldPush = (unreadFromMe ?? 0) === 0;
-
-  const { data: inserted, error: insertErr } = await sb
-    .from("chat_messages")
-    .insert({ chat_id: id, sender_id: user.id, body: text })
-    .select("id, sender_id, body, created_at, read_at")
-    .single();
+  // C-032: вставка сообщения + дебаунс + last_message_at/typing + enqueue
+  // new_message — ОДНА транзакция (queue outage не теряет chat event; больше не
+  // dual-write). Дебаунс и получатель считаются внутри RPC.
+  const { data: sendData, error: sendErr } = await sb.rpc("send_chat_message", {
+    p_chat: id,
+    p_sender: user.id,
+    p_body: text,
+  });
+  const sent = (Array.isArray(sendData) ? sendData[0] : sendData) as
+    | { message_id?: string; created_at?: string; should_push?: boolean; outbox_id?: string }
+    | undefined;
   // Нельзя отвечать «ok», если вставка не прошла: пользователь увидит, что
-  // сообщение «отправлено», а его нет (потеря данных). Не трогаем чат/пуш на сбое.
-  if (insertErr || !inserted)
+  // сообщение «отправлено», а его нет (потеря данных).
+  if (sendErr || !sent?.message_id)
     return NextResponse.json({ ok: false, error: "send_failed" }, { status: 500 });
-  // отправитель больше не «печатает» + обновляем время последнего сообщения
-  const stopTyping = user.id === chat.user_a ? { typing_a_until: null } : { typing_b_until: null };
-  await sb.from("chats").update({ last_message_at: new Date().toISOString(), ...stopTyping }).eq("id", id);
 
-  if (shouldPush) {
-    // F1: через retry-safe outbox. Worker сам резолвит telegram_id, пропускает
-    // deleted-аккаунты и рендерит текст на локали получателя.
-    await enqueueAndDeliver(otherIdEarly, "new_message");
-  }
-  return NextResponse.json({ ok: true, message: inserted });
+  // outbox-строка уже в транзакции RPC; здесь best-effort мгновенная доставка, cron — фолбэк.
+  if (sent.should_push) await tryDeliverNow(sent.outbox_id ?? null);
+
+  const message = {
+    id: sent.message_id,
+    sender_id: user.id,
+    body: text,
+    created_at: sent.created_at,
+    read_at: null,
+  };
+  return NextResponse.json({ ok: true, message });
 }

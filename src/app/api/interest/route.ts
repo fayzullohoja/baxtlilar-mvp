@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { DAILY_LIMITS } from "@/lib/matching/quota";
-import { enqueueAndDeliver } from "@/lib/v2/tg-outbox-worker";
+import { tryDeliverNow } from "@/lib/v2/tg-outbox-worker";
 import { areBlocked } from "@/lib/safety/blocks";
 import { containsContact } from "@/lib/profile/schemas";
 import { requirePermissionForRequest } from "@/lib/v2/with-permission";
@@ -70,14 +70,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     p_limit: DAILY_LIMITS.interests,
   });
   if (error) return NextResponse.json({ ok: false, error: "failed" }, { status: 500 });
-  const row = (Array.isArray(data) ? data[0] : data) as { result?: string; chat_id?: string } | undefined;
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { result?: string; chat_id?: string; outbox_id?: string }
+    | undefined;
 
   switch (row?.result) {
+    // C-032: уведомление уже зафиксировано в транзакции process_interest (не
+    // dual-write). Здесь только best-effort мгновенная доставка; cron — фолбэк.
     case "mutual":
-      await enqueueAndDeliver(receiver_id, "mutual_match");
+      await tryDeliverNow(row.outbox_id ?? null);
       return NextResponse.json({ ok: true, mutual: true, next: `/chats/${row.chat_id}` });
     case "sent":
-      await enqueueAndDeliver(receiver_id, "new_interest");
+      await tryDeliverNow(row.outbox_id ?? null);
       return NextResponse.json({ ok: true, mutual: false });
     case "blocked":
       return NextResponse.json({ ok: false, error: "blocked" }, { status: 403 });
