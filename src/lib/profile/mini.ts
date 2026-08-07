@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapRows } from "@/lib/db/unwrap";
 import { signedPhotoUrls } from "@/lib/uploads/storage";
 import { ageFromDate } from "@/lib/profile/schemas";
 import { PHOTO_TYPES_PRE_MUTUAL } from "@/lib/profile/options";
@@ -12,24 +13,30 @@ export async function getMiniProfiles(ids: string[]): Promise<Record<string, Min
   if (!unique.length) return {};
   const sb = supabaseAdmin();
 
-  const { data: profs } = await sb
-    .from("user_profiles")
-    .select("user_id, display_name, birth_date, city")
-    .in("user_id", unique);
+  // Сбой БД здесь НЕ равен «нет профилей»: молча вернув пусто, список рисует
+  // пустые карточки со ссылкой в никуда. unwrapRows делает отказ видимым.
+  const profs = unwrapRows(
+    await sb
+      .from("user_profiles")
+      .select("user_id, display_name, birth_date, city")
+      .in("user_id", unique),
+  ) as Array<Record<string, unknown>>;
   // Мини-карточка (thumbnail) может показываться ДО взаимного интереса (напр.
   // входящий pending-запрос), поэтому только PRE-MUTUAL типы (портрет). Полный
   // рост + family раскрываются post-mutual через RevealedProfile (ревью оунера 1.18).
-  const { data: photos } = await sb
+  const photos = unwrapRows(
+    await sb
     .from("profile_photos")
     .select("user_id, path, is_main, ord")
     .eq("status", "approved")
     .in("photo_type", [...PHOTO_TYPES_PRE_MUTUAL])
     .in("user_id", unique)
     .order("is_main", { ascending: false })
-    .order("ord", { ascending: true });
+    .order("ord", { ascending: true }),
+  ) as Array<Record<string, unknown>>;
 
   const pathBy: Record<string, string> = {};
-  for (const ph of photos ?? []) {
+  for (const ph of photos) {
     const uid = ph.user_id as string;
     if (!pathBy[uid]) pathBy[uid] = ph.path as string;
   }
@@ -38,7 +45,7 @@ export async function getMiniProfiles(ids: string[]): Promise<Record<string, Min
   for (const [uid, path] of Object.entries(pathBy)) if (urls[path]) photoBy[uid] = urls[path];
 
   const out: Record<string, Mini> = {};
-  for (const p of profs ?? []) {
+  for (const p of profs) {
     const uid = p.user_id as string;
     // PRIVACY: только ПЕРВОЕ имя (фамилия скрыта). Мини-карточка показывается и
     // ДО взаимного интереса (входящие pending-запросы в /requests), где фамилия

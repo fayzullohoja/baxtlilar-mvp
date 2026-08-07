@@ -17,6 +17,7 @@
 import type { VerificationStatus } from "@/lib/state-machine/types";
 import { Headline } from "./Headline";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 
 type Props = {
   status: VerificationStatus;
@@ -27,6 +28,8 @@ type Content = {
   eyebrow: string;
   title: string;
   body: string;
+  /** CTA пути восстановления. Есть только там, где юзеру ЕСТЬ что сделать. */
+  cta?: { label: string; href: string };
 };
 
 function contentFor(status: VerificationStatus, t: ReturnType<typeof useTranslations>): Content {
@@ -40,10 +43,13 @@ function contentFor(status: VerificationStatus, t: ReturnType<typeof useTranslat
         body: t("queued.body"),
       };
     case "needs_changes":
+      // Единственный путь наружу для shadow-active юзера: без этой кнопки он
+      // видит «нужно поправить» и не может ничего сделать (был тупик).
       return {
         eyebrow: t("needsChanges.label"),
         title: t("needsChanges.title"),
         body: t("needsChanges.body"),
+        cta: { label: t("needsChanges.cta"), href: "/onboarding/needs-changes" },
       };
     case "rejected":
       return {
@@ -140,6 +146,26 @@ export function VerificationPlashka({ status, submittedAt }: Props) {
       >
         {c.body}
       </p>
+      {c.cta ? (
+        <Link
+          href={c.cta.href}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginTop: "20px",
+            padding: "12px 22px",
+            background: "var(--color-v2-accent)",
+            color: "#fff",
+            borderRadius: "999px",
+            fontSize: "15px",
+            fontWeight: 700,
+            textDecoration: "none",
+          }}
+        >
+          {c.cta.label}
+        </Link>
+      ) : null}
     </div>
   );
 }

@@ -56,13 +56,18 @@ export function Field({
   error?: string;
   children: ReactNode;
 }) {
-  // Bug #34 (loop pass 10): a11y — связь label↔input через htmlFor/id.
+  // a11y: раньше htmlFor указывал на <div> — не labelable, связи label↔контрол
+  // фактически не было. Дети здесь разнородны (input/textarea/select/пилюли/чипы),
+  // поэтому связываем через role="group" + aria-labelledby: работает для любого
+  // типа контрола и не требует правок всех 14 форм анкеты.
   const id = useId();
+  const labelId = `${id}-label`;
+  const msgId = `${id}-msg`;
   const hasError = !!error;
   return (
     <div style={{ marginBottom: "22px" }} {...(hasError ? { [ANKETA_ERROR_ATTR]: "1" } : {})}>
       <label
-        htmlFor={id}
+        id={labelId}
         style={{
           display: "block",
           fontSize: "13px",
@@ -75,11 +80,15 @@ export function Field({
         {label}
         {required ? <span style={{ color: "var(--color-v2-accent)", marginLeft: "4px" }}>*</span> : null}
       </label>
-      {/* Wrap children в div с id чтобы native screen reader увидел label→control.
-          §2 P0: красная рамка = ring вокруг wrapper'а (child-type-agnostic — работает
+      {/* Группа контрола: aria-labelledby связывает с подписью, aria-describedby -
+          с ошибкой/подсказкой, aria-invalid помечает невалидное состояние.
+          §2 P0: красная рамка = ring вокруг wrapper'а (child-type-agnostic - работает
           для input/textarea/select-пилюль/chips/слайдеров одинаково). */}
       <div
         id={id}
+        role="group"
+        aria-labelledby={labelId}
+        aria-describedby={hasError || hint ? msgId : undefined}
         style={
           hasError
             ? {
@@ -93,6 +102,7 @@ export function Field({
       </div>
       {hasError ? (
         <div
+          id={msgId}
           role="alert"
           style={{
             fontSize: "12.5px",
@@ -107,6 +117,7 @@ export function Field({
         </div>
       ) : hint ? (
         <div
+          id={msgId}
           style={{
             fontSize: "12px",
             color: "var(--color-v2-ink-400)",

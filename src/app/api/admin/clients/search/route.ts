@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminApi } from "@/lib/admin/guard";
+import { requireAdminApi, adminAudit } from "@/lib/admin/guard";
 import { can } from "@/lib/admin/permissions";
 import { searchClients } from "@/lib/admin/load-clients-search";
 
@@ -26,6 +26,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     verification: sp.get("verification") ?? undefined,
   };
   const result = await searchClients(q, 30, filters, offset);
+  // Инвариант 7: массовое чтение PII-директории оставляет forensic-след — как
+  // просмотр карточки кейса (case_view). Пишем запрос и объём, не сами данные.
+  await adminAudit({
+    adminId: session.adminId,
+    action: "clients_directory_search",
+    entity: "clients_directory",
+    newValue: { q_len: q.length, offset, filters, returned: result.rows.length },
+  });
   return NextResponse.json({
     ok: true,
     rows: result.rows,

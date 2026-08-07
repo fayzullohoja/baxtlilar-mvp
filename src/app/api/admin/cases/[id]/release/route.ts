@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -13,6 +14,8 @@ export async function POST(
 ): Promise<NextResponse> {
   const { session, res } = await requireAdminApi();
   if (res) return res;
+  if (!can(session.role, "queue.work"))
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   const { id } = await params;
 
   const { data, error } = await supabaseAdmin().rpc("admin_release_case", {

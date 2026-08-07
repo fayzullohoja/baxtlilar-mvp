@@ -292,6 +292,7 @@ function BlockConfirm({
   pending: boolean;
 }) {
   const tButtons = useTranslations("Buttons");
+  const tSafety = useTranslations("ProfileSafety");
   return (
     <div
       role="dialog"
@@ -331,7 +332,7 @@ function BlockConfirm({
             marginBottom: "16px",
           }}
         >
-          {`Заблокировать ${firstName}?`}
+          {tSafety("blockConfirmTitle", { name: firstName })}
         </div>
         <p
           style={{
@@ -341,11 +342,11 @@ function BlockConfirm({
             marginBottom: "24px",
           }}
         >
-          {`Ты не будешь видеть ${firstName} в ленте. Чат закроется. Интересы между Вами отзовутся. ${firstName} не узнает об этом.`}
+          {tSafety("blockConfirmBody", { name: firstName })}
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <Button onClick={onConfirm} disabled={pending} variant="primary">
-            {pending ? "…" : "Заблокировать"}
+            {pending ? "…" : tSafety("blockConfirmAction")}
           </Button>
           <Button onClick={onClose} disabled={pending} variant="ghost">
             {tButtons("cancel")}

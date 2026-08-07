@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi, adminAudit } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { trustedIp } from "@/lib/http/ip";
 import { notifyUser } from "@/lib/telegram/notify";
@@ -14,6 +15,8 @@ export async function POST(
 ): Promise<NextResponse> {
   const { session, res } = await requireAdminApi();
   if (res) return res;
+  if (!can(session.role, "photos.moderate"))
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   const { id } = await params;
   const body = (await req.json().catch(() => ({}))) as {
     action?: "approve" | "reject" | "needs_replacement";

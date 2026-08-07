@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin/guard";
+import { requireAdmin, adminAudit } from "@/lib/admin/guard";
 import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { OpsShell } from "@/components/admin-ops/OpsShell";
@@ -58,6 +58,13 @@ export default async function Page({
 
   const filters = { status: statusF, gender: genderF, verification: verifF };
   const { rows, hasMore } = await searchClients("", PAGE_SIZE, filters);
+  // Инвариант 7: открытие PII-директории — тоже массовое чтение, оставляем след.
+  await adminAudit({
+    adminId: session.adminId,
+    action: "clients_directory_view",
+    entity: "clients_directory",
+    newValue: { filters, returned: rows.length },
+  });
 
   // href сохраняет ВСЕ активные фильтры, меняя один. Пустые (all) не пишем.
   const hrefWith = (override: Partial<typeof filters>) => {

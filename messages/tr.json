@@ -568,7 +568,12 @@
     "empty_body": "Henüz sizinkiyle yeterince eşleşen bir profil yok. Bu normal — herkesi göstermiyoruz. Her gün yeni insanlar geliyor: doğru kişiyi bulur bulmaz burada olacak.",
     "empty_body_2": "Bu arada — profilde tercih ettiğiniz yaş aralığını genişletebilir veya psiko-portrenizi tamamlayabilirsiniz. Verileriniz ne kadar kesin olursa, eşleştirme o kadar geniş ve isabetli olur.",
     "maint_title": "Eşleştirme bakım için duraklatıldı.",
-    "maint_body": "Bakım süresince yeni eşleşmeleri geçici olarak duraklattık. Hiçbir şey kaybolmadı — biraz sonra tekrar bakın, bugünün eşleşmesi burada olacak."
+    "maint_body": "Bakım süresince yeni eşleşmeleri geçici olarak duraklattık. Hiçbir şey kaybolmadı — biraz sonra tekrar bakın, bugünün eşleşmesi burada olacak.",
+    "interest_send": "İlgi gönder",
+    "interest_skip": "Şimdilik uygun değil",
+    "interest_daily_limit": "Bugünlük bu kadar. Herkesi göstermiyoruz - yarın yeni eşleşmeler için tekrar bakın.",
+    "paused_resume": "Devam et",
+    "paused_resuming": "Devam ediliyor…"
   },
   "Nav": {
     "feed": "Akış",
@@ -891,7 +896,10 @@
     "reportButton": "Şikayet et",
     "blockButton": "Engelle",
     "reportSentLabel": "Şikayet gönderildi",
-    "blockedLabel": "Engellendi"
+    "blockedLabel": "Engellendi",
+    "blockConfirmTitle": "{name} engellensin mi?",
+    "blockConfirmBody": "{name} akışınızda görünmeyecek. Sohbet kapanacak. Aranızdaki ilgiler geri alınacak. {name} bilgilendirilmeyecek.",
+    "blockConfirmAction": "Engelle"
   },
   "Report": {
     "detailsPlaceholder": "Ayrıntılar (isteğe bağlı)",
@@ -973,7 +981,8 @@
     "needsChanges": {
       "label": "Düzeltme gerekiyor",
       "title": "Düzeltilmesi gerekiyor.",
-      "body": "Moderatör belgeleri düzeltmenizi istedi. Yeni fotoğraflar yükleyin — ve tekrar incelemeye gönderin."
+      "body": "Moderatör belgeleri düzeltmenizi istedi. Yeni fotoğraflar yükleyin — ve tekrar incelemeye gönderin.",
+      "cta": "Belgeleri yeniden yükle"
     },
     "rejected": {
       "label": "Reddedildi",

@@ -9,7 +9,12 @@ export const dynamic = "force-dynamic";
 export default async function NeedsChangesPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const user = await requireUserAtStep(locale, "needs_changes");
+  // Shadow-Active: решение needs_changes приходит и к активному юзеру
+  // (onboarding_step='active') — экран перезагрузки документов должен быть
+  // доступен и ему, иначе путь восстановления недостижим.
+  const user = await requireUserAtStep(locale, "needs_changes", {
+    allowActiveWithVerification: "needs_changes",
+  });
   const t = await getTranslations("Onboarding");
 
   const { data: doc } = await supabaseAdmin()

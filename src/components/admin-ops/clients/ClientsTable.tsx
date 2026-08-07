@@ -173,7 +173,7 @@ export function ClientsTable({ rows }: { rows: ClientRow[] }) {
                   >
                     {name}
                   </Link>
-                  {r.pinfl ? (
+                  {r.pinfl_masked ? (
                     <div
                       style={{
                         fontSize: 11,
@@ -181,7 +181,7 @@ export function ClientsTable({ rows }: { rows: ClientRow[] }) {
                         fontFamily: ADMIN.fontMono,
                       }}
                     >
-                      {r.pinfl}
+                      {r.pinfl_masked}
                     </div>
                   ) : null}
                 </td>

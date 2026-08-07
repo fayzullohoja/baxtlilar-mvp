@@ -11,7 +11,12 @@ export const dynamic = "force-dynamic";
 
 /** Повторная загрузка после needs_changes: грузим присланные файлы → снова на модерацию. */
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const { user, res } = await loadUserForStep("needs_changes");
+  // Shadow-Active: решение needs_changes приходит и к уже активному юзеру
+  // (lifecycle='active', onboarding_step='active') — его тоже пускаем на
+  // перезагрузку документов, иначе он в перманентном тупике.
+  const { user, res } = await loadUserForStep("needs_changes", {
+    allowActiveWithVerification: "needs_changes",
+  });
   if (res) return res;
 
   const form = await req.formData().catch(() => null);
@@ -55,12 +60,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     .eq("user_id", user.id);
   if (saveErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
+  // Shadow-active юзер УЖЕ прошёл онбординг (step='active') — ему меняем только
+  // verification_status, иначе откатили бы его назад в онбординг-поток. Юзеру в
+  // онбординге — как раньше: статус + шаг модерации.
+  const isShadowActive = user.lifecycle_state === "active";
   const tr = await tryTransition(
     user.id,
-    { verification_status: "pending_review", onboarding_step: "moderation_pending" },
+    isShadowActive
+      ? { verification_status: "pending_review" }
+      : { verification_status: "pending_review", onboarding_step: "moderation_pending" },
     "re-submitted after needs_changes",
     { kind: "user", id: user.id },
   );
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.moderation_pending });
+  return NextResponse.json({
+    ok: true,
+    next: isShadowActive ? "/main" : ONBOARDING_PATHS.moderation_pending,
+  });
 }

@@ -14,6 +14,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { requireActiveUser } from "@/lib/auth/active-guard";
+import { deriveRole, hasPermission } from "@/lib/v2/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { areBlocked } from "@/lib/safety/blocks";
 import { signedPhotoUrls } from "@/lib/uploads/storage";
@@ -49,6 +50,12 @@ export default async function V2ProfileDetailPage({
   const t = await getTranslations('Profile');
   const viewer = await requireActiveUser(locale);
   if (id === viewer.id) redirect({ href: "/main", locale });
+  // Смотреть чужие анкеты может только verified-юзер (как /main, /chats,
+  // /chats/[id]). requireActiveUser проверяет лишь lifecycle, поэтому shadow /
+  // rejected с чужим UUID иначе увидел бы pre-mutual карточку с портретом.
+  if (!hasPermission(deriveRole(viewer.lifecycle_state, viewer.verification_status), "view_feed")) {
+    redirect({ href: "/main", locale });
+  }
 
   const sb = supabaseAdmin();
   const { data: u } = await sb

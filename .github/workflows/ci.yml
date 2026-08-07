@@ -30,6 +30,11 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test:run
+      # Ревью: нарушения RSC-границы (server-only, затянутый в client-компонент)
+      # ловятся ТОЛЬКО сборкой — tsc их не видит, а в тестах server-only застаблен.
+      # Раньше такие ошибки всплывали лишь при деплое. Секретов не требует
+      # (env валидируется лениво, в рантайме).
+      - run: pnpm build
 
   sql:
     name: SQL-контракты (PG16)
@@ -49,3 +54,33 @@ jobs:
           echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
       - name: Прогнать SQL-тесты
         run: bash scripts/test-db/run-sql-tests.sh
+
+  integration:
+    name: Интеграция route→RPC (сид-БД)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Установить PostgreSQL 16
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-16 || {
+            sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+            curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+            sudo apt-get update
+            sudo apt-get install -y postgresql-16
+          }
+          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
+      # Живая связка роут→query-builder→RPC. Именно этот слой пропустил баг
+      # accept_interest (set-returning читался скаляром), поэтому гейтим в CI,
+      # а не только вручную на машине разработчика.
+      - name: Прогнать интеграционные тесты
+        run: bash scripts/test-db/run-integration-tests.sh

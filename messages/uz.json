@@ -568,7 +568,12 @@
     "empty_body": "Hozircha anketangizga yetarlicha mos keladigan anketa yoʻq. Bu normal — biz kimni boʻlsa koʻrsatmaymiz. Har kuni yangi odamlar paydo boʻladi: mos odamni topishimiz bilan u shu yerda boʻladi.",
     "empty_body_2": "Ayni paytda — anketada istagan yosh oraligʻini kengaytirishingiz yoki psixoportretni toʻldirishingiz mumkin. Maʼlumotlar qanchalik aniq boʻlsa, tanlov shunchalik keng va aniq boʻladi.",
     "maint_title": "Tanlov texnik ishlar uchun vaqtincha toʻxtatilgan.",
-    "maint_body": "Texnik ishlar vaqtida yangi tanlovlarni vaqtincha toʻxtatib turdik. Hech narsa yoʻqolmaydi — birozdan soʻng qayting, bugungi tanlov shu yerda boʻladi."
+    "maint_body": "Texnik ishlar vaqtida yangi tanlovlarni vaqtincha toʻxtatib turdik. Hech narsa yoʻqolmaydi — birozdan soʻng qayting, bugungi tanlov shu yerda boʻladi.",
+    "interest_send": "Qiziqish yuborish",
+    "interest_skip": "Hozircha mos emas",
+    "interest_daily_limit": "Bugunga yetarli. Biz kimni boʻlsa koʻrsatmaymiz — ertaga kiring, yangilarini tanlaymiz.",
+    "paused_resume": "Davom ettirish",
+    "paused_resuming": "Pauzadan chiqyapmiz…"
   },
   "Nav": {
     "feed": "Lenta",
@@ -891,7 +896,10 @@
     "reportButton": "Shikoyat qilish",
     "blockButton": "Bloklash",
     "reportSentLabel": "Shikoyat yuborildi",
-    "blockedLabel": "Bloklangan"
+    "blockedLabel": "Bloklangan",
+    "blockConfirmTitle": "{name}ni bloklaysizmi?",
+    "blockConfirmBody": "Siz {name}ni tasmada koʻrmaysiz. Chat yopiladi. Oʻzaro qiziqishlar bekor qilinadi. {name} bundan bilmaydi.",
+    "blockConfirmAction": "Bloklash"
   },
   "Report": {
     "detailsPlaceholder": "Batafsil (ixtiyoriy)",
@@ -973,7 +981,8 @@
     "needsChanges": {
       "label": "Oʻzgartirish kerak",
       "title": "Tuzatish kerak.",
-      "body": "Moderator hujjatlarni tuzatishni soʻradi. Yangi fotolarni yuklang — va qayta tekshiruvga."
+      "body": "Moderator hujjatlarni tuzatishni soʻradi. Yangi fotolarni yuklang — va qayta tekshiruvga.",
+      "cta": "Hujjatlarni qayta yuklash"
     },
     "rejected": {
       "label": "Rad etildi",

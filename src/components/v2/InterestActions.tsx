@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "./Button";
 import { InterestModal } from "./InterestModal";
 
@@ -25,6 +26,7 @@ type Props = {
 };
 
 export function InterestActions({ candidateId, candidateFirstName }: Props) {
+  const t = useTranslations("Main");
   const router = useRouter();
   const [skipping, startSkip] = useTransition();
   const [modalOpen, setModalOpen] = useState(false);
@@ -64,8 +66,7 @@ export function InterestActions({ candidateId, candidateFirstName }: Props) {
           fontFamily: "var(--font-v2-body)",
         }}
       >
-        На сегодня достаточно. Мы не показываем кого попало — загляните завтра,
-        подберём новых.
+        {t("interest_daily_limit")}
       </p>
     );
   }
@@ -78,14 +79,14 @@ export function InterestActions({ candidateId, candidateFirstName }: Props) {
           onClick={() => setModalOpen(true)}
           disabled={skipping}
         >
-          Отправить интерес
+          {t("interest_send")}
         </Button>
         <Button
           variant="secondary"
           onClick={skip}
           disabled={skipping}
         >
-          {skipping ? "..." : "Сейчас не подходит"}
+          {skipping ? "..." : t("interest_skip")}
         </Button>
       </div>
 

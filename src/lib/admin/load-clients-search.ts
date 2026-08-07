@@ -10,8 +10,12 @@ export type ClientRow = {
   full_name: string | null; // из user_identity если есть
   age: number | null;
   city: string | null;
-  pinfl: string | null;
-  passport: string | null;
+  /** Инвариант 7: самые чувствительные идентификаторы скрыты по умолчанию —
+   *  в директорию уходит только хвост, как у телефона. Полное значение видно в
+   *  карточке клиента (там просмотр пишется в аудит). Поиск не страдает: матчинг
+   *  идёт по полному значению внутри RPC admin_search_clients. */
+  pinfl_masked: string | null;
+  passport_masked: string | null;
   telegram_username: string | null;
   phone_number_masked: string | null;
   verification_status: string;
@@ -23,6 +27,14 @@ export type ClientRow = {
 function maskPhone(p: string): string {
   if (p.length < 6) return p;
   return p.slice(0, 4) + " *** " + p.slice(-4);
+}
+
+/** Скрыть идентификатор до хвоста: 14 цифр ПИНФЛ / серия+номер паспорта. */
+function maskId(v: string | null): string | null {
+  if (!v) return null;
+  const s = v.trim();
+  if (s.length <= 4) return "••••";
+  return "•••• " + s.slice(-4);
 }
 
 /**
@@ -125,8 +137,8 @@ export async function searchClients(
         : null,
       age: bd ? ageFromDate(bd) : null,
       city: (p?.city as string | null) ?? null,
-      pinfl: (i?.pinfl as string | null) ?? null,
-      passport: i ? `${i.passport_series}${i.passport_number}` : null,
+      pinfl_masked: maskId((i?.pinfl as string | null) ?? null),
+      passport_masked: maskId(i ? `${i.passport_series}${i.passport_number}` : null),
       telegram_username: (u.telegram_username as string | null) ?? null,
       phone_number_masked: u.phone_number
         ? maskPhone(u.phone_number as string)

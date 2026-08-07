@@ -61,6 +61,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     })
     .select("id, is_main, photo_type")
     .single();
+  // Гонку (двойной тап / медленная загрузка) ловит unique-индекс
+  // profile_photos_one_per_type — это не сбой БД, а «слот уже занят».
+  if (error?.code === "23505")
+    return NextResponse.json({ ok: false, error: "type_exists" }, { status: 400 });
   if (error || !inserted)
     return NextResponse.json({ ok: false, error: "db_failed" }, { status: 500 });
 

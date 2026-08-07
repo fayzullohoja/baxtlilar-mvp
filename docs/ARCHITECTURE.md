@@ -29,10 +29,17 @@ actions; БД из браузера не дёргается.
   - `select(col, { count:'exact', head:true })` → `count`;
   - **безопасность**: все значения параметризуются (`$n`), идентификаторы валидируются регуляркой.
 - **`.rpc(name, params)`** — зовёт Postgres-функцию именованными аргументами
-  (`fn(p_x => $1, ...)`). Набор-возвращающие (`process_interest`, `get_recommendations`,
-  `get_chat_list`) → массив; скалярные (`bump_quota`, `bump_otp_attempt`, `get_unread_total`,
-  `transition_user`, `get_admin_demographics`) → значение.
-- Тесты: `src/lib/db/query-builder.test.ts` пиннят сгенерированный SQL и шейпинг.
+  (`fn(p_x => $1, ...)`). Набор-возвращающие (`returns table/setof`) → массив;
+  скалярные (`bump_quota`, `transition_user`, `enqueue_tg_outbox`, `is_matchable` …) → значение.
+  **Источник правды по набор-возвращающим — константа `SET_RETURNING` в
+  `src/lib/db/query-builder.ts`** (список менялся; здесь его НЕ дублируем).
+  ⚠️ Функция `returns table/setof`, забытая в `SET_RETURNING`, вызывается как скаляр →
+  node-pg отдаёт composite **строкой** → роут не может прочитать поля (так однажды
+  сломался `accept_interest`: всегда 409). Защищено гейтом
+  `src/lib/db/set-returning-guard.test.ts` (сверяет миграции с реестром).
+- Тесты: `src/lib/db/query-builder.test.ts` пиннят сгенерированный SQL и шейпинг;
+  `src/lib/db/rpc-shape.itest.ts` проверяет форму ответа против живой сид-БД
+  (`pnpm test:integration`).
 
 Атомарность критичных операций живёт **внутри** Postgres-функций (advisory-локи, `FOR UPDATE`),
 поэтому один вызов = один `pool.query()` = одна транзакция. Оптимистичный concurrency для

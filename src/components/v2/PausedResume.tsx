@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
+import { useTranslations } from "next-intl";
 
 /**
  * V2 PausedResume — кнопка «Возобновить» на paused-экране /main.
@@ -12,6 +13,7 @@ import { Button } from "./Button";
  * раньше paused вообще не мог дойти до настроек (петля редиректов /main). C1.
  */
 export function PausedResume() {
+  const t = useTranslations("Main");
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -36,7 +38,7 @@ export function PausedResume() {
 
   return (
     <Button onClick={resume} disabled={busy} fullWidth={false}>
-      {busy ? "Снимаем паузу…" : "Возобновить"}
+      {busy ? t("paused_resuming") : t("paused_resume")}
     </Button>
   );
 }
