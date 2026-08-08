@@ -11,6 +11,7 @@ import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { UploadField } from "@/components/v2/UploadField";
 import { getTranslations } from "next-intl/server";
+import { Requirements } from "@/components/v2/Requirements";
 
 export const dynamic = "force-dynamic";
 
@@ -206,53 +207,5 @@ function BadPassportSvg() {
         strokeLinecap="round"
       />
     </svg>
-  );
-}
-
-function Requirements({ title, items }: { title: string; items: string[] }) {
-  return (
-    <div>
-      <div
-        style={{
-          fontSize: "12px",
-          fontWeight: 800,
-          textTransform: "uppercase",
-          letterSpacing: "0.14em",
-          color: "var(--color-v2-accent)",
-          marginBottom: "10px",
-          fontFamily: "var(--font-v2-body)",
-        }}
-      >
-        {title}
-      </div>
-      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-        {items.map((item, i) => (
-          <li
-            key={i}
-            style={{
-              fontFamily: "var(--font-v2-body)",
-              fontSize: "14px",
-              lineHeight: "1.55",
-              color: "var(--color-v2-ink-200)",
-              marginBottom: "8px",
-              paddingLeft: "14px",
-              position: "relative",
-            }}
-          >
-            <span
-              style={{
-                position: "absolute",
-                left: 0,
-                top: "10px",
-                width: "5px",
-                height: "1px",
-                background: "var(--color-v2-ink-300)",
-              }}
-            />
-            <span dangerouslySetInnerHTML={{ __html: item }} />
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }
