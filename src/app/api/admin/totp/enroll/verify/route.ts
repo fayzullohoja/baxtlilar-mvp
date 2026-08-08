@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { getAdminSession } from "@/lib/admin/session";
-import { adminAudit } from "@/lib/admin/guard";
+import { requireAdminApi, adminAudit } from "@/lib/admin/guard";
 import { verifyTotp } from "@/lib/admin/totp";
 import { trustedIp } from "@/lib/http/ip";
 
@@ -14,9 +13,11 @@ export const dynamic = "force-dynamic";
  * логин аккаунта требует TOTP (self-safe enforcement).
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const session = await getAdminSession();
-  if (!session)
-    return NextResponse.json({ ok: false, error: "no_session" }, { status: 401 });
+  // SEC: через requireAdminApi (а не сырой getAdminSession) — иначе
+  // деактивированный/удалённый админ с ещё живой 8-часовой кукой мог
+  // привязать себе второй фактор: freshAdmin() тут не вызывался.
+  const { session, res } = await requireAdminApi();
+  if (res) return res;
 
   const { code } = (await req.json().catch(() => ({}))) as { code?: string };
   if (!code) return NextResponse.json({ ok: false, error: "missing" }, { status: 400 });

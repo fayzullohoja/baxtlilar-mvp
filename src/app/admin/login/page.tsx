@@ -25,24 +25,31 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const res = await fetch("/api/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ login, password }),
-    });
-    const data = await res.json().catch(() => ({ ok: false }));
-    if (data.ok && data.totp_required) {
-      setStage("totp");
-      setBusy(false);
-    } else if (data.ok) {
-      router.push("/admin");
-      router.refresh();
-    } else {
-      setError(
-        data.error === "throttled"
-          ? "Слишком много попыток. Подождите 15 минут."
-          : "Неверный логин или пароль.",
-      );
+    // Без try/catch сетевой сбой оставлял busy=true навсегда: форма входа
+    // блокировалась без единого сообщения, помогала только перезагрузка.
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ login, password }),
+      });
+      const data = await res.json().catch(() => ({ ok: false }));
+      if (data.ok && data.totp_required) {
+        setStage("totp");
+        setBusy(false);
+      } else if (data.ok) {
+        router.push("/admin");
+        router.refresh();
+      } else {
+        setError(
+          data.error === "throttled"
+            ? "Слишком много попыток. Подождите 15 минут."
+            : "Неверный логин или пароль.",
+        );
+        setBusy(false);
+      }
+    } catch {
+      setError("Сеть недоступна. Проверьте соединение и повторите.");
       setBusy(false);
     }
   }
@@ -51,23 +58,28 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const res = await fetch("/api/admin/login/totp", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
-    });
-    const data = await res.json().catch(() => ({ ok: false }));
-    if (data.ok) {
-      router.push("/admin");
-      router.refresh();
-    } else {
-      setError(
-        data.error === "throttled"
-          ? "Слишком много попыток. Подождите."
-          : data.error === "no_pending"
-            ? "Сессия входа истекла. Начните заново."
-            : "Неверный код. Попробуйте ещё раз.",
-      );
+    try {
+      const res = await fetch("/api/admin/login/totp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json().catch(() => ({ ok: false }));
+      if (data.ok) {
+        router.push("/admin");
+        router.refresh();
+      } else {
+        setError(
+          data.error === "throttled"
+            ? "Слишком много попыток. Подождите."
+            : data.error === "no_pending"
+              ? "Сессия входа истекла. Начните заново."
+              : "Неверный код. Попробуйте ещё раз.",
+        );
+        setBusy(false);
+      }
+    } catch {
+      setError("Сеть недоступна. Проверьте соединение и повторите.");
       setBusy(false);
     }
   }

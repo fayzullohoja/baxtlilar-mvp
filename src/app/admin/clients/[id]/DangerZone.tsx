@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 import { Button } from "@/components/admin-ops/Button";
 import { Dialog } from "@/components/admin-ops/Dialog";
+import { useAsyncAction, postAdminAction } from "@/lib/admin/use-async-action";
+import { ADMIN_ERROR_RU as ERR_RU } from "@/lib/admin/labels";
 
 // DZ-1/2/3 — операторские действия над аккаунтом (только superadmin).
 // Бэк ban(two-person)/unban/unblock-verification уже готов; restart/hard-delete —
@@ -104,8 +106,10 @@ export function DangerZone({
   const [open, setOpen] = useState<Kind | null>(null);
   const [reason, setReason] = useState("");
   const [typed, setTyped] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // busy/error — через общий примитив: он снимает busy и на успехе тоже.
+  // Раньше здесь busy сбрасывался только в ветке ошибки, и после первого
+  // удачного действия вся danger-zone оставалась заблокированной до F5.
+  const { busy, error, setError, run: runAction } = useAsyncAction();
 
   function start(k: Kind) {
     setOpen(k);
@@ -117,26 +121,11 @@ export function DangerZone({
   async function run() {
     if (!open) return;
     const cfg = ACTIONS[open];
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch(cfg.path(userId), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cfg.body(reason.trim())),
-      });
-      const d = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
-      if (d.ok) {
-        setOpen(null);
-        router.refresh();
-      } else {
-        setError(d.error ?? "unknown");
-        setBusy(false);
-      }
-    } catch {
-      setError("network");
-      setBusy(false);
-    }
+    await runAction(async () => {
+      await postAdminAction(cfg.path(userId), cfg.body(reason.trim()), ERR_RU);
+      setOpen(null);
+      router.refresh();
+    });
   }
 
   const cfg = open ? ACTIONS[open] : null;

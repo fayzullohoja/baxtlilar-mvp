@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 import { PhotosTable } from "@/components/admin-ops/photo/PhotosTable";
 import { PhotoDrawer } from "@/components/admin-ops/photo/PhotoDrawer";
+import { postAdminAction } from "@/lib/admin/use-async-action";
+import { ADMIN_ERROR_RU } from "@/lib/admin/labels";
 import type { PhotoCase, PhotosFilter } from "@/lib/admin/load-photos";
 
 const TABS: { id: PhotosFilter; label: string }[] = [
@@ -30,16 +32,24 @@ export function PhotosScreen({
   // POST'а на одно фото). Кнопки строки disabled, пока решение не применилось.
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
 
+  // Ответ ДОЛЖЕН проверяться: раньше fetch игнорировал результат, и провал
+  // одобрения (403/500/kill-switch) был неотличим от успеха — фото «пропадало»
+  // из очереди по router.refresh(), хотя решение не применилось.
+  const [error, setError] = useState<string | null>(null);
+
   async function quickApprove(p: PhotoCase) {
     if (busyIds.has(p.photo_id)) return;
     setBusyIds((prev) => new Set(prev).add(p.photo_id));
+    setError(null);
     try {
-      await fetch(`/api/admin/photos/${p.photo_id}/decision`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "approve" }),
-      });
+      await postAdminAction(
+        `/api/admin/photos/${p.photo_id}/decision`,
+        { action: "approve" },
+        ADMIN_ERROR_RU,
+      );
       router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Не удалось одобрить фото.");
     } finally {
       setBusyIds((prev) => {
         const n = new Set(prev);
@@ -70,6 +80,10 @@ export function PhotosScreen({
           </Link>
         ))}
       </div>
+
+      {error ? (
+        <div style={{ marginBottom: 12, fontSize: 13, color: ADMIN.danger }}>Ошибка: {error}</div>
+      ) : null}
 
       <PhotosTable
         rows={rows}

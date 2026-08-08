@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { getAdminSession } from "@/lib/admin/session";
+import { requireAdminApi } from "@/lib/admin/guard";
 import { generateTotpSecret, otpauthUri } from "@/lib/admin/totp";
 
 export const runtime = "nodejs";
@@ -12,9 +12,11 @@ export const dynamic = "force-dynamic";
  * + otpauth-URI (клиент рисует QR / показывает ключ для ручного ввода).
  */
 export async function POST(): Promise<NextResponse> {
-  const session = await getAdminSession();
-  if (!session)
-    return NextResponse.json({ ok: false, error: "no_session" }, { status: 401 });
+  // SEC: через requireAdminApi (а не сырой getAdminSession) — иначе
+  // деактивированный/удалённый админ с ещё живой 8-часовой кукой мог
+  // привязать себе второй фактор: freshAdmin() тут не вызывался.
+  const { session, res } = await requireAdminApi();
+  if (res) return res;
 
   const sb = supabaseAdmin();
   const { data: admin } = await sb

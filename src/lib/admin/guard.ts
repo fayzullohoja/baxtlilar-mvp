@@ -43,7 +43,17 @@ export async function requireAdminApi(): Promise<
   return { session: { ...s, role: fresh.role } };
 }
 
-/** Записать действие админа в audit log. */
+/**
+ * Записать действие админа в audit log.
+ *
+ * Раньше результат insert выбрасывался: сбой записи был НЕВИДИМ — действие
+ * совершено, а следа «кто это сделал» нет (проблема для разбора инцидентов и
+ * требований по ПД).
+ *
+ * Ошибку НЕ бросаем осознанно: аудит пишется ПОСЛЕ самой мутации, и 500 в ответ
+ * соврал бы оператору об исходе — он повторил бы бан/удаление. Вместо этого
+ * делаем потерю громкой в логах (и не глотаем исключения драйвера).
+ */
 export async function adminAudit(params: {
   adminId: string;
   action: string;
@@ -54,16 +64,28 @@ export async function adminAudit(params: {
   reason?: string;
   ip?: string;
 }): Promise<void> {
-  await supabaseAdmin().from("admin_audit_log").insert({
-    admin_id: params.adminId,
-    action: params.action,
-    entity: params.entity,
-    entity_id: params.entityId ?? null,
-    old_value: params.oldValue ?? null,
-    new_value: params.newValue ?? null,
-    reason: params.reason ?? null,
-    ip: params.ip ?? null,
-  });
+  try {
+    const { error } = await supabaseAdmin().from("admin_audit_log").insert({
+      admin_id: params.adminId,
+      action: params.action,
+      entity: params.entity,
+      entity_id: params.entityId ?? null,
+      old_value: params.oldValue ?? null,
+      new_value: params.newValue ?? null,
+      reason: params.reason ?? null,
+      ip: params.ip ?? null,
+    });
+    if (error) {
+      console.error(
+        `[AUDIT LOST] admin=${params.adminId} action=${params.action} entity=${params.entity}:${params.entityId ?? "-"} — ${error.message}`,
+      );
+    }
+  } catch (e) {
+    console.error(
+      `[AUDIT LOST] admin=${params.adminId} action=${params.action} entity=${params.entity}:${params.entityId ?? "-"} —`,
+      e,
+    );
+  }
 }
 
 // =============================================================================
