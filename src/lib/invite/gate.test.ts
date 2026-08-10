@@ -48,14 +48,28 @@ function updateChain() {
   return c;
 }
 
+// Ветка "app_settings" нужна ТОЛЬКО последнему describe-блоку файла (реальный
+// flags.ts, без мока isFeatureEnabled) - остальные тесты мокают isFeatureEnabled
+// напрямую и до этой таблицы не долетают вообще. Всегда "сбой чтения": это
+// единственный сценарий, ради которого связка вообще проверяется здесь (Task 6,
+// раунд исправлений 1 - "связка двух фактов нигде не проверяется").
 vi.mock("@/lib/supabase/admin", () => ({
   supabaseAdmin: () => ({
-    from: (_table: string) => ({
-      update: (patch: Record<string, unknown>) => {
-        updatedPatches.push(patch);
-        return updateChain();
-      },
-    }),
+    from: (table: string) => {
+      if (table === "app_settings") {
+        return {
+          select: () => ({
+            in: () => Promise.resolve({ data: null, error: { message: "connection reset" } }),
+          }),
+        };
+      }
+      return {
+        update: (patch: Record<string, unknown>) => {
+          updatedPatches.push(patch);
+          return updateChain();
+        },
+      };
+    },
   }),
 }));
 
@@ -169,5 +183,28 @@ describe("redeemCode", () => {
     expect(updatedPatches).toHaveLength(2);
     expect(updatedPatches[1]).toMatchObject({ invited_by: "owner-2" });
     expect(updateFilters[1]).toContainEqual(["invite_redeemed_at", null]);
+  });
+});
+
+// Раунд исправлений 1 (ревью): "сбой БД открывает вход всем" - Critical в
+// src/lib/features/flags.ts, но пойман ТОЛЬКО через связку с needsInviteStep.
+// Все тесты выше мокают isFeatureEnabled напрямую (`gateOn`) - это специально
+// изолирует gate.ts от flags.ts, но именно поэтому реальная дыра в flags.ts
+// (сбой чтения app_settings молча откатывался к дефолту invite_gate=false =
+// "вход открыт") здесь не проверялась вообще. Этот блок НЕ мокает
+// "@/lib/features/flags" - needsInviteStep зовёт настоящий loadFeatureFlags,
+// который падает на чтении app_settings (мок supabaseAdmin выше, ветка
+// "app_settings") и обязан закрыть шлагбаум, а не открыть его дефолтом.
+describe("needsInviteStep + реальный @/lib/features/flags (без мока isFeatureEnabled)", () => {
+  it("недоступность БД при чтении invite_gate → needsInviteStep для новичка = true (шлагбаум закрыт), а не false из дефолта", async () => {
+    vi.resetModules();
+    vi.doUnmock("@/lib/features/flags");
+    // Свежий инстанс "./gate" собирается уже против НАСТОЯЩЕГО flags.ts.
+    // "@/lib/supabase/admin" и "./store" остаются замоканными (см. выше) -
+    // needsInviteStep через store вообще не ходит, а flags.ts получит от
+    // supabaseAdmin() ветку "app_settings" - гарантированный сбой чтения.
+    const fresh = await import("./gate");
+    const result = await fresh.needsInviteStep({ invite_redeemed_at: null, invite_exempt: false });
+    expect(result).toBe(true);
   });
 });
