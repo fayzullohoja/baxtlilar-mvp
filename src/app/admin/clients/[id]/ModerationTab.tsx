@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapRows } from "@/lib/db/unwrap";
 import Link from "next/link";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 import { StatusPill } from "@/components/admin-ops/StatusPill";
@@ -19,13 +20,15 @@ export async function ModerationTab({ userId }: { userId: string }) {
       .order("created_at", { ascending: false }),
   ]);
 
-  const cases = (casesRes.data ?? []) as Array<{
+  // unwrapRows бросает на сбое БД: пусто должно значить «записей нет»,
+  // а не «база не ответила» (иначе вкладка врёт оператору).
+  const cases = unwrapRows(casesRes) as Array<{
     id: string;
     state: string;
     outcome: string | null;
     created_at: string;
   }>;
-  const reports = (reportsRes.data ?? []) as Array<{
+  const reports = unwrapRows(reportsRes) as Array<{
     id: string;
     reason_code: string;
     comment: string | null;

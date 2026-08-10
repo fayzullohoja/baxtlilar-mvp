@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin/guard";
 import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapRows } from "@/lib/db/unwrap";
 import { OpsShell } from "@/components/admin-ops/OpsShell";
 import { StatusPill } from "@/components/admin-ops/StatusPill";
 import { ADMIN } from "@/lib/admin/admin-tokens";
@@ -71,23 +72,26 @@ export default async function ReportDetail({
     (target?.telegram_first_name as string) ||
     (target?.telegram_username ? "@" + target.telegram_username : targetId.slice(0, 8));
 
-  const { data: history } = await sb
+  // unwrapRows: сбой БД не должен выглядеть как «жалоб на юзера нет»
+  const history = unwrapRows(await sb
     .from("reports")
     .select("id, reason_code, comment, status, created_at")
     .eq("target_user_id", targetId)
     .order("created_at", { ascending: false })
-    .limit(30);
+    .limit(30));
 
   // Транскрипт связанного чата — evidence. Участников не именуем.
   let transcript: { who: "target" | "other"; body: string; at: string }[] = [];
   if (report.chat_id) {
-    const { data: msgs } = await sb
+    // Переписка — ДОКАЗАТЕЛЬСТВО по жалобе: сбой БД, показанный как «сообщений
+    // нет», подталкивает модератора решить без улик.
+    const msgs = unwrapRows(await sb
       .from("chat_messages")
       .select("sender_id, body, created_at")
       .eq("chat_id", report.chat_id as string)
       .order("created_at", { ascending: true })
-      .limit(200);
-    transcript = (msgs ?? []).map((m) => ({
+      .limit(200));
+    transcript = msgs.map((m) => ({
       who: (m.sender_id as string) === targetId ? "target" : "other",
       body: m.body as string,
       at: m.created_at as string,

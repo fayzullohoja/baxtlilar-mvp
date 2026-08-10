@@ -84,7 +84,12 @@ export function ClientsScreen({
   const isSearch = query.length > 0;
   // Показываем поисковый стейт ТОЛЬКО если он под текущий q (иначе — идёт загрузка).
   const activeSearch = search && search.q === query ? search : null;
-  const rows = isSearch ? (activeSearch?.rows ?? []) : [...initial, ...dirExtra];
+  // Дедуп по user_id: dirExtra (дозагруженные страницы) переживает
+  // router.refresh(), а initial перечитывается с сервера — после мутации строки
+  // задваивались и React-ключи сталкивались.
+  const rows = isSearch
+    ? (activeSearch?.rows ?? [])
+    : dedupeById([...initial, ...dirExtra]);
   const showMore = isSearch ? (activeSearch?.hasMore ?? false) : dirHasMore;
   // busy — производное: ищем, но результата под текущий q ещё нет. Не залипает.
   const busy = isSearch && activeSearch === null;
@@ -128,4 +133,16 @@ export function ClientsScreen({
       ) : null}
     </div>
   );
+}
+
+/** Первое вхождение по user_id выигрывает (свежий серверный initial идёт первым). */
+function dedupeById(list: ClientRow[]): ClientRow[] {
+  const seen = new Set<string>();
+  const out: ClientRow[] = [];
+  for (const r of list) {
+    if (seen.has(r.user_id)) continue;
+    seen.add(r.user_id);
+    out.push(r);
+  }
+  return out;
 }

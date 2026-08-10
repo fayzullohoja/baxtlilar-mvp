@@ -112,7 +112,10 @@ export function ContentEditor({
         else next[key] = value.trim();
         return { ...o, [locale]: next };
       });
+      // Черновик снимаем ТОЛЬКО если оператор не продолжил печатать, пока
+      // запрос летел: иначе ответ затирал уже набранный новый текст.
       setDrafts((dd) => {
+        if (dd[id] !== value) return dd; // печатал дальше — оставляем как есть
         const n = { ...dd };
         delete n[id];
         return n;

@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapRows, unwrapOne } from "@/lib/db/unwrap";
 import { BUCKET_DOCUMENTS } from "@/lib/uploads/storage";
 
 export type LoadedCase = {
@@ -50,37 +51,37 @@ async function signedUrl(path: string | null): Promise<string | null> {
 }
 
 export async function loadCase(caseId: string): Promise<LoadedCase | null> {
-  const { data: row } = await supabaseAdmin()
+  const row = unwrapOne(await supabaseAdmin()
     .from("verification_cases")
     .select(
       "id, state, outcome, draft_payload, created_at, updated_at, claimed_at, assignee_id, user_id",
     )
     .eq("id", caseId)
-    .maybeSingle();
+    .maybeSingle());
   if (!row) return null;
 
-  const { data: user } = await supabaseAdmin()
+  const user = unwrapOne(await supabaseAdmin()
     .from("users")
     .select(
       "id, telegram_id, telegram_first_name, telegram_username, phone_number, verification_status",
     )
     .eq("id", row.user_id)
-    .maybeSingle();
+    .maybeSingle());
   if (!user) return null;
 
-  const { data: profile } = await supabaseAdmin()
+  const profile = unwrapOne(await supabaseAdmin()
     .from("user_profiles")
     .select(
       "display_name, birth_date, gender, citizenship, birth_country, birth_region, birth_district, birth_city",
     )
     .eq("user_id", row.user_id)
-    .maybeSingle();
+    .maybeSingle());
 
-  const { data: doc } = await supabaseAdmin()
+  const doc = unwrapOne(await supabaseAdmin()
     .from("user_documents")
     .select("passport_path, selfie_path")
     .eq("user_id", row.user_id)
-    .maybeSingle();
+    .maybeSingle());
 
   const [passport_image_url, selfie_image_url] = await Promise.all([
     signedUrl((doc?.passport_path as string | null) ?? null),
@@ -100,10 +101,11 @@ export async function loadCase(caseId: string): Promise<LoadedCase | null> {
       .eq("case_id", caseId)
       .order("created_at", { ascending: false }),
   ]);
-  const noteRows = (notesRaw.data ?? []) as Array<{
+  // unwrapRows: пустой таймлайн = «событий нет», а не «БД не ответила».
+  const noteRows = unwrapRows(notesRaw) as Array<{
     id: string; author_id: string; body: string; created_at: string;
   }>;
-  const eventRows = (eventsRaw.data ?? []) as Array<{
+  const eventRows = unwrapRows(eventsRaw) as Array<{
     id: string; actor_id: string | null; action: string;
     payload: Record<string, unknown>; created_at: string;
   }>;
@@ -115,11 +117,11 @@ export async function loadCase(caseId: string): Promise<LoadedCase | null> {
   ];
   const loginById = new Map<string, string>();
   if (adminIds.length) {
-    const { data: admins } = await supabaseAdmin()
+    const admins = unwrapRows(await supabaseAdmin()
       .from("admin_users")
       .select("id, login")
-      .in("id", adminIds);
-    for (const a of admins ?? []) loginById.set(a.id as string, a.login as string);
+      .in("id", adminIds));
+    for (const a of admins) loginById.set(a.id as string, a.login as string);
   }
 
   return {
