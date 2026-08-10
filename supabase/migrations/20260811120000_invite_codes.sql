@@ -44,7 +44,31 @@ create index if not exists users_invited_by_idx on users(invited_by)
   where invited_by is not null;
 
 -- Все, кто зарегистрировался ДО запуска, проходят по старым правилам.
-update users set invite_exempt = true where invite_exempt = false;
+--
+-- Предикат "invite_exempt = false" сам по себе НЕ привязан к моменту наката -
+-- это множество "кому ещё предстоит пройти шлагбаум", и оно растёт после
+-- запуска новыми пользователями. Без защиты повторный прогон файла (в т.ч.
+-- через год, вручную через psql < file - именно так проверяется
+-- идемпотентность) молча пометил бы exempt=true и того, кто ПРЯМО СЕЙЧАС
+-- стоит на шаге ввода кода - то есть открыл бы вход мимо шлагбаума без
+-- единой ошибки и следа в логах.
+--
+-- Защита - одноразовый маркер в app_settings (тот же паттерн, что
+-- feature_*_enabled в миграции 20260724150000): backfill выполняется РОВНО
+-- ОДИН РАЗ, при первом накате, и никогда больше - независимо от того, сколько
+-- раз файл прогонят позже и сколько новых НЕ-exempt пользователей появится
+-- к тому моменту. Отсечка по created_at была бы проще, но зашивала бы в
+-- код миграции дату, которую на момент написания файла мы ещё не знаем
+-- (точный момент наката на прод) - маркер честнее и не требует гадать дату.
+do $$
+begin
+  if not exists (select 1 from app_settings where key = 'invite_codes_backfill_done') then
+    update users set invite_exempt = true where invite_exempt = false;
+    insert into app_settings (key, value)
+    values ('invite_codes_backfill_done', to_jsonb(now()))
+    on conflict (key) do nothing;
+  end if;
+end $$;
 
 -- Шаг в справочник воронки Grafana, между "Передача контакта" (3) и
 -- "Приветственный экран" (4). Существующие ord сдвигаем на 1.
