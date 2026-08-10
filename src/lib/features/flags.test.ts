@@ -38,17 +38,18 @@ beforeEach(() => {
 });
 
 describe("feature flags — набор ключей и дефолты", () => {
-  it("ровно 5 фич с ожидаемыми именами", () => {
-    expect([...FEATURES]).toEqual(["verification", "matching", "interests", "chat", "payments"]);
+  it("ровно 6 фич с ожидаемыми именами", () => {
+    expect([...FEATURES]).toEqual(["verification", "matching", "interests", "chat", "payments", "invite_gate"]);
   });
 
-  it("payments выключен по умолчанию, остальные включены", () => {
+  it("payments и invite_gate выключены по умолчанию, остальные включены", () => {
     expect(FEATURE_DEFAULTS).toEqual({
       verification: true,
       matching: true,
       interests: true,
       chat: true,
       payments: false,
+      invite_gate: false,
     });
   });
 
@@ -114,5 +115,21 @@ describe("G-26 — гейт роута меняет поведение (без �
   it("isFeatureEnabled отражает флаг", async () => {
     mockRows([{ key: "feature_verification_enabled", value: false }]);
     expect(await isFeatureEnabled("verification")).toBe(false);
+  });
+});
+
+describe("invite_gate", () => {
+  it("есть в списке фич", () => {
+    expect(FEATURES).toContain("invite_gate");
+  });
+
+  // Шлагбаум ВЫКЛЮЧЕН по умолчанию: выкладка кода не должна ничего менять
+  // для живых пользователей. Включается осознанно, отдельным действием.
+  it("по умолчанию выключен", () => {
+    expect(FEATURE_DEFAULTS.invite_gate).toBe(false);
+  });
+
+  it("ключ в app_settings совпадает с соглашением", () => {
+    expect(featureKey("invite_gate")).toBe("feature_invite_gate_enabled");
   });
 });
