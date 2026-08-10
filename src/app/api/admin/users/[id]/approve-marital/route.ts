@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdminApi, adminAudit } from "@/lib/admin/guard";
+import { requireAdminApi, requireInQueueOrSuper, adminAudit } from "@/lib/admin/guard";
+import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { trustedIp } from "@/lib/http/ip";
 
@@ -23,7 +24,17 @@ export async function POST(
 ): Promise<NextResponse> {
   const { session, res } = await requireAdminApi();
   if (res) return res;
+  if (!can(session.role, "users.moderate"))
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+
   const { id } = await params;
+
+  // F-120 scope: модератор снимает флаг только у юзера СВОЕЙ очереди, super —
+  // у любого. Без этого любой модератор мог расфлагнуть произвольного юзера по
+  // UUID (карточка ему при этом недоступна), обходя и ревью, и запись в
+  // admin_scope_violations. Заодно снимает existence-oracle 404/409 для чужих.
+  const scope = await requireInQueueOrSuper(session, id, "user_view", req);
+  if ("res" in scope) return scope.res;
 
   const sb = supabaseAdmin();
   const { data: prof } = await sb

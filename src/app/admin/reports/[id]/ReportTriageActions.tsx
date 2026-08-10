@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 import { Button } from "@/components/admin-ops/Button";
+import { useAsyncAction, postAdminAction } from "@/lib/admin/use-async-action";
+import { ADMIN_ERROR_RU as ERR_RU } from "@/lib/admin/labels";
 
 // REP-2/3/4 — решение по жалобе с причиной + реальная санкция.
 // «Предложить бан нарушителю» дёргает готовый ban-эндпоинт (two-person) и
@@ -35,60 +37,41 @@ export function ReportTriageActions({
 }) {
   const router = useRouter();
   const [reason, setReason] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // busy снимается всегда; ошибка второго запроса больше не теряется.
+  const { busy, error, setError, run: runAction } = useAsyncAction();
 
   async function decide(status: string) {
-    setBusy(true);
-    setError(null);
-    try {
-      const r = await fetch(`/api/admin/reports/${reportId}/decision`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status, reason: reason.trim() || undefined }),
-      });
-      const d = (await r.json().catch(() => ({}))) as { ok?: boolean; error?: string };
-      if (d.ok) router.refresh();
-      else {
-        setError(d.error ?? "error");
-        setBusy(false);
-      }
-    } catch {
-      setError("network");
-      setBusy(false);
-    }
+    await runAction(async () => {
+      await postAdminAction(
+        `/api/admin/reports/${reportId}/decision`,
+        { status, reason: reason.trim() || undefined },
+        ERR_RU,
+      );
+      router.refresh();
+    });
   }
 
   async function banTarget() {
     if (reason.trim().length < 3) {
-      setError("Для бана укажите причину");
+      setError("Для бана укажите причину (не короче 3 символов).");
       return;
     }
-    setBusy(true);
-    setError(null);
-    try {
-      const r = await fetch(`/api/admin/users/${targetId}/ban`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "propose", reason: reason.trim() }),
-      });
-      const d = (await r.json().catch(() => ({}))) as { ok?: boolean; error?: string };
-      if (!d.ok) {
-        setError(`бан: ${d.error ?? "error"}`);
-        setBusy(false);
-        return;
-      }
-      // санкция предложена → фиксируем жалобу как «меры приняты»
-      await fetch(`/api/admin/reports/${reportId}/decision`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "action_taken", reason: reason.trim() }),
-      });
+    await runAction(async () => {
+      await postAdminAction(
+        `/api/admin/users/${targetId}/ban`,
+        { action: "propose", reason: reason.trim() },
+        ERR_RU,
+      );
+      // Санкция предложена → фиксируем жалобу как «меры приняты». Результат
+      // ЭТОГО запроса раньше не проверялся: бан предлагался, а жалоба молча
+      // оставалась неразобранной.
+      await postAdminAction(
+        `/api/admin/reports/${reportId}/decision`,
+        { status: "action_taken", reason: reason.trim() },
+        ERR_RU,
+      );
       router.refresh();
-    } catch {
-      setError("network");
-      setBusy(false);
-    }
+    });
   }
 
   return (

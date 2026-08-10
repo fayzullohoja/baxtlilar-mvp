@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapOne } from "@/lib/db/unwrap";
 import { BUCKET_DOCUMENTS } from "@/lib/uploads/storage";
 
 export type LoadedClient = {
@@ -48,31 +49,31 @@ async function signedUrl(path: string | null): Promise<string | null> {
 }
 
 export async function loadClient(userId: string): Promise<LoadedClient | null> {
-  const { data: user } = await supabaseAdmin()
+  const user = unwrapOne(await supabaseAdmin()
     .from("users")
     .select(
       "id, avatar_path, verification_status, lifecycle_state, telegram_first_name, telegram_username, created_at",
     )
     .eq("id", userId)
-    .maybeSingle();
+    .maybeSingle());
   if (!user) return null;
 
-  const { data: profile } = await supabaseAdmin()
+  const profile = unwrapOne(await supabaseAdmin()
     .from("user_profiles")
     .select("display_name")
     .eq("user_id", userId)
-    .maybeSingle();
+    .maybeSingle());
 
   const avatar_url = await signedUrl((user.avatar_path as string | null) ?? null);
 
-  const { data: idRow } = await supabaseAdmin()
+  const idRow = unwrapOne(await supabaseAdmin()
     .from("user_identity")
     .select(
       "last_name, first_name, middle_name, birth_date, gender, citizenship, birth_place, passport_series, passport_number, pinfl, issued_by, issued_at, expires_at, region_code, district_code, locality, street_address, entered_by, entered_at, source_case_id",
     )
     .eq("user_id", userId)
     .is("superseded_at", null)
-    .maybeSingle();
+    .maybeSingle());
 
   let identity: LoadedClient["identity"] = null;
   if (idRow) {

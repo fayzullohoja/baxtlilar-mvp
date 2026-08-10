@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapOne } from "@/lib/db/unwrap";
 
 // PT-1/PT-6 — единый серверный загрузчик ПОЛНОЙ анкеты V4 для админки.
 // Тянет все hot-колонки user_profiles (select *), extended jsonb (cold-секции:
@@ -29,11 +30,11 @@ export type FullProfile = {
 
 export async function loadFullProfile(userId: string): Promise<FullProfile | null> {
   const sb = supabaseAdmin();
-  const { data: p } = await sb
+  const p = unwrapOne(await sb
     .from("user_profiles")
     .select("*")
     .eq("user_id", userId)
-    .maybeSingle();
+    .maybeSingle());
   if (!p) return null;
 
   const [{ data: q }, { data: qa }] = await Promise.all([

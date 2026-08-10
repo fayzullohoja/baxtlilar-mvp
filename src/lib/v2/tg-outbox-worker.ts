@@ -53,14 +53,14 @@ type OutboxRow = {
 const TEMPLATES: Record<OutboxEventType, { ru: (p: OutboxPayload) => string; uz: (p: OutboxPayload) => string }> = {
   verification_approved: {
     ru: () =>
-      "✅ Профиль одобрен.\nТеперь Baxtlilar покажет Вам подбор и&nbsp;Вы сможете отправлять интересы. Откройте приложение.",
+      "✅ Профиль одобрен.\nТеперь Baxtlilar покажет Вам подбор и Вы сможете отправлять интересы. Откройте приложение.",
     uz: () =>
       "✅ Profilingiz tasdiqlandi.\nEndi Baxtlilar sizga moslamani ko‘rsatadi va qiziqish yuborishingiz mumkin. Ilovani oching.",
   },
   verification_needs_changes: {
     ru: (p) =>
       p.reason
-        ? `Модератор просит уточнить пару моментов.\n\nПричина: ${p.reason}\n\nОткройте Baxtlilar и&nbsp;переделайте — займёт пару минут.`
+        ? `Модератор просит уточнить пару моментов.\n\nПричина: ${p.reason}\n\nОткройте Baxtlilar и переделайте — займёт пару минут.`
         : "Модератор просит уточнить пару моментов.\nОткройте Baxtlilar и переделайте — займёт пару минут.",
     uz: (p) =>
       p.reason

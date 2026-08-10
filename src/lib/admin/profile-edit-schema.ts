@@ -93,7 +93,8 @@ export const PROFILE_EDIT_SECTIONS: readonly EditSection[] = [
       { key: "country_of_residence", label: "Страна проживания", kind: "select", options: COUNTRY_OF_RESIDENCE },
       { key: "region", label: "Регион", kind: "select", options: UZ_REGIONS },
       { key: "district", label: "Район (код)", kind: "text", maxLen: 128, hint: "код района" },
-      { key: "district_visible_public", label: "Район публично", kind: "toggle" },
+      // NOT NULL в схеме → required, иначе очистка поля даёт 500 вместо 400.
+      { key: "district_visible_public", label: "Район публично", kind: "toggle", required: true },
       { key: "marital_status", label: "Семейный статус", kind: "select", options: MARITAL_STATUS },
       { key: "has_children", label: "Дети", kind: "select", options: HAS_CHILDREN },
       { key: "children_count", label: "Кол-во детей", kind: "number", min: 0, max: 10 },

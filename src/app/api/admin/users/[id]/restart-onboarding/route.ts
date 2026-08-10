@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin/guard";
 import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapRows, unwrapOne } from "@/lib/db/unwrap";
 import { BUCKET_DOCUMENTS, BUCKET_PHOTOS } from "@/lib/uploads/storage";
 
 export const runtime = "nodejs";
@@ -30,15 +31,24 @@ export async function POST(
   // СОГЛАСИЯ, но файлы на volume не трогает. Собираем пути ДО вызова RPC, чтобы
   // после успешного рестарта дочистить их (иначе биометрия остаётся на диске без
   // строки-указателя и после отзыва согласия — как в hard-delete route).
-  const [{ data: photos }, { data: docs }, { data: urow }] = await Promise.all([
+  // unwrap* бросают на сбое БД — СПЕЦИАЛЬНО до деструктивного RPC: лучше
+  // отказать в сбросе (500), чем стереть согласия и оставить биометрию с
+  // паспортом на диске из-за молча провалившегося SELECT.
+  const [photosRes, docsRes, userRes] = await Promise.all([
     sb.from("profile_photos").select("path").eq("user_id", id),
     sb.from("user_documents").select("passport_path, selfie_path").eq("user_id", id),
     sb.from("users").select("avatar_path").eq("id", id).maybeSingle(),
   ]);
+  const photos = unwrapRows(photosRes);
+  const docs = unwrapRows(docsRes);
+  const urow = unwrapOne(userRes) as { avatar_path?: string | null } | null;
   const paths = [
-    ...((photos ?? []).map((p) => p.path as string)),
-    ...((docs ?? []).flatMap((d) => [d.passport_path as string | null, d.selfie_path as string | null])),
-    (urow?.avatar_path as string | null) ?? null,
+    ...photos.map((p) => (p as { path: string }).path),
+    ...docs.flatMap((d) => {
+      const row = d as { passport_path: string | null; selfie_path: string | null };
+      return [row.passport_path, row.selfie_path];
+    }),
+    urow?.avatar_path ?? null,
   ].filter((p): p is string => !!p);
 
   const { data, error } = await sb.rpc("admin_restart_onboarding", {

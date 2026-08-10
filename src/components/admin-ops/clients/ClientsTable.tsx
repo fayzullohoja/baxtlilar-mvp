@@ -6,6 +6,8 @@ import { ADMIN } from "@/lib/admin/admin-tokens";
 import { StatusPill } from "@/components/admin-ops/StatusPill";
 import { Button } from "@/components/admin-ops/Button";
 import { Dialog } from "@/components/admin-ops/Dialog";
+import { useAsyncAction, postAdminAction } from "@/lib/admin/use-async-action";
+import { ADMIN_ERROR_RU as ERR_RU } from "@/lib/admin/labels";
 import type { ClientRow } from "@/lib/admin/load-clients-search";
 
 const th = {
@@ -25,24 +27,14 @@ const th = {
 // от отмывания бана в RPC); для забаненного всегда есть Удаление.
 type RowAction = { userId: string; name: string; kind: "restart" | "delete" };
 
-const ERR_RU: Record<string, string> = {
-  blocked_or_pending_ban:
-    "Пользователь заблокирован или в ожидании бана — сброс недоступен. Используйте «Удалить» или сначала разбаньте.",
-  reason_required: "Укажите причину (не короче 3 символов).",
-  confirm_required: "Наберите слово подтверждения.",
-  forbidden: "Нужны права суперадмина.",
-  not_found: "Пользователь не найден (возможно, уже удалён).",
-  internal: "Внутренняя ошибка сервера.",
-  network: "Сеть недоступна.",
-};
-
 export function ClientsTable({ rows }: { rows: ClientRow[] }) {
   const router = useRouter();
   const [action, setAction] = useState<RowAction | null>(null);
   const [reason, setReason] = useState("");
   const [typed, setTyped] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // busy/error — общий примитив: снимает busy И на успехе (раньше после
+  // первого удаления/сброса все построчные действия оставались мертвы).
+  const { busy, error, setError, run: runAction } = useAsyncAction();
 
   function start(a: RowAction) {
     setAction(a);
@@ -54,32 +46,17 @@ export function ClientsTable({ rows }: { rows: ClientRow[] }) {
   async function run() {
     if (!action) return;
     const isDelete = action.kind === "delete";
-    setBusy(true);
-    setError(null);
-    try {
-      const path = isDelete
-        ? `/api/admin/users/${action.userId}/delete`
-        : `/api/admin/users/${action.userId}/restart-onboarding`;
-      const body = isDelete
-        ? { confirm: "DELETE", reason: reason.trim() }
-        : { reason: reason.trim() };
-      const res = await fetch(path, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const d = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
-      if (d.ok) {
-        setAction(null);
-        router.refresh();
-      } else {
-        setError(ERR_RU[d.error ?? ""] ?? d.error ?? "unknown");
-        setBusy(false);
-      }
-    } catch {
-      setError(ERR_RU.network);
-      setBusy(false);
-    }
+    const path = isDelete
+      ? `/api/admin/users/${action.userId}/delete`
+      : `/api/admin/users/${action.userId}/restart-onboarding`;
+    const body = isDelete
+      ? { confirm: "DELETE", reason: reason.trim() }
+      : { reason: reason.trim() };
+    await runAction(async () => {
+      await postAdminAction(path, body, ERR_RU);
+      setAction(null);
+      router.refresh();
+    });
   }
 
   const isDelete = action?.kind === "delete";

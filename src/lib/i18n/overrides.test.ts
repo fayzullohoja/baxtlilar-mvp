@@ -7,6 +7,7 @@ import {
   validatePlaceholders,
   validateIcuStructure,
   validateOverrideText,
+  validateNoRawHtml,
 } from "./overrides";
 import ru from "../../../messages/ru.json";
 import uz from "../../../messages/uz.json";
@@ -112,6 +113,41 @@ describe("validatePlaceholders — write-time защита", () => {
   });
   it("совпадающие теги и аргументы → ok", () => {
     expect(validatePlaceholders("<b>{n}</b>", "<b>значение {n}</b>").ok).toBe(true);
+  });
+});
+
+describe("⛔ validateNoRawHtml — stored XSS через конструктор текстовок (SEC-XSS-1)", () => {
+  // Дыра: TAG_RE ловил только ГОЛЫЕ теги, поэтому тег С АТРИБУТАМИ давал пустое
+  // множество тегов == пустому множеству базы и проходил все проверки, а два
+  // экрана верификации рендерили строку через dangerouslySetInnerHTML.
+  const PAYLOADS = [
+    `<img src=x onerror="alert(1)">`,
+    `<img src=x onerror=alert(1)>`,
+    `<svg/onload=alert(1)>`,
+    `<script>alert(1)</script>`,
+    `<a href="javascript:alert(1)">клик</a>`,
+    `<iframe src="//evil.tld">`,
+    `<!-- комментарий -->`,
+    `<b onmouseover=alert(1)>жирный</b>`,
+    `текст <div style="position:fixed;inset:0">оверлей</div>`,
+  ];
+
+  it("реальные XSS-пейлоады отвергаются валидацией записи", () => {
+    for (const p of PAYLOADS) {
+      expect(validateNoRawHtml(p).ok, p).toBe(false);
+      // и через полную валидацию тоже (база без тегов — как в реальных строках)
+      expect(validateOverrideText("Лицо хорошо видно", p).ok, p).toBe(false);
+    }
+  });
+
+  it("обычный текст и парные rich-теги по-прежнему разрешены", () => {
+    expect(validateNoRawHtml("Лицо хорошо видно").ok).toBe(true);
+    expect(validateNoRawHtml("<b>жирный</b> и <link>ссылка</link>").ok).toBe(true);
+    expect(validateOverrideText("<b>{n}</b>", "<b>значение {n}</b>").ok).toBe(true);
+  });
+
+  it("математический знак «меньше» без тега тоже блокируется (осознанно строго)", () => {
+    expect(validateNoRawHtml("возраст < 18").ok).toBe(false);
   });
 });
 

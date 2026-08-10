@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapCount, unwrapOne } from "@/lib/db/unwrap";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 
 export async function ActivityTab({ userId }: { userId: string }) {
@@ -30,8 +31,10 @@ export async function ActivityTab({ userId }: { userId: string }) {
       .eq("user_b", userId),
   ]);
 
-  const chatCount = (chatsA.count ?? 0) + (chatsB.count ?? 0);
-  const u = user.data as {
+  // unwrapCount/unwrapOne бросают на сбое БД — иначе «0 активности»
+  // неотличимо от недоступной базы.
+  const chatCount = unwrapCount(chatsA) + unwrapCount(chatsB);
+  const u = unwrapOne(user) as {
     created_at?: string;
     paused_at?: string | null;
     blocked_at?: string | null;
@@ -57,8 +60,8 @@ export async function ActivityTab({ userId }: { userId: string }) {
         label="Пауза"
         value={u?.paused_at ? new Date(u.paused_at).toLocaleString("ru-RU") : "—"}
       />
-      <Stat label="Отправлено интересов" value={String(sent.count ?? 0)} />
-      <Stat label="Получено интересов" value={String(received.count ?? 0)} />
+      <Stat label="Отправлено интересов" value={String(unwrapCount(sent))} />
+      <Stat label="Получено интересов" value={String(unwrapCount(received))} />
       <Stat label="Активных чатов" value={String(chatCount)} />
       <Stat
         label="Заблокирован"

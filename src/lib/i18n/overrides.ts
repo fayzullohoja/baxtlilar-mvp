@@ -216,9 +216,41 @@ export function validateIcuStructure(str: string): ValidationResult {
   return { ok: true };
 }
 
-/** Полная write-time валидация значения: сохранён набор плейсхолдеров/тегов
- * (относительно базы) И структура ICU корректна. */
+/**
+ * ⛔ SEC-XSS-1. Запрещает сырой HTML в значении оверрайда.
+ *
+ * Дыра: `TAG_RE` ловит только ГОЛЫЕ теги (`<b>`, `</b>`) — тег С АТРИБУТАМИ под
+ * него не подходит. Поэтому `<img src=x onerror="...">` давал ПУСТОЕ множество
+ * тегов, совпадал с пустым множеством базы и проходил и tag-проверку, и ICU.
+ * А два экрана верификации рендерили строку через dangerouslySetInnerHTML (при
+ * CSP с 'unsafe-inline') ⇒ stored XSS на всех пользователей. Право `i18n.edit`
+ * есть и у МОДЕРАТОРА, то есть эскалация из младшей роли.
+ *
+ * Правило: вырезаем ТОЛЬКО голые теги из белого списка форматирования; любой
+ * оставшийся `<` — недопустим. Белый список (а не «любой голый тег») важен:
+ * иначе `<script>…</script>` — тоже голые теги — проехал бы эту проверку и
+ * держался бы лишь на равенстве наборов тегов с базой.
+ */
+const ALLOWED_RICH_TAGS = ["b", "i", "em", "strong", "u", "br", "link"] as const;
+const ALLOWED_TAG_RE = new RegExp(`</?(?:${ALLOWED_RICH_TAGS.join("|")})>`, "gi");
+
+export function validateNoRawHtml(candidate: string): ValidationResult {
+  const stripped = candidate.replace(ALLOWED_TAG_RE, "");
+  if (stripped.includes("<")) {
+    return {
+      ok: false,
+      error:
+        "HTML не допускается. Символ «<» разрешён только как парный тег оформления вида <b>текст</b> — теги с атрибутами (например <img src=…>) запрещены.",
+    };
+  }
+  return { ok: true };
+}
+
+/** Полная write-time валидация значения: нет сырого HTML, сохранён набор
+ * плейсхолдеров/тегов (относительно базы) И структура ICU корректна. */
 export function validateOverrideText(base: string, candidate: string): ValidationResult {
+  const html = validateNoRawHtml(candidate);
+  if (!html.ok) return html;
   const ph = validatePlaceholders(base, candidate);
   if (!ph.ok) return ph;
   return validateIcuStructure(candidate);
