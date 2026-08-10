@@ -36,6 +36,13 @@
 
 Создать `supabase/migrations/20260811120000_invite_codes.sql`:
 
+**ВНИМАНИЕ:** блок ниже - это ФАКТИЧЕСКИЙ текст файла миграции после доработки
+по итогам ревью (первый вариант падал на проде и на локальной пересборке БД -
+подробности в `.superpowers/sdd/2026-08-11-invite-codes/task-1-report.md`).
+Копировать SQL нужно из самого файла `supabase/migrations/20260811120000_invite_codes.sql`
+в репозитории, а не из этого документа - здесь текст продублирован для
+контекста и может разойтись с файлом при последующих правках.
+
 ```sql
 -- Коды-приглашения для закрытого family-запуска.
 -- Спека: docs/superpowers/specs/2026-08-11-invite-codes-design.md
@@ -83,19 +90,92 @@ create index if not exists users_invited_by_idx on users(invited_by)
   where invited_by is not null;
 
 -- Все, кто зарегистрировался ДО запуска, проходят по старым правилам.
-update users set invite_exempt = true where invite_exempt = false;
+--
+-- Предикат "invite_exempt = false" сам по себе НЕ привязан к моменту наката -
+-- это множество "кому ещё предстоит пройти шлагбаум", и оно растёт после
+-- запуска новыми пользователями. Без защиты повторный прогон файла (в т.ч.
+-- через год, вручную через psql < file - именно так проверяется
+-- идемпотентность) молча пометил бы exempt=true и того, кто ПРЯМО СЕЙЧАС
+-- стоит на шаге ввода кода - то есть открыл бы вход мимо шлагбаума без
+-- единой ошибки и следа в логах.
+--
+-- Защита - одноразовый маркер в app_settings (тот же паттерн, что
+-- feature_*_enabled в миграции 20260724150000): backfill выполняется РОВНО
+-- ОДИН РАЗ, при первом накате, и никогда больше - независимо от того, сколько
+-- раз файл прогонят позже и сколько новых НЕ-exempt пользователей появится
+-- к тому моменту. Отсечка по created_at была бы проще, но зашивала бы в
+-- код миграции дату, которую на момент написания файла мы ещё не знаем
+-- (точный момент наката на прод) - маркер честнее и не требует гадать дату.
+do $$
+begin
+  if not exists (select 1 from app_settings where key = 'invite_codes_backfill_done') then
+    update users set invite_exempt = true where invite_exempt = false;
+    insert into app_settings (key, value)
+    values ('invite_codes_backfill_done', to_jsonb(now()))
+    on conflict (key) do nothing;
+  end if;
+end $$;
 
 -- Шаг в справочник воронки Grafana, между "Передача контакта" (3) и
 -- "Приветственный экран" (4). Существующие ord сдвигаем на 1.
-update analytics.funnel_steps set ord = ord + 1 where ord >= 4;
-insert into analytics.funnel_steps (ord, step, phase, label)
-values (4, 'bot_invite_code', 'Бот', 'Код приглашения')
-on conflict (step) do nothing;
+--
+-- ord - первичный ключ без DEFERRABLE, поэтому сдвиг на +1 одним запросом
+-- ломается на промежуточном дубликате: строка 4 переезжает в 5, а 5 ещё занята.
+-- Сдвигаем в два прохода через заведомо свободный диапазон +1000.
+--
+-- Двойная проверка, ДВУМЯ вложенными IF (не одним AND):
+--  - to_regclass - analytics.funnel_steps создана вручную прямо на проде
+--    (это отдельная схема для Grafana, вне supabase/migrations), поэтому в
+--    локальной/тестовой БД, поднятой только из миграций, её нет - без этой
+--    проверки любой локальный rebuild (npm run test:integration) падал бы
+--    здесь с "relation analytics.funnel_steps does not exist". Именно
+--    вложенным IF, а не "and not exists (...)" одним выражением: PL/pgSQL
+--    разбирает подзапрос вложенного IF только при входе в внешнюю ветку,
+--    а составное "A and B" разбирается целиком сразу и падает на этапе
+--    парсинга, даже если A уже ложно;
+--  - not exists (... step = 'bot_invite_code') - сам сдвиг ord не идемпотентен,
+--    без неё повторный прогон сдвинул бы воронку ещё раз и молча испортил
+--    порядок шагов.
+do $$
+begin
+  if to_regclass('analytics.funnel_steps') is not null then
+    if not exists (select 1 from analytics.funnel_steps where step = 'bot_invite_code') then
+      update analytics.funnel_steps set ord = ord + 1000 where ord >= 4;
+      update analytics.funnel_steps set ord = ord - 999  where ord >= 1004;
+      insert into analytics.funnel_steps (ord, step, phase, label)
+      values (4, 'bot_invite_code', 'Бот', 'Код приглашения')
+      on conflict (step) do nothing;
+    end if;
+  end if;
+end $$;
 ```
 
-- [ ] **Step 2: Проверить идемпотентность локально**
+- [ ] **Step 2: Проверить идемпотентность различающим тестом (не просто "нет ошибок")**
 
-Миграция должна применяться дважды без ошибок. `update users set invite_exempt = true where invite_exempt = false` при повторе не тронет ни строки - это и есть защита: при втором прогоне новые (уже не exempt) пользователи не будут помечены задним числом.
+"Применяется дважды без ошибок" - недостаточная проверка: до правки backfill
+`update users set invite_exempt = true where invite_exempt = false` тоже "не
+падал" при повторном прогоне, но при этом молча ломал защиту, если на срезе
+уже не было ни одной строки с `invite_exempt = false` (после первого наката
+их и не остаётся) - "UPDATE 0" получался бы что с защитой, что без неё,
+поэтому такая проверка ничего не различает.
+
+Правильный, различающий тест:
+
+1. Создать синтетического пользователя с `invite_exempt = false` (имитация
+   живого юзера, который прямо сейчас стоит на шаге ввода кода):
+   ```sql
+   insert into users (telegram_id, invite_exempt) values (-900000000001, false);
+   ```
+2. Прогнать файл миграции повторно напрямую: `psql -d baxtlilar < <файл>`.
+3. Убедиться, что у синтетического пользователя `invite_exempt` **осталось
+   `false`** (не превратилось в `true`) - это и есть подтверждение, что
+   маркер в `app_settings` реально защищает, а не просто "нет ошибок".
+4. Удалить синтетического пользователя.
+
+Заодно проверить: `analytics.funnel_steps` после повторного прогона осталась
+без изменений (`count/min/max(ord)` те же, что до повтора) - это подтверждает,
+что двухпроходный сдвиг с гардом `not exists (... step = 'bot_invite_code')`
+не сдвигает воронку второй раз.
 
 - [ ] **Step 3: Накатить на прод ДО выкладки кода**
 
