@@ -14,7 +14,7 @@ export const INVITE_CODE_LENGTH = 6;
  */
 const CYRILLIC_LOOKALIKES: Record<string, string> = {
   А: "A", В: "B", Е: "E", К: "K", М: "M", Н: "H",
-  О: "O", Р: "P", С: "C", Т: "T", У: "Y", Х: "X",
+  Р: "P", С: "C", Т: "T", У: "Y", Х: "X",
 };
 
 /** Привести пользовательский ввод к каноническому виду кода. */
@@ -26,6 +26,27 @@ export function normalizeInviteCode(raw: string): string {
     if (INVITE_CODE_ALPHABET.includes(mapped)) out += mapped;
   }
   return out;
+}
+
+/**
+ * Достать код из свободного текста. Люди пересылают приглашение целиком
+ * ("Держи код: 7K2MQX, заходи"), а не только сам код, поэтому просто
+ * нормализовать всю строку нельзя - буквы из соседних слов подмешаются
+ * в результат и код не найдётся.
+ *
+ * Ищем среди слов то, что после нормализации даёт ровно длину кода.
+ * Если подходящих слов несколько - берём первое: код в сообщении обычно один,
+ * а угадывать между кандидатами хуже, чем честно не найти.
+ */
+export function extractInviteCode(text: string): string {
+  for (const token of (text ?? "").split(/\s+/)) {
+    const c = normalizeInviteCode(token);
+    if (c.length === INVITE_CODE_LENGTH) return c;
+  }
+  // Слова не подошли - последняя попытка: вся строка целиком. Покрывает случай,
+  // когда человек прислал код, разбитый пробелами: "7K2 MQX".
+  const whole = normalizeInviteCode(text);
+  return whole.length === INVITE_CODE_LENGTH ? whole : "";
 }
 
 /** Сгенерировать новый код. Уникальность гарантирует индекс в БД, не эта функция. */
