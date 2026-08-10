@@ -53,15 +53,28 @@ update users set invite_exempt = true where invite_exempt = false;
 -- ломается на промежуточном дубликате: строка 4 переезжает в 5, а 5 ещё занята.
 -- Сдвигаем в два прохода через заведомо свободный диапазон +1000.
 --
--- Блок под условием, потому что сам сдвиг не идемпотентен: повторный прогон
--- сдвинул бы воронку ещё раз и молча испортил порядок шагов.
+-- Двойная проверка, ДВУМЯ вложенными IF (не одним AND):
+--  - to_regclass - analytics.funnel_steps создана вручную прямо на проде
+--    (это отдельная схема для Grafana, вне supabase/migrations), поэтому в
+--    локальной/тестовой БД, поднятой только из миграций, её нет - без этой
+--    проверки любой локальный rebuild (npm run test:integration) падал бы
+--    здесь с "relation analytics.funnel_steps does not exist". Именно
+--    вложенным IF, а не "and not exists (...)" одним выражением: PL/pgSQL
+--    разбирает подзапрос вложенного IF только при входе в внешнюю ветку,
+--    а составное "A and B" разбирается целиком сразу и падает на этапе
+--    парсинга, даже если A уже ложно;
+--  - not exists (... step = 'bot_invite_code') - сам сдвиг ord не идемпотентен,
+--    без неё повторный прогон сдвинул бы воронку ещё раз и молча испортил
+--    порядок шагов.
 do $$
 begin
-  if not exists (select 1 from analytics.funnel_steps where step = 'bot_invite_code') then
-    update analytics.funnel_steps set ord = ord + 1000 where ord >= 4;
-    update analytics.funnel_steps set ord = ord - 999  where ord >= 1004;
-    insert into analytics.funnel_steps (ord, step, phase, label)
-    values (4, 'bot_invite_code', 'Бот', 'Код приглашения')
-    on conflict (step) do nothing;
+  if to_regclass('analytics.funnel_steps') is not null then
+    if not exists (select 1 from analytics.funnel_steps where step = 'bot_invite_code') then
+      update analytics.funnel_steps set ord = ord + 1000 where ord >= 4;
+      update analytics.funnel_steps set ord = ord - 999  where ord >= 1004;
+      insert into analytics.funnel_steps (ord, step, phase, label)
+      values (4, 'bot_invite_code', 'Бот', 'Код приглашения')
+      on conflict (step) do nothing;
+    end if;
   end if;
 end $$;
