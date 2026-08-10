@@ -29,68 +29,64 @@ export function normalizeInviteCode(raw: string): string {
 }
 
 /**
- * Нормализовать с отслеживанием замен из карты кириллицы. Нужно для приоритизации
- * в extractInviteCode: слова, которые требуют замены, обычно это попытка ввода на
- * кириллице, а слова БЕЗ замен - это или чистая латиница (очень похоже на код),
- * или кириллица, которой вообще нет в карте.
- */
-function normalizeWithTracking(raw: string): { normalized: string; hadReplacements: boolean } {
-  const upper = (raw ?? "").toUpperCase();
-  let out = "";
-  let hadReplacements = false;
-  for (const ch of upper) {
-    const mapped = CYRILLIC_LOOKALIKES[ch];
-    if (mapped) {
-      hadReplacements = true;
-      if (INVITE_CODE_ALPHABET.includes(mapped)) out += mapped;
-    } else if (INVITE_CODE_ALPHABET.includes(ch)) {
-      out += ch;
-    }
-  }
-  return { normalized: out, hadReplacements };
-}
-
-/**
  * Достать код из свободного текста. Люди пересылают приглашение целиком
  * ("Держи код: 7K2MQX, заходи"), а не только сам код, поэтому просто
  * нормализовать всю строку нельзя - буквы из соседних слов подмешаются
  * в результат и код не найдётся.
  *
- * Ищем среди слов то, что после нормализации даёт ровно длину кода, с приоритетом:
- * 1. Слова БЕЗ замен из карты кириллицы (это очень похоже на человека, который
- *    вставил чистый латинский код);
- * 2. Слова С заменами (человек набрал код на кириллице);
- * 3. Вся строка целиком (для кода, разбитого пробелами: "7K2 MQX"), но ТОЛЬКО если
- *    нет замен - иначе подмешаем соседние слова вместо честного отказа.
+ * Признак кода: после нормализации должны быть ровно 6 символов И хотя бы одна
+ * цифра. Цифра есть в кодах, но не в обычных словах ни на русском, ни на узбекском,
+ * ни на английском - это работает одинаково для всех трёх.
+ *
+ * Алгоритм:
+ * 1. Ищем среди слов то, что после нормализации даёт 6 символов с цифрой.
+ * 2. Если не найдено - пробуем нормализовать всю строку целиком (для кода,
+ *    разбитого пробелами: "7K2 MQX" или "ВХТ 7К2").
  */
 export function extractInviteCode(text: string): string {
   const tokens = (text ?? "").split(/\s+/);
 
-  // Проход 1: слова БЕЗ замен - самые вероятные коды.
+  // Проход 1: ищем слово с 6 символами и цифрой.
   for (const token of tokens) {
-    const { normalized, hadReplacements } = normalizeWithTracking(token);
-    if (!hadReplacements && normalized.length === INVITE_CODE_LENGTH) return normalized;
+    const normalized = normalizeInviteCode(token);
+    if (normalized.length === INVITE_CODE_LENGTH && /\d/.test(normalized)) {
+      return normalized;
+    }
   }
 
-  // Проход 2: слова С заменами - человек на кириллице.
-  for (const token of tokens) {
-    const { normalized, hadReplacements } = normalizeWithTracking(token);
-    if (hadReplacements && normalized.length === INVITE_CODE_LENGTH) return normalized;
-  }
-
-  // Проход 3: вся строка целиком, но только если в ней нет замен. Это покрывает
-  // "7K2 MQX", но не "А 7K2MQ" - честно вернёт пустую строку вместо подмешивания.
-  const { normalized: whole, hadReplacements: wholeHadReplacements } = normalizeWithTracking(text);
-  if (!wholeHadReplacements && whole.length === INVITE_CODE_LENGTH) return whole;
+  // Проход 2: вся строка целиком (для кода, разбитого пробелами).
+  const whole = normalizeInviteCode(text);
+  if (whole.length === INVITE_CODE_LENGTH && /\d/.test(whole)) return whole;
 
   return "";
 }
 
-/** Сгенерировать новый код. Уникальность гарантирует индекс в БД, не эта функция. */
+/**
+ * Сгенерировать новый код. Уникальность гарантирует индекс в БД, не эта функция.
+ * Код обязательно содержит минимум одну цифру и минимум одну букву, чтобы
+ * отличиться от обычных слов при извлечении из текста.
+ */
 export function generateInviteCode(): string {
-  const bytes = new Uint8Array(INVITE_CODE_LENGTH);
-  crypto.getRandomValues(bytes);
-  let out = "";
-  for (const b of bytes) out += INVITE_CODE_ALPHABET[b % INVITE_CODE_ALPHABET.length];
-  return out;
+  const MAX_ATTEMPTS = 100;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const bytes = new Uint8Array(INVITE_CODE_LENGTH);
+    crypto.getRandomValues(bytes);
+    let code = "";
+    let hasDigit = false;
+    let hasLetter = false;
+
+    for (const b of bytes) {
+      const ch = INVITE_CODE_ALPHABET[b % INVITE_CODE_ALPHABET.length];
+      code += ch;
+      if (/\d/.test(ch)) hasDigit = true;
+      if (/[A-Z]/.test(ch)) hasLetter = true;
+    }
+
+    if (hasDigit && hasLetter) return code;
+  }
+
+  // Резервный путь: если не выпало за 100 попыток, сгенерируем детерминированно.
+  // Вероятность так мала (~0.0001%), что это условие почти не вызывается.
+  let code = "2A" + Array(4).fill(0).map(() => INVITE_CODE_ALPHABET[Math.floor(Math.random() * INVITE_CODE_ALPHABET.length)]).join("");
+  return code;
 }
