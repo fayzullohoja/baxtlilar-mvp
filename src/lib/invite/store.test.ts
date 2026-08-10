@@ -130,8 +130,15 @@ describe("findActiveCode", () => {
     expect(eqCalls).toContainEqual(["code", "ZZZZZ2"]);
   });
 
-  it("сбой базы - null (вход закрыт, а не открыт настежь)", async () => {
-    selectQueue.push({ data: null, error: { message: "connection refused" } });
+  it("сбой базы - null, ДАЖЕ если строка пришла вместе с ошибкой (вход закрыт, а не открыт настежь)", async () => {
+    // data специально НЕ пустой: без `if (error) return null` функция вернула
+    // бы эту строку - то есть пустила бы по коду при сбое БД. Пустой data не
+    // отличил бы "защита от ошибки сработала" от "просто нечего вернуть" - и
+    // такой тест остался бы зелёным, даже если удалить саму проверку `error`.
+    selectQueue.push({
+      data: { id: "c9", code: "ZZZZZ3", owner_id: "u9", disabled_at: null },
+      error: { message: "connection refused" },
+    });
     expect(await findActiveCode("ZZZZZ3")).toBeNull();
   });
 
@@ -166,14 +173,23 @@ describe("codeExistsButDisabled", () => {
     expect(await codeExistsButDisabled("###")).toBe(false);
     expect(fromSpy).not.toHaveBeenCalled();
   });
+
+  it("сбой базы - false (fail-closed по тексту причины, но не по доступу - единственный вызывающий уже отказал)", async () => {
+    // data специально непустой - как и в findActiveCode, проверяем, что именно
+    // проверка error решает исход, а не совпадение с "нечего вернуть".
+    selectQueue.push({ data: { id: "cX" }, error: { message: "timeout" } });
+    expect(await codeExistsButDisabled("ZZZZZ5")).toBe(false);
+  });
 });
 
 describe("ensureCodeForUser", () => {
-  it("код уже есть - отдаёт существующий, insert не зовёт", async () => {
+  it("код уже есть - отдаёт существующий, insert не зовёт, фильтр по owner_id и непогашенным", async () => {
     selectQueue.push({ data: { code: "EXIST1" }, error: null });
     const code = await ensureCodeForUser("u1");
     expect(code).toBe("EXIST1");
     expect(insertedRows).toHaveLength(0);
+    expect(eqCalls).toContainEqual(["owner_id", "u1"]);
+    expect(isCalls).toContainEqual(["disabled_at", null]);
   });
 
   it("кода нет - создаёт новый и отдаёт его", async () => {
@@ -194,6 +210,12 @@ describe("ensureCodeForUser", () => {
     const code = await ensureCodeForUser("u1");
     expect(code).toBe("WINNER1");
     expect(insertedRows).toHaveLength(1); // ушла ровно одна попытка insert, не три
+    // Перечитка после гонки обязана фильтровать по ТОМУ ЖЕ owner_id и по
+    // непогашенным кодам - иначе можно случайно отдать чужой или мёртвый код.
+    // Оба select'а (начальный + перечитка) используют одинаковые фильтры,
+    // поэтому здесь достаточно проверить, что нужная пара вообще встречается.
+    expect(eqCalls.filter(([col, val]) => col === "owner_id" && val === "u1")).toHaveLength(2);
+    expect(isCalls.filter(([col, val]) => col === "disabled_at" && val === null)).toHaveLength(2);
   });
 
   it("после 3 неудачных попыток (коллизия кода, не гонка по владельцу) - бросает", async () => {
@@ -205,6 +227,12 @@ describe("ensureCodeForUser", () => {
     await expect(ensureCodeForUser("u1")).rejects.toThrow(/не удалось выпустить код/);
     expect(insertedRows).toHaveLength(3);
   });
+
+  it("сбой начальной проверки - бросает СРАЗУ, insert вообще не зовёт", async () => {
+    selectQueue.push({ data: null, error: { message: "connection refused" } });
+    await expect(ensureCodeForUser("u1")).rejects.toThrow(/не удалось проверить код приглашения/);
+    expect(insertedRows).toHaveLength(0); // не пытались вслепую вставлять при непроверенном состоянии
+  });
 });
 
 describe("disableCodesOfUser", () => {
@@ -215,6 +243,11 @@ describe("disableCodesOfUser", () => {
     expect(typeof updatedRows[0]?.disabled_at).toBe("string"); // timestamp проставлен
     expect(eqCalls).toContainEqual(["owner_id", "u1"]);
     expect(isCalls).toContainEqual(["disabled_at", null]); // гасим только ещё активные
+  });
+
+  it("сбой БД - бросает, а не молча делает вид, что погасили (критично: код остался бы активным)", async () => {
+    updateQueue.push({ error: { message: "connection refused" } });
+    await expect(disableCodesOfUser("u1", "leak")).rejects.toThrow(/не удалось погасить/);
   });
 });
 
@@ -229,6 +262,11 @@ describe("reviveBanDisabledCodes", () => {
     // бы открытым каналом входа, просто с погашенным-и-снова-включённым кодом.
     expect(eqCalls).toContainEqual(["disabled_reason", "ban"]);
   });
+
+  it("сбой БД - бросает (направление безопасное, но тихий провал вводит оператора в заблуждение)", async () => {
+    updateQueue.push({ error: { message: "connection refused" } });
+    await expect(reviveBanDisabledCodes("u1")).rejects.toThrow(/не удалось оживить/);
+  });
 });
 
 describe("countInvitedBy", () => {
@@ -242,5 +280,10 @@ describe("countInvitedBy", () => {
   it("нет count в ответе - 0, а не undefined/NaN", async () => {
     selectQueue.push({ data: null, error: null });
     expect(await countInvitedBy("u1")).toBe(0);
+  });
+
+  it("сбой БД - бросает, а не тихий 0 (0 и 'не смогли посчитать' - разные факты)", async () => {
+    selectQueue.push({ data: null, error: { message: "connection refused" }, count: 0 });
+    await expect(countInvitedBy("u1")).rejects.toThrow(/не удалось посчитать/);
   });
 });
