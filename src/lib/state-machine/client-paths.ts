@@ -3,6 +3,8 @@ export const CLIENT_ONBOARDING_PATHS: Record<string, string> = {
   // bot-шаги пользователь проходит В БОТЕ; в мини-аппе они не должны
   // показывать UI — фолбэк на /open-in-telegram, который кинет в бот.
   bot_language: "/open-in-telegram",
+  // Коды-приглашения (2026-08-11): шаг живёт только в боте, как и остальные bot_*.
+  bot_invite_code: "/open-in-telegram",
   bot_contact: "/open-in-telegram",
   bot_consent_pd: "/open-in-telegram",
   bot_consent_biometric: "/open-in-telegram",
