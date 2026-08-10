@@ -29,24 +29,61 @@ export function normalizeInviteCode(raw: string): string {
 }
 
 /**
+ * Нормализовать с отслеживанием замен из карты кириллицы. Нужно для приоритизации
+ * в extractInviteCode: слова, которые требуют замены, обычно это попытка ввода на
+ * кириллице, а слова БЕЗ замен - это или чистая латиница (очень похоже на код),
+ * или кириллица, которой вообще нет в карте.
+ */
+function normalizeWithTracking(raw: string): { normalized: string; hadReplacements: boolean } {
+  const upper = (raw ?? "").toUpperCase();
+  let out = "";
+  let hadReplacements = false;
+  for (const ch of upper) {
+    const mapped = CYRILLIC_LOOKALIKES[ch];
+    if (mapped) {
+      hadReplacements = true;
+      if (INVITE_CODE_ALPHABET.includes(mapped)) out += mapped;
+    } else if (INVITE_CODE_ALPHABET.includes(ch)) {
+      out += ch;
+    }
+  }
+  return { normalized: out, hadReplacements };
+}
+
+/**
  * Достать код из свободного текста. Люди пересылают приглашение целиком
  * ("Держи код: 7K2MQX, заходи"), а не только сам код, поэтому просто
  * нормализовать всю строку нельзя - буквы из соседних слов подмешаются
  * в результат и код не найдётся.
  *
- * Ищем среди слов то, что после нормализации даёт ровно длину кода.
- * Если подходящих слов несколько - берём первое: код в сообщении обычно один,
- * а угадывать между кандидатами хуже, чем честно не найти.
+ * Ищем среди слов то, что после нормализации даёт ровно длину кода, с приоритетом:
+ * 1. Слова БЕЗ замен из карты кириллицы (это очень похоже на человека, который
+ *    вставил чистый латинский код);
+ * 2. Слова С заменами (человек набрал код на кириллице);
+ * 3. Вся строка целиком (для кода, разбитого пробелами: "7K2 MQX"), но ТОЛЬКО если
+ *    нет замен - иначе подмешаем соседние слова вместо честного отказа.
  */
 export function extractInviteCode(text: string): string {
-  for (const token of (text ?? "").split(/\s+/)) {
-    const c = normalizeInviteCode(token);
-    if (c.length === INVITE_CODE_LENGTH) return c;
+  const tokens = (text ?? "").split(/\s+/);
+
+  // Проход 1: слова БЕЗ замен - самые вероятные коды.
+  for (const token of tokens) {
+    const { normalized, hadReplacements } = normalizeWithTracking(token);
+    if (!hadReplacements && normalized.length === INVITE_CODE_LENGTH) return normalized;
   }
-  // Слова не подошли - последняя попытка: вся строка целиком. Покрывает случай,
-  // когда человек прислал код, разбитый пробелами: "7K2 MQX".
-  const whole = normalizeInviteCode(text);
-  return whole.length === INVITE_CODE_LENGTH ? whole : "";
+
+  // Проход 2: слова С заменами - человек на кириллице.
+  for (const token of tokens) {
+    const { normalized, hadReplacements } = normalizeWithTracking(token);
+    if (hadReplacements && normalized.length === INVITE_CODE_LENGTH) return normalized;
+  }
+
+  // Проход 3: вся строка целиком, но только если в ней нет замен. Это покрывает
+  // "7K2 MQX", но не "А 7K2MQ" - честно вернёт пустую строку вместо подмешивания.
+  const { normalized: whole, hadReplacements: wholeHadReplacements } = normalizeWithTracking(text);
+  if (!wholeHadReplacements && whole.length === INVITE_CODE_LENGTH) return whole;
+
+  return "";
 }
 
 /** Сгенерировать новый код. Уникальность гарантирует индекс в БД, не эта функция. */
