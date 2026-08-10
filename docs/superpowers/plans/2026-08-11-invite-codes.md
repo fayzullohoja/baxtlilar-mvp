@@ -844,6 +844,15 @@ git commit -m "feat(invite): решение о шаге и зачёт кода �
 **Files:**
 - Modify: `src/lib/telegram/bot/messages.ts` (объект `M`)
 - Modify: `src/lib/telegram/bot/handlers.ts` (три места: `promptStep` ~строка 355, ветка `ns === "lang"` ~строка 565, `handleUpdate` ~строка 783 и текстовый фолбэк ~строка 809)
+- Modify: `src/lib/telegram/bot/handlers.ts` - **множество `BOT_STEPS` ~строка 91**
+- Modify: `src/app/api/auth/bootstrap/route.ts` - **множество `BOT_OR_LEGACY_STEPS`**
+
+⛔ **ДВА ОБХОДА ШЛАГБАУМА, найдены при ревью Task 4.** Оба множества перечисляют бот-шаги
+обычными строками (`Set<string>`), поэтому компилятор их НЕ проверяет и новый шаг туда не
+попал. Цепочка обхода: человек на `bot_invite_code` пишет боту `/app` → `BOT_STEPS` не знает
+шаг → бот считает бот-часть пройденной и шлёт рабочую кнопку мини-аппа → на бэкенде
+`BOT_OR_LEGACY_STEPS` тоже не знает шаг → выдаётся сессия. То есть вход мимо кода.
+**Добавить `bot_invite_code` в ОБА множества.**
 - Test: `src/lib/telegram/bot/invite-flow.test.ts`
 
 **Interfaces:**
