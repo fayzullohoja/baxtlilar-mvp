@@ -3,7 +3,11 @@ import { loadActiveUserApi } from "@/lib/auth/active-guard";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { clearSession } from "@/lib/auth/session";
-import { BUCKET_PHOTOS, BUCKET_DOCUMENTS, BUCKET_FEEDBACK } from "@/lib/uploads/storage";
+import {
+  BUCKET_PHOTOS,
+  BUCKET_DOCUMENTS,
+  removeUserFeedbackScreenshots,
+} from "@/lib/uploads/storage";
 import { hashPhone } from "@/lib/identity/hashing";
 
 // F-006: окно cooldown после delete, в течение которого тот же телефон
@@ -77,20 +81,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const { data: photos } = await sb.from("profile_photos").select("path").eq("user_id", user.id);
     const photoPaths = (photos ?? []).map((p) => p.path as string);
 
-    // Скриншоты отзывов - по той же причине ДО erase_user, но по своей: строку
-    // feedback он не удаляет (users только обезличивается, каскад не сработает),
-    // а screenshot_path обнуляет - после вызова путь к файлу взять уже негде, и
-    // скриншот с чужой анкетой останется на диске навсегда.
-    const { data: shots, error: shotsErr } = await sb
-      .from("feedback")
-      .select("screenshot_path")
-      .eq("user_id", user.id);
-    if (shotsErr)
-      console.error("[account.delete] feedback screenshots select failed:", shotsErr.message);
-    const shotPaths = (shots ?? [])
-      .map((s) => s.screenshot_path as string | null)
-      .filter((p): p is string => !!p);
-
     // F-114/F-012 + H8 verdict-fix (split-window): lifecycle='deleted' перевод
     // ТЕПЕРЬ ВНУТРИ erase_user RPC (см. миграцию 20260620920000). Раньше:
     //   tryTransition(deleted) → COMMIT tx1
@@ -108,7 +98,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // транзакционен; orphan-файлы лучше периодически чистить отдельным cron).
     try {
       if (photoPaths.length) await sb.storage.from(BUCKET_PHOTOS).remove(photoPaths);
-      if (shotPaths.length) await sb.storage.from(BUCKET_FEEDBACK).remove(shotPaths);
+      // Скриншоты отзывов - обходом папки, а не по feedback.screenshot_path:
+      // файл, чья запись об отзыве не создалась (суточный лимит, дедуп двойного
+      // тапа, обрыв запроса), в базе не значится вовсе, и по ссылкам из неё
+      // остался бы на диске навсегда. На нём может быть чужая анкета.
+      await removeUserFeedbackScreenshots(user.id);
       const { data: docFiles } = await sb.storage.from(BUCKET_DOCUMENTS).list(user.id);
       if (docFiles?.length)
         await sb.storage.from(BUCKET_DOCUMENTS).remove(docFiles.map((f) => `${user.id}/${f.name}`));

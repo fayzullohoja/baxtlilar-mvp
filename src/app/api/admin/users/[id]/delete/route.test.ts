@@ -3,16 +3,18 @@ import type { NextRequest } from "next/server";
 
 // Полное удаление аккаунта обязано уносить и скриншот отзыва.
 //
-// RPC отдаёт пути файлов ДО удаления строк - после каскада указателя на файл в
-// базе уже нет, и осиротевший скриншот не найти ничем: сборщика лишних файлов в
-// проекте нет, housekeeping-крон в бакеты не заглядывает. Роут знал только про
-// фото и документы, поэтому файл с чужой анкетой переживал «необратимое»
-// удаление. Здесь проверяем, что чистятся все три бакета.
+// Фото и документы чистятся по путям из RPC, а бакет отзывов - обходом папки
+// человека. Разница не косметическая: путь скриншота попадает в базу не всегда
+// (суточный лимит, дедуп двойного тапа, обрыв запроса кладут файл на диск без
+// записи), поэтому список из RPC для него заведомо неполон, а на файле может
+// быть чужая анкета. Здесь проверяем, что чистятся все три бакета и что
+// неучтённый в базе файл тоже уходит.
 
-const { requireAdminApiMock, rpcMock, removeMock, storageFromMock } = vi.hoisted(() => ({
+const { requireAdminApiMock, rpcMock, removeMock, listMock, storageFromMock } = vi.hoisted(() => ({
   requireAdminApiMock: vi.fn(),
   rpcMock: vi.fn(),
   removeMock: vi.fn(),
+  listMock: vi.fn(),
   storageFromMock: vi.fn(),
 }));
 
@@ -25,6 +27,8 @@ import { POST } from "./route";
 import { BUCKET_DOCUMENTS, BUCKET_FEEDBACK, BUCKET_PHOTOS } from "@/lib/uploads/storage";
 
 const PATHS = ["u1/photo.jpg", "u1/passport.jpg", "u1/feedback/shot.png"];
+/** Что лежит в папке человека в бакете отзывов - имена файлов, как отдаёт list(). */
+const SHOTS = [{ name: "1700000000000.png" }, { name: "1700000060000.png" }];
 
 function call(id = "u1") {
   const req = new Request("http://localhost/api/admin/users/u1/delete", {
@@ -41,8 +45,10 @@ beforeEach(() => {
   rpcMock.mockResolvedValue({ data: { ok: true, storage_paths: PATHS }, error: null });
   removeMock.mockReset();
   removeMock.mockResolvedValue({ error: null });
+  listMock.mockReset();
+  listMock.mockResolvedValue({ data: SHOTS, error: null });
   storageFromMock.mockReset();
-  storageFromMock.mockImplementation(() => ({ remove: removeMock }));
+  storageFromMock.mockImplementation(() => ({ remove: removeMock, list: listMock }));
 });
 
 describe("POST /api/admin/users/[id]/delete - чистка файлов после hard-delete", () => {
@@ -58,6 +64,15 @@ describe("POST /api/admin/users/[id]/delete - чистка файлов посл
     expect(removeMock).toHaveBeenCalledWith(PATHS);
   });
 
+  it("сносит скриншоты обходом папки, а не по путям из RPC", async () => {
+    // Файл, чья запись об отзыве не создалась, в storage_paths не попадёт -
+    // и остался бы на диске навсегда, если чистить только по ним.
+    await call();
+
+    expect(listMock).toHaveBeenCalledWith("u1");
+    expect(removeMock).toHaveBeenCalledWith(["u1/1700000000000.png", "u1/1700000060000.png"]);
+  });
+
   it("сбой чистки одного бакета не роняет удаление - строки в базе уже нет", async () => {
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     removeMock.mockRejectedValueOnce(new Error("bucket not found"));
@@ -65,7 +80,8 @@ describe("POST /api/admin/users/[id]/delete - чистка файлов посл
     const res = await call();
 
     expect(res.status).toBe(200);
-    expect(storageFromMock.mock.calls.length).toBe(3);
+    // Три бакета по путям из RPC плюс отдельный обход папки отзывов.
+    expect(storageFromMock.mock.calls.length).toBe(4);
     errSpy.mockRestore();
   });
 });

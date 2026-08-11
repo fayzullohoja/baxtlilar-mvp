@@ -135,6 +135,61 @@ export async function uploadFeedbackScreenshot(
   return { ok: true, path, type, sha256: sha256Bytes(bytes) };
 }
 
+/**
+ * Снос одного скриншота - парная операция к загрузке.
+ *
+ * Нужна потому, что файл и запись об отзыве уезжают в разные места и не в одной
+ * транзакции: файл кладётся ДО create_feedback (чтобы «не тот формат» человек
+ * увидел ошибкой формы, а не после сохранения отзыва), а процедура может
+ * отказать по суточному лимиту или упасть. Без этого вызова путь теряется в тот
+ * же миг: указателя на файл в базе нет ни секунды, и снести его потом нечем.
+ */
+export async function removeFeedbackScreenshot(path: string): Promise<boolean> {
+  if (!path) return false;
+  const { error } = await supabaseAdmin().storage.from(BUCKET_FEEDBACK).remove([path]);
+  // Адаптер хранилища не бросает, а возвращает {error} - без явной проверки
+  // неудачная чистка засчиталась бы успехом и файл остался бы молча.
+  if (error) {
+    console.error("[feedback] снос осиротевшего скриншота не удался:", path, error.message);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Снос всех скриншотов человека - обходом его папки в бакете, а НЕ по ссылкам
+ * из базы. Так же устроена чистка документов при удалении аккаунта.
+ *
+ * Обходом папки, потому что в базе видны не все файлы. Загрузка не
+ * транзакционна с записью отзыва, поэтому файл, чья запись не создалась
+ * (суточный лимит, дедуп двойного тапа, обрыв запроса), в
+ * feedback.screenshot_path не попадает никогда. Список по базе оставил бы такой
+ * файл на диске навсегда - а на скриншоте по условиям спеки может оказаться
+ * чужая анкета, которая обязана уйти вместе с аккаунтом.
+ *
+ * Обход безопасен ровно потому, что uploadFeedbackScreenshot кладёт файлы
+ * только в `<userId>/`: чужого в этой папке не окажется.
+ *
+ * Возвращает число снесённых файлов - вызывающему это нужно только для лога:
+ * обе дороги удаления идут дальше в любом случае, строки в базе уже не вернуть.
+ */
+export async function removeUserFeedbackScreenshots(userId: string): Promise<number> {
+  const bucket = supabaseAdmin().storage.from(BUCKET_FEEDBACK);
+  const { data, error } = await bucket.list(userId);
+  if (error) {
+    console.error("[feedback] обход папки скриншотов не удался:", userId, error.message);
+    return 0;
+  }
+  const paths = (data ?? []).map((f) => `${userId}/${f.name}`);
+  if (!paths.length) return 0;
+  const { error: rmErr } = await bucket.remove(paths);
+  if (rmErr) {
+    console.error("[feedback] снос скриншотов не удался:", userId, rmErr.message);
+    return 0;
+  }
+  return paths.length;
+}
+
 /** Подписанные ссылки на скриншоты пачкой - для списка в админке. */
 export async function signedFeedbackUrls(
   paths: (string | null | undefined)[],
