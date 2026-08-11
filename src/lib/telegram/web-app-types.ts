@@ -7,6 +7,10 @@ export type TgWebApp = {
   ready?: () => void;
   expand?: () => void;
   close?: () => void;
+  // Task 9 (invite): открыть t.me-ссылку нативно. Внутри Telegram WebView
+  // обычный window.open часто ничего не делает (попапы блокируются) - это
+  // официальный способ открыть t.me/share/url без разрыва мини-аппа.
+  openTelegramLink?: (url: string) => void;
 };
 
 declare global {

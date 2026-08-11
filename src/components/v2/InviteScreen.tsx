@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
 import { Headline } from "./Headline";
+import "@/lib/telegram/web-app-types";
 
 /**
  * V2 InviteScreen (Task 9) - тело экрана «Пригласить».
@@ -84,7 +85,16 @@ export function V2InviteScreen() {
 
   function shareTelegram() {
     const url = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(t("share_text"))}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    // Внутри Telegram WebView window.open обычно ничего не делает (попапы
+    // блокируются) - openTelegramLink открывает t.me-ссылку нативно, не
+    // разрывая мини-аппу. window.open остаётся фолбэком для обычного браузера
+    // (например, при тестировании вне Telegram).
+    const tg = window.Telegram?.WebApp;
+    if (tg?.openTelegramLink) {
+      tg.openTelegramLink(url);
+    } else {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
   }
 
   if (status === "loading") {
