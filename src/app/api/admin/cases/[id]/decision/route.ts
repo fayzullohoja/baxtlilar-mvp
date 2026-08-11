@@ -5,6 +5,7 @@ import {
   validatePassportPayload,
   type PassportPayload,
 } from "@/lib/admin/passport-validation";
+import { ensureCodeForUser } from "@/lib/invite/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -88,6 +89,21 @@ export async function POST(
               ? 403
               : 400;
       return NextResponse.json(out, { status });
+    }
+
+    // Приглашать могут только подтверждённые люди - код выпускаем здесь же, в
+    // момент одобрения. Сбой выпуска НЕ отменяет само одобрение верификации
+    // (RPC уже закоммитил approved) и не должен ронять ответ модератору 500 -
+    // в отличие от гашения при бане (guard.ts), у этого сбоя ЕСТЬ рабочая
+    // подстраховка: GET /api/invite сам вызывает ensureCodeForUser лениво при
+    // первом заходе человека на экран «Пригласить», так что код всё равно
+    // появится - просто не в момент approve, а при первом обращении.
+    if (out.user_id) {
+      try {
+        await ensureCodeForUser(out.user_id);
+      } catch (e) {
+        console.error("[decision] выпуск кода приглашения при одобрении не удался:", e);
+      }
     }
     return NextResponse.json(out);
   }
