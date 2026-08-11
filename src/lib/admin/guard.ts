@@ -7,6 +7,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { env } from "@/lib/env";
 import { trustedIp } from "@/lib/http/ip";
 import { notifyUser } from "@/lib/telegram/notify";
+import { disableCodesOfUser } from "@/lib/invite/store";
 
 export type AdminRow = { id: string; login: string; role: "superadmin" | "moderator" };
 
@@ -223,6 +224,32 @@ export async function dispatchBanAction(
     }
     const r = data as BanRpcResult;
     if (!r.ok) return rpcErrorToHttp(r);
+
+    // Гасим код приглашения забаненного - иначе он продолжает приводить людей
+    // в закрытый запуск уже будучи забаненным (это и есть дыра, которую
+    // закрывает Task 8). disableCodesOfUser осознанно бросает на сбое БД
+    // (Task 5, store.ts) - но бан к этому моменту УЖЕ закоммичен RPC выше
+    // (r.ok=true), откатывать его нельзя и не нужно: сам бан - защита ОСТАЛЬНЫХ
+    // пользователей, и она уже действует. Превратить этот сбой в 500 означало
+    // бы, что модератор нажмёт «Подтвердить» ещё раз - а RPC ответит
+    // not_eligible (юзер уже blocked), и это прочитается как «вообще всё
+    // сломано», хотя бан прошёл. Поэтому - по образцу adminAudit чуть выше по
+    // файлу (комментарий "Ошибку НЕ бросаем осознанно"): громкий console.error
+    // + факт сбоя пишется В ТОТ ЖЕ audit-row (newValue.codes_disabled) + флаг в
+    // ответе роута, чтобы отказ не остался незамеченным ни в логах, ни в
+    // истории действий модератора, ни (когда админка станет это показывать) у
+    // него на экране.
+    let codesDisabled = true;
+    try {
+      await disableCodesOfUser(userId, "ban");
+    } catch (e) {
+      codesDisabled = false;
+      console.error(
+        `[ban] КРИТИЧНО: бан ${userId} прошёл, но гашение кода приглашения провалилось:`,
+        e,
+      );
+    }
+
     await adminAudit({
       adminId: session.adminId,
       action: "ban_confirmed",
@@ -233,7 +260,7 @@ export async function dispatchBanAction(
         proposer_admin_id: r.proposer_admin_id,
         proposer_reason: r.proposer_reason,
       },
-      newValue: { lifecycle_state: "blocked", final_reason: r.final_reason },
+      newValue: { lifecycle_state: "blocked", final_reason: r.final_reason, codes_disabled: codesDisabled },
       reason: override || (r.proposer_reason as string),
       ip: trustedIp(req),
     });
@@ -244,7 +271,7 @@ export async function dispatchBanAction(
         "Ваш аккаунт заблокирован модератором.\nHisobingiz moderator tomonidan bloklangan.",
       );
     }
-    return NextResponse.json({ ok: true, status: "blocked" });
+    return NextResponse.json({ ok: true, status: "blocked", codes_disabled: codesDisabled });
   }
 
   if (action === "cancel") {

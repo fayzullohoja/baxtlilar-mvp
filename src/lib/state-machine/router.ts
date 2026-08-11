@@ -9,6 +9,8 @@ export const ONBOARDING_PATHS: Record<OnboardingStep, string> = {
   // bot-шаги — мини-аппа не должна показывать их UI; выкидываем на /open-in-telegram,
   // там user попадёт обратно в бот через deep-link.
   bot_language: "/open-in-telegram",
+  // Коды-приглашения (2026-08-11): шаг живёт только в боте, как и остальные bot_*.
+  bot_invite_code: "/open-in-telegram",
   bot_contact: "/open-in-telegram",
   bot_consent_pd: "/open-in-telegram",
   bot_consent_biometric: "/open-in-telegram",

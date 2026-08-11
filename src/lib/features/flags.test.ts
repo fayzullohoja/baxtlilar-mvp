@@ -11,6 +11,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import {
   FEATURES,
   FEATURE_DEFAULTS,
+  FAIL_CLOSED_FEATURES,
   featureKey,
   loadFeatureFlags,
   isFeatureEnabled,
@@ -38,17 +39,18 @@ beforeEach(() => {
 });
 
 describe("feature flags — набор ключей и дефолты", () => {
-  it("ровно 5 фич с ожидаемыми именами", () => {
-    expect([...FEATURES]).toEqual(["verification", "matching", "interests", "chat", "payments"]);
+  it("ровно 6 фич с ожидаемыми именами", () => {
+    expect([...FEATURES]).toEqual(["verification", "matching", "interests", "chat", "payments", "invite_gate"]);
   });
 
-  it("payments выключен по умолчанию, остальные включены", () => {
+  it("payments и invite_gate выключены по умолчанию, остальные включены", () => {
     expect(FEATURE_DEFAULTS).toEqual({
       verification: true,
       matching: true,
       interests: true,
       chat: true,
       payments: false,
+      invite_gate: false,
     });
   });
 
@@ -80,10 +82,19 @@ describe("feature flags — набор ключей и дефолты", () => {
     expect(flags.matching).toBe(true); // не сломались об мусор
   });
 
-  it("сбой БД → fail-open к дефолтам", async () => {
+  it("сбой БД → fail-open к дефолтам для обычных рубильников, invite_gate - исключение (см. describe ниже)", async () => {
     mockRows(null, { message: "connection reset" });
     const flags = await loadFeatureFlags();
-    expect(flags).toEqual(FEATURE_DEFAULTS);
+    // Раунд исправлений 1: раньше здесь стояло `expect(flags).toEqual(FEATURE_DEFAULTS)` -
+    // это ЦЕЛИКОМ совпадало с тем, что invite_gate на сбое молча брал дефолт
+    // false ("вход открыт"). Теперь дефолты сохраняются только для пяти
+    // обычных флагов; invite_gate - в FAIL_CLOSED_FEATURES и не участвует в
+    // fail-open. Проверяем оба факта явно, а не одним toEqual по всему объекту.
+    for (const f of FEATURES) {
+      if (FAIL_CLOSED_FEATURES.includes(f)) continue;
+      expect(flags[f]).toBe(FEATURE_DEFAULTS[f]); // обычные флаги - дефолт как раньше
+    }
+    expect(flags.invite_gate).toBe(true); // а не false из дефолта
   });
 });
 
@@ -114,5 +125,59 @@ describe("G-26 — гейт роута меняет поведение (без �
   it("isFeatureEnabled отражает флаг", async () => {
     mockRows([{ key: "feature_verification_enabled", value: false }]);
     expect(await isFeatureEnabled("verification")).toBe(false);
+  });
+});
+
+describe("invite_gate", () => {
+  it("есть в списке фич", () => {
+    expect(FEATURES).toContain("invite_gate");
+  });
+
+  // Шлагбаум ВЫКЛЮЧЕН по умолчанию: выкладка кода не должна ничего менять
+  // для живых пользователей. Включается осознанно, отдельным действием.
+  it("по умолчанию выключен", () => {
+    expect(FEATURE_DEFAULTS.invite_gate).toBe(false);
+  });
+
+  it("ключ в app_settings совпадает с соглашением", () => {
+    expect(featureKey("invite_gate")).toBe("feature_invite_gate_enabled");
+  });
+
+  it("в списке FAIL_CLOSED_FEATURES", () => {
+    expect(FAIL_CLOSED_FEATURES).toContain("invite_gate");
+  });
+
+  // Раунд исправлений 1 — Critical из ревью: сбой чтения app_settings молча
+  // откатывался к дефолту invite_gate=false ("вход открыт"). Строки флага в
+  // таблице при этом попросту нет (обычное дело - флаг ещё не настраивали) -
+  // это тот же сценарий, что "отсутствие строки → дефолт" выше, но с ошибкой
+  // чтения вместо пустого результата. На старом коде (`catch {}` без правки
+  // FAIL_CLOSED_FEATURES) этот тест падал: flags.invite_gate был false.
+  it("сбой чтения при отсутствующей строке флага → invite_gate=true (шлагбаум закрыт), а не false из дефолта", async () => {
+    mockRows(null, { message: "connection reset" });
+    const flags = await loadFeatureFlags();
+    expect(flags.invite_gate).toBe(true);
+  });
+
+  it("неудачное чтение НЕ кэшируется - следующий вызов без ручного invalidateFeatureCache идёт в БД заново", async () => {
+    const inSpy = vi.fn();
+    // Первый вызов - БД недоступна.
+    inSpy.mockResolvedValueOnce({ data: null, error: { message: "connection reset" } });
+    // Второй вызов (тот же process, тот же кэш) - БД снова отвечает, строки нет.
+    inSpy.mockResolvedValueOnce({ data: [], error: null });
+    vi.mocked(supabaseAdmin).mockReturnValue({
+      from: () => ({ select: () => ({ in: inSpy }) }),
+    } as never);
+
+    const first = await loadFeatureFlags();
+    expect(first.invite_gate).toBe(true); // сбой → закрыто
+
+    // invalidateFeatureCache() здесь НАРОЧНО не зовём: если бы неудачный первый
+    // вызов осел в кэше (старый баг - `cache = {...}` было безусловным), второй
+    // вызов отдал бы ту же закэшированную закрытую версию, не дойдя до БД, и
+    // inSpy получил бы только один вызов вместо двух.
+    const second = await loadFeatureFlags();
+    expect(second.invite_gate).toBe(false); // БД снова доступна → честный дефолт
+    expect(inSpy).toHaveBeenCalledTimes(2); // оба раза реально ходили в БД
   });
 });

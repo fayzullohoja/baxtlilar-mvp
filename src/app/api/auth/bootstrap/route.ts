@@ -13,8 +13,16 @@ type BootstrapBody = { initData?: string; start_param?: string | null };
 // Шаги, на которых пользователь ЕЩЁ В БОТЕ и не имеет права получить сессию
 // мини-аппы. Бот сам ведёт через них; мини-аппа открывается только после
 // bot_consent_biometric → verification_intro.
+//
+// ⛔ Коды-приглашения: bot_invite_code ОБЯЗАН быть в этом множестве - это
+// ВТОРАЯ половина обхода шлагбаума (первая - BOT_STEPS в
+// src/lib/telegram/bot/handlers.ts). Обычный Set<string>, не проверяется
+// компилятором по enum OnboardingStep: забытый здесь шаг значит, что
+// человек, ещё не введший код, всё равно получит сессию мини-аппы, если
+// каким-то путём доберётся до bootstrap со start_param.
 const BOT_OR_LEGACY_STEPS = new Set<string>([
   "bot_language",
+  "bot_invite_code",
   "bot_contact",
   "bot_consent_pd",
   "bot_consent_biometric",

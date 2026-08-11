@@ -9,6 +9,9 @@ export type LifecycleState = "onboarding" | "active" | "paused" | "pending_ban" 
 export type OnboardingStep =
   // Бот-регистрация (2026-06-19 security pivot, заменяет SMS-OTP):
   | "bot_language"
+  // Коды-приглашения (2026-08-11): шлагбаум закрытого запуска между языком и
+  // офертой. Живёт только в боте - у мини-аппы нет экрана для него.
+  | "bot_invite_code"
   | "bot_contact"
   | "bot_consent_pd"
   | "bot_consent_biometric"
@@ -84,7 +87,10 @@ export const ALLOWED_TRANSITIONS: Record<OnboardingStep, OnboardingStep[]> = {
   // Бот-регистрация. V2 ext 2026-06-28 (round 2): порядок перестроен —
   // сначала оферта/правила (до передачи телефона), потом телефон, потом
   // отдельно биометрия. Источник: продакт-фидбэк учредителя.
-  bot_language: ["bot_consent_pd"],
+  // Коды-приглашения (2026-08-11): обе стрелки разрешены ВСЕГДА. Какую выбрать,
+  // решает бот по флагу invite_gate - поэтому шлагбаум переключается без деплоя.
+  bot_language: ["bot_invite_code", "bot_consent_pd"],
+  bot_invite_code: ["bot_consent_pd"],
   bot_consent_pd: ["bot_contact"],
   // 2026-07-10 (спец оунера): согласие на биометрию перенесено из бота в
   // mini-app (экран верификации, перед документом/селфи). Новый путь: телефон

@@ -2,7 +2,7 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { unwrapRows } from "@/lib/db/unwrap";
-import { FEATURES, FEATURE_DEFAULTS, featureKey, type Feature } from "./features";
+import { FEATURES, FEATURE_DEFAULTS, FAIL_CLOSED_FEATURES, featureKey, type Feature } from "./features";
 
 /**
  * C-033 — Feature kill switches (§67 «немедленное отключение»).
@@ -20,7 +20,7 @@ import { FEATURES, FEATURE_DEFAULTS, featureKey, type Feature } from "./features
  * ./features (без "server-only"), чтобы client-панель могла их импортировать.
  * Реэкспортим для существующих серверных импортёров.
  */
-export { FEATURES, FEATURE_DEFAULTS, featureKey };
+export { FEATURES, FEATURE_DEFAULTS, FAIL_CLOSED_FEATURES, featureKey };
 export type { Feature };
 
 // Кэш: избегаем DB-хита на КАЖДЫЙ запрос фичи. TTL определяет реальную задержку
@@ -41,6 +41,13 @@ export function invalidateFeatureCache(): void {
  * дефолтам: если app_settings недоступна, verification/matching/interests/chat
  * продолжают работать (kill-switch — редкое ручное действие; недоступность БД не
  * должна ложно глушить продукт), а payments остаётся выключенным.
+ *
+ * ИСКЛЮЧЕНИЕ — FAIL_CLOSED_FEATURES (сейчас это invite_gate): у этих флагов
+ * дефолт САМ ПО СЕБЕ означает "открыто", поэтому обычный fail-open превратил бы
+ * сбой БД в дыру — см. докстринг константы в ./features. Для них незнание
+ * состояния принудительно читается как "закрыто", а неудачный результат вообще
+ * не кэшируется (иначе одна транзиентная ошибка держала бы дыру открытой все
+ * CACHE_TTL_MS).
  */
 export async function loadFeatureFlags(): Promise<Record<Feature, boolean>> {
   const now = Date.now();
@@ -63,7 +70,16 @@ export async function loadFeatureFlags(): Promise<Record<Feature, boolean>> {
       if (v === true || v === false) flags[f] = v;
     }
   } catch {
-    // БД недоступна → дефолты (см. fail-open в докстринге).
+    // БД недоступна: для большинства флагов дефолт и так безопасен (fail-open,
+    // см. докстринг выше) - flags уже содержит дефолты, ничего не трогаем.
+    // Но для FAIL_CLOSED_FEATURES дефолт НЕбезопасен на сбое - принудительно
+    // закрываем, независимо от того, что там в FEATURE_DEFAULTS.
+    for (const f of FAIL_CLOSED_FEATURES) flags[f] = true;
+    // Важно: НЕ кэшируем результат неудачного чтения (ранний return, минуя
+    // `cache = {...}` ниже). Иначе один упавший запрос закрепит "не знаем
+    // состояние" в кэше на весь CACHE_TTL_MS, и все, кто подойдёт в это окно,
+    // получат то же самое решение вместо честной попытки перечитать флаг.
+    return flags;
   }
 
   cache = { at: now, flags };

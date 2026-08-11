@@ -12,6 +12,7 @@ import {
   IconUserShield,
   IconSettings,
   IconLanguage,
+  IconTicket,
   IconLogout,
 } from "@tabler/icons-react";
 import { ADMIN } from "@/lib/admin/admin-tokens";
@@ -48,6 +49,7 @@ const GROUPS: Group[] = [
     label: "РЕЕСТР",
     items: [
       { href: "/admin/clients", label: "Клиенты", icon: IconUsers, perm: "clients.directory" },
+      { href: "/admin/invites", label: "Приглашения", icon: IconTicket, perm: "invites.manage" },
     ],
   },
   {

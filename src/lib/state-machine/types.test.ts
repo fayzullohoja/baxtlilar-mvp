@@ -39,7 +39,9 @@ describe("ALLOWED_TRANSITIONS", () => {
   it("bot-flow (2026-06-28 round 2): язык → оферта → контакт → биометрия → welcome → verification_intro → doc_upload", () => {
     // V2 ext 2026-06-28 round 2: оферта/правила ПЕРЕД телефоном (продакт-фидбэк
     // учредителя). Раньше было язык → телефон → оферта → биометрия.
-    expect(ALLOWED_TRANSITIONS.bot_language).toEqual(["bot_consent_pd"]);
+    // Коды-приглашения (2026-08-11): добавлена вторая стрелка на bot_invite_code
+    // (шлагбаум), см. invite-step.test.ts - здесь достаточно не потерять старую.
+    expect(ALLOWED_TRANSITIONS.bot_language).toEqual(["bot_invite_code", "bot_consent_pd"]);
     expect(ALLOWED_TRANSITIONS.bot_consent_pd).toEqual(["bot_contact"]);
     // 2026-07-10 (спец оунера): биометрия перенесена из бота в mini-app.
     // Телефон → welcome_mission напрямую; bot_consent_biometric оставлен целью

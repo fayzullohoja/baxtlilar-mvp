@@ -6,12 +6,17 @@ import { FEATURES, type Feature } from "@/lib/features/features";
 // C-033: kill-switch панель. Каждая фича выключается независимо, мгновенно, без
 // деплоя (POST /api/admin/features). Выключение = «функция недоступна для всех
 // пользователей прямо сейчас». Действие логируется в admin_audit_log.
+// invite_gate устроен наоборот остальных: true = "шлагбаум опущен, нужен код",
+// false = "вход открыт". Если рисовать его как обычный рубильник, штатное
+// состояние выглядит аварийным, и оператор "чинит" его, закрывая вход всем.
+const INVERTED: readonly Feature[] = ["invite_gate"];
 const LABELS: Record<Feature, { title: string; hint: string }> = {
   verification: { title: "Верификация", hint: "Приём документов и селфи на проверку" },
   matching: { title: "Подбор (матчинг)", hint: "Показ «подбора на сегодня» на главном" },
   interests: { title: "Интересы", hint: "Отправка новых интересов (приём уже отправленных не трогается)" },
   chat: { title: "Чат", hint: "Отправка сообщений (чтение остаётся доступным)" },
   payments: { title: "Платежи", hint: "Оплаты (точки входа ещё нет — флаг зарезервирован)" },
+  invite_gate: { title: "Шлагбаум приглашений", hint: "При включении новые пользователи смогут войти только по коду от участника; уже начавшие регистрацию не пострадают" },
 };
 
 export function FeatureFlagsPanel({ initial }: { initial: Record<Feature, boolean> }) {
@@ -47,7 +52,7 @@ export function FeatureFlagsPanel({ initial }: { initial: Record<Feature, boolea
 
   return (
     <div style={card}>
-      <div style={cardLabel}>Kill switches — выключение функций без деплоя</div>
+      <div style={cardLabel}>Управление фичами и доступом — без деплоя</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {FEATURES.map((f) => {
           const on = flags[f];
@@ -60,29 +65,59 @@ export function FeatureFlagsPanel({ initial }: { initial: Record<Feature, boolea
                 <div style={{ fontSize: 12, color: ADMIN.ink500 }}>{LABELS[f].hint}</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                <span
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: on ? ADMIN.ink500 : ADMIN.danger,
-                  }}
-                >
-                  {on ? "Включено" : "Выключено"}
-                </span>
-                <button
-                  type="button"
-                  disabled={busy === f}
-                  onClick={() => toggle(f, !on)}
-                  style={{
-                    ...toggleBtn,
-                    background: on ? ADMIN.surface : ADMIN.danger,
-                    color: on ? ADMIN.ink900 : "#fff",
-                    borderColor: on ? ADMIN.border : ADMIN.danger,
-                    opacity: busy === f ? 0.6 : 1,
-                  }}
-                >
-                  {busy === f ? "…" : on ? "Выключить" : "Включить"}
-                </button>
+                {INVERTED.includes(f) ? (
+                  <>
+                    <span
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: on ? ADMIN.danger : ADMIN.ink500,
+                      }}
+                    >
+                      {on ? "Вход по коду" : "Вход открыт"}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={busy === f}
+                      onClick={() => toggle(f, !on)}
+                      style={{
+                        ...toggleBtn,
+                        background: on ? ADMIN.danger : ADMIN.surface,
+                        color: on ? "#fff" : ADMIN.ink900,
+                        borderColor: on ? ADMIN.danger : ADMIN.border,
+                        opacity: busy === f ? 0.6 : 1,
+                      }}
+                    >
+                      {busy === f ? "…" : on ? "Открыть вход" : "Закрыть вход"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: on ? ADMIN.ink500 : ADMIN.danger,
+                      }}
+                    >
+                      {on ? "Включено" : "Выключено"}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={busy === f}
+                      onClick={() => toggle(f, !on)}
+                      style={{
+                        ...toggleBtn,
+                        background: on ? ADMIN.surface : ADMIN.danger,
+                        color: on ? ADMIN.ink900 : "#fff",
+                        borderColor: on ? ADMIN.border : ADMIN.danger,
+                        opacity: busy === f ? 0.6 : 1,
+                      }}
+                    >
+                      {busy === f ? "…" : on ? "Выключить" : "Включить"}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           );

@@ -1,12 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "@/i18n/navigation";
+import { useRouter, Link } from "@/i18n/navigation";
 import { Button } from "./Button";
 import { useTranslations } from 'next-intl'
 
 /**
- * V2 Settings Actions — pause/resume + delete account.
+ * V2 Settings Actions - invite + pause/resume + delete account.
+ *
+ * Invite (Task 9, план invite-codes): просто переход на /v2/invite, своей
+ * логики здесь нет - карточка стилизована под secondary-Button, потому что
+ * <Button> умеет быть только <button>, а сюда нужна ссылка (Link даёт
+ * prefetch и работает без JS, в отличие от onClick+router.push).
  *
  * Pause: lifecycle=paused, юзер невидим в фиде, не получает interest.
  * Existing chats работают (см. permissions paused — Sprint 5).
@@ -57,6 +62,47 @@ export function V2SettingsActions({ paused }: { paused: boolean }) {
   return (
     <>
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div
+          className="v2-rise"
+          style={{
+            background: "#fff",
+            borderRadius: "16px",
+            boxShadow: "var(--v2-shadow-card)",
+            padding: "18px 16px",
+          }}
+        >
+          <Link
+            href="/v2/invite"
+            style={{
+              display: "block",
+              textAlign: "center",
+              textDecoration: "none",
+              fontFamily: "var(--font-v2-body)",
+              fontSize: "16px",
+              fontWeight: 700,
+              letterSpacing: "-0.01em",
+              padding: "17px 24px",
+              borderRadius: "var(--v2-radius-lg)",
+              border: "1.5px solid var(--color-v2-ink-500)",
+              background: "#ffffff",
+              color: "var(--color-v2-ink-400)",
+            }}
+          >
+            {t('invite_title')}
+          </Link>
+          <p
+            style={{
+              marginTop: "10px",
+              fontSize: "12px",
+              color: "var(--color-v2-ink-400)",
+              fontFamily: "var(--font-v2-body)",
+              lineHeight: "1.5",
+            }}
+          >
+            {t('invite_desc')}
+          </p>
+        </div>
+
         <div
           className="v2-rise"
           style={{

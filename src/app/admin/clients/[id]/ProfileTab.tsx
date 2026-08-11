@@ -3,6 +3,7 @@ import { ADMIN } from "@/lib/admin/admin-tokens";
 import { StatusPill } from "@/components/admin-ops/StatusPill";
 import { ageFromDate } from "@/lib/profile/schemas";
 import { loadFullProfile } from "@/lib/admin/load-profile-full";
+import { loadInviteSummary } from "@/lib/admin/load-invite-summary";
 import { districtLabel } from "@/lib/profile/uz-districts";
 import { cityLabel } from "@/lib/profile/cities";
 import { MaritalReviewAction } from "./MaritalReviewAction";
@@ -143,6 +144,11 @@ export async function ProfileTab({ userId, canEdit = false }: { userId: string; 
       ? `${raw(p.district)}${p.district_visible_public ? " · публично" : " · скрыт"}`
       : "—";
 
+  // Task 10: "Пришёл по коду" + "Привёл" - полная картина (код + имя
+  // пригласившего) видна ТОЛЬКО здесь, в карточке модератора (см. docstring
+  // loadInviteSummary про разницу с мини-аппом, которому отдаётся лишь число).
+  const invite = await loadInviteSummary(userId);
+
   return (
     <ProfileEditGate userId={userId} canEdit={canEdit} values={editableValues}>
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -190,6 +196,8 @@ export async function ProfileTab({ userId, canEdit = false }: { userId: string; 
         <Field label="Готовность к браку" value={L(MARRIAGE_READINESS, p.marriage_readiness)} />
         <Field label="Готовность к переезду" value={L(RELOCATION_READINESS, p.relocation_readiness)} />
         <Field label="Видимость профиля" value={L(PROFILE_VISIBILITY_MODE, p.profile_visibility_mode)} />
+        <Field label="Пришёл по коду" value={invite.joinedVia ?? "—"} />
+        <Field label="Привёл" value={String(invite.invitedCount)} />
       </Section>
 
       <Section title="Образование и работа">

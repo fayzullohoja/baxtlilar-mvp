@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import type { LifecycleState } from "@/lib/state-machine/types";
 import { trustedIp } from "@/lib/http/ip";
+import { reviveBanDisabledCodes } from "@/lib/invite/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,13 +58,33 @@ export async function POST(
     .from("users")
     .update({ pending_ban_prev_lifecycle: null })
     .eq("id", id);
+
+  // Оживляем код приглашения, погашенный ИМЕННО баном (не утечкой) - симметрично
+  // гашению в dispatchBanAction (guard.ts). reviveBanDisabledCodes тоже бросает
+  // на сбое БД (Task 5) - разбан к этому моменту уже закоммичен (tr.ok=true),
+  // откатывать его сбоем оживления кода нельзя и незачем: разбан - решение
+  // модератора, а невосстановленное право приглашать - его последствие, о
+  // котором он должен узнать (тем же способом, что и симметричный сбой при
+  // бане: громко в лог + флаг в audit-row + флаг в ответе), а не остаться в
+  // неведении, что человек разбанен, а приглашать всё ещё не может.
+  let codesRevived = true;
+  try {
+    await reviveBanDisabledCodes(id);
+  } catch (e) {
+    codesRevived = false;
+    console.error(
+      `[unban] КРИТИЧНО: разбан ${id} прошёл, но оживление кода приглашения провалилось:`,
+      e,
+    );
+  }
+
   await adminAudit({
     adminId: session.adminId,
     action: "unban_user",
     entity: "user",
     entityId: id,
-    newValue: { lifecycle_state: restored },
+    newValue: { lifecycle_state: restored, codes_revived: codesRevived },
     ip: trustedIp(req),
   });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, codes_revived: codesRevived });
 }
