@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { unwrapOne } from "@/lib/db/unwrap";
 import { countInvitedBy } from "@/lib/invite/store";
 
 export type InviteSummary = {
@@ -21,16 +22,23 @@ export type InviteSummary = {
  * Модератору для разбора инцидентов (утечка кода, спор о том, кто кого привёл)
  * нужна именно полная картина - отсюда разница в объёме данных между двумя
  * поверхностями одной и той же функциональности.
+ *
+ * Раунд исправлений 1: все select'ы читаются через unwrapOne (src/lib/db/
+ * unwrap.ts), а не голым `data` с игнорированием `error` - как и соседний
+ * load-invites.ts (unwrapRows). Без этого сбой БД на любом из четырёх
+ * запросов молча выглядел бы как "у человека нет инвайт-данных" (joinedVia:
+ * null / "—"), а не как "не удалось прочитать" - тот же класс тихо-пустых
+ * экранов, под который в проекте заведены эти хелперы: они бросают на
+ * ошибке, и модератор видит явный сбой страницы вместо правдоподобной, но
+ * ложной пустоты.
  */
 export async function loadInviteSummary(userId: string): Promise<InviteSummary> {
   const sb = supabaseAdmin();
-  const { data: person } = await sb
-    .from("users")
-    .select("invited_by, invite_code_id, invite_exempt")
-    .eq("id", userId)
-    .maybeSingle();
+  const person = unwrapOne(
+    await sb.from("users").select("invited_by, invite_code_id, invite_exempt").eq("id", userId).maybeSingle(),
+  );
 
-  const invitedCount = await countInvitedBy(userId);
+  const invitedCount = await countInvitedBy(userId); // сама уже бросает на сбое (store.ts)
 
   if (!person) return { joinedVia: null, invitedCount };
   if (person.invite_exempt) {
@@ -41,15 +49,18 @@ export async function loadInviteSummary(userId: string): Promise<InviteSummary> 
   const invitedBy = person.invited_by as string | null;
   if (!inviteCodeId) return { joinedVia: null, invitedCount };
 
-  const [{ data: codeRow }, { data: inviterProfile }, { data: inviterUser }] = await Promise.all([
+  const [codeRes, inviterProfileRes, inviterUserRes] = await Promise.all([
     sb.from("invite_codes").select("code, label").eq("id", inviteCodeId).maybeSingle(),
     invitedBy
       ? sb.from("user_profiles").select("display_name").eq("user_id", invitedBy).maybeSingle()
-      : Promise.resolve({ data: null }),
+      : Promise.resolve({ data: null, error: null }),
     invitedBy
       ? sb.from("users").select("telegram_first_name, telegram_username").eq("id", invitedBy).maybeSingle()
-      : Promise.resolve({ data: null }),
+      : Promise.resolve({ data: null, error: null }),
   ]);
+  const codeRow = unwrapOne(codeRes);
+  const inviterProfile = unwrapOne(inviterProfileRes);
+  const inviterUser = unwrapOne(inviterUserRes);
 
   const code = (codeRow?.code as string | undefined) ?? "—";
 

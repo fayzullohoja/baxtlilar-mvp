@@ -82,8 +82,23 @@ const fromSpy = vi.fn((table: string) => {
   return chain();
 });
 
+// Task 10 (раунд исправлений 1): disableCodesOfUser теперь один RPC-вызов
+// вместо двух прямых UPDATE (см. store.ts и миграцию 20260811160000) - обе
+// записи объединены транзакцией НА СТОРОНЕ БД, а это моком не проверить (мок
+// не исполняет SQL). Здесь мокаем ТОЛЬКО транспорт: какие параметры ушли в
+// rpc() и что делает disableCodesOfUser с data/error, которые вернула БД.
+// Реальную атомарность (что первая запись откатывается, если падает вторая)
+// проверяет src/lib/invite/disable-invite-codes.itest.ts на живом Postgres.
+type RpcResult = { data?: unknown; error?: { message: string } | null };
+let rpcQueue: RpcResult[] = [];
+const rpcCalls: Array<{ name: string; params: Record<string, unknown> }> = [];
+const rpcSpy = vi.fn((name: string, params: Record<string, unknown> = {}) => {
+  rpcCalls.push({ name, params });
+  return Promise.resolve(rpcQueue.shift() ?? { data: null, error: null });
+});
+
 vi.mock("@/lib/supabase/admin", () => ({
-  supabaseAdmin: () => ({ from: fromSpy }),
+  supabaseAdmin: () => ({ from: fromSpy, rpc: rpcSpy }),
 }));
 
 import {
@@ -102,13 +117,16 @@ beforeEach(() => {
   selectQueue = [];
   insertQueue = [];
   updateQueue = [];
+  rpcQueue = [];
   fromCalls.length = 0;
   eqCalls.length = 0;
   isCalls.length = 0;
   notCalls.length = 0;
   insertedRows.length = 0;
   updatedRows.length = 0;
+  rpcCalls.length = 0;
   fromSpy.mockClear();
+  rpcSpy.mockClear();
 });
 
 describe("findActiveCode", () => {
@@ -267,46 +285,37 @@ describe("ensureCodeForUser", () => {
   });
 });
 
-describe("disableCodesOfUser", () => {
-  it("гасит активные коды пользователя с указанной причиной", async () => {
-    updateQueue.push({ error: null }); // invite_codes.disabled_at
-    updateQueue.push({ error: null }); // Task 10: users.invite_revoked_at (reason !== "ban")
+describe("disableCodesOfUser (раунд исправлений 1: один RPC-вызов вместо двух UPDATE)", () => {
+  it("зовёт RPC disable_invite_codes_of_user с userId и reason - ОДНИМ вызовом, не двумя UPDATE", async () => {
+    rpcQueue.push({ data: { ok: true, disabled_count: 1 }, error: null });
     await disableCodesOfUser("u1", "leak");
-    expect(updatedRows[0]).toMatchObject({ disabled_reason: "leak" });
-    expect(typeof updatedRows[0]?.disabled_at).toBe("string"); // timestamp проставлен
-    expect(eqCalls).toContainEqual(["owner_id", "u1"]);
-    expect(isCalls).toContainEqual(["disabled_at", null]); // гасим только ещё активные
+    expect(rpcCalls).toEqual([{ name: "disable_invite_codes_of_user", params: { p_user_id: "u1", p_reason: "leak" } }]);
+    // Реальных UPDATE через .from() здесь больше НЕТ - обе записи теперь
+    // внутри SQL-функции (транзакция), а не в этом слое.
+    expect(fromSpy).not.toHaveBeenCalled();
   });
 
-  // ⛔ Task 10: это и есть исправление самоотмены гашения - без второй update-
-  // строки на users человек оставался бы вправе получить новый код (см.
-  // ensureCodeForUser выше и "полную цепочку" ниже).
-  it("Task 10: reason НЕ 'ban' - тем же вызовом закрывает персональное право приглашать (users.invite_revoked_at)", async () => {
-    updateQueue.push({ error: null });
-    updateQueue.push({ error: null });
-    await disableCodesOfUser("u1", "leak");
-    expect(updatedRows).toHaveLength(2);
-    expect(updatedRows[1]).toEqual({ invite_revoked_at: expect.any(String) });
-    expect(eqCalls).toContainEqual(["id", "u1"]); // вторая update-строка фильтрует по users.id
-  });
-
-  it("Task 10: reason 'ban' - персональное право НЕ трогает (у бана своя симметричная пара reviveBanDisabledCodes)", async () => {
-    updateQueue.push({ error: null }); // только invite_codes
-    await disableCodesOfUser("u1", "ban");
-    expect(updatedRows).toHaveLength(1); // ни одного update на users
-  });
-
-  it("сбой БД при гашении строки - бросает, а не молча делает вид, что погасили (критично: код остался бы активным)", async () => {
-    updateQueue.push({ error: { message: "connection refused" } });
+  it("транспортная ошибка (error от драйвера) - бросает", async () => {
+    rpcQueue.push({ data: null, error: { message: "connection refused" } });
     await expect(disableCodesOfUser("u1", "leak")).rejects.toThrow(/не удалось погасить/);
-    expect(updatedRows).toHaveLength(1); // до персонального запрета не дошли
   });
 
-  it("Task 10: строка кода погашена, но закрыть персональное право не удалось - бросает (иначе та самая дыра)", async () => {
-    updateQueue.push({ error: null }); // invite_codes - успех
-    updateQueue.push({ error: { message: "connection refused" } }); // users - сбой
-    await expect(disableCodesOfUser("u1", "leak")).rejects.toThrow(/не удалось закрыть право приглашать/);
+  // ⛔ Раунд исправлений 1: сама функция БД тоже может вернуть { ok:false }
+  // (например reason_required), не только ошибку транспорта - оба случая
+  // обязаны одинаково честно бросать, а не тихо считаться успехом только
+  // потому что error===null.
+  it("функция БД вернула { ok:false } (без транспортной ошибки) - тоже бросает", async () => {
+    rpcQueue.push({ data: { ok: false, error: "reason_required" }, error: null });
+    await expect(disableCodesOfUser("u1", "")).rejects.toThrow(/reason_required/);
   });
+
+  // Реальную атомарность ("если второй UPDATE внутри функции падает, первый
+  // ОТКАТЫВАЕТСЯ") мок не проверяет - мок не исполняет SQL и не умеет
+  // изображать транзакцию. Она проверена на живом Postgres:
+  // src/lib/invite/disable-invite-codes.itest.ts (гоняется через
+  // scripts/test-db/run-integration-tests.sh). Здесь, на уровне TS-обёртки,
+  // важно лишь то, что ЛЮБОЙ неуспех (transport error ИЛИ !ok) превращается в
+  // throw - дальше это забота уже транзакции внутри RPC, не этого файла.
 });
 
 describe("restoreInviteRight (Task 10)", () => {
@@ -350,19 +359,21 @@ describe("createMasterCode (Task 10)", () => {
 // просто два независимых поведения по отдельности.
 describe("самоотмена гашения за утечку - полная цепочка (Task 10)", () => {
   it("disableCodesOfUser('leak') закрывает право, и следующий ensureCodeForUser НЕ выпускает новый код", async () => {
-    // Шаг 1: оператор гасит код за утечку из /admin/invites.
-    updateQueue.push({ error: null }); // invite_codes.disabled_at
-    updateQueue.push({ error: null }); // users.invite_revoked_at
+    // Шаг 1: оператор гасит код за утечку из /admin/invites. RPC отвечает
+    // тем же jsonb-контрактом, что и реальная disable_invite_codes_of_user
+    // (миграция 20260811160000) - "at" ниже НЕ выдуман, это ровно то поле,
+    // которое функция БД кладёт в ответ.
+    rpcQueue.push({ data: { ok: true, disabled_count: 1, at: "2026-08-11T09:00:00.000Z" }, error: null });
     await disableCodesOfUser("u1", "leak");
-    const revokedAt = updatedRows[1]?.invite_revoked_at;
-    expect(typeof revokedAt).toBe("string"); // запрет реально записан, не пропущен
+    expect(rpcCalls[0]).toMatchObject({ name: "disable_invite_codes_of_user", params: { p_user_id: "u1", p_reason: "leak" } });
 
     // Шаг 2: человек (по-прежнему подтверждён и активен - гашение СТРОКИ его
     // статус не меняет) открывает экран «Пригласить». В реальной БД лукап
-    // активного кода ничего не найдёт (строка погашена шагом 1), а
-    // users.invite_revoked_at вернёт ИМЕННО то значение, что записал шаг 1.
+    // активного кода ничего не найдёт (строка погашена транзакцией шага 1), а
+    // users.invite_revoked_at вернёт ИМЕННО тот момент, что записала та же
+    // транзакция (значение из ответа шага 1, а не взятое с потолка).
     selectQueue.push({ data: null, error: null });
-    selectQueue.push({ data: { invite_revoked_at: revokedAt }, error: null });
+    selectQueue.push({ data: { invite_revoked_at: "2026-08-11T09:00:00.000Z" }, error: null });
 
     await expect(ensureCodeForUser("u1")).rejects.toBeInstanceOf(InviteRevokedError);
     expect(insertedRows).toHaveLength(0); // ГЛАВНАЯ проверка: новый код НЕ создан
