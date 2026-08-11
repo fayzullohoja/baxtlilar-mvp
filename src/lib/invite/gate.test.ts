@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // --- флаг --------------------------------------------------------------
 let gateOn = true;
@@ -196,6 +196,20 @@ describe("redeemCode", () => {
 // который падает на чтении app_settings (мок supabaseAdmin выше, ветка
 // "app_settings") и обязан закрыть шлагбаум, а не открыть его дефолтом.
 describe("needsInviteStep + реальный @/lib/features/flags (без мока isFeatureEnabled)", () => {
+  // Раунд исправлений 2: vi.doUnmock живёт до явной отмены, а не до конца
+  // теста. Без восстановления любой тест, дописанный ПОСЛЕ этого блока (в том
+  // числе по тому же паттерну динамического import("./gate")), молча пойдёт
+  // против настоящего flags.ts вместо мока - непредсказуемо и без всякой
+  // связи со своим собственным намерением. Возвращаем мок и чистим кэш
+  // модулей сразу после теста, а не полагаемся на то, что это последний блок
+  // в файле.
+  afterEach(() => {
+    vi.doMock("@/lib/features/flags", () => ({
+      isFeatureEnabled: () => Promise.resolve(gateOn),
+    }));
+    vi.resetModules();
+  });
+
   it("недоступность БД при чтении invite_gate → needsInviteStep для новичка = true (шлагбаум закрыт), а не false из дефолта", async () => {
     vi.resetModules();
     vi.doUnmock("@/lib/features/flags");
@@ -206,5 +220,23 @@ describe("needsInviteStep + реальный @/lib/features/flags (без мок
     const fresh = await import("./gate");
     const result = await fresh.needsInviteStep({ invite_redeemed_at: null, invite_exempt: false });
     expect(result).toBe(true);
+  });
+});
+
+// Раунд исправлений 2: регрессионная страховка на сам механизм восстановления
+// мока выше (afterEach с doMock+resetModules). vi.doUnmock живёт до явной
+// отмены - без восстановления follow-up тест, дописанный ПОСЛЕ предыдущего
+// describe по тому же паттерну динамического import("./gate"), молча попал
+// бы на НАСТОЯЩИЙ flags.ts вместо мока. Проверено мутацией: без afterEach
+// этот тест краснеет (needsInviteStep получает true от реального flags.ts
+// вместо false по gateOn, потому что реальный flags.ts падает на "app_settings"
+// в общем моке supabaseAdmin и уходит в FAIL_CLOSED_FEATURES).
+describe("мок @/lib/features/flags восстанавливается после блока с doUnmock", () => {
+  it("свежий import(./gate) после того describe снова видит мок isFeatureEnabled, а не настоящий flags.ts", async () => {
+    gateOn = false;
+    vi.resetModules();
+    const fresh = await import("./gate");
+    const result = await fresh.needsInviteStep({ invite_redeemed_at: null, invite_exempt: false });
+    expect(result).toBe(false);
   });
 });
