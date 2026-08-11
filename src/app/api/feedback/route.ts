@@ -1,0 +1,93 @@
+import { NextRequest, NextResponse } from "next/server";
+import { loadActiveUserApi } from "@/lib/auth/active-guard";
+import { createFeedback, FEEDBACK_MAX_BODY } from "@/lib/feedback/store";
+import { removeFeedbackScreenshot, uploadFeedbackScreenshot } from "@/lib/uploads/storage";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const LOCALES = ["ru", "uz", "en", "tr"];
+
+/**
+ * Приём отзыва о приложении.
+ *
+ * allowPaused: true - экран отзыва висит в настройках рядом с «Пригласить»,
+ * и человек на паузе имеет право сказать, что ему не понравилось; отказ
+ * ровно тому, у кого больше всего причин написать, был бы издевательством.
+ *
+ * Порядок «сначала файл, потом запись» намеренный: слишком большой или не тот
+ * файл человек должен увидеть как ошибку формы, а не узнать после того, как
+ * отзыв уже сохранён без картинки. А вот СБОЙ загрузки (диск, права) - другое
+ * дело: терять из-за него оценку и текст нельзя, поэтому пишем отзыв без
+ * скриншота и честно говорим об этом ответом screenshot: "failed".
+ *
+ * Цена этого порядка - файл уже на диске, когда запись может не создаться, а
+ * хранилище не транзакционно. Поэтому на каждой ветке, где путь скриншота не
+ * доехал до базы, файл сносим тут же: указателя на него в базе нет ни секунды,
+ * и найти его потом нечем - сборщика осиротевших файлов в проекте нет. Веток
+ * таких две: отзыв не записался вовсе (лимит, сбой) и дедуп повторной отправки,
+ * у которого скриншот уже был свой.
+ */
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  const { user, res } = await loadActiveUserApi({ allowPaused: true });
+  if (res) return res;
+
+  const form = await req.formData().catch(() => null);
+  if (!form) return NextResponse.json({ ok: false, error: "bad_request" }, { status: 400 });
+
+  const ratingRaw = String(form.get("rating") ?? "").trim();
+  if (!ratingRaw) return NextResponse.json({ ok: false, error: "no_rating" }, { status: 400 });
+  const rating = Number(ratingRaw);
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5)
+    return NextResponse.json({ ok: false, error: "bad_rating" }, { status: 400 });
+
+  const bodyRaw = String(form.get("body") ?? "").trim();
+  if (bodyRaw.length > FEEDBACK_MAX_BODY)
+    return NextResponse.json({ ok: false, error: "body_too_long" }, { status: 400 });
+
+  const localeRaw = String(form.get("locale") ?? "ru");
+  const locale = LOCALES.includes(localeRaw) ? localeRaw : "ru";
+
+  let screenshotPath: string | null = null;
+  let screenshot: "saved" | "failed" | "none" = "none";
+  const file = form.get("file");
+  if (file instanceof File && file.size > 0) {
+    const up = await uploadFeedbackScreenshot(user.id, await file.arrayBuffer());
+    if (up.ok) {
+      screenshotPath = up.path;
+      screenshot = "saved";
+    } else if (up.error === "upload_failed") {
+      screenshot = "failed";
+    } else {
+      return NextResponse.json({ ok: false, error: up.error }, { status: 400 });
+    }
+  }
+
+  const created = await createFeedback({
+    userId: user.id,
+    rating,
+    body: bodyRaw || null,
+    screenshotPath,
+    locale,
+  });
+  if (!created.ok) {
+    // Отзыв не записался - путь скриншота в базу не попал, и файл остался бы
+    // мусором навсегда: обе дороги удаления аккаунта чистят папку человека
+    // целиком, но до тех пор N попыток по 5 МБ просто занимают диск.
+    if (screenshotPath) await removeFeedbackScreenshot(screenshotPath);
+    return NextResponse.json(
+      { ok: false, error: created.error },
+      { status: created.error === "rate_limited" ? 429 : 500 },
+    );
+  }
+
+  // Дедуп вернул СТАРУЮ запись (двойной тап, ретрай по таймауту, вторая
+  // вкладка). Файл этой отправки процедура либо прикрепила к ней - тогда на него
+  // ссылается база и трогать его нельзя, - либо не взяла, потому что скриншот у
+  // записи уже свой. Второй файл в этом случае осиротел, сносим. Человеку это не
+  // ошибка: скриншот у отзыва есть, просто от первой отправки, поэтому статус не
+  // меняем - "failed" сказали бы только про настоящий сбой загрузки выше.
+  if (screenshotPath && !created.screenshotStored) await removeFeedbackScreenshot(screenshotPath);
+
+  return NextResponse.json({ ok: true, screenshot });
+}

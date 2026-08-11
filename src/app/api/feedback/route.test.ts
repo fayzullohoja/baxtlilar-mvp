@@ -1,0 +1,141 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+const loadMock = vi.fn();
+const createMock = vi.fn();
+const uploadMock = vi.fn();
+const removeMock = vi.fn();
+
+vi.mock("@/lib/auth/active-guard", () => ({
+  loadActiveUserApi: (...a: unknown[]) => loadMock(...a),
+}));
+vi.mock("@/lib/feedback/store", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/feedback/store")>("@/lib/feedback/store");
+  return { ...actual, createFeedback: (...a: unknown[]) => createMock(...a) };
+});
+vi.mock("@/lib/uploads/storage", () => ({
+  uploadFeedbackScreenshot: (...a: unknown[]) => uploadMock(...a),
+  removeFeedbackScreenshot: (...a: unknown[]) => removeMock(...a),
+}));
+
+import { POST } from "./route";
+
+function req(fields: Record<string, string>, file?: File): Request {
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(fields)) fd.append(k, v);
+  if (file) fd.append("file", file);
+  return new Request("http://localhost/api/feedback", { method: "POST", body: fd });
+}
+
+const PNG = new File([new Uint8Array([1, 2, 3])], "s.png", { type: "image/png" });
+
+describe("POST /api/feedback", () => {
+  beforeEach(() => {
+    loadMock.mockReset().mockResolvedValue({ user: { id: "u1" }, res: null });
+    createMock.mockReset().mockResolvedValue({
+      ok: true,
+      id: "f1",
+      deduplicated: false,
+      screenshotStored: true,
+    });
+    uploadMock.mockReset().mockResolvedValue({
+      ok: true,
+      path: "u1/1.png",
+      type: "image/png",
+      sha256: "x",
+    });
+    removeMock.mockReset().mockResolvedValue(true);
+  });
+
+  it("отказывает без оценки", async () => {
+    const r = await POST(req({ body: "текст" }) as never);
+    expect(r.status).toBe(400);
+    expect(await r.json()).toEqual({ ok: false, error: "no_rating" });
+  });
+
+  it("отказывает оценке вне 1-5 - запрос в обход формы", async () => {
+    const r = await POST(req({ rating: "99" }) as never);
+    expect(r.status).toBe(400);
+    expect(await r.json()).toEqual({ ok: false, error: "bad_rating" });
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it("принимает одну оценку без текста и файла", async () => {
+    const r = await POST(req({ rating: "5" }) as never);
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual({ ok: true, screenshot: "none" });
+    expect(createMock).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "u1", rating: 5, body: null, screenshotPath: null }),
+    );
+  });
+
+  it("отказывает тексту длиннее предела", async () => {
+    const r = await POST(req({ rating: "4", body: "я".repeat(1001) }) as never);
+    expect(r.status).toBe(400);
+    expect(await r.json()).toEqual({ ok: false, error: "body_too_long" });
+  });
+
+  it("отвечает 429 при исчерпанном лимите", async () => {
+    createMock.mockResolvedValue({ ok: false, error: "rate_limited" });
+    const r = await POST(req({ rating: "3" }) as never);
+    expect(r.status).toBe(429);
+    expect(await r.json()).toEqual({ ok: false, error: "rate_limited" });
+  });
+
+  it("сохраняет отзыв, даже если скриншот не загрузился", async () => {
+    // Спека: сбой загрузки файла НЕ должен терять оценку и текст.
+    uploadMock.mockResolvedValue({ ok: false, error: "upload_failed" });
+    const r = await POST(req({ rating: "2", body: "сломалось" }, PNG) as never);
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual({ ok: true, screenshot: "failed" });
+    expect(createMock).toHaveBeenCalledWith(expect.objectContaining({ screenshotPath: null }));
+  });
+
+  it("отказывает слишком большому файлу до записи отзыва", async () => {
+    uploadMock.mockResolvedValue({ ok: false, error: "too_large" });
+    const r = await POST(req({ rating: "2" }, PNG) as never);
+    expect(r.status).toBe(400);
+    expect(await r.json()).toEqual({ ok: false, error: "too_large" });
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it("отвечает 500 на сбое базы", async () => {
+    createMock.mockResolvedValue({ ok: false, error: "db_failed" });
+    const r = await POST(req({ rating: "5" }) as never);
+    expect(r.status).toBe(500);
+    expect(await r.json()).toEqual({ ok: false, error: "db_failed" });
+  });
+
+  it("сносит уже загруженный файл, когда отзыв не записался", async () => {
+    // Файл лёг на диск до вызова процедуры, а путь в базу не попал: без сноса
+    // он остаётся мусором, которого не найти ничем - указателя на него нет.
+    createMock.mockResolvedValue({ ok: false, error: "rate_limited" });
+    const r = await POST(req({ rating: "3" }, PNG) as never);
+    expect(r.status).toBe(429);
+    expect(removeMock).toHaveBeenCalledWith("u1/1.png");
+  });
+
+  it("сохранённый отзыв свой скриншот не сносит", async () => {
+    await POST(req({ rating: "5" }, PNG) as never);
+    expect(removeMock).not.toHaveBeenCalled();
+  });
+
+  it("сносит файл, который дедуп не прикрепил к найденной записи", async () => {
+    // Повтор отправки в пределах минуты: процедура вернула СТАРУЮ запись, а у
+    // неё скриншот уже свой - только что загруженный файл не пригодился и
+    // указателя в базе не получил. Человеку это не ошибка: скриншот у отзыва
+    // есть, поэтому статус остаётся "saved".
+    createMock.mockResolvedValue({ ok: true, id: "f1", deduplicated: true, screenshotStored: false });
+    const r = await POST(req({ rating: "5" }, PNG) as never);
+    expect(r.status).toBe(200);
+    expect(await r.json()).toEqual({ ok: true, screenshot: "saved" });
+    expect(removeMock).toHaveBeenCalledWith("u1/1.png");
+  });
+
+  it("прикреплённый дедупом скриншот не сносит", async () => {
+    // Человек добавил забытую картинку повторной отправкой - процедура
+    // прикрепила её к старой записи, значит на файл теперь ссылается база.
+    createMock.mockResolvedValue({ ok: true, id: "f1", deduplicated: true, screenshotStored: true });
+    await POST(req({ rating: "5" }, PNG) as never);
+    expect(removeMock).not.toHaveBeenCalled();
+  });
+});
