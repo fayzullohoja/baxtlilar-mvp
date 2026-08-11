@@ -131,6 +131,14 @@ beforeEach(() => {
   redeemCodeMock.mockClear();
 });
 
+// ⚠️ Тесты этого describe, которые шлют текстовые сообщения на шаге
+// bot_invite_code с id "u1" (верный/неверный/погашенный код), делят ОДНО
+// ведро inviteCodeCooldown (модульный синглтон в handlers.ts, ключ по
+// user.id, capacity 5) - три их вызова уже съедают 3 из 5 токенов на весь
+// файл. Не хватит, чтобы что-то сломать сейчас, но добавляя ЕЩЁ один
+// текстовый redeem-тест с id "u1" в этот describe, учти остаток бюджета -
+// или, надёжнее, возьми отдельный id, как это сделано в "раунд исправлений 1"
+// ниже для теста кулдауна.
 describe("шаг кода в боте", () => {
   it("на шаге bot_invite_code бот просит код", async () => {
     currentUser = {
@@ -303,6 +311,92 @@ describe("шаг кода в боте", () => {
     await promptStep(1, currentUser as never);
     // Не молчим и не падаем - показываем обычный экран кода как fallback.
     expect(sent.at(-1)?.text).toContain(M.invite_ask.ru.slice(0, 20));
+  });
+});
+
+// Раунд исправлений 1 (ревью Task 7): кулдаун на приём кода, проверка
+// результата tryTransition на пути принятого кода, привязка inv:help к шагу.
+describe("раунд исправлений 1", () => {
+  it("поток сообщений на шаге кода упирается в кулдаун и человек получает понятное сообщение", async () => {
+    // Отдельный id/chat - не делит ведро кулдауна с другими тестами файла,
+    // иначе порядок запуска тестов влиял бы на результат.
+    currentUser = {
+      id: "u-cooldown",
+      telegram_id: 77,
+      language: "ru",
+      onboarding_step: "bot_invite_code",
+      lifecycle_state: "onboarding",
+    };
+    // burst кулдауна = 5 - шлём 6 попыток подряд без пауз (время в тесте не
+    // течёт, refill не успевает сработать между вызовами).
+    for (let i = 0; i < 6; i++) {
+      await handleUpdate(textMsg(`BAD${i}`, 77) as never);
+    }
+    // Ведро исчерпано ровно на 6-й попытке - redeemCode вызван только 5 раз,
+    // не 6: кулдаун реально останавливает поток ДО похода в redeemCode, а не
+    // просто добавляет предупреждение поверх обычной обработки.
+    expect(redeemCodeMock).toHaveBeenCalledTimes(5);
+    expect(sent.at(-1)?.text).toBe(M.invite_rate_limited.ru);
+    // Предыдущие 5 ответов - обычный "кода нет", не тишина и не тот же текст.
+    expect(sent.slice(0, 5).every((s) => s.text === M.invite_not_found.ru)).toBe(true);
+
+    // Уведомление о частоте - тоже под своим узким ведром: предупредили один
+    // раз, дальше на продолжающийся поток молчим (а не шлём sendMessage на
+    // КАЖДОЕ лишнее сообщение - иначе тысяча лишних входящих даёт тысячу
+    // исходящих против общей квоты бота).
+    const countBefore = sent.length;
+    await handleUpdate(textMsg("BAD6", 77) as never);
+    await handleUpdate(textMsg("BAD7", 77) as never);
+    expect(sent.length).toBe(countBefore); // ни одного нового сообщения
+    expect(redeemCodeMock).toHaveBeenCalledTimes(5); // и код по-прежнему не проверяли
+  });
+
+  it("нераспознанная команда на шаге кода не тратит кулдаун-бюджет и не выдаёт «кода нет»", async () => {
+    currentUser = {
+      id: "u-unknown-cmd",
+      telegram_id: 66,
+      language: "ru",
+      onboarding_step: "bot_invite_code",
+      lifecycle_state: "onboarding",
+    };
+    await handleUpdate(textMsg("/help", 66) as never);
+    expect(redeemCodeMock).not.toHaveBeenCalled();
+    expect(sent.some((s) => s.text === M.invite_not_found.ru)).toBe(false);
+    // Мягкий промпт текущего шага - экран кода, а не тишина.
+    expect(sent.at(-1)?.text).toContain(M.invite_ask.ru.slice(0, 20));
+  });
+
+  it("при неуспешном переходе человек НЕ получает «Приглашение принято» с офертой, а видит осмысленную реакцию", async () => {
+    currentUser = {
+      id: "u-transition-fail",
+      telegram_id: 88,
+      language: "ru",
+      onboarding_step: "bot_invite_code",
+      lifecycle_state: "onboarding",
+    };
+    transitionOk = false; // гонка/конфликт (например дубль вебхука)
+    await handleUpdate(textMsg("GOODCODE", 88) as never);
+    // Код был зачтён (redeemCode отработал), но переход в БД не удался -
+    // человек не должен увидеть "принято" с офертой, которую он не сможет
+    // подтвердить (согласие потерялось бы молча).
+    expect(sent.some((s) => s.text.includes(M.invite_accepted.ru))).toBe(false);
+    expect(sent.some((s) => s.text.includes("Документы Baxtlilar"))).toBe(false);
+    expect(sent.at(-1)?.text).toBe(M.error_generic.ru);
+  });
+
+  it("inv:help не отвечает тому, кто не на шаге кода", async () => {
+    currentUser = {
+      id: "u-not-on-step",
+      telegram_id: 99,
+      language: "ru",
+      onboarding_step: "bot_consent_pd", // код уже пройден/не требовался
+      lifecycle_state: "onboarding",
+    };
+    await handleUpdate(cbUpdate("inv:help", 99) as never);
+    expect(sent.some((s) => s.text === M.invite_no_code_text.ru)).toBe(false);
+    // Фолбэк файла для неактуального callback - answerCallbackQuery + промпт текущего шага.
+    expect(answered).toContain("cb1");
+    expect(sent.some((s) => s.text.includes("Документы Baxtlilar"))).toBe(true);
   });
 });
 

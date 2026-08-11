@@ -19,6 +19,27 @@ import { needsInviteStep, redeemCode } from "@/lib/invite/gate";
 // флуд сам был бы усилителем.
 const startCooldown = new TokenBucketLimiter({ capacity: 3, refillPerSec: 0.05 });
 
+// Round 1 fix: приём кода приглашения устроен точно как /start (запрос(ы) в
+// БД + исходящее сообщение на каждое сообщение), но кулдауна не имел -
+// пропущено в исходной реализации. Burst 5 (человек, реально вводящий код
+// руками, может промахнуться мимо раскладки/опечататься пару-тройку раз
+// подряд - порог ниже наказывал бы честную ошибку), дальше 1 в 10с. От
+// подбора КОНКРЕТНОГО кода защищает не этот лимитер, а размер пространства
+// кодов (~887 млн, Task 2) - лимитер против другого: массового прощупывания
+// через разные тексты сообщений, какие строки вообще существуют как коды.
+const inviteCodeCooldown = new TokenBucketLimiter({ capacity: 5, refillPerSec: 0.1 });
+
+// Координатор явно потребовал СООБЩАТЬ человеку о частых попытках, а не
+// молчать как /start ("лишние /start молча игнорируем" - комментарий выше):
+// /start это повтор одного и того же действия (шум можно проигнорировать),
+// а здесь человек реально пытается что-то ВВЕСТИ и без объяснения решит, что
+// бот сломался. Но ответ на каждое заблокированное сообщение сам по себе
+// неограничен - при потоке в тысячи сообщений это тысячи исходящих
+// sendMessage против общей квоты бота. Отдельное узкое ведро именно на САМО
+// уведомление (не на приём кода): один раз предупредили - дальше молчим,
+// пока не пройдёт минута, а не на каждое лишнее сообщение отвечаем заново.
+const inviteRateLimitNotice = new TokenBucketLimiter({ capacity: 1, refillPerSec: 1 / 60 });
+
 /**
  * V3 (2026-06-30, product feedback): legal-документы шлём как HTML
  * hyperlinks в самом тексте согласия, а не как 4 отдельных PDF-attachment.
@@ -670,7 +691,11 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
       return;
     }
 
-    if (ns === "inv" && val === "help") {
+    // Round 1 fix: привязка к шагу, как у lang/pd/bio ниже - без неё старая
+    // кнопка из истории чата сработала бы и у давно верифицированного
+    // человека (сама по себе безвредно: тут только статичный текст, ни
+    // изменения состояния, ни утечки, - но это ломает единый паттерн файла).
+    if (ns === "inv" && val === "help" && user.onboarding_step === "bot_invite_code") {
       await answerCallbackQuery(cb.id);
       await sendMessage(chatId, pick(M.invite_no_code_text, user.language));
       return;
@@ -899,17 +924,45 @@ export async function handleUpdate(update: TgUpdate): Promise<void> {
     }
     // прочие сообщения игнорируем (или мягко промптим current step)
     const user = update.message.from ? await findByTg(update.message.from.id) : null;
-    // Коды-приглашения: на шаге bot_invite_code любой текст - это попытка
-    // ввести код, а не команда и не игнорируемый шум.
-    if (user && user.onboarding_step === "bot_invite_code" && update.message.text) {
-      const res = await redeemCode(user.id, update.message.text);
+    // Коды-приглашения: на шаге bot_invite_code любой НЕ-командный текст - это
+    // попытка ввести код. "/"-текст исключаем: неизвестная команда (например
+    // опечатанный /help) не может быть кодом (Task 2 требует цифру в коде,
+    // "/" её не несёт) и по комментарию блока switch выше должна мягко упасть
+    // в promptStep (переспросит экран кода), а не жечь кулдаун-бюджет и не
+    // получать "такого кода нет" в ответ на команду.
+    if (user && user.onboarding_step === "bot_invite_code" && text && !text.startsWith("/")) {
+      // Round 1 fix: кулдаун ДО похода в redeemCode - иначе поток сообщений
+      // бьёт в БД без ограничений, точно как /start до своего кулдауна.
+      // Уведомление - отдельным узким ведром (inviteRateLimitNotice), чтобы
+      // не отвечать на КАЖДОЕ лишнее сообщение при длинном потоке.
+      if (!inviteCodeCooldown.take(`u:${user.id}`)) {
+        if (inviteRateLimitNotice.take(`u:${user.id}`)) {
+          await sendMessage(update.message.chat.id, pick(M.invite_rate_limited, user.language));
+        }
+        return;
+      }
+      const res = await redeemCode(user.id, text);
       if (res.ok) {
-        await tryTransition(
+        // Round 1 fix: результат перехода ОБЯЗАН проверяться - это был
+        // единственный tryTransition в файле без проверки. Код уже
+        // необратимо зачтён в БД (redeemCode атомарен, Task 6), но при
+        // конфликте перехода (например дубль вебхука) onboarding_step
+        // остался бы прежним - и "Приглашение принято" + оферта ушли бы
+        // человеку, который на следующем шаге (клик "Согласен") провалился
+        // бы в общий catch-all, потерял бы согласие с первого нажатия и
+        // увидел бы ту же оферту заново. Паттерн - как в handleContact ниже
+        // (единственная другая транзиция вне handleCallback: тоже просто
+        // sendMessage(error_generic), без cb.id для answerCallbackQuery).
+        const t = await tryTransition(
           user.id,
           { onboarding_step: "bot_consent_pd" },
           "bot:invite_redeemed",
           { kind: "user", id: user.id },
         );
+        if (!t.ok) {
+          await sendMessage(update.message.chat.id, pick(M.error_generic, user.language));
+          return;
+        }
         await sendMessage(update.message.chat.id, pick(M.invite_accepted, user.language));
         await sendLegalDocsAndConsentPrompt(update.message.chat.id, user.language);
       } else {

@@ -408,6 +408,13 @@ export const M = {
       "We grow only through personal recommendations - it is safer for everyone already here.\n\n" +
       "If you have no one to ask, write to us and we will help.",
   },
+  // Round 1 fix Task 7: кулдаун на приём кода - см. inviteCodeCooldown в handlers.ts.
+  invite_rate_limited: {
+    ru: "Слишком много попыток подряд. Подождите немного и отправьте код ещё раз.",
+    uz: "Ketma-ket juda koʻp urinish. Birozdan keyin kodni qayta yuboring.",
+    tr: "Art arda çok fazla deneme oldu. Lütfen biraz bekleyip kodu tekrar gönderin.",
+    en: "Too many attempts in a row. Please wait a little and send the code again.",
+  },
 } as const;
 
 export type Lang = "ru" | "uz" | "tr" | "en";
