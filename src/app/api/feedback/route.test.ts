@@ -74,11 +74,18 @@ describe("POST /api/feedback", () => {
     expect(await r.json()).toEqual({ ok: false, error: "body_too_long" });
   });
 
-  it("отвечает 429 при исчерпанном лимите", async () => {
+  it("отвечает 429 при исчерпанном лимите - своим кодом, не общим rate_limited", async () => {
+    // Код обязан отличаться от rate_limited: тем же телом отвечает глобальный
+    // лимитер в src/proxy.ts, который отбивает запрос ДО роута (ведро IP_API
+    // общее на весь IP, а за CGNAT-адресом оператора десятки людей). Пока коды
+    // совпадали, форма показывала первому же соседу по IP «Вы уже оставили три
+    // отзыва за сутки» - человеку, у которого отзывов ноль.
     createMock.mockResolvedValue({ ok: false, error: "rate_limited" });
     const r = await POST(req({ rating: "3" }) as never);
     expect(r.status).toBe(429);
-    expect(await r.json()).toEqual({ ok: false, error: "rate_limited" });
+    const body = await r.json();
+    expect(body).toEqual({ ok: false, error: "feedback_limit" });
+    expect(body.error).not.toBe("rate_limited");
   });
 
   it("сохраняет отзыв, даже если скриншот не загрузился", async () => {

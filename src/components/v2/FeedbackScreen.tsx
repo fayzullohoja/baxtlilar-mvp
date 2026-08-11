@@ -8,7 +8,11 @@
  * объяснения заставляет человека гадать, что он сделал не так.
  *
  * После отправки показываем отдельный экран благодарности, а не молчаливый
- * возврат назад - человеку важно понять, что его услышали.
+ * возврат назад - человеку важно понять, что его услышали. Форму при этом
+ * размонтируем намеренно: живая форма поверх уже сохранённой записи - прямая
+ * дорога к дублю, как только истечёт минутное окно дедупа в create_feedback.
+ * Единственное исключение - неудавшийся скриншот: под него на экране
+ * благодарности живёт кнопка повтора, см. SHOT_RETRY_MS ниже.
  *
  * Пределы (1000 символов, 5 МБ) продублированы здесь константами, а не взяты
  * из @/lib/feedback/store и @/lib/uploads/storage: те модули серверные
@@ -17,7 +21,7 @@
  * человек узнал о пределе до отправки, а не после.
  */
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Headline } from "@/components/v2/Headline";
@@ -28,6 +32,38 @@ const MAX_BODY = 1000;
 // превращает свободный рассказ в упражнение по укладке в лимит.
 const COUNTER_FROM = 800;
 const MAX_BYTES = 5 * 1024 * 1024;
+
+// Типы, которые сервер ТОЧНО примет: detectImageType (src/lib/uploads/mime-check.ts)
+// узнаёт ровно эти по магическим байтам. Список шире атрибута accept ниже, и это
+// не описка: accept сужен до трёх форматов, чтобы iOS сам перекодировал HEIC в
+// JPEG, а здесь мы имеем право отбить только заведомо негодное. Отказать в файле,
+// который сервер бы взял, - худшая ошибка, чем лишняя загрузка.
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+
+// Сколько держим кнопку «приложить скриншот ещё раз». Окно дедупа в
+// create_feedback - минута от created_at записи, а этот отсчёт стартует позже:
+// ответ уже проделал дорогу обратно. Поэтому 45 с, а не 60: нажатие на 59-й
+// секунде дедуп уже не поймает, и вместо картинки к первой записи человек
+// создаст ВТОРУЮ запись об одной поломке и сожжёт второй слот из трёх суточных.
+const SHOT_RETRY_MS = 45_000;
+
+// Код ошибки от сервера -> ключ текста. Таблицей, а не лесенкой из «?:»:
+// кодов пять, и лесенка на пятом уровне вложенности уже не читается.
+//
+// feedback_limit и rate_limited - РАЗНЫЕ вещи, и путать их нельзя. Первый
+// отдаёт роут отзыва на исчерпанном суточном лимите (три отзыва за скользящие
+// сутки). Второй приходит от глобального лимитера в src/proxy.ts, который
+// отбивает запрос ещё ДО роута: ведро IP_API общее на весь IP, а за одним
+// CGNAT-адресом мобильного оператора сидят десятки людей. Пока оба кода
+// назывались одинаково, форма встречала первого же соседа по IP словами «Вы уже
+// оставили три отзыва за сутки» - при том что отзывов у него ноль, а повтор
+// через секунду прошёл бы.
+const ERROR_COPY: Record<string, string> = {
+  feedback_limit: "err_rate_limited",
+  rate_limited: "err_too_fast",
+  too_large: "err_too_large",
+  bad_type: "err_bad_type",
+};
 
 // Карточка v2 - те же токены, что у соседних экранов мини-аппа
 // (InviteNotVerifiedCard, VerificationPlashka): белый лист, hairline-борт,
@@ -51,6 +87,59 @@ const blockLabelStyle: React.CSSProperties = {
   fontFamily: "var(--font-v2-body)",
 };
 
+/**
+ * Звезда оценки - SVG-контур в стиле line-иконок нижней навигации, а не глиф ★.
+ *
+ * Глиф красили токеном --color-v2-ink-500. Это цвет hairline-борта (#f0ddd0):
+ * на белой карточке он даёт контраст 1.3:1 при требуемых WCAG 1.4.11 3:1, и
+ * единственный обязательный элемент экрана человек просто не видит - под
+ * заголовком «Как Вам приложение?» у него пустая полоса. Незажжённая звезда
+ * теперь контур ink-400 (3.99:1), зажжённая - заливка accent.
+ */
+function Star({ filled }: { filled: boolean }) {
+  return (
+    <svg
+      width="34"
+      height="34"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill={filled ? "var(--color-v2-accent)" : "none"}
+      stroke={filled ? "var(--color-v2-accent)" : "var(--color-v2-ink-400)"}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polygon points="12 2.6 15 8.7 21.7 9.7 16.9 14.4 18 21 12 17.9 6 21 7.1 14.4 2.3 9.7 9 8.7" />
+    </svg>
+  );
+}
+
+/** Плашка ошибки - вид тот же, что в InviteScreen и ProfileSafetyActions. */
+function ErrorBanner({ text }: { text: string }) {
+  return (
+    <div
+      role="alert"
+      style={{
+        // Розовая плашка с красной полосой слева, а не голый красный текст.
+        padding: "10px 14px",
+        background: "#FBE7E4",
+        borderLeft: "3px solid var(--color-v2-danger)",
+        borderRadius: "12px",
+        fontSize: "13px",
+        fontWeight: 600,
+        lineHeight: "1.5",
+        color: "#9A4B46",
+        fontFamily: "var(--font-v2-body)",
+        // Явно слева: на экране благодарности родитель центрирует текст, а
+        // ошибка в две строки по центру читается как украшение, а не как сбой.
+        textAlign: "left",
+      }}
+    >
+      {text}
+    </div>
+  );
+}
+
 export function V2FeedbackScreen({ locale }: { locale: string }) {
   const t = useTranslations("Feedback");
   const [rating, setRating] = useState(0);
@@ -60,7 +149,31 @@ export function V2FeedbackScreen({ locale }: { locale: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<null | { shotFailed: boolean }>(null);
+  const [shotRetryOpen, setShotRetryOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const pickerRef = useRef<HTMLButtonElement>(null);
+  const thanksRef = useRef<HTMLDivElement>(null);
+
+  // Форма исчезает целиком, и кнопка «Отправить», на которой стоял курсор
+  // скринридера, размонтируется - браузер сбрасывает фокус на body, и человек
+  // с VoiceOver не слышит ни слова о том, ушёл отзыв или нет. Переводим фокус
+  // на заголовок карточки: он и объявляет «Спасибо», и даёт точку, от которой
+  // продолжается свайп. Живой области (role="status") здесь нарочно нет - она
+  // добавляется в DOM уже с текстом, такое объявляют не все скринридеры, а
+  // вместе с фокусом дала бы двойное чтение.
+  useEffect(() => {
+    if (done) thanksRef.current?.focus();
+  }, [done]);
+
+  // Окно повтора закрываем сами - см. SHOT_RETRY_MS. Эффект стартует один раз,
+  // на переходе флага в true: повторный setShotRetryOpen(true) тем же значением
+  // React проглатывает, и отсчёт остаётся привязан к ПЕРВОМУ ответу, то есть к
+  // моменту создания записи, а не к последней неудачной попытке.
+  useEffect(() => {
+    if (!shotRetryOpen) return;
+    const id = setTimeout(() => setShotRetryOpen(false), SHOT_RETRY_MS);
+    return () => clearTimeout(id);
+  }, [shotRetryOpen]);
 
   function pickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null;
@@ -69,6 +182,18 @@ export function V2FeedbackScreen({ locale }: { locale: string }) {
     // загрузки выглядит как поломка приложения, а не как слишком большой файл.
     if (f.size > MAX_BYTES) {
       setError(t("err_too_large"));
+      e.target.value = "";
+      return;
+    }
+    // Формат - там же и по той же причине. accept в системном выборщике только
+    // подсказка: на Android человек переключается на «все файлы» и берёт .gif,
+    // и без этой проверки 4 МБ уезжают на сервер по мобильному интернету, чтобы
+    // вернуться ответом «не тот формат». Отбиваем ТОЛЬКО заведомо картинку не
+    // из списка: пустой или неизвестный тип (файловые менеджеры отдают
+    // application/octet-stream даже на нормальный PNG) отправляем на сервер -
+    // там магические байты, они надёжнее строки от пикера.
+    if (f.type.startsWith("image/") && !ACCEPTED_TYPES.includes(f.type)) {
+      setError(t("err_bad_type"));
       e.target.value = "";
       return;
     }
@@ -83,6 +208,9 @@ export function V2FeedbackScreen({ locale }: { locale: string }) {
     setPreview(null);
     setFile(null);
     if (fileRef.current) fileRef.current.value = "";
+    // Кнопка «Убрать» сейчас исчезнет вместе с фокусом на ней. Возвращаем фокус
+    // туда, откуда человек пришёл, - на кнопку выбора файла.
+    pickerRef.current?.focus();
   }
 
   async function submit() {
@@ -105,17 +233,15 @@ export function V2FeedbackScreen({ locale }: { locale: string }) {
         const code = j && !j.ok ? j.error : "";
         // Введённое НЕ стираем: заставлять человека набирать отзыв заново
         // из-за нашего сбоя - верный способ больше отзывов не получить.
-        setError(
-          code === "rate_limited"
-            ? t("err_rate_limited")
-            : code === "too_large"
-              ? t("err_too_large")
-              : code === "bad_type"
-                ? t("err_bad_type")
-                : t("err_generic"),
-        );
+        setError(t(ERROR_COPY[code] ?? "err_generic"));
         return;
       }
+      // Отзыв сохранён, а картинка не доехала (диск, права). Открываем окно
+      // повтора: процедура create_feedback написана ровно под этот случай -
+      // в ветке дедупа она ПРИКРЕПЛЯЕТ принесённый скриншот к найденной записи,
+      // и повтор в пределах минуты добавляет картинку к тому же отзыву, а не
+      // плодит второй.
+      if (j.screenshot === "failed") setShotRetryOpen(true);
       setDone({ shotFailed: j.screenshot === "failed" });
     } catch {
       setError(t("err_generic"));
@@ -127,20 +253,16 @@ export function V2FeedbackScreen({ locale }: { locale: string }) {
   if (done) {
     return (
       <div className="v2-rise" style={{ ...cardStyle, padding: "28px 22px", textAlign: "center" }}>
-        <div
-          aria-hidden="true"
-          style={{
-            fontSize: "40px",
-            lineHeight: 1,
-            marginBottom: "12px",
-            color: "var(--color-v2-accent)",
-          }}
-        >
-          ★
+        <div aria-hidden="true" style={{ display: "flex", justifyContent: "center", marginBottom: "12px" }}>
+          <Star filled />
         </div>
-        <Headline size="md" as="h2">
-          {t("thanks_title")}
-        </Headline>
+        {/* tabIndex={-1} - цель программного фокуса, а не элемент управления,
+            поэтому рамку фокуса не рисуем: нажать тут нечего. */}
+        <div ref={thanksRef} tabIndex={-1} style={{ outline: "none" }}>
+          <Headline size="md" as="h2">
+            {t("thanks_title")}
+          </Headline>
+        </div>
         <p
           style={{
             marginTop: "10px",
@@ -164,6 +286,20 @@ export function V2FeedbackScreen({ locale }: { locale: string }) {
           >
             {t("shot_failed")}
           </p>
+        )}
+        {/* Ошибка неудавшегося повтора: без неё нажатие на кнопку ниже выглядит
+            как «ничего не произошло». */}
+        {error && (
+          <div style={{ marginTop: "12px" }}>
+            <ErrorBanner text={error} />
+          </div>
+        )}
+        {done.shotFailed && shotRetryOpen && (
+          <div style={{ marginTop: "16px" }}>
+            <Button onClick={submit} variant="secondary" disabled={busy}>
+              {busy ? t("sending") : t("shot_retry")}
+            </Button>
+          </div>
         )}
         <div style={{ marginTop: "20px" }}>
           <Link
@@ -209,13 +345,14 @@ export function V2FeedbackScreen({ locale }: { locale: string }) {
                 border: "none",
                 background: "transparent",
                 cursor: "pointer",
-                fontSize: "34px",
-                lineHeight: 1.1,
-                padding: "4px 0",
-                color: n <= rating ? "var(--color-v2-accent)" : "var(--color-v2-ink-500)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                lineHeight: 0,
+                padding: "6px 0",
               }}
             >
-              ★
+              <Star filled={n <= rating} />
             </button>
           ))}
         </div>
@@ -283,58 +420,87 @@ export function V2FeedbackScreen({ locale }: { locale: string }) {
 
       <div className="v2-rise" style={cardStyle}>
         <p style={{ ...blockLabelStyle, marginBottom: "8px" }}>{t("shot_label")}</p>
-        {preview ? (
-          <div>
-            {/* eslint-disable-next-line @next/next/no-img-element -- локальный blob: превью до отправки, next/image здесь не применим */}
-            <img
-              src={preview}
-              alt=""
-              style={{
-                maxWidth: "100%",
-                borderRadius: "var(--v2-radius-md)",
-                display: "block",
-              }}
-            />
-            <button
-              type="button"
-              onClick={removeFile}
-              style={{
-                marginTop: "8px",
-                border: "none",
-                background: "transparent",
-                color: "var(--color-v2-ink-400)",
-                fontFamily: "var(--font-v2-body)",
-                fontSize: "14px",
-                fontWeight: 600,
-                cursor: "pointer",
-                padding: "6px 0",
-              }}
-            >
-              {t("shot_remove")}
-            </button>
-          </div>
-        ) : (
+        {/* Кнопку выбора файла превью НЕ подменяет - тот же приём, что в
+            UploadField: подпись кнопки становится именем файла. Подмена уносила
+            фокус в никуда (нажатую кнопку размонтировали), а незрячий человек
+            не получал ни слова о том, что скриншот прикреплён: на её месте был
+            <img alt="">, для скринридера пустое место. Здесь фокус остаётся на
+            кнопке, и скринридер зачитывает её новое имя - имя файла. */}
+        <button
+          ref={pickerRef}
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          style={{
+            // Пунктир того же цвета, что у загрузки паспорта (UploadField):
+            // это одна и та же вещь «приложить файл», и выглядеть она должна
+            // одинаково. Радиус - карточный md, а не 20px как у UploadField:
+            // там кнопка сама себе экран, здесь она лежит внутри карточки.
+            width: "100%",
+            padding: "14px",
+            borderRadius: "var(--v2-radius-md)",
+            border: "1.5px dashed #E0A9A3",
+            background: "#fff",
+            color: "var(--color-v2-ink-300)",
+            fontFamily: "var(--font-v2-body)",
+            fontSize: "15px",
+            fontWeight: 600,
+            lineHeight: 1.5,
+            cursor: "pointer",
+            textAlign: "center",
+          }}
+        >
+          {file ? (
+            <span style={{ color: "var(--color-v2-ink-200)" }}>
+              {/* anywhere - имя скриншота с телефона длиннее ширины карточки
+                  и без переноса растянуло бы кнопку за борт. */}
+              <strong style={{ overflowWrap: "anywhere" }}>{file.name}</strong>
+              <br />
+              <span style={{ fontSize: "12px", color: "var(--color-v2-ink-400)" }}>
+                {t("shot_replace")}
+              </span>
+            </span>
+          ) : (
+            t("shot_add")
+          )}
+        </button>
+        {preview && (
+          /* eslint-disable-next-line @next/next/no-img-element -- локальный blob: превью до отправки, next/image здесь не применим */
+          <img
+            src={preview}
+            alt=""
+            style={{
+              // maxHeight обязателен: вертикальный скрин телефона 1080x2400 при
+              // одной только maxWidth рисуется высотой ~670px и выдавливает
+              // «Убрать» и «Отправить» за нижний край экрана - человек видит
+              // одну большую картинку без единого органа управления. На скрине
+              // с прокруткой (Samsung, Xiaomi) это уже несколько экранов.
+              // Превью служит опознанием файла, а не просмотром.
+              display: "block",
+              marginTop: "10px",
+              maxWidth: "100%",
+              maxHeight: "240px",
+              objectFit: "contain",
+              borderRadius: "var(--v2-radius-md)",
+            }}
+          />
+        )}
+        {file && (
           <button
             type="button"
-            onClick={() => fileRef.current?.click()}
+            onClick={removeFile}
             style={{
-              // Пунктир того же цвета, что у загрузки паспорта (UploadField):
-              // это одна и та же вещь «приложить файл», и выглядеть она должна
-              // одинаково. Радиус - карточный md, а не 20px как у UploadField:
-              // там кнопка сама себе экран, здесь она лежит внутри карточки.
-              width: "100%",
-              padding: "14px",
-              borderRadius: "var(--v2-radius-md)",
-              border: "1.5px dashed #E0A9A3",
-              background: "#fff",
-              color: "var(--color-v2-ink-300)",
+              marginTop: "8px",
+              border: "none",
+              background: "transparent",
+              color: "var(--color-v2-ink-400)",
               fontFamily: "var(--font-v2-body)",
-              fontSize: "15px",
+              fontSize: "14px",
               fontWeight: 600,
               cursor: "pointer",
+              padding: "6px 0",
             }}
           >
-            {t("shot_add")}
+            {t("shot_remove")}
           </button>
         )}
         {/* heic в accept намеренно нет, хотя сервер его принимает: текст ошибки
@@ -360,26 +526,7 @@ export function V2FeedbackScreen({ locale }: { locale: string }) {
         </p>
       </div>
 
-      {error && (
-        <div
-          role="alert"
-          style={{
-            // Тот же вид ошибки, что в InviteScreen и ProfileSafetyActions:
-            // розовая плашка с красной полосой слева, а не голый красный текст.
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            fontWeight: 600,
-            lineHeight: "1.5",
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-          }}
-        >
-          {error}
-        </div>
-      )}
+      {error && <ErrorBanner text={error} />}
 
       <div>
         <Button onClick={submit} disabled={!rating || busy}>

@@ -85,10 +85,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // картинку вместо доказательства поломки (та же развилка в store.ts:59-65).
     if (screenshotPath && created.error === "rate_limited")
       await removeFeedbackScreenshot(screenshotPath);
-    return NextResponse.json(
-      { ok: false, error: created.error },
-      { status: created.error === "rate_limited" ? 429 : 500 },
-    );
+    // Наружу суточный лимит уходит СВОИМ кодом feedback_limit, хотя внутри
+    // store.ts он называется rate_limited. Причина: ровно тем же телом
+    // {ok:false,error:"rate_limited"} отвечает глобальный лимитер в src/proxy.ts,
+    // и отвечает ДО роута - ведро IP_API общее на весь IP, а за одним CGNAT-
+    // адресом мобильного оператора сидят десятки человек (см. комментарий в
+    // src/lib/http/rate-limit.ts). Пока коды совпадали, форма не могла их
+    // отличить - тела байт в байт одинаковы - и показывала первому же соседу по
+    // IP «Вы уже оставили три отзыва за сутки», хотя отзывов у него ноль, а
+    // повтор через секунду прошёл бы. Отличать по заголовку Retry-After значило
+    // бы держать смысл ответа в заголовке, который ставит чужой слой.
+    if (created.error === "rate_limited")
+      return NextResponse.json({ ok: false, error: "feedback_limit" }, { status: 429 });
+    return NextResponse.json({ ok: false, error: created.error }, { status: 500 });
   }
 
   // Дедуп вернул СТАРУЮ запись (двойной тап, ретрай по таймауту, вторая
