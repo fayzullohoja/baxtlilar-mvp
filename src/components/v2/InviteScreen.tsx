@@ -4,23 +4,24 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
 import { Headline } from "./Headline";
+import { InviteNotVerifiedCard } from "./InviteNotVerifiedCard";
 import "@/lib/telegram/web-app-types";
 
 /**
- * V2 InviteScreen (Task 9) - тело экрана «Пригласить».
+ * V2 InviteScreen (Task 9) - тело экрана «Пригласить» для approved-юзеров.
  *
  * Единственный консюмер GET /api/invite (Task 8) во всей мини-аппе: сам
- * запрашивает код + счётчик на маунте и разруливает три состояния ответа.
- * Клиентский компонент, а не серверный кусок страницы, - чтобы состояние
- * сбоя могло предложить «Повторить» без полной перезагрузки страницы
- * (обычный router.refresh() в серверном компоненте это тоже даёт, но здесь
- * повтор - это просто повторный fetch того же роута, без похода через
- * Next.js навигацию).
+ * запрашивает код + счётчик на маунте. Клиентский компонент, а не серверный
+ * кусок страницы, - чтобы состояние сбоя могло предложить «Повторить» без
+ * полной перезагрузки страницы (обычный router.refresh() в серверном
+ * компоненте это тоже даёт, но здесь повтор - это просто повторный fetch
+ * того же роута, без похода через Next.js навигацию).
  *
- * "not_verified" (403 от роута) - НЕ ошибка, а нормальный этап: до одобрения
- * верификации кода попросту не существует (роут её не создаёт). Поэтому
- * рендерим её отдельной веткой с тем же спокойным тоном, что и остальной
- * контент, а не в блоке catch/error.
+ * "not_verified" (403 от роута) сюда в норме не долетает - page.tsx уже знает
+ * verification_status из requireActiveUser и монтирует этот компонент только
+ * для approved. Ветка оставлена как защита от гонки (статус поменялся между
+ * рендером страницы и этим fetch) - тем же InviteNotVerifiedCard, что и на
+ * сервере, чтобы текст не мог разъехаться в двух местах.
  */
 
 type ApiResponse =
@@ -31,12 +32,33 @@ type Status = "loading" | "ok" | "not_verified" | "error";
 
 const BOT_USERNAME = "baxtlilar_uz_bot";
 
+export type CopyOutcome = "copied" | "failed";
+
+/**
+ * Вынесено из компонента отдельной функцией специально ради тестируемости:
+ * у самого InviteScreen нет "use client"-инфраструктуры для рендер-тестов
+ * (в проекте вообще нет ни одного .test.tsx, happy-dom - неиспользуемая
+ * devDependency) - заводить её ради одной ветки было бы непропорционально.
+ * Здесь же чистая функция без React - обычный .test.ts, без смены окружения
+ * vitest.
+ */
+export async function copyToClipboard(text: string): Promise<CopyOutcome> {
+  try {
+    if (!navigator.clipboard) return "failed";
+    await navigator.clipboard.writeText(text);
+    return "copied";
+  } catch {
+    return "failed";
+  }
+}
+
 export function V2InviteScreen() {
   const t = useTranslations("Invite");
   const [status, setStatus] = useState<Status>("loading");
   const [code, setCode] = useState("");
   const [invited, setInvited] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   // Promise .then/.catch, а не async/await: react-hooks/set-state-in-effect
   // ругается на setState синхронно в теле эффекта, и трактует ЛЮБОЙ setState
@@ -72,14 +94,21 @@ export function V2InviteScreen() {
 
   const shareUrl = `https://t.me/${BOT_USERNAME}?start=${code}`;
 
+  // На отказ (старый Android WebView без Clipboard API, нет разрешения) не
+  // молчим: раньше был голый try/catch с пустым catch - человек жал кнопку,
+  // ничего не менялось, и он решал, что кнопка сломана, хотя код всё это
+  // время виден крупно на экране и его можно выделить руками. Теперь отказ
+  // явно показывает t("copy_error") с текстом, что делать вручную. Сама
+  // проверка успех/отказ вынесена в copyToClipboard (см. выше) - там же тест.
   async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
+    const outcome = await copyToClipboard(shareUrl);
+    if (outcome === "copied") {
+      setCopyFailed(false);
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
-    } catch {
-      /* буфер обмена недоступен (нет разрешения/старый WebView) - код всё
-         равно виден крупно на экране, можно скопировать вручную */
+    } else {
+      setCopied(false);
+      setCopyFailed(true);
     }
   }
 
@@ -114,42 +143,7 @@ export function V2InviteScreen() {
   }
 
   if (status === "not_verified") {
-    return (
-      <div
-        className="v2-rise"
-        style={{
-          background: "#fff",
-          border: "1px solid var(--color-v2-border)",
-          borderRadius: "var(--v2-radius-card)",
-          boxShadow: "var(--v2-shadow-card)",
-          padding: "28px 22px",
-          fontFamily: "var(--font-v2-body)",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "12px",
-            fontWeight: 800,
-            textTransform: "uppercase",
-            letterSpacing: "0.14em",
-            color: "var(--color-v2-teal)",
-            marginBottom: "12px",
-          }}
-        >
-          {t("not_verified_title")}
-        </div>
-        <p
-          style={{
-            fontSize: "15px",
-            lineHeight: "1.55",
-            color: "var(--color-v2-ink-200)",
-            margin: 0,
-          }}
-        >
-          {t("not_verified")}
-        </p>
-      </div>
-    );
+    return <InviteNotVerifiedCard title={t("not_verified_title")} body={t("not_verified")} />;
   }
 
   if (status === "error") {
@@ -230,6 +224,22 @@ export function V2InviteScreen() {
       <Button onClick={copyLink} variant="primary">
         {copied ? t("copied") : t("copy_link")}
       </Button>
+      {copyFailed ? (
+        <div
+          style={{
+            padding: "10px 14px",
+            background: "#FBE7E4",
+            borderLeft: "3px solid var(--color-v2-danger)",
+            borderRadius: "12px",
+            fontSize: "13px",
+            fontWeight: 600,
+            color: "#9A4B46",
+            fontFamily: "var(--font-v2-body)",
+          }}
+        >
+          {t("copy_error")}
+        </div>
+      ) : null}
       <Button onClick={shareTelegram} variant="trust">
         {t("share")}
       </Button>

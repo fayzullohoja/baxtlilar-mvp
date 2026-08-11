@@ -5,12 +5,16 @@
  * приглашённых. Открывается из настроек (см. Settings.invite_title в
  * SettingsActions.tsx).
  *
- * Данные (код, счётчик, статус верификации) целиком приходят из
- * GET /api/invite (Task 8) - страница их не пересчитывает, чтобы не
- * дублировать бизнес-логику ensureCodeForUser/countInvitedBy. Всей загрузкой
- * и тремя состояниями (код есть / не верифицирован / сбой) занимается
- * клиентский V2InviteScreen - он же даёт кнопку «Повторить» без перезагрузки
- * страницы.
+ * Раунд исправлений 1: verification_status уже приходит из requireActiveUser
+ * бесплатно, поэтому карточку "не верифицирован" рисуем сразу на сервере -
+ * НЕ approved-юзер раньше видел лишний GET /api/invite и вспышку "Загружаем…"
+ * ради ответа, который был известен ещё до рендера страницы. Клиентский
+ * V2InviteScreen (реальный HTTP-консюмер GET /api/invite, Task 8) монтируется
+ * только approved-юзерам, которым код и счётчик действительно нужны -
+ * получение и выдача кода по-прежнему целиком в route.ts, страница их не
+ * дублирует. В самом V2InviteScreen ветка not_verified оставлена как защита
+ * от гонки (статус изменился между рендером страницы и fetch), а не как
+ * основной путь.
  *
  * Гард - requireActiveUser(locale, { allowPaused: true }), тот же, что и на
  * /v2/settings: экран висит в настройках, и paused-пользователь должен видеть
@@ -25,6 +29,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline, Lead } from "@/components/v2/Headline";
 import { V2InviteScreen } from "@/components/v2/InviteScreen";
+import { InviteNotVerifiedCard } from "@/components/v2/InviteNotVerifiedCard";
 
 export const dynamic = "force-dynamic";
 
@@ -36,12 +41,17 @@ export default async function V2InvitePage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("Invite");
+  const tSettings = await getTranslations("Settings");
   const user = await requireActiveUser(locale, { allowPaused: true });
   const unread = await getUnreadTotal(user.id);
+  const isApproved = user.verification_status === "approved";
 
   return (
     <>
-      <MiniAppShell eyebrow={t("title")} align="top" footer={null}>
+      {/* eyebrow = заголовок раздела настроек ("Профиль"), а не Invite.title -
+          иначе прямо под ним Headline повторял бы то же слово («Пригласить» /
+          «Пригласить»). Так eyebrow работает как хлебная крошка "откуда пришли". */}
+      <MiniAppShell eyebrow={tSettings("title")} align="top" footer={null}>
         <div className="v2-screen-in">
           <div style={{ marginBottom: "12px", marginLeft: "-4px" }}>
             <Link
@@ -71,7 +81,11 @@ export default async function V2InvitePage({
           <Lead>{t("subtitle")}</Lead>
 
           <div style={{ marginTop: "28px" }}>
-            <V2InviteScreen />
+            {isApproved ? (
+              <V2InviteScreen />
+            ) : (
+              <InviteNotVerifiedCard title={t("not_verified_title")} body={t("not_verified")} />
+            )}
           </div>
 
           <div style={{ height: "80px" }} />

@@ -6,10 +6,10 @@ import { Button } from "./Button";
 import { useTranslations } from 'next-intl'
 
 /**
- * V2 Settings Actions — invite + pause/resume + delete account.
+ * V2 Settings Actions - invite + pause/resume + delete account.
  *
  * Invite (Task 9, план invite-codes): просто переход на /v2/invite, своей
- * логики здесь нет — карточка стилизована под secondary-Button, потому что
+ * логики здесь нет - карточка стилизована под secondary-Button, потому что
  * <Button> умеет быть только <button>, а сюда нужна ссылка (Link даёт
  * prefetch и работает без JS, в отличие от onClick+router.push).
  *
