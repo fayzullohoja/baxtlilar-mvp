@@ -64,14 +64,25 @@ vi.mock("@/lib/supabase/admin", () => ({
 // примера из брифа Task 7) - для теста самовосстановления и теста "пришёл по
 // ссылке" важно, что мок реально смотрит на invite_redeemed_at/invite_exempt
 // переданного юзера, а не просто отдаёт gateOn вслепую. redeemResult -
-// управляемая переменная: по умолчанию решает по подстроке "GOOD"/иначе
-// not_found, но тест на погашенный код обязан уметь подставить reason:"disabled".
+// управляемая переменная: по умолчанию решает по подстроке VALID_GOOD_CODE,
+// иначе not_found, но тест на погашенный код обязан уметь подставить
+// reason:"disabled".
+//
+// Round 2 fix: этот файл (в отличие от gate.test.ts) НЕ мокает
+// "@/lib/invite/code" - handlers.ts теперь зовёт РЕАЛЬНЫЙ extractInviteCode
+// как gate ДО вызова redeemCode (см. коммент в handlers.ts). Значит текст
+// фикстур обязан быть настоящим валидным кодом (6 символов из алфавита кода,
+// с цифрой - см. src/lib/invite/code.ts), а не просто содержать узнаваемую
+// подстроку типа "GOOD": буква "O" из "GOOD" не входит в алфавит кода
+// (визуально путается с нулём) и вырезается при нормализации - строка вроде
+// "GOOD12" превращается в "GD2" (3 символа) и извлечение проваливается.
+const VALID_GOOD_CODE = "K2M4PQ"; // валиден по extractInviteCode: 6 симв., есть цифры
 let gateOn = true;
 let redeemResult: { ok: true } | { ok: false; reason: "not_found" | "disabled" | "self" } | null = null;
 const redeemCodeMock = vi.fn((_userId: string, raw: string) =>
   Promise.resolve(
     redeemResult ??
-      (raw.toUpperCase().includes("GOOD") ? { ok: true } : { ok: false, reason: "not_found" as const }),
+      (raw.toUpperCase().includes(VALID_GOOD_CODE) ? { ok: true } : { ok: false, reason: "not_found" as const }),
   ),
 );
 vi.mock("@/lib/invite/gate", () => ({
@@ -160,10 +171,13 @@ describe("шаг кода в боте", () => {
       onboarding_step: "bot_invite_code",
       lifecycle_state: "onboarding",
     };
-    await handleUpdate(textMsg("GOOD12") as never);
+    await handleUpdate(textMsg(VALID_GOOD_CODE) as never);
     expect(sent.some((s) => s.text.includes(M.invite_accepted.ru))).toBe(true);
-    // и следом идёт оферта - шаг реально продвинулся, а не просто похвалил
-    expect(sent.some((s) => s.text.includes("Baxtlilar"))).toBe(true);
+    // и следом идёт оферта - шаг реально продвинулся, а не просто похвалил.
+    // Именно "Документы Baxtlilar" (текст pd_consent_ask), а не голое
+    // "Baxtlilar" - оно тавтологично совпало бы уже с M.invite_accepted.ru
+    // ("...Добро пожаловать в Baxtlilar.") и ничего не доказывало бы про оферту.
+    expect(sent.some((s) => s.text.includes("Документы Baxtlilar"))).toBe(true);
     expect(transitionCalls).toHaveLength(1);
     expect(transitionCalls[0].patch).toMatchObject({ onboarding_step: "bot_consent_pd" });
   });
@@ -194,7 +208,7 @@ describe("шаг кода в боте", () => {
       lifecycle_state: "onboarding",
     };
     redeemResult = { ok: false, reason: "disabled" };
-    await handleUpdate(textMsg("DEAD01") as never);
+    await handleUpdate(textMsg("DEAD26") as never);
     expect(sent.some((s) => s.text.includes(M.invite_disabled.ru))).toBe(true);
     expect(sent.some((s) => s.text.includes(M.invite_not_found.ru))).toBe(false);
   });
@@ -240,9 +254,9 @@ describe("шаг кода в боте", () => {
       invite_redeemed_at: null,
       invite_exempt: false,
     };
-    // Шаг 1: /start с payload-кодом из ссылки.
-    await handleUpdate(textMsg("/start GOODLINK") as never);
-    expect(redeemCodeMock).toHaveBeenCalledWith("u1", "GOODLINK");
+    // Шаг 1: /start с payload-кодом из ссылки (start_param = сам код).
+    await handleUpdate(textMsg(`/start ${VALID_GOOD_CODE}`) as never);
+    expect(redeemCodeMock).toHaveBeenCalledWith("u1", VALID_GOOD_CODE);
 
     sent.length = 0; // интересует только то, что произойдёт ПОСЛЕ выбора языка
     // Шаг 2: пользователь выбирает язык.
@@ -328,9 +342,13 @@ describe("раунд исправлений 1", () => {
       lifecycle_state: "onboarding",
     };
     // burst кулдауна = 5 - шлём 6 попыток подряд без пауз (время в тесте не
-    // течёт, refill не успевает сработать между вызовами).
+    // течёт, refill не успевает сработать между вызовами). "BAD246" - валидный
+    // по extractInviteCode код (6 символов алфавита, есть цифры), просто не
+    // совпадающий с VALID_GOOD_CODE - повторное использование одного и того
+    // же текста в цикле ОК, тест проверяет счётчик вызовов и текст ответа,
+    // не различие между попытками.
     for (let i = 0; i < 6; i++) {
-      await handleUpdate(textMsg(`BAD${i}`, 77) as never);
+      await handleUpdate(textMsg("BAD246", 77) as never);
     }
     // Ведро исчерпано ровно на 6-й попытке - redeemCode вызван только 5 раз,
     // не 6: кулдаун реально останавливает поток ДО похода в redeemCode, а не
@@ -345,8 +363,8 @@ describe("раунд исправлений 1", () => {
     // КАЖДОЕ лишнее сообщение - иначе тысяча лишних входящих даёт тысячу
     // исходящих против общей квоты бота).
     const countBefore = sent.length;
-    await handleUpdate(textMsg("BAD6", 77) as never);
-    await handleUpdate(textMsg("BAD7", 77) as never);
+    await handleUpdate(textMsg("BAD246", 77) as never);
+    await handleUpdate(textMsg("BAD246", 77) as never);
     expect(sent.length).toBe(countBefore); // ни одного нового сообщения
     expect(redeemCodeMock).toHaveBeenCalledTimes(5); // и код по-прежнему не проверяли
   });
@@ -366,6 +384,49 @@ describe("раунд исправлений 1", () => {
     expect(sent.at(-1)?.text).toContain(M.invite_ask.ru.slice(0, 20));
   });
 
+  // Раунд исправлений 2 (ревью Task 7): фильтр "text.startsWith('/')" отсекал
+  // ЦЕЛОЕ сообщение по первому символу, даже если код нашёлся дальше внутри
+  // текста - extractInviteCode специально ищет код ВНУТРИ произвольного
+  // текста (Task 2), а пересланное приглашение может начинаться с чего
+  // угодно. Пример буквально из ревью - проверено вручную ДО фикса, что
+  // extractInviteCode реально возвращает "2A3456" из этой строки.
+  it("сообщение с косой чертой и валидным кодом внутри всё равно приводит к попытке зачёта", async () => {
+    currentUser = {
+      id: "u-slash-with-code",
+      telegram_id: 55,
+      language: "ru",
+      onboarding_step: "bot_invite_code",
+      lifecycle_state: "onboarding",
+    };
+    const forwarded = "/ Держи код: 2A3456, заходи";
+    await handleUpdate(textMsg(forwarded, 55) as never);
+    // Код внутри есть, но не совпадает с VALID_GOOD_CODE - главное здесь не
+    // ok/not_found, а то, что redeemCode вообще ВЫЗВАН (то есть сообщение
+    // распознано как попытка, а не молча пропущено).
+    expect(redeemCodeMock).toHaveBeenCalledWith("u-slash-with-code", forwarded);
+    expect(sent.at(-1)?.text).toBe(M.invite_not_found.ru);
+  });
+
+  it("сообщение с косой чертой БЕЗ кода внутри по-прежнему не считается попыткой и не тратит кулдаун", async () => {
+    currentUser = {
+      id: "u-slash-no-code",
+      telegram_id: 44,
+      language: "ru",
+      onboarding_step: "bot_invite_code",
+      lifecycle_state: "onboarding",
+    };
+    // 5 "мусорных" слэш-сообщений без кода внутри - если бы они тратили
+    // кулдаун-бюджет (capacity 5), следующая уже настоящая попытка упёрлась
+    // бы в лимит вместо честного зачёта.
+    for (let i = 0; i < 5; i++) {
+      await handleUpdate(textMsg("/randomnoise", 44) as never);
+    }
+    expect(redeemCodeMock).not.toHaveBeenCalled();
+    await handleUpdate(textMsg(VALID_GOOD_CODE, 44) as never);
+    expect(sent.some((s) => s.text.includes(M.invite_accepted.ru))).toBe(true);
+    expect(sent.some((s) => s.text === M.invite_rate_limited.ru)).toBe(false);
+  });
+
   it("при неуспешном переходе человек НЕ получает «Приглашение принято» с офертой, а видит осмысленную реакцию", async () => {
     currentUser = {
       id: "u-transition-fail",
@@ -375,7 +436,7 @@ describe("раунд исправлений 1", () => {
       lifecycle_state: "onboarding",
     };
     transitionOk = false; // гонка/конфликт (например дубль вебхука)
-    await handleUpdate(textMsg("GOODCODE", 88) as never);
+    await handleUpdate(textMsg(VALID_GOOD_CODE, 88) as never);
     // Код был зачтён (redeemCode отработал), но переход в БД не удался -
     // человек не должен увидеть "принято" с офертой, которую он не сможет
     // подтвердить (согласие потерялось бы молча).

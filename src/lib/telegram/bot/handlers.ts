@@ -12,6 +12,7 @@ import { M, pick, type Lang } from "./messages";
 import { LEGAL_VERSION } from "@/content/legal";
 import { TokenBucketLimiter } from "@/lib/http/rate-limit";
 import { needsInviteStep, redeemCode } from "@/lib/invite/gate";
+import { extractInviteCode } from "@/lib/invite/code";
 
 // SEC-3a: per-user кулдаун на /start — каждый /start = sendMessage + запросы к
 // БД, циклом его дёргать нельзя. Burst 3 (легитимные double-tap), дальше 1 в
@@ -924,13 +925,21 @@ export async function handleUpdate(update: TgUpdate): Promise<void> {
     }
     // прочие сообщения игнорируем (или мягко промптим current step)
     const user = update.message.from ? await findByTg(update.message.from.id) : null;
-    // Коды-приглашения: на шаге bot_invite_code любой НЕ-командный текст - это
-    // попытка ввести код. "/"-текст исключаем: неизвестная команда (например
-    // опечатанный /help) не может быть кодом (Task 2 требует цифру в коде,
-    // "/" её не несёт) и по комментарию блока switch выше должна мягко упасть
-    // в promptStep (переспросит экран кода), а не жечь кулдаун-бюджет и не
-    // получать "такого кода нет" в ответ на команду.
-    if (user && user.onboarding_step === "bot_invite_code" && text && !text.startsWith("/")) {
+    // Коды-приглашения: на шаге bot_invite_code попытка зачёта - это текст, в
+    // котором НАШЁЛСЯ код, а не любой не-командный текст.
+    //
+    // Round 2 fix: раньше здесь стояло "text && !text.startsWith('/')" - это
+    // отсекало ЦЕЛОЕ сообщение по первому символу, даже если код был найден
+    // чуть дальше внутри текста. extractInviteCode специально ищет код ВНУТРИ
+    // произвольного текста (Task 2, "Держи код: 7K2MQX, заходи" - её же
+    // пример), а пересланное сообщение может начинаться с чего угодно, не
+    // только с кода: подпись, "/"-символ, что угодно. Порядок теперь другой -
+    // сначала пробуем найти код, и только если код НЕ нашёлся, считаем
+    // сообщение НЕ попыткой зачёта (падаем в promptStep ниже, кулдаун не
+    // трогаем). Исходная цель фильтра (нераспознанная команда без кода внутри
+    // не превращается в попытку зачёта) сохраняется без изменений -
+    // extractInviteCode на "/help" и подобных вернёт "".
+    if (user && user.onboarding_step === "bot_invite_code" && extractInviteCode(text)) {
       // Round 1 fix: кулдаун ДО похода в redeemCode - иначе поток сообщений
       // бьёт в БД без ограничений, точно как /start до своего кулдауна.
       // Уведомление - отдельным узким ведром (inviteRateLimitNotice), чтобы
