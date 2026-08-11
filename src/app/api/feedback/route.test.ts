@@ -105,17 +105,34 @@ describe("POST /api/feedback", () => {
     expect(await r.json()).toEqual({ ok: false, error: "db_failed" });
   });
 
-  it("сносит уже загруженный файл, когда отзыв не записался", async () => {
-    // Файл лёг на диск до вызова процедуры, а путь в базу не попал: без сноса
-    // он остаётся мусором, которого не найти ничем - указателя на него нет.
+  it("сносит уже загруженный файл при исчерпанном лимите", async () => {
+    // Лимит - единственный отказ, про который известно, что вставки НЕ было:
+    // процедура возвращает limited до всякого insert. Значит указателя на файл
+    // в базе нет ни секунды, и без сноса он остаётся мусором, которого не найти.
     createMock.mockResolvedValue({ ok: false, error: "rate_limited" });
     const r = await POST(req({ rating: "3" }, PNG) as never);
     expect(r.status).toBe(429);
     expect(removeMock).toHaveBeenCalledWith("u1/1.png");
   });
 
+  it("не сносит скриншот на сбое базы - запись могла закоммититься", async () => {
+    // Обрыв связи после COMMIT выглядит как db_failed: строка со screenshot_path
+    // есть, а роут об этом не знает. Снос тут оставил бы модератору битую
+    // картинку вместо доказательства поломки, и вернуть файл нечем.
+    createMock.mockResolvedValue({ ok: false, error: "db_failed" });
+    const r = await POST(req({ rating: "5" }, PNG) as never);
+    expect(r.status).toBe(500);
+    expect(removeMock).not.toHaveBeenCalled();
+  });
+
   it("сохранённый отзыв свой скриншот не сносит", async () => {
     await POST(req({ rating: "5" }, PNG) as never);
+    // Путь загруженного файла обязан доехать до записи: без этой проверки
+    // передача null вместо него прошла бы зелёной, а роут по собственной ветке
+    // «дедуп не прикрепил» снёс бы файл, отчитавшись человеку «скриншот сохранён».
+    expect(createMock).toHaveBeenCalledWith(
+      expect.objectContaining({ screenshotPath: "u1/1.png" }),
+    );
     expect(removeMock).not.toHaveBeenCalled();
   });
 
