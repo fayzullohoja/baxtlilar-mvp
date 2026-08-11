@@ -6,12 +6,16 @@ import { Button } from "./Button";
 import { useTranslations } from 'next-intl'
 
 /**
- * V2 Settings Actions - invite + pause/resume + delete account.
+ * V2 Settings Actions - invite + feedback + pause/resume + delete account.
  *
  * Invite (Task 9, план invite-codes): просто переход на /v2/invite, своей
  * логики здесь нет - карточка стилизована под secondary-Button, потому что
  * <Button> умеет быть только <button>, а сюда нужна ссылка (Link даёт
  * prefetch и работает без JS, в отличие от onClick+router.push).
+ *
+ * Feedback: такой же переход, только на /v2/feedback, и отдельной карточкой -
+ * приглашение и отзыв это разные действия, в одном блоке они читались бы как
+ * варианты одного.
  *
  * Pause: lifecycle=paused, юзер невидим в фиде, не получает interest.
  * Existing chats работают (см. permissions paused — Sprint 5).
@@ -23,6 +27,10 @@ import { useTranslations } from 'next-intl'
 export function V2SettingsActions({ paused }: { paused: boolean }) {
   const router = useRouter();
   const t = useTranslations('Settings');
+  // Подпись входа в отзыв берём из namespace Feedback, где живёт вся копия
+  // этого экрана: заводить под ту же строку ещё и Settings.feedback_* значит
+  // держать два источника правды и разъехаться при первой же правке текста.
+  const tFeedback = useTranslations('Feedback');
   const [busy, setBusy] = useState(false);
   const [delConfirmOpen, setDelConfirmOpen] = useState(false);
 
@@ -100,6 +108,47 @@ export function V2SettingsActions({ paused }: { paused: boolean }) {
             }}
           >
             {t('invite_desc')}
+          </p>
+        </div>
+
+        <div
+          className="v2-rise"
+          style={{
+            background: "#fff",
+            borderRadius: "16px",
+            boxShadow: "var(--v2-shadow-card)",
+            padding: "18px 16px",
+          }}
+        >
+          <Link
+            href="/v2/feedback"
+            style={{
+              display: "block",
+              textAlign: "center",
+              textDecoration: "none",
+              fontFamily: "var(--font-v2-body)",
+              fontSize: "16px",
+              fontWeight: 700,
+              letterSpacing: "-0.01em",
+              padding: "17px 24px",
+              borderRadius: "var(--v2-radius-lg)",
+              border: "1.5px solid var(--color-v2-ink-500)",
+              background: "#ffffff",
+              color: "var(--color-v2-ink-400)",
+            }}
+          >
+            {tFeedback('entry_title')}
+          </Link>
+          <p
+            style={{
+              marginTop: "10px",
+              fontSize: "12px",
+              color: "var(--color-v2-ink-400)",
+              fontFamily: "var(--font-v2-body)",
+              lineHeight: "1.5",
+            }}
+          >
+            {tFeedback('entry_desc')}
           </p>
         </div>
 
