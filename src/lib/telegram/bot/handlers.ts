@@ -11,6 +11,7 @@ import type { InlineKeyboardMarkup, ReplyKeyboardMarkup } from "../bot-api";
 import { M, pick, type Lang } from "./messages";
 import { LEGAL_VERSION } from "@/content/legal";
 import { TokenBucketLimiter } from "@/lib/http/rate-limit";
+import { needsInviteStep, redeemCode } from "@/lib/invite/gate";
 
 // SEC-3a: per-user кулдаун на /start — каждый /start = sendMessage + запросы к
 // БД, циклом его дёргать нельзя. Burst 3 (легитимные double-tap), дальше 1 в
@@ -83,13 +84,27 @@ type DbUser = {
   phone_number: string | null;
   phone_verified: boolean;
   verification_status: string | null;
+  // Коды-приглашения (2026-08-11): нужны needsInviteStep, чтобы решить, нужен
+  // ли шаг bot_invite_code. Обязаны реально прийти из select() ниже - если
+  // колонки не перечислить явно, они придут undefined и needsInviteStep
+  // будет fail-closed отвечать "нужен" всем подряд (см. коммент у findByTg).
+  invite_redeemed_at: string | null;
+  invite_exempt: boolean;
 };
 
 // Шаги, на которых пользователь ещё ведётся ботом (мини-аппа недоступна —
 // bootstrap их гейтит). Используется /status и /app, чтобы не слать open-app
 // кнопку тому, кто не прошёл бот-flow.
+//
+// ⛔ Коды-приглашения: bot_invite_code ОБЯЗАН быть в этом множестве. Это
+// обычный Set<string>, компилятор его не проверяет по enum OnboardingStep -
+// забытый шаг здесь молча открывает обход шлагбаума: /app человеку, который
+// ещё не ввёл код, решит, что бот-часть пройдена, и пришлёт рабочую кнопку
+// мини-аппа (bootstrap ниже такой шаг тоже должен знать - см. BOT_OR_LEGACY_STEPS
+// в src/app/api/auth/bootstrap/route.ts, это ВТОРАЯ половина той же дыры).
 const BOT_STEPS = new Set<string>([
   "bot_language",
+  "bot_invite_code",
   "bot_contact",
   "bot_consent_pd",
   "bot_consent_biometric",
@@ -104,7 +119,7 @@ async function findByTg(tgId: number): Promise<DbUser | null> {
   const { data, error } = await sb
     .from("users")
     .select(
-      "id, telegram_id, language, lifecycle_state, onboarding_step, phone_number, phone_verified, verification_status",
+      "id, telegram_id, language, lifecycle_state, onboarding_step, phone_number, phone_verified, verification_status, invite_redeemed_at, invite_exempt",
     )
     .eq("telegram_id", tgId)
     .neq("lifecycle_state", "deleted")
@@ -178,7 +193,7 @@ async function createInitial(tg: TgUser): Promise<DbUser | null> {
       // дефолт onboarding_step — bot_language (см. миграцию 20260619100000)
     })
     .select(
-      "id, telegram_id, language, lifecycle_state, onboarding_step, phone_number, phone_verified, verification_status",
+      "id, telegram_id, language, lifecycle_state, onboarding_step, phone_number, phone_verified, verification_status, invite_redeemed_at, invite_exempt",
     )
     .single();
   if (error || !data) {
@@ -338,7 +353,7 @@ async function recordConsent(
 //  Высокоуровневые шаги — отправка вопроса/итога
 // =====================================================================
 
-async function promptStep(chatId: number, user: DbUser): Promise<void> {
+export async function promptStep(chatId: number, user: DbUser): Promise<void> {
   // lifecycle переопределяет шаг
   if (user.lifecycle_state === "blocked") {
     await sendMessage(chatId, pick(M.blocked_by_moderator, user.language));
@@ -356,6 +371,41 @@ async function promptStep(chatId: number, user: DbUser): Promise<void> {
     case "bot_language":
       await sendMessage(chatId, M.greeting, langKeyboard());
       return;
+    case "bot_invite_code": {
+      // Пересчитываем на КАЖДОМ входе, а не только один раз при выборе языка
+      // (см. ns==="lang" ниже). needsInviteStep смотрит на ЖИВЫЕ
+      // invite_redeemed_at/invite_exempt и живой флаг invite_gate и
+      // fail-closed отвечает "нужен" при любой неопределённости - значит
+      // пересчёт может только продвинуть человека ВПЕРЁД, когда шлагбаум и
+      // правда снят/человек и правда исключён/код и правда уже зачтён, и
+      // никогда не открывает дыру на неопределённости. Без этой проверки
+      // транзиентный сбой БД ровно в момент выбора языка навсегда запирал бы
+      // человека здесь: назад в bot_language пути в ALLOWED_TRANSITIONS нет,
+      // а единственный штатный выход отсюда - ввод кода (см. handleUpdate).
+      const stillNeedsCode = await needsInviteStep({
+        invite_redeemed_at: user.invite_redeemed_at,
+        invite_exempt: user.invite_exempt,
+      });
+      if (!stillNeedsCode) {
+        const r = await tryTransition(
+          user.id,
+          { onboarding_step: "bot_consent_pd" },
+          "bot:invite_gate_recheck",
+          { kind: "user", id: user.id },
+        );
+        if (r.ok) {
+          await sendLegalDocsAndConsentPrompt(chatId, user.language);
+          return;
+        }
+        // Гонка/конфликт перехода - падаем в обычный экран кода ниже, а не молчим.
+      }
+      await sendMessage(chatId, pick(M.invite_ask, user.language), {
+        inline_keyboard: [
+          [{ text: pick(M.invite_no_code_button, user.language), callback_data: "inv:help" }],
+        ],
+      });
+      return;
+    }
     case "bot_contact":
       await sendMessage(chatId, pick(M.contact_ask, user.language), contactKeyboard(user.language));
       return;
@@ -401,6 +451,22 @@ async function handleStart(msg: TgMessage): Promise<void> {
   if (!user) {
     await sendMessage(chatId, pick(M.error_generic, "ru"));
     return;
+  }
+  // t.me/baxtlilar_uz_bot?start=КОД - Telegram присылает "/start КОД".
+  // Аргумент /start до задачи про коды-приглашения ничем не был занят.
+  const payload = (msg.text ?? "").split(/\s+/)[1];
+  if (payload && !user.invite_redeemed_at) {
+    const res = await redeemCode(user.id, payload);
+    // Молча: если код плохой, человек просто увидит обычный экран ввода
+    // (promptStep/ветка "lang" сами решат, нужен ли ещё шаг кода).
+    if (res.ok) {
+      // ВАЖНО: redeemCode не возвращает обновлённую строку, а findByTg выше
+      // уже отдал СТАРЫЙ снимок (invite_redeemed_at: null). Если не обновить
+      // его здесь на месте, promptStep ниже (случай user уже стоит на
+      // bot_invite_code и повторно тычет свежую ссылку) увидит тот же
+      // устаревший null и переспросит код, который человек только что ввёл.
+      user.invite_redeemed_at = new Date().toISOString();
+    }
   }
   // Постоянная menu-кнопка на языке юзера (best-effort).
   await syncMenuButton(chatId, user.language);
@@ -567,10 +633,21 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
       const sb = supabaseAdmin();
       const { error } = await sb.from("users").update({ language: lang }).eq("id", user.id);
       if (error) throw new Error(error.message);
-      // V2 ext 2026-06-28 round 2: после языка → оферта (ДО передачи телефона).
+      // Коды-приглашения: следующий шаг зависит от шлагбаума и от того, не
+      // пришёл ли человек уже по ссылке (тогда код зачтён и шаг не нужен).
+      // Пересчитываем ЖИВЫМ вызовом needsInviteStep прямо здесь, а не читаем
+      // заранее сохранённое решение - состояние определяют данные текущей
+      // строки, а не история событий (см. докстринг needsInviteStep).
+      const needCode = await needsInviteStep({
+        invite_redeemed_at: user.invite_redeemed_at,
+        invite_exempt: user.invite_exempt,
+      });
+      const nextStep = needCode ? "bot_invite_code" : "bot_consent_pd";
+      // V2 ext 2026-06-28 round 2: после языка → оферта (ДО передачи телефона),
+      // если шлагбаум не требует код первым.
       const r = await tryTransition(
         user.id,
-        { onboarding_step: "bot_consent_pd", language: lang },
+        { onboarding_step: nextStep, language: lang },
         "bot:language_picked",
         { kind: "user", id: user.id },
       );
@@ -580,8 +657,22 @@ async function handleCallback(cb: TgCallbackQuery): Promise<void> {
       }
       await syncMenuButton(chatId, lang);
       await answerCallbackQuery(cb.id);
-      // V2 ext 2026-06-28: после языка → 4 PDF + сообщение оферты.
-      await sendLegalDocsAndConsentPrompt(chatId, lang);
+      if (needCode) {
+        await sendMessage(chatId, pick(M.invite_ask, lang), {
+          inline_keyboard: [
+            [{ text: pick(M.invite_no_code_button, lang), callback_data: "inv:help" }],
+          ],
+        });
+      } else {
+        // V2 ext 2026-06-28: после языка → 4 PDF + сообщение оферты.
+        await sendLegalDocsAndConsentPrompt(chatId, lang);
+      }
+      return;
+    }
+
+    if (ns === "inv" && val === "help") {
+      await answerCallbackQuery(cb.id);
+      await sendMessage(chatId, pick(M.invite_no_code_text, user.language));
       return;
     }
 
@@ -808,6 +899,32 @@ export async function handleUpdate(update: TgUpdate): Promise<void> {
     }
     // прочие сообщения игнорируем (или мягко промптим current step)
     const user = update.message.from ? await findByTg(update.message.from.id) : null;
+    // Коды-приглашения: на шаге bot_invite_code любой текст - это попытка
+    // ввести код, а не команда и не игнорируемый шум.
+    if (user && user.onboarding_step === "bot_invite_code" && update.message.text) {
+      const res = await redeemCode(user.id, update.message.text);
+      if (res.ok) {
+        await tryTransition(
+          user.id,
+          { onboarding_step: "bot_consent_pd" },
+          "bot:invite_redeemed",
+          { kind: "user", id: user.id },
+        );
+        await sendMessage(update.message.chat.id, pick(M.invite_accepted, user.language));
+        await sendLegalDocsAndConsentPrompt(update.message.chat.id, user.language);
+      } else {
+        // Разные тексты для "кода нет" и "код погашен" (Task 6): человеку с
+        // погашенным кодом советуем попросить новый, а не бесконечно
+        // проверять раскладку клавиатуры. "self" (попытка ввести свой же
+        // код) сюда штатно не долетает - у новичка на этом шаге своего
+        // активного кода ещё нет, - и намеренно схлопнут в тот же текст, что
+        // и not_found: отдельный текст на редкий/недостижимый кейс не стоит
+        // риска раскрыть постороннему, что где-то есть чей-то код.
+        const text = res.reason === "disabled" ? M.invite_disabled : M.invite_not_found;
+        await sendMessage(update.message.chat.id, pick(text, user.language));
+      }
+      return;
+    }
     if (user) await promptStep(update.message.chat.id, user);
     return;
   }

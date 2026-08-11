@@ -353,6 +353,61 @@ export const M = {
       `• <a href="${APP_URL}/legal/pd-consent.pdf">Consent to Personal Data Processing</a>\n\n` +
       "Your data is not shown to other users without your consent.",
   },
+
+  // === Коды-приглашения (2026-08-11): шаг bot_invite_code между языком и офертой ===
+  invite_ask: {
+    ru:
+      "Baxtlilar сейчас работает по приглашениям.\n\n" +
+      "Наш клуб пока закрытый: войти можно только по коду от человека, который уже здесь.\n" +
+      "Отправьте код сообщением - или откройте ссылку-приглашение, которую Вам прислали.",
+    uz:
+      "Baxtlilar hozircha taklif asosida ishlaydi.\n\n" +
+      "Klubimiz yopiq: faqat shu yerda boʻlgan insonning kodi bilan kirish mumkin.\n" +
+      "Kodni xabar qilib yuboring - yoki sizga yuborilgan taklif havolasini oching.",
+    tr:
+      "Baxtlilar şu anda davetle çalışıyor.\n\n" +
+      "Kulübümüz kapalı: yalnızca burada olan birinin koduyla girebilirsiniz.\n" +
+      "Kodu mesaj olarak gönderin - ya da size gönderilen davet bağlantısını açın.",
+    en:
+      "Baxtlilar is currently invite-only.\n\n" +
+      "Our club is closed for now: you can join only with a code from someone already here.\n" +
+      "Send the code as a message - or open the invitation link you were given.",
+  },
+  invite_accepted: {
+    ru: "Приглашение принято. Добро пожаловать в Baxtlilar.",
+    uz: "Taklif qabul qilindi. Baxtlilarga xush kelibsiz.",
+    tr: "Davet kabul edildi. Baxtlilar'a hoş geldiniz.",
+    en: "Invitation accepted. Welcome to Baxtlilar.",
+  },
+  invite_not_found: {
+    ru: "Такого кода нет. Проверьте раскладку и попробуйте снова - в коде только буквы и цифры.",
+    uz: "Bunday kod yoʻq. Klaviatura tilini tekshirib, qayta urinib koʻring - kodda faqat harf va raqamlar boʻladi.",
+    tr: "Böyle bir kod yok. Klavye düzenini kontrol edip tekrar deneyin - kodda yalnızca harf ve rakam var.",
+    en: "No such code. Check your keyboard layout and try again - the code has only letters and digits.",
+  },
+  invite_disabled: {
+    ru: "Этот код больше не действует. Попросите у пригласившего новый.",
+    uz: "Bu kod endi ishlamaydi. Taklif qilgan insondan yangisini soʻrang.",
+    tr: "Bu kod artık geçerli değil. Sizi davet edenden yenisini isteyin.",
+    en: "This code no longer works. Ask the person who invited you for a new one.",
+  },
+  invite_no_code_button: {
+    ru: "Нет кода?", uz: "Kod yoʻqmi?", tr: "Kodunuz yok mu?", en: "No code?",
+  },
+  invite_no_code_text: {
+    ru:
+      "Мы растём только через личные рекомендации - так безопаснее для всех, кто уже здесь.\n\n" +
+      "Если Вам некого попросить, напишите нам, и мы подскажем.",
+    uz:
+      "Biz faqat shaxsiy tavsiyalar orqali oʻsamiz - bu shu yerdagilar uchun xavfsizroq.\n\n" +
+      "Soʻraydigan odamingiz boʻlmasa, bizga yozing, yoʻl koʻrsatamiz.",
+    tr:
+      "Yalnızca kişisel tavsiyelerle büyüyoruz - bu, burada olan herkes için daha güvenli.\n\n" +
+      "İsteyeceğiniz kimse yoksa bize yazın, yardımcı olalım.",
+    en:
+      "We grow only through personal recommendations - it is safer for everyone already here.\n\n" +
+      "If you have no one to ask, write to us and we will help.",
+  },
 } as const;
 
 export type Lang = "ru" | "uz" | "tr" | "en";
