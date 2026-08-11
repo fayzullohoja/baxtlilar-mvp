@@ -16,7 +16,12 @@ export type CreateFeedbackInput = {
 };
 
 export type CreateFeedbackResult =
-  | { ok: true; id: string }
+  // deduplicated - процедура вернула СТАРУЮ запись (двойной тап, ретрай по
+  // таймауту, вторая вкладка), а не создала новую. screenshotStored - доехал ли
+  // до записи файл ИМЕННО этой отправки. Оба поля нужны вызывающему для
+  // действий, а не для отчёта: файл кладётся в бакет до вызова процедуры, и без
+  // них роут не знает, снести ли его и что сказать человеку про скриншот.
+  | { ok: true; id: string; deduplicated: boolean; screenshotStored: boolean }
   | { ok: false; error: "rate_limited" | "db_failed" };
 
 /**
@@ -47,5 +52,16 @@ export async function createFeedback(input: CreateFeedbackInput): Promise<Create
   if (!row) return { ok: false, error: "db_failed" };
   if (row.limited) return { ok: false, error: "rate_limited" };
   if (!row.feedback_id) return { ok: false, error: "db_failed" };
-  return { ok: true, id: String(row.feedback_id) };
+  return {
+    ok: true,
+    id: String(row.feedback_id),
+    deduplicated: row.deduplicated === true,
+    // Своего файла в отправке не было - сохранять и сносить нечего.
+    // А вот отсутствие самого столбца (в базе ещё старая версия процедуры -
+    // окно выката) читаем как "сохранён": из двух ошибок эта обратимая.
+    // Осиротевший файл подметёт removeUserFeedbackScreenshots обходом папки,
+    // а снесённый файл, на который ссылается запись, не вернуть ничем -
+    // модератор увидит битую картинку вместо доказательства поломки.
+    screenshotStored: input.screenshotPath !== null && row.screenshot_stored !== false,
+  };
 }
