@@ -705,7 +705,7 @@
     "thanks_title": "Thank you",
     "thanks_body": "We will read your feedback. If we need details, we will write to you on Telegram.",
     "thanks_back": "Back to profile",
-    "err_rate_limited": "You have already left three messages today. Let us continue tomorrow.",
+    "err_rate_limited": "You have already left three messages in the last 24 hours. Please try again later.",
     "err_too_large": "The file is over 5 MB. Please send a smaller screenshot.",
     "err_bad_type": "This file does not fit. A JPG, PNG or WEBP screenshot will work.",
     "err_generic": "Could not send. Please try again - what you wrote is still here.",

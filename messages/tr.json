@@ -705,7 +705,7 @@
     "thanks_title": "Teşekkürler",
     "thanks_body": "Geri bildiriminizi okuyacağız. Ayrıntı gerekirse Telegram'dan yazarız.",
     "thanks_back": "Profile dön",
-    "err_rate_limited": "Bugün zaten üç geri bildirim bıraktınız. Yarın devam edelim.",
+    "err_rate_limited": "Son 24 saat içinde zaten üç geri bildirim bıraktınız. Lütfen daha sonra tekrar deneyin.",
     "err_too_large": "Dosya 5 MB'tan büyük. Daha küçük bir ekran görüntüsü gönderin.",
     "err_bad_type": "Bu dosya uygun değil. JPG, PNG veya WEBP ekran görüntüsü olur.",
     "err_generic": "Gönderilemedi. Lütfen tekrar deneyin - yazdıklarınız duruyor.",

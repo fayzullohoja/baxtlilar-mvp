@@ -705,7 +705,7 @@
     "thanks_title": "Rahmat",
     "thanks_body": "Fikringizni oʻqib chiqamiz. Aniqlashtirish kerak boʻlsa, Telegramda yozamiz.",
     "thanks_back": "Profilga qaytish",
-    "err_rate_limited": "Bugun Siz uchta fikr qoldirdingiz. Ertaga davom etamiz.",
+    "err_rate_limited": "Siz so'nggi 24 soat ichida uchta fikr qoldirdingiz. Keyinroq urinib ko'ring.",
     "err_too_large": "Fayl 5 MB dan katta. Kichikroq skrinshot yuboring.",
     "err_bad_type": "Bu fayl toʻgʻri kelmadi. JPG, PNG yoki WEBP skrinshot yuboring.",
     "err_generic": "Yuborib boʻlmadi. Yana urinib koʻring - yozganingiz saqlanib qoldi.",
