@@ -113,6 +113,39 @@ describe("RPC shape — set-returning функции читаются как М�
     expect(Array.isArray(data)).toBe(true);
   });
 
+  it("create_feedback: {feedback_id,limited} массивом - иначе роут отвечает 500 на сохранённый отзыв", async () => {
+    const u = await seedUser();
+    const { data, error } = await sb.rpc("create_feedback", {
+      p_user_id: u,
+      p_rating: 5,
+      p_body: "всё понятно, спасибо",
+      p_screenshot_path: null,
+      p_locale: "ru",
+    });
+    expect(error).toBeNull();
+    expect(Array.isArray(data)).toBe(true); // ← при баге здесь была строка "(uuid,f)"
+    const row = (Array.isArray(data) ? data[0] : data) as { feedback_id?: string; limited?: boolean };
+    expect(row.feedback_id).toBeTruthy(); // ← при баге undefined → db_failed → 500
+    expect(row.limited).toBe(false);
+  });
+
+  it("create_feedback сверх суточного лимита: limited=true читается, а не превращается в 500", async () => {
+    const u = await seedUser();
+    // Тексты разные - иначе сработает дедуп двойного тапа (минутное окно).
+    for (const body of ["раз", "два", "три"]) {
+      const { data } = await sb.rpc("create_feedback", {
+        p_user_id: u, p_rating: 4, p_body: body, p_screenshot_path: null, p_locale: "ru",
+      });
+      expect((data as Array<{ limited: boolean }>)[0].limited).toBe(false);
+    }
+    const { data } = await sb.rpc("create_feedback", {
+      p_user_id: u, p_rating: 4, p_body: "четыре", p_screenshot_path: null, p_locale: "ru",
+    });
+    const row = (data as Array<{ feedback_id: string | null; limited: boolean }>)[0];
+    expect(row.limited).toBe(true); // человек должен увидеть текст про лимит, а не ошибку
+    expect(row.feedback_id).toBeNull();
+  });
+
   it("get_recommendations / get_chat_list: массивы", async () => {
     const u = await seedUser();
     const rec = await sb.rpc("get_recommendations", { p_viewer: u, p_limit: 5, p_relax_level: 0 });

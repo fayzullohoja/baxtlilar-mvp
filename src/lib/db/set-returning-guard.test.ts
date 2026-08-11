@@ -16,7 +16,10 @@ const SRC_DIR = join(process.cwd(), "src");
 function setReturningFromMigrations(): Map<string, boolean> {
   const map = new Map<string, boolean>();
   const files = readdirSync(MIG_DIR).filter((f) => f.endsWith(".sql")).sort();
-  const defRe = /create\s+(?:or\s+replace\s+)?function\s+(\w+)\s*\(/gi;
+  // Схема в объявлении необязательна и на имя функции не влияет, но парсер её
+  // не знал - и любое `create function public.foo(` проходило мимо гейта
+  // целиком. Гейт, слепой к части определений, ловит половину баг-класса.
+  const defRe = /create\s+(?:or\s+replace\s+)?function\s+(?:\w+\.)?(\w+)\s*\(/gi;
   for (const f of files) {
     const sql = readFileSync(join(MIG_DIR, f), "utf8");
     let m: RegExpExecArray | null;
@@ -62,6 +65,11 @@ describe("SET_RETURNING guard — набор RPC совпадает с returns t
     expect(setReturning.get("get_recommendations")).toBe(true);
     expect(setReturning.get("accept_interest")).toBe(true);
     expect(setReturning.get("enqueue_tg_outbox")).toBe(false); // returns uuid (скаляр)
+    // create_feedback объявлялась схемо-квалифицированно (public.create_feedback)
+    // и потому была НЕВИДИМА гейту: парсер не находил её вовсе, а проверка
+    // «вызванная set-функция зарегистрирована» молча пропускает то, чего нет в
+    // карте. Гейт, слепой к части функций, ловит не баг-класс, а его половину.
+    expect(setReturning.get("create_feedback")).toBe(true);
   });
 
   it("каждая ВЫЗВАННАЯ .rpc set-функция зарегистрирована в SET_RETURNING", () => {

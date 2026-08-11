@@ -32,8 +32,28 @@ create index if not exists feedback_user_created_idx on public.feedback (user_id
  * Возвращает limited = true вместо ошибки, потому что превышение лимита -
  * ожидаемое состояние, а не сбой: роуту надо ответить человеку понятным
  * текстом, а не пятисоткой.
+ *
+ * security INVOKER, а не definer: функция не делает ничего, ради чего берут
+ * права владельца - не отключает триггеров и не пишет в чужие схемы. С definer
+ * она раздавала запись в public.feedback любому, кто может подключиться к базе:
+ * рядом с приложением живёт роль только-на-чтение grafana_ro (витрины
+ * analytics.* ходят в ту же базу), и ей прямой insert отбивался, а вызов
+ * функции проходил - ровно мимо решения "тексты отзывов ей не показываем".
+ *
+ * pg_temp в search_path назван ЯВНО и последним. Если его не назвать, Postgres
+ * ищет временную схему ПЕРВОЙ, и неквалифицированное имя feedback в теле
+ * подменяется временной таблицей вызывающего: отзыв уходит в никуда, суточный
+ * лимит обнуляется, а на definer тем же приёмом выполняется чужой код с правами
+ * владельца. Та же пара граблей уже разбиралась у claim_export_window
+ * (20260620920000) и admin_hard_delete_user (20260704060000).
+ *
+ * Имя объявлено БЕЗ схемы намеренно: гейт src/lib/db/set-returning-guard.test.ts
+ * ищет определения функций по неквалифицированному имени, и схемо-квалифицированное
+ * объявление делает set-returning функцию невидимой для него - а это ровно тот
+ * класс бага (C-026/C-032), ради которого гейт написан. search_path у функции
+ * зафиксирован строкой ниже, так что схема от префикса не зависит.
  */
-create or replace function public.create_feedback(
+create or replace function create_feedback(
   p_user_id uuid,
   p_rating int,
   p_body text,
@@ -41,8 +61,8 @@ create or replace function public.create_feedback(
   p_locale text
 ) returns table (feedback_id uuid, limited boolean)
 language plpgsql
-security definer
-set search_path = public
+security invoker
+set search_path = public, pg_temp
 as $$
 declare
   v_body text := nullif(btrim(coalesce(p_body, '')), '');
@@ -85,3 +105,10 @@ begin
   return query select v_id, false;
 end;
 $$;
+
+-- Пустой список прав у функции - это НЕ "никому не выдано", а дефолт "EXECUTE
+-- есть у всех", поэтому право отзываем явно (тот же приём, что у
+-- claim_export_window в 20260620900000). Одного security invoker хватило бы -
+-- запись отбилась бы уже на правах таблицы - но вторая линия здесь дешёвая:
+-- если функцию когда-нибудь снова сделают definer, дыра не откроется молча.
+revoke all on function create_feedback(uuid, int, text, text, text) from public;

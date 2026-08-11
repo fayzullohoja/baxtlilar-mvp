@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin/guard";
 import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { BUCKET_DOCUMENTS, BUCKET_PHOTOS } from "@/lib/uploads/storage";
+import { BUCKET_DOCUMENTS, BUCKET_FEEDBACK, BUCKET_PHOTOS } from "@/lib/uploads/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,11 +41,14 @@ export async function POST(
   if (!r.ok)
     return NextResponse.json(r, { status: r.error === "not_found" ? 404 : 400 });
 
-  // best-effort: пробуем удалить файлы из обоих приватных бакетов (неверный
-  // бакет — no-op/ошибка, глушим). БД уже удалена — файлы иначе осиротеют.
+  // best-effort: пробуем удалить файлы из всех приватных бакетов (неверный
+  // бакет - no-op/ошибка, глушим). БД уже удалена - файлы иначе осиротеют.
+  // BUCKET_FEEDBACK здесь обязателен: RPC отдаёт в storage_paths и скриншот
+  // отзыва, а строка с этим путём уже удалена каскадом - второго шанса найти
+  // файл не будет.
   const paths = r.storage_paths ?? [];
   if (paths.length) {
-    for (const bucket of [BUCKET_PHOTOS, BUCKET_DOCUMENTS]) {
+    for (const bucket of [BUCKET_PHOTOS, BUCKET_DOCUMENTS, BUCKET_FEEDBACK]) {
       try {
         await sb.storage.from(bucket).remove(paths);
       } catch (e) {
