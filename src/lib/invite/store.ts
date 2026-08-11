@@ -10,6 +10,21 @@ export type InviteCodeRow = {
 };
 
 /**
+ * Персональный запрет приглашать (Task 10). Бросается из ensureCodeForUser,
+ * когда человеку закрыт выпуск НОВОГО кода (users.invite_revoked_at заполнен) -
+ * см. развёрнутый комментарий там же и в миграции 20260811150000. Отдельный
+ * класс (по образцу TransitionError/PermissionDeniedError в проекте), чтобы
+ * вызывающая сторона (GET /api/invite) могла отличить осознанный отказ от
+ * обычного сбоя БД через instanceof, а не парсить текст сообщения.
+ */
+export class InviteRevokedError extends Error {
+  constructor() {
+    super("invite_revoked");
+    this.name = "InviteRevokedError";
+  }
+}
+
+/**
  * Найти ДЕЙСТВУЮЩИЙ код по пользовательскому вводу.
  *
  * Достаём код через extractInviteCode (не normalizeInviteCode): люди пересылают
@@ -77,6 +92,27 @@ export async function ensureCodeForUser(userId: string): Promise<string> {
   if (lookupError) throw new Error(`не удалось проверить код приглашения: ${lookupError.message}`);
   if (data) return (data as { code: string }).code;
 
+  // ⛔ Task 10 (ревью Task 8): без этой проверки гашение "утечка" САМО СЕБЯ
+  // ОТМЕНЯЕТ. Сценарий: оператор гасит СТРОКУ кода за утечку в /admin/invites
+  // (disableCodesOfUser ниже) - человек остаётся подтверждённым и активным,
+  // гашение строки его статус не меняет. Он открывает экран «Пригласить» ->
+  // сюда, лукап выше ничего не находит (погашенный не считается активным) ->
+  // без проверки ниже мы бы создали ему НОВЫЙ активный код: частичный индекс
+  // invite_codes_one_active_per_owner разрешает "один погашенный + один новый
+  // активный" на owner_id. Итог без проверки: мертва СТРОКА, но не мертво
+  // ПРАВО. Запрет живёт на ЧЕЛОВЕКЕ (users.invite_revoked_at), отдельно от
+  // строки кода - его ставит disableCodesOfUser (кроме бана - см. комментарий
+  // там) и снимает только restoreInviteRight, явным действием оператора.
+  const { data: person, error: personError } = await sb
+    .from("users")
+    .select("invite_revoked_at")
+    .eq("id", userId)
+    .maybeSingle();
+  if (personError) throw new Error(`не удалось проверить право приглашать: ${personError.message}`);
+  if ((person as { invite_revoked_at: string | null } | null)?.invite_revoked_at) {
+    throw new InviteRevokedError();
+  }
+
   // Коллизия кода почти невероятна (31^6), но индекс её поймает - пробуем трижды.
   for (let attempt = 0; attempt < 3; attempt++) {
     const code = generateInviteCode();
@@ -109,7 +145,8 @@ export async function ensureCodeForUser(userId: string): Promise<string> {
 
 /** Погасить все активные коды пользователя (бан, утечка, ручное действие). */
 export async function disableCodesOfUser(userId: string, reason: string): Promise<void> {
-  const { error } = await supabaseAdmin()
+  const sb = supabaseAdmin();
+  const { error } = await sb
     .from("invite_codes")
     .update({ disabled_at: new Date().toISOString(), disabled_reason: reason })
     .eq("owner_id", userId)
@@ -119,6 +156,67 @@ export async function disableCodesOfUser(userId: string, reason: string): Promis
   // оператор в это время видит "готово". Бросаем, чтобы вызывающий роут вернул
   // честную ошибку вместо ложного успеха.
   if (error) throw new Error(`не удалось погасить коды пользователя: ${error.message}`);
+
+  // ⛔ Task 10: ключевая часть исправления самоотмены - см. развёрнутый
+  // комментарий в ensureCodeForUser. Гасим ЛЮБУЮ причину, КРОМЕ бана:
+  //   - reason==="ban" ЭТОТ шаг не нужен - забаненный физически не доходит до
+  //     экрана «Пригласить» (requireActiveUser/loadActiveUserApi режут по
+  //     lifecycle_state='blocked' раньше ensureCodeForUser), а на unban уже
+  //     есть симметричная пара reviveBanDisabledCodes (Task 8) - трогать здесь
+  //     users.invite_revoked_at для бана значило бы держать ДВЕ независимые
+  //     колонки в ручной синхронизации (эта + lifecycle_state) без выигрыша;
+  //   - любая ДРУГАЯ причина (утечка и т.п.) человека НЕ блокирует - он
+  //     остаётся активным и подтверждённым, поэтому без явного персонального
+  //     запрета он выпустил бы себе новый код при следующем заходе на экран.
+  // Оставлено намеренно, не по недосмотру - см. store.test.ts.
+  if (reason !== "ban") {
+    const { error: revokeError } = await sb
+      .from("users")
+      .update({ invite_revoked_at: new Date().toISOString() })
+      .eq("id", userId);
+    // Тот же принцип "бросаем, а не молчим" - иначе оператор нажал «Погасить»,
+    // строка кода умерла, но право приглашать тихо осталось, и следующий заход
+    // человека на «Пригласить» выпустит ему новый код - та самая дыра.
+    if (revokeError) throw new Error(`не удалось закрыть право приглашать: ${revokeError.message}`);
+  }
+}
+
+/**
+ * Снять персональный запрет приглашать, поставленный НЕ баном (утечка кода и
+ * т.п. - см. disableCodesOfUser). Явное действие оператора из /admin/invites.
+ *
+ * В отличие от reviveBanDisabledCodes старую погашенную СТРОКУ кода намеренно
+ * НЕ оживляем: она погашена по причине, связанной именно с этим кодом
+ * (например скомпрометирована), а не со статусом человека - оживший
+ * скомпрометированный код был бы новой утечкой на пустом месте. Следующий
+ * заход человека на экран «Пригласить» сам выпустит через ensureCodeForUser
+ * СВЕЖИЙ код - ровно тот механизм самолечения, который эта задача учит не
+ * запускать преждевременно.
+ */
+export async function restoreInviteRight(userId: string): Promise<void> {
+  const { error } = await supabaseAdmin()
+    .from("users")
+    .update({ invite_revoked_at: null })
+    .eq("id", userId);
+  if (error) throw new Error(`не удалось снять запрет приглашать: ${error.message}`);
+}
+
+/**
+ * Мастер-код (owner_id = null - оффлайн-встречи, см. комментарий на таблице в
+ * миграции 20260811120000). У мастер-кодов нет ограничения "один активный на
+ * владельца" - частичный индекс invite_codes_one_active_per_owner фильтрует
+ * owner_id IS NOT NULL, поэтому несколько мастер-кодов могут жить одновременно.
+ * `label` обязателен НА УРОВНЕ ВЫЗЫВАЮЩЕГО РОУТА (форма в /admin/invites
+ * требует подпись "зачем он") - здесь только сам выпуск.
+ */
+export async function createMasterCode(label: string): Promise<string> {
+  const sb = supabaseAdmin();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const code = generateInviteCode();
+    const { error } = await sb.from("invite_codes").insert({ code, owner_id: null, label });
+    if (!error) return code;
+  }
+  throw new Error("не удалось выпустить мастер-код");
 }
 
 /** Оживить коды, погашенные ИМЕННО из-за бана (разбан). Погашенные за утечку не трогаем. */

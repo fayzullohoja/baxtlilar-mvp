@@ -25,6 +25,7 @@ const MODERATOR_FORBIDDEN: Permission[] = [
   "audit.viewAll",
   "staff.manage",
   "settings.edit",
+  "invites.manage", // ← Task 10: гашение чужого кода + выпуск мастер-кода - super-only
 ];
 
 describe("RBAC capability matrix", () => {
@@ -71,5 +72,10 @@ describe("RBAC capability matrix", () => {
     expect(can("moderator", "clients.directory")).toBe(false);
     expect(can("superadmin", "users.sanction")).toBe(true);
     expect(can("superadmin", "clients.directory")).toBe(true);
+  });
+
+  it("раздел «Приглашения» (invites.manage) - ТОЛЬКО super (Task 10)", () => {
+    expect(can("moderator", "invites.manage")).toBe(false);
+    expect(can("superadmin", "invites.manage")).toBe(true);
   });
 });

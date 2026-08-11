@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { loadActiveUserApi } from "@/lib/auth/active-guard";
-import { ensureCodeForUser, countInvitedBy } from "@/lib/invite/store";
+import { ensureCodeForUser, countInvitedBy, InviteRevokedError } from "@/lib/invite/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,6 +37,16 @@ export async function GET(): Promise<NextResponse> {
     const [code, invited] = await Promise.all([ensureCodeForUser(user.id), countInvitedBy(user.id)]);
     return NextResponse.json({ ok: true, code, invited });
   } catch (e) {
+    // ⛔ Task 10: персональный запрет (гашение "утечка" в /admin/invites и
+    // т.п.) - ОСОЗНАННОЕ состояние, а не сбой БД. Отличаем через instanceof
+    // (см. InviteRevokedError в store.ts), чтобы в логах не путать "запрещено"
+    // со "легла база", и отвечаем отдельным кодом ошибки вместо "db".
+    // V2InviteScreen (Task 9) всё равно ловит любой error !== "not_verified"
+    // в общий экран с кнопкой "Повторить" - это поверхность Task 9, её здесь
+    // не трогаем, так что смена текста ошибки не меняет поведение мини-аппа.
+    if (e instanceof InviteRevokedError) {
+      return NextResponse.json({ ok: false, error: "invite_revoked" }, { status: 403 });
+    }
     console.error("[invite] не удалось получить код/счётчик приглашений:", e);
     return NextResponse.json({ ok: false, error: "db" }, { status: 500 });
   }

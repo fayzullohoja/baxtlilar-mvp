@@ -14,13 +14,25 @@ const { loadActiveUserApiMock, ensureCodeForUserMock, countInvitedByMock } = vi.
   countInvitedByMock: vi.fn(async () => 0),
 }));
 
+// InviteRevokedError - настоящий класс внутри фабрики мока (Task 10): роут
+// делает `e instanceof InviteRevokedError`, и оба импорта ("@/lib/invite/store"
+// здесь и в route.ts) резолвятся в ОДИН И ТОТ ЖЕ мокнутый модуль, поэтому
+// ссылка на класс совпадает. Без этого экспорта `instanceof undefined` в
+// роуте бросал бы TypeError на любой ветке, а не только на revoked-кейсе.
 vi.mock("@/lib/auth/active-guard", () => ({ loadActiveUserApi: loadActiveUserApiMock }));
 vi.mock("@/lib/invite/store", () => ({
   ensureCodeForUser: ensureCodeForUserMock,
   countInvitedBy: countInvitedByMock,
+  InviteRevokedError: class InviteRevokedError extends Error {
+    constructor() {
+      super("invite_revoked");
+      this.name = "InviteRevokedError";
+    }
+  },
 }));
 
 import { GET } from "./route";
+import { InviteRevokedError } from "@/lib/invite/store";
 
 function fakeUser(overrides: Partial<DbUser> = {}): DbUser {
   return {
@@ -105,6 +117,22 @@ describe("GET /api/invite (Task 8)", () => {
     expect(body.ok).toBe(false);
     expect(typeof body.error).toBe("string");
     expect(errSpy).toHaveBeenCalled();
+
+    errSpy.mockRestore();
+  });
+
+  it("Task 10: персональный запрет (InviteRevokedError) - 403 invite_revoked, НЕ 500 'db' (это не сбой БД)", async () => {
+    loadActiveUserApiMock.mockResolvedValue({ user: fakeUser() });
+    ensureCodeForUserMock.mockRejectedValue(new InviteRevokedError());
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await GET();
+    const body = (await res.json()) as { ok: boolean; error: string };
+
+    expect(res.status).toBe(403);
+    expect(body).toEqual({ ok: false, error: "invite_revoked" });
+    // Это осознанный отказ, а не сбой БД - НЕ должен шуметь в логах как "db".
+    expect(errSpy).not.toHaveBeenCalled();
 
     errSpy.mockRestore();
   });

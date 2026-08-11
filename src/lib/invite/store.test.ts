@@ -93,6 +93,9 @@ import {
   disableCodesOfUser,
   reviveBanDisabledCodes,
   countInvitedBy,
+  restoreInviteRight,
+  createMasterCode,
+  InviteRevokedError,
 } from "./store";
 
 beforeEach(() => {
@@ -194,6 +197,7 @@ describe("ensureCodeForUser", () => {
 
   it("кода нет - создаёт новый и отдаёт его", async () => {
     selectQueue.push({ data: null, error: null }); // начальная проверка - кода нет
+    selectQueue.push({ data: { invite_revoked_at: null }, error: null }); // Task 10: проверка персонального запрета - не стоит
     insertQueue.push({ error: null }); // insert проходит с первой попытки
     const code = await ensureCodeForUser("u1");
     expect(code).toMatch(/^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$/);
@@ -203,6 +207,7 @@ describe("ensureCodeForUser", () => {
 
   it("гонка: insert бьётся об invite_codes_one_active_per_owner, но код уже есть - отдаёт его, не жжёт попытки", async () => {
     selectQueue.push({ data: null, error: null }); // начальная проверка - кода ещё нет
+    selectQueue.push({ data: { invite_revoked_at: null }, error: null }); // Task 10: запрета нет
     insertQueue.push({
       error: { message: 'duplicate key value violates unique constraint "invite_codes_one_active_per_owner"' },
     });
@@ -220,6 +225,7 @@ describe("ensureCodeForUser", () => {
 
   it("после 3 неудачных попыток (коллизия кода, не гонка по владельцу) - бросает", async () => {
     selectQueue.push({ data: null, error: null }); // начальная проверка
+    selectQueue.push({ data: { invite_revoked_at: null }, error: null }); // Task 10: запрета нет
     for (let i = 0; i < 3; i++) {
       insertQueue.push({ error: { message: 'duplicate key value violates unique constraint "invite_codes_code_key"' } });
       selectQueue.push({ data: null, error: null }); // перечитка ничего не находит - это не гонка по владельцу
@@ -233,11 +239,38 @@ describe("ensureCodeForUser", () => {
     await expect(ensureCodeForUser("u1")).rejects.toThrow(/не удалось проверить код приглашения/);
     expect(insertedRows).toHaveLength(0); // не пытались вслепую вставлять при непроверенном состоянии
   });
+
+  // ⛔ Task 10 (находка ревью Task 8): гашение "утечка" не должно САМО СЕБЯ
+  // ОТМЕНЯТЬ. Без проверки ниже человек без активного кода, но с
+  // users.invite_revoked_at заполненным, получил бы новый код на следующем
+  // же заходе - именно это и ломало гашение до этой задачи.
+  it("активного кода нет, но персональный запрет стоит - бросает InviteRevokedError, insert НЕ зовёт", async () => {
+    selectQueue.push({ data: null, error: null }); // начальная проверка - активного кода нет (погашен)
+    selectQueue.push({ data: { invite_revoked_at: "2026-08-11T09:00:00.000Z" }, error: null }); // запрет стоит
+    await expect(ensureCodeForUser("u1")).rejects.toBeInstanceOf(InviteRevokedError);
+    expect(insertedRows).toHaveLength(0);
+  });
+
+  it("проверка запрета фильтрует по id ЧЕЛОВЕКА (не по owner_id кода)", async () => {
+    selectQueue.push({ data: null, error: null });
+    selectQueue.push({ data: { invite_revoked_at: null }, error: null });
+    insertQueue.push({ error: null });
+    await ensureCodeForUser("u7");
+    expect(eqCalls).toContainEqual(["id", "u7"]);
+  });
+
+  it("сбой проверки персонального запрета - бросает СРАЗУ, insert не зовёт", async () => {
+    selectQueue.push({ data: null, error: null }); // начальная проверка кода - ок
+    selectQueue.push({ data: null, error: { message: "connection refused" } }); // сбой проверки запрета
+    await expect(ensureCodeForUser("u1")).rejects.toThrow(/не удалось проверить право приглашать/);
+    expect(insertedRows).toHaveLength(0);
+  });
 });
 
 describe("disableCodesOfUser", () => {
   it("гасит активные коды пользователя с указанной причиной", async () => {
-    updateQueue.push({ error: null });
+    updateQueue.push({ error: null }); // invite_codes.disabled_at
+    updateQueue.push({ error: null }); // Task 10: users.invite_revoked_at (reason !== "ban")
     await disableCodesOfUser("u1", "leak");
     expect(updatedRows[0]).toMatchObject({ disabled_reason: "leak" });
     expect(typeof updatedRows[0]?.disabled_at).toBe("string"); // timestamp проставлен
@@ -245,9 +278,94 @@ describe("disableCodesOfUser", () => {
     expect(isCalls).toContainEqual(["disabled_at", null]); // гасим только ещё активные
   });
 
-  it("сбой БД - бросает, а не молча делает вид, что погасили (критично: код остался бы активным)", async () => {
+  // ⛔ Task 10: это и есть исправление самоотмены гашения - без второй update-
+  // строки на users человек оставался бы вправе получить новый код (см.
+  // ensureCodeForUser выше и "полную цепочку" ниже).
+  it("Task 10: reason НЕ 'ban' - тем же вызовом закрывает персональное право приглашать (users.invite_revoked_at)", async () => {
+    updateQueue.push({ error: null });
+    updateQueue.push({ error: null });
+    await disableCodesOfUser("u1", "leak");
+    expect(updatedRows).toHaveLength(2);
+    expect(updatedRows[1]).toEqual({ invite_revoked_at: expect.any(String) });
+    expect(eqCalls).toContainEqual(["id", "u1"]); // вторая update-строка фильтрует по users.id
+  });
+
+  it("Task 10: reason 'ban' - персональное право НЕ трогает (у бана своя симметричная пара reviveBanDisabledCodes)", async () => {
+    updateQueue.push({ error: null }); // только invite_codes
+    await disableCodesOfUser("u1", "ban");
+    expect(updatedRows).toHaveLength(1); // ни одного update на users
+  });
+
+  it("сбой БД при гашении строки - бросает, а не молча делает вид, что погасили (критично: код остался бы активным)", async () => {
     updateQueue.push({ error: { message: "connection refused" } });
     await expect(disableCodesOfUser("u1", "leak")).rejects.toThrow(/не удалось погасить/);
+    expect(updatedRows).toHaveLength(1); // до персонального запрета не дошли
+  });
+
+  it("Task 10: строка кода погашена, но закрыть персональное право не удалось - бросает (иначе та самая дыра)", async () => {
+    updateQueue.push({ error: null }); // invite_codes - успех
+    updateQueue.push({ error: { message: "connection refused" } }); // users - сбой
+    await expect(disableCodesOfUser("u1", "leak")).rejects.toThrow(/не удалось закрыть право приглашать/);
+  });
+});
+
+describe("restoreInviteRight (Task 10)", () => {
+  it("снимает персональный запрет приглашать", async () => {
+    updateQueue.push({ error: null });
+    await restoreInviteRight("u1");
+    expect(updatedRows[0]).toEqual({ invite_revoked_at: null });
+    expect(eqCalls).toContainEqual(["id", "u1"]);
+  });
+
+  it("сбой БД - бросает (иначе оператор жмёт «Восстановить», а право тихо остаётся закрытым)", async () => {
+    updateQueue.push({ error: { message: "connection refused" } });
+    await expect(restoreInviteRight("u1")).rejects.toThrow(/не удалось снять запрет/);
+  });
+});
+
+describe("createMasterCode (Task 10)", () => {
+  it("создаёт код без владельца с переданной подписью", async () => {
+    insertQueue.push({ error: null });
+    const code = await createMasterCode("Встреча в Ташкенте 2026-08-20");
+    expect(code).toMatch(/^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$/);
+    expect(insertedRows).toHaveLength(1);
+    expect(insertedRows[0]).toMatchObject({ owner_id: null, label: "Встреча в Ташкенте 2026-08-20" });
+  });
+
+  it("коллизия кода трижды - бросает", async () => {
+    for (let i = 0; i < 3; i++) {
+      insertQueue.push({ error: { message: 'duplicate key value violates unique constraint "invite_codes_code_key"' } });
+    }
+    await expect(createMasterCode("test")).rejects.toThrow(/не удалось выпустить мастер-код/);
+    expect(insertedRows).toHaveLength(3);
+  });
+});
+
+// ⛔ Полная цепочка, явно требуемая ревью Task 8→10: погасили за утечку ->
+// человек открывает «Пригласить» -> нового кода НЕ появляется. Отдельные
+// describe-блоки выше уже проверяют каждую половину по отдельности - здесь
+// они соединены в одном тесте, значение invite_revoked_at, ЗАПИСАННОЕ шагом
+// disableCodesOfUser, дословно передаётся в шаг ensureCodeForUser (а не
+// берётся с потолка), так что тест реально проверяет СТЫК двух функций, а не
+// просто два независимых поведения по отдельности.
+describe("самоотмена гашения за утечку - полная цепочка (Task 10)", () => {
+  it("disableCodesOfUser('leak') закрывает право, и следующий ensureCodeForUser НЕ выпускает новый код", async () => {
+    // Шаг 1: оператор гасит код за утечку из /admin/invites.
+    updateQueue.push({ error: null }); // invite_codes.disabled_at
+    updateQueue.push({ error: null }); // users.invite_revoked_at
+    await disableCodesOfUser("u1", "leak");
+    const revokedAt = updatedRows[1]?.invite_revoked_at;
+    expect(typeof revokedAt).toBe("string"); // запрет реально записан, не пропущен
+
+    // Шаг 2: человек (по-прежнему подтверждён и активен - гашение СТРОКИ его
+    // статус не меняет) открывает экран «Пригласить». В реальной БД лукап
+    // активного кода ничего не найдёт (строка погашена шагом 1), а
+    // users.invite_revoked_at вернёт ИМЕННО то значение, что записал шаг 1.
+    selectQueue.push({ data: null, error: null });
+    selectQueue.push({ data: { invite_revoked_at: revokedAt }, error: null });
+
+    await expect(ensureCodeForUser("u1")).rejects.toBeInstanceOf(InviteRevokedError);
+    expect(insertedRows).toHaveLength(0); // ГЛАВНАЯ проверка: новый код НЕ создан
   });
 });
 
