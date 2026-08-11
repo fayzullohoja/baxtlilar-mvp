@@ -660,7 +660,26 @@
     "actions_cancel": "Cancel",
     "profileFallback": "Profile",
     "statusLabel": "Status",
-    "versionInfo": "Version V2 · Baxtlilar"
+    "versionInfo": "Version V2 · Baxtlilar",
+    "invite_title": "Invite",
+    "invite_desc": "Your code and invite link"
+  },
+  "Invite": {
+    "title": "Invite",
+    "subtitle": "Baxtlilar is a closed club. Only invite people you trust — they'll join through your recommendation.",
+    "code_label": "Your code",
+    "copy_link": "Copy link",
+    "copied": "Copied",
+    "share": "Share on Telegram",
+    "share_text": "I'm inviting you to Baxtlilar — join with my code:",
+    "joined_count": "People who joined with your code: {n}",
+    "back": "Back",
+    "loading": "Loading your code…",
+    "not_verified_title": "Your code will appear after verification",
+    "not_verified": "Only people who passed document verification can invite others. Once your profile is approved, your code will appear here.",
+    "error_title": "Couldn't load this",
+    "error_body": "Check your connection and try again.",
+    "retry": "Try again"
   },
   "Blocked": {
     "title": "Access restricted",

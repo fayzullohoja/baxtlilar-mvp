@@ -660,7 +660,26 @@
     "actions_cancel": "Bekor qilish",
     "profileFallback": "Profil",
     "statusLabel": "Holat",
-    "versionInfo": "Versiya V2 · Baxtlilar"
+    "versionInfo": "Versiya V2 · Baxtlilar",
+    "invite_title": "Taklif qilish",
+    "invite_desc": "Kodingiz va taklif havolasi"
+  },
+  "Invite": {
+    "title": "Taklif qilish",
+    "subtitle": "Baxtlilar — yopiq klub. Faqat ishonadigan odamlarni taklif qiling: ular Sizning tavsiyangiz orqali qoʻshiladi.",
+    "code_label": "Kodingiz",
+    "copy_link": "Havolani nusxalash",
+    "copied": "Nusxalandi",
+    "share": "Telegram orqali ulashish",
+    "share_text": "Sizni Baxtlilarga taklif qilaman — mening kodim orqali qoʻshiling:",
+    "joined_count": "Kodingiz orqali qoʻshilganlar: {n}",
+    "back": "Orqaga",
+    "loading": "Kodingiz yuklanmoqda…",
+    "not_verified_title": "Kod tekshiruvdan keyin paydo boʻladi",
+    "not_verified": "Faqat hujjat tekshiruvidan oʻtganlar taklif qila oladi. Anketangiz tasdiqlangach, bu yerda kod paydo boʻladi.",
+    "error_title": "Yuklab boʻlmadi",
+    "error_body": "Aloqani tekshirib, qayta urinib koʻring.",
+    "retry": "Qayta urinish"
   },
   "Blocked": {
     "title": "Kirish cheklangan",

@@ -660,7 +660,26 @@
     "actions_cancel": "İptal",
     "profileFallback": "Profil",
     "statusLabel": "Durum",
-    "versionInfo": "Sürüm V2 · Baxtlilar"
+    "versionInfo": "Sürüm V2 · Baxtlilar",
+    "invite_title": "Davet edin",
+    "invite_desc": "Kodunuz ve davet bağlantınız"
+  },
+  "Invite": {
+    "title": "Davet edin",
+    "subtitle": "Baxtlilar kapalı bir kulüptür. Yalnızca güvendiğiniz kişileri davet edin — sizin önerinizle katılırlar.",
+    "code_label": "Kodunuz",
+    "copy_link": "Bağlantıyı kopyala",
+    "copied": "Kopyalandı",
+    "share": "Telegram'da paylaş",
+    "share_text": "Sizi Baxtlilar'a davet ediyorum — kodumla katılın:",
+    "joined_count": "Kodunuzla katılanlar: {n}",
+    "back": "Geri",
+    "loading": "Kodunuz yükleniyor…",
+    "not_verified_title": "Kodunuz doğrulamadan sonra görünecek",
+    "not_verified": "Yalnızca belge doğrulamasından geçenler davet edebilir. Anketiniz onaylandığında kodunuz burada görünecek.",
+    "error_title": "Yüklenemedi",
+    "error_body": "Bağlantınızı kontrol edip tekrar deneyin.",
+    "retry": "Tekrar dene"
   },
   "Blocked": {
     "title": "Erişim kısıtlandı",
