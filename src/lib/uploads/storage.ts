@@ -110,3 +110,40 @@ export async function uploadProfilePhoto(
   if (error) return { ok: false, error: "upload_failed" };
   return { ok: true, path, url: await signedPhotoUrl(path), type };
 }
+
+// 5 МБ - предел из спеки. Меньше общего MAX_BYTES (12 МБ): скриншот экрана
+// телефона столько не весит, а лишний запас - лишний способ занять диск.
+export const FEEDBACK_MAX_BYTES = 5 * 1024 * 1024;
+
+/** Загрузка скриншота к отзыву. Тип проверяем по magic-байтам, а не по имени. */
+export async function uploadFeedbackScreenshot(
+  userId: string,
+  file: ArrayBuffer,
+): Promise<UploadResult> {
+  if (file.byteLength > FEEDBACK_MAX_BYTES) return { ok: false, error: "too_large" };
+  const bytes = new Uint8Array(file);
+  const type = detectImageType(bytes);
+  if (!type) return { ok: false, error: "bad_type" };
+
+  // Date.now() в имени - у одного человека несколько отзывов со скриншотами,
+  // и второй не должен затирать первый.
+  const path = `${userId}/${Date.now()}.${extForType(type)}`;
+  const { error } = await supabaseAdmin()
+    .storage.from(BUCKET_FEEDBACK)
+    .upload(path, bytes, { contentType: type, upsert: false });
+  if (error) return { ok: false, error: "upload_failed" };
+  return { ok: true, path, type, sha256: sha256Bytes(bytes) };
+}
+
+/** Подписанные ссылки на скриншоты пачкой - для списка в админке. */
+export async function signedFeedbackUrls(
+  paths: (string | null | undefined)[],
+  ttl = 300,
+): Promise<Record<string, string>> {
+  const uniq = [...new Set(paths.filter((p): p is string => !!p))];
+  if (!uniq.length) return {};
+  const { data } = await supabaseAdmin().storage.from(BUCKET_FEEDBACK).createSignedUrls(uniq, ttl);
+  const out: Record<string, string> = {};
+  for (const it of data ?? []) if (it.path && it.signedUrl) out[it.path] = it.signedUrl;
+  return out;
+}
