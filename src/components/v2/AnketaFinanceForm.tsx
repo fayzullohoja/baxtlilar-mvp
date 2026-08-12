@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 import { Field, Select, NumberScale, scrollToFirstError } from "./AnketaFields";
 import {
   INCOME_SOURCE_STABILITY,
@@ -41,7 +42,9 @@ export function V2AnketaFinanceForm({
   };
 }) {
   const t = useTranslations("Anketa");
-  const router = useRouter();
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
+    "/api/onboarding/profile/finance",
+  );
   const [incomeSource, setIncomeSource] = useState(
     initial?.income_source_stability ?? "",
   );
@@ -57,8 +60,6 @@ export function V2AnketaFinanceForm({
     initial?.monthly_income_range ?? "",
   );
   const [housing, setHousing] = useState(initial?.housing_status ?? "");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
   // §2 P0: эквивалент прежнего valid (importance 1-5 + management; прочее опц.).
@@ -77,35 +78,14 @@ export function V2AnketaFinanceForm({
       requestAnimationFrame(scrollToFirstError);
       return;
     }
-    setBusy(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/onboarding/profile/finance", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          // Доход опционален — отправляем только если выбран (пустую не шлём).
-          ...(incomeSource ? { income_source_stability: incomeSource } : {}),
-          financial_stability_importance: Number(importance),
-          family_finance_management: management,
-          ...(incomeRange ? { monthly_income_range: incomeRange } : {}),
-          ...(housing ? { housing_status: housing } : {}),
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        ok: boolean;
-        next?: string;
-      };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      setErr("failed");
-    } catch {
-      setErr("failed");
-    } finally {
-      setBusy(false);
-    }
+    await submitStep({
+      // Доход опционален - отправляем только если выбран (пустую не шлём).
+      ...(incomeSource ? { income_source_stability: incomeSource } : {}),
+      financial_stability_importance: Number(importance),
+      family_finance_management: management,
+      ...(incomeRange ? { monthly_income_range: incomeRange } : {}),
+      ...(housing ? { housing_status: housing } : {}),
+    });
   }
 
   return (
@@ -187,22 +167,7 @@ export function V2AnketaFinanceForm({
         {t("finance_privacy_note")}
       </p>
 
-      {err ? (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "16px",
-          }}
-        >
-          {t("err_failed")}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />
 
       <Button onClick={submit} disabled={busy} variant="primary">
         {busy ? t("btn_saving") : t("btn_next")}

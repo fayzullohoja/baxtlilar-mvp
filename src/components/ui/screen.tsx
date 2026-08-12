@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { StepMovedNotice } from "@/components/v2/StepMovedNotice";
 
 /** Базовая обёртка экрана онбординга: бренд-карточка по центру. */
 export function Screen({
@@ -35,6 +36,10 @@ export function Screen({
         ) : null}
         <h1 className="text-2xl font-bold tracking-tight mb-2">{title}</h1>
         {subtitle ? <p className="text-sm text-baxt-muted mb-6">{subtitle}</p> : null}
+        {/* Сюда человека уводит 409 wrong_step с формы анкеты - чаще всего на
+            /onboarding/needs-changes, когда модератор вынес решение прямо во
+            время заполнения. Без этой плашки переход выглядел бы необъяснимым. */}
+        <StepMovedNotice />
         {children}
         {footer ? <div className="mt-6">{footer}</div> : null}
       </div>

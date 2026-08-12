@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 import { Field, Chips, Select, DualRangeSlider, scrollToFirstError } from "./AnketaFields";
 import {
   PARTNER_QUALITIES,
@@ -89,7 +90,9 @@ export function V2AnketaPartnerExtendedForm({
   };
 }) {
   const t = useTranslations("Anketa");
-  const router = useRouter();
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
+    "/api/onboarding/profile/partner-extended",
+  );
   // Возраст/рост — диапазоны двойным ползунком. «Не указано» до касания (isSet).
   const initAge = parseRange(
     initial?.partner_age_min,
@@ -148,8 +151,6 @@ export function V2AnketaPartnerExtendedForm({
   const [hardCriteria, setHardCriteria] = useState<string[]>(
     initial?.partner_hard_criteria ?? [],
   );
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
   // §2 P0: эквивалент прежнего valid (возраст задан; качества 1-5; при «выбрать
@@ -210,52 +211,31 @@ export function V2AnketaPartnerExtendedForm({
       requestAnimationFrame(scrollToFirstError);
       return;
     }
-    setBusy(true);
-    setErr(null);
-    try {
-      const body: Record<string, unknown> = {
-        partner_age_min: ageLo,
-        partner_age_max: ageHi,
-        partner_top_qualities: qualities,
-      };
-      if (heightSet) {
-        body.partner_height_min = heightLo;
-        body.partner_height_max = heightHi;
-      }
-      // Всегда шлём (null при сбросе) — иначе очистка не удалит cold-значение:
-      // route мержит `...partnerSection`, и опущенный вес сохранил бы старое.
-      body.partner_weight_min = weightSet ? weightLo : null;
-      body.partner_weight_max = weightSet ? weightHi : null;
-      if (nationalityPref !== "") body.partner_nationality_pref = nationalityPref;
-      if (nationalityPref === "specific" && nationality.length > 0)
-        body.partner_nationality = nationality;
-      if (religionMatch !== "") body.partner_religion_match = religionMatch;
-      if (healthAttitude !== "") body.partner_health_attitude = healthAttitude;
-      if (countries.length > 0) body.partner_preferred_countries = countries;
-      if (maritalPref.length > 0) body.partner_marital_pref = maritalPref;
-      if (childrenPref !== "") body.partner_children_pref = childrenPref;
-      if (regionPref !== "") body.partner_origin_region_pref = regionPref;
-      if (hardCriteria.length > 0) body.partner_hard_criteria = hardCriteria;
-
-      const res = await fetch("/api/onboarding/profile/partner-extended", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        ok: boolean;
-        next?: string;
-      };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      setErr("failed");
-    } catch {
-      setErr("failed");
-    } finally {
-      setBusy(false);
+    const body: Record<string, unknown> = {
+      partner_age_min: ageLo,
+      partner_age_max: ageHi,
+      partner_top_qualities: qualities,
+    };
+    if (heightSet) {
+      body.partner_height_min = heightLo;
+      body.partner_height_max = heightHi;
     }
+    // Всегда шлём (null при сбросе) - иначе очистка не удалит cold-значение:
+    // route мержит `...partnerSection`, и опущенный вес сохранил бы старое.
+    body.partner_weight_min = weightSet ? weightLo : null;
+    body.partner_weight_max = weightSet ? weightHi : null;
+    if (nationalityPref !== "") body.partner_nationality_pref = nationalityPref;
+    if (nationalityPref === "specific" && nationality.length > 0)
+      body.partner_nationality = nationality;
+    if (religionMatch !== "") body.partner_religion_match = religionMatch;
+    if (healthAttitude !== "") body.partner_health_attitude = healthAttitude;
+    if (countries.length > 0) body.partner_preferred_countries = countries;
+    if (maritalPref.length > 0) body.partner_marital_pref = maritalPref;
+    if (childrenPref !== "") body.partner_children_pref = childrenPref;
+    if (regionPref !== "") body.partner_origin_region_pref = regionPref;
+    if (hardCriteria.length > 0) body.partner_hard_criteria = hardCriteria;
+
+    await submitStep(body);
   }
 
   return (
@@ -442,22 +422,7 @@ export function V2AnketaPartnerExtendedForm({
         />
       </Field>
 
-      {err ? (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "16px",
-          }}
-        >
-          {t("err_failed")}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />
 
       <Button onClick={submit} disabled={busy} variant="primary">
         {busy ? t("btn_saving") : t("btn_next")}

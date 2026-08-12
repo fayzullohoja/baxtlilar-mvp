@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 import { scrollToFirstError, ANKETA_ERROR_ATTR } from "./AnketaFields";
 
 /**
@@ -34,7 +35,8 @@ type Photo = { id: string; url: string; photo_type: PhotoType; is_main: boolean 
 
 export function V2AnketaPhotosForm({ initial = [] }: { initial?: InitialPhoto[] }) {
   const t = useTranslations("Anketa");
-  const router = useRouter();
+  const { busy, errorCode, stepMoved, setErrorCode, submit: submitDone, submitTo } =
+    useAnketaSubmit("/api/onboarding/profile/photos-done");
   const inputRef = useRef<HTMLInputElement>(null);
   // Тип слота, для которого открыт файловый диалог.
   const pendingType = useRef<PhotoType>("portrait");
@@ -48,8 +50,6 @@ export function V2AnketaPhotosForm({ initial = [] }: { initial?: InitialPhoto[] 
         is_main: p.is_main,
       })),
   );
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
   const ERR_COPY: Record<string, string> = {
@@ -71,31 +71,19 @@ export function V2AnketaPhotosForm({ initial = [] }: { initial?: InitialPhoto[] 
   }
 
   async function add(file: File) {
-    setBusy(true);
-    setErr(null);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("photo_type", pendingType.current);
-      const res = await fetch("/api/onboarding/profile/photo", {
-        method: "POST",
-        body: fd,
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        ok: boolean;
-        photo?: Photo;
-        error?: string;
-      };
-      if (data.ok && data.photo) {
-        setPhotos((p) => [...p, data.photo as Photo]);
-        return;
-      }
-      setErr(data.error ?? "failed");
-    } catch {
-      setErr("failed");
-    } finally {
-      setBusy(false);
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("photo_type", pendingType.current);
+    // Загрузка снимка идёт на свой роут, но через тот же слой: 409 wrong_step
+    // здесь так же бесполезно повторять, как и на «готово».
+    const outcome = await submitTo("/api/onboarding/profile/photo", fd);
+    if (outcome.kind !== "ok") return;
+    const photo = outcome.body.photo as Photo | undefined;
+    if (photo) {
+      setPhotos((p) => [...p, photo]);
+      return;
     }
+    setErrorCode("failed");
   }
 
   async function remove(id: string) {
@@ -107,33 +95,12 @@ export function V2AnketaPhotosForm({ initial = [] }: { initial?: InitialPhoto[] 
     if (busy) return;
     if (!hasPortrait) {
       // §2 P0: красная рамка на слоте портрета + скролл к нему (не только баннер).
-      setErr("no_photo");
+      setErrorCode("no_photo");
       setShowErrors(true);
       requestAnimationFrame(scrollToFirstError);
       return;
     }
-    setBusy(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/onboarding/profile/photos-done", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        ok: boolean;
-        next?: string;
-        error?: string;
-      };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      setErr(data.error ?? "no_photo");
-    } catch {
-      setErr("failed");
-    } finally {
-      setBusy(false);
-    }
+    await submitDone();
   }
 
   return (
@@ -305,22 +272,7 @@ export function V2AnketaPhotosForm({ initial = [] }: { initial?: InitialPhoto[] 
         {t("photos_instructions")}
       </div>
 
-      {err ? (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "16px",
-          }}
-        >
-          {ERR_COPY[err] ?? ERR_COPY.failed}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} errorCopy={ERR_COPY} />
 
       <Button onClick={done} disabled={busy} variant="primary">
         {busy ? t("photos_loading") : t("photos_continue")}

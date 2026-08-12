@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 import { Field, Select, TextInput, scrollToFirstError } from "./AnketaFields";
 import {
   ChildrenDetails,
@@ -63,7 +64,9 @@ export function V2AnketaFamilyForm({
     children_living?: string;
   };
 }) {
-  const router = useRouter();
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
+    "/api/onboarding/profile/family",
+  );
   const t = useTranslations("Anketa");
   const [marital, setMarital] = useState(initial?.marital_status ?? "");
   const [prevMarriages, setPrevMarriages] = useState(
@@ -80,8 +83,6 @@ export function V2AnketaFamilyForm({
     initial?.children_living ?? "",
   );
   const [plan, setPlan] = useState(initial?.future_children_plan ?? "");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
   const showChildrenDetails = hasChildren === "yes";
@@ -110,43 +111,21 @@ export function V2AnketaFamilyForm({
       requestAnimationFrame(scrollToFirstError);
       return;
     }
-    setBusy(true);
-    setErr(null);
-    try {
-      const body: Record<string, unknown> = {
-        marital_status: marital,
-        has_children: hasChildren,
-        future_children_plan: plan,
-      };
-      if (showPrevMarriages && prevMarriages)
-        body.previous_marriages = prevMarriages;
-      if (showMaritalOther && maritalOther.trim())
-        body.marital_other = maritalOther.trim();
-      if (showChildrenDetails) {
-        body.children_count = children.length; // hot int = длина массива
-        body.children = children; // COLD extended.family.children (пол + возраст)
-        if (childrenLiving) body.children_living = childrenLiving;
-      }
-      const res = await fetch("/api/onboarding/profile/family", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        ok: boolean;
-        next?: string;
-        error?: string;
-      };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      setErr("failed");
-    } catch {
-      setErr("failed");
-    } finally {
-      setBusy(false);
+    const body: Record<string, unknown> = {
+      marital_status: marital,
+      has_children: hasChildren,
+      future_children_plan: plan,
+    };
+    if (showPrevMarriages && prevMarriages)
+      body.previous_marriages = prevMarriages;
+    if (showMaritalOther && maritalOther.trim())
+      body.marital_other = maritalOther.trim();
+    if (showChildrenDetails) {
+      body.children_count = children.length; // hot int = длина массива
+      body.children = children; // COLD extended.family.children (пол + возраст)
+      if (childrenLiving) body.children_living = childrenLiving;
     }
+    await submitStep(body);
   }
 
   return (
@@ -254,22 +233,7 @@ export function V2AnketaFamilyForm({
         />
       </Field>
 
-      {err ? (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "16px",
-          }}
-        >
-          {t("err_failed")}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />
 
       <Button onClick={submit} disabled={busy} variant="primary">
         {busy ? t("btn_saving") : t("btn_next")}

@@ -16,9 +16,18 @@ export async function loadUserForStep(
     return { res: NextResponse.json({ ok: false, error: "no_session" }, { status: 401 }) };
   }
   if (expected && (user.lifecycle_state !== "onboarding" || user.onboarding_step !== expected)) {
+    // lifecycle отдаём вместе с шагом: клиент по этой паре сразу считает
+    // настоящий экран человека (clientNextPath). Без lifecycle заблокированный
+    // или удалённый уехал бы сначала в анкету и только потом был бы отбит
+    // серверным гардом - лишний скачок на ровном месте.
     return {
       res: NextResponse.json(
-        { ok: false, error: "wrong_step", current: user.onboarding_step },
+        {
+          ok: false,
+          error: "wrong_step",
+          current: user.onboarding_step,
+          lifecycle: user.lifecycle_state,
+        },
         { status: 409 },
       ),
     };

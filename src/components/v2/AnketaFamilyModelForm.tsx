@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 import { Field, Select, scrollToFirstError } from "./AnketaFields";
 import {
   FAMILY_ROLE_MODEL,
@@ -40,7 +41,9 @@ export function V2AnketaFamilyModelForm({
     household_responsibility_model?: string;
   };
 }) {
-  const router = useRouter();
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
+    "/api/onboarding/profile/family-model",
+  );
   const t = useTranslations("Anketa");
   const [roleModel, setRoleModel] = useState(initial?.family_role_model ?? "");
   const [wifeWork, setWifeWork] = useState(
@@ -49,8 +52,6 @@ export function V2AnketaFamilyModelForm({
   const [householdModel, setHouseholdModel] = useState(
     initial?.household_responsibility_model ?? "",
   );
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
   // §2 P0: эквивалент прежнего `!!roleModel && !!wifeWork` (household опционален).
@@ -65,34 +66,13 @@ export function V2AnketaFamilyModelForm({
       requestAnimationFrame(scrollToFirstError);
       return;
     }
-    setBusy(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/onboarding/profile/family-model", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          family_role_model: roleModel,
-          wife_work_after_marriage_view: wifeWork,
-          ...(householdModel
-            ? { household_responsibility_model: householdModel }
-            : {}),
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        ok: boolean;
-        next?: string;
-      };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      setErr("failed");
-    } catch {
-      setErr("failed");
-    } finally {
-      setBusy(false);
-    }
+    await submitStep({
+      family_role_model: roleModel,
+      wife_work_after_marriage_view: wifeWork,
+      ...(householdModel
+        ? { household_responsibility_model: householdModel }
+        : {}),
+    });
   }
 
   return (
@@ -139,22 +119,7 @@ export function V2AnketaFamilyModelForm({
         />
       </Field>
 
-      {err ? (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "16px",
-          }}
-        >
-          {t('err_failed')}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />
 
       <Button onClick={submit} disabled={busy} variant="primary">
         {busy ? t('btn_saving') : t('btn_next')}

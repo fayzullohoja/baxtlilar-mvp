@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 import { Field, TextInput, Select, scrollToFirstError } from "./AnketaFields";
 import { useTranslations } from "next-intl";
 import {
@@ -41,7 +42,9 @@ export function V2AnketaBasicForm({
   verifiedGender?: string | null;
   verifiedLegalName?: string | null;
 }) {
-  const router = useRouter();
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
+    "/api/onboarding/profile/basic",
+  );
   const t = useTranslations("Anketa");
   // Tier 2: редактируемые лейблы вариантов (fallback → options.ts)
   const { labelOf: optLabelOf } = useOptLabel(locale);
@@ -73,8 +76,6 @@ export function V2AnketaBasicForm({
   // По умолчанию район скрыт (учредительская приватность «минимум инфо до match»).
   const [district, setDistrict] = useState("");
   const [districtVisiblePublic, setDistrictVisiblePublic] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
   // Region виден только если выбрано проживание в UZ.
@@ -100,43 +101,20 @@ export function V2AnketaBasicForm({
       requestAnimationFrame(scrollToFirstError);
       return;
     }
-    setBusy(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/onboarding/profile/basic", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          display_name: name,
-          gender,
-          birth_date: birth,
-          citizenship,
-          country_of_residence: country,
-          ...(showRegion ? { region } : {}),
-          // district — nullable, отправляем только если реально введено.
-          // Флаг видимости шлём только когда district block фактически показан,
-          // иначе оставшийся в стейте true с прошлого UZ-выбора протек бы в БД
-          // при смене country_of_residence на не-UZ (baxt fix P5).
-          ...(showDistrict && district.trim() ? { district: district.trim() } : {}),
-          ...(showDistrict ? { district_visible_public: districtVisiblePublic } : {}),
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        ok: boolean;
-        next?: string;
-        detail?: string;
-        error?: string;
-      };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      setErr(data.detail ?? data.error ?? "failed");
-    } catch {
-      setErr("failed");
-    } finally {
-      setBusy(false);
-    }
+    await submitStep({
+      display_name: name,
+      gender,
+      birth_date: birth,
+      citizenship,
+      country_of_residence: country,
+      ...(showRegion ? { region } : {}),
+      // district - nullable, отправляем только если реально введено.
+      // Флаг видимости шлём только когда district block фактически показан,
+      // иначе оставшийся в стейте true с прошлого UZ-выбора протек бы в БД
+      // при смене country_of_residence на не-UZ (baxt fix P5).
+      ...(showDistrict && district.trim() ? { district: district.trim() } : {}),
+      ...(showDistrict ? { district_visible_public: districtVisiblePublic } : {}),
+    });
   }
 
   return (
@@ -337,23 +315,7 @@ export function V2AnketaBasicForm({
         </label>
       ) : null}
 
-      {err ? (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "16px",
-            lineHeight: "1.5",
-          }}
-        >
-          {errCopy[err] ?? errCopy.failed}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} errorCopy={errCopy} />
 
       <Button onClick={submit} disabled={busy} variant="primary">
         {busy ? t("btn_saving") : t("btn_next")}

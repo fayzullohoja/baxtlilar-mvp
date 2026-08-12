@@ -13,6 +13,7 @@
 import type { ReactNode } from "react";
 import { BackButton } from "./BackButton";
 import { AnketaProgress } from "./AnketaProgress";
+import { StepMovedNotice } from "./StepMovedNotice";
 import type { AnketaProgress as Progress } from "@/lib/onboarding/anketa-progress";
 
 type Props = {
@@ -79,6 +80,11 @@ export function MiniAppShell({
             {eyebrow}
           </div>
         ) : null}
+        {/* Объяснение для человека, которого только что увели сюда с формы,
+            не сохранившейся из-за смены шага (409 wrong_step). Плашка читает
+            метку в адресе и без неё не рисуется - поэтому висит в общей обёртке,
+            а не в каждой из 14 страниц анкеты. */}
+        <StepMovedNotice />
         {children}
       </main>
       {footer ? (

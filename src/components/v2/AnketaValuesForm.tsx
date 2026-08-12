@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 import { Field, Select, Chips, scrollToFirstError } from "./AnketaFields";
 import {
   RELIGION,
@@ -31,11 +32,11 @@ export function V2AnketaValuesForm({
   };
 }) {
   const t = useTranslations('Anketa');
-  const router = useRouter();
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
+    "/api/onboarding/profile/values",
+  );
   const [religion, setReligion] = useState(initial?.religion ?? "");
   const [values, setValues] = useState<string[]>(initial?.top_life_values ?? []);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
   // §2 P0: эквивалент прежнего `valid` (values 1-3; max=3 обеспечивает Chips).
@@ -53,29 +54,11 @@ export function V2AnketaValuesForm({
       requestAnimationFrame(scrollToFirstError);
       return;
     }
-    setBusy(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/onboarding/profile/values", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          // Вера опциональна — отправляем только если выбрана (пустую не шлём).
-          ...(religion ? { religion } : {}),
-          top_life_values: values,
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { ok: boolean; next?: string };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      setErr("failed");
-    } catch {
-      setErr("failed");
-    } finally {
-      setBusy(false);
-    }
+    await submitStep({
+      // Вера опциональна - отправляем только если выбрана (пустую не шлём).
+      ...(religion ? { religion } : {}),
+      top_life_values: values,
+    });
   }
 
   return (
@@ -93,22 +76,7 @@ export function V2AnketaValuesForm({
         <Chips options={LIFE_VALUES_V3} selected={values} onToggle={toggle} max={3} locale={locale} />
       </Field>
 
-      {err ? (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "16px",
-          }}
-        >
-          {t('err_failed')}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />
 
       <Button onClick={submit} disabled={busy} variant="primary">
         {busy ? t('btn_saving') : t('btn_next')}

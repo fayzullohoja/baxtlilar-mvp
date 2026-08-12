@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 import { Field, TextInput, Select } from "./AnketaFields";
 import { GEO_PREFERENCE } from "@/lib/profile/options";
 
@@ -18,7 +19,9 @@ import { GEO_PREFERENCE } from "@/lib/profile/options";
  */
 
 export function V2AnketaLookingForm({ locale }: { locale: string }) {
-  const router = useRouter();
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
+    "/api/onboarding/profile/looking-for",
+  );
   const t = useTranslations("Anketa");
   // Локализованные ошибки из i18n — не хардкод RU ты-формы.
   const errCopy: Record<string, string> = {
@@ -29,39 +32,14 @@ export function V2AnketaLookingForm({ locale }: { locale: string }) {
   const [min, setMin] = useState("");
   const [max, setMax] = useState("");
   const [geo, setGeo] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
 
   async function submit() {
     if (busy) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/onboarding/profile/looking-for", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          partner_age_min: Number(min),
-          partner_age_max: Number(max),
-          geo_preference: geo,
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        ok: boolean;
-        next?: string;
-        detail?: string;
-        error?: string;
-      };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      setErr(data.detail ?? data.error ?? "failed");
-    } catch {
-      setErr("failed");
-    } finally {
-      setBusy(false);
-    }
+    await submitStep({
+      partner_age_min: Number(min),
+      partner_age_max: Number(max),
+      geo_preference: geo,
+    });
   }
 
   const minN = Number(min);
@@ -131,22 +109,7 @@ export function V2AnketaLookingForm({ locale }: { locale: string }) {
         <Select options={GEO_PREFERENCE} value={geo} onChange={setGeo} locale={locale} />
       </Field>
 
-      {err ? (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "16px",
-          }}
-        >
-          {errCopy[err] ?? errCopy.failed}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} errorCopy={errCopy} />
 
       <Button onClick={submit} disabled={busy || !valid} variant="primary">
         {busy ? t("btn_saving") : t("btn_next")}

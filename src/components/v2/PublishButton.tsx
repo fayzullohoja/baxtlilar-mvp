@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 
 /**
  * V2 Publish — финальное действие на /v2/anketa/preview.
@@ -19,63 +19,26 @@ export function V2PublishButton({
 }: {
   verificationStatus?: string;
 }) {
-  const router = useRouter();
   const t = useTranslations("Anketa");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+  const { busy, errorCode, stepMoved, submit } = useAnketaSubmit(
+    "/api/onboarding/profile/publish",
+  );
   const isApproved = verificationStatus === "approved";
+  // C6: пол в анкете не совпал с паспортом - это не «поправьте анкету», менять
+  // пол пользователь не может, нужен оператор. Остальные коды - общий текст.
+  const errCopy: Record<string, string> = {
+    gender_mismatch: t("error_gender_mismatch"),
+    failed: t("error_publish_failed"),
+  };
 
   async function publish() {
     if (busy) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/onboarding/profile/publish", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        ok: boolean;
-        next?: string;
-        error?: string;
-      };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      // C6: пол в анкете не совпал с паспортом — это не «поправьте анкету»,
-      // менять пол пользователь не может, нужен оператор.
-      if (data.error === "gender_mismatch") {
-        setErr(t("error_gender_mismatch"));
-        return;
-      }
-      setErr(t("error_publish_failed"));
-    } catch {
-      setErr(t("error_publish_generic"));
-    } finally {
-      setBusy(false);
-    }
+    await submit();
   }
 
   return (
     <div>
-      {err ? (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            fontWeight: 600,
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "12px",
-          }}
-        >
-          {err}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} errorCopy={errCopy} />
       <Button onClick={publish} disabled={busy} variant="primary">
         {busy
           ? isApproved

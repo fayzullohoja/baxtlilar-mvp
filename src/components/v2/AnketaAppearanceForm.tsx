@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
 import { Field, Select, Chips, TextInput, RangeSlider, scrollToFirstError } from "./AnketaFields";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 import { LANGUAGES_LIST } from "@/lib/profile/options";
 
 /**
@@ -35,8 +36,10 @@ export function V2AnketaAppearanceForm({
     other_language?: string;
   };
 }) {
-  const router = useRouter();
   const t = useTranslations("Anketa");
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
+    "/api/onboarding/profile/appearance",
+  );
   const hasHeight = typeof initial?.height_cm === "number";
   const hasWeight = typeof initial?.weight_kg === "number";
   const [heightCm, setHeightCm] = useState(initial?.height_cm ?? HEIGHT_MID);
@@ -53,8 +56,6 @@ export function V2AnketaAppearanceForm({
   const [otherLanguage, setOtherLanguage] = useState(
     initial?.other_language ?? "",
   );
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
   // §2 P0: эквивалент прежнего valid (nativeLang + spokenLangs 1-6; рост/вес опц.).
@@ -77,38 +78,16 @@ export function V2AnketaAppearanceForm({
       requestAnimationFrame(scrollToFirstError);
       return;
     }
-    setBusy(true);
-    setErr(null);
-    try {
-      const body: Record<string, unknown> = {
-        native_language: nativeLang,
-        languages: spokenLangs,
-        // Рост/вес опциональны — отправляем только если ползунок «указан».
-        ...(heightSet ? { height_cm: heightCm } : {}),
-        ...(showWeight && weightSet ? { weight_kg: weightKg } : {}),
-        ...(showOtherLang && otherLanguage.trim()
-          ? { other_language: otherLanguage.trim() }
-          : {}),
-      };
-      const res = await fetch("/api/onboarding/profile/appearance", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        ok: boolean;
-        next?: string;
-      };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      setErr("failed");
-    } catch {
-      setErr("failed");
-    } finally {
-      setBusy(false);
-    }
+    await submitStep({
+      native_language: nativeLang,
+      languages: spokenLangs,
+      // Рост/вес опциональны - отправляем только если ползунок «указан».
+      ...(heightSet ? { height_cm: heightCm } : {}),
+      ...(showWeight && weightSet ? { weight_kg: weightKg } : {}),
+      ...(showOtherLang && otherLanguage.trim()
+        ? { other_language: otherLanguage.trim() }
+        : {}),
+    });
   }
 
   return (
@@ -210,22 +189,7 @@ export function V2AnketaAppearanceForm({
         </button>
       )}
 
-      {err ? (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "24px",
-          }}
-        >
-          {t("err_failed")}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />
 
       <Button
         variant="primary"

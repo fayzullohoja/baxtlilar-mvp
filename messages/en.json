@@ -33,7 +33,8 @@
     "back": "Back",
     "loading": "Please wait…",
     "error_generic": "Something went wrong. Please try again.",
-    "menu": "Menu"
+    "menu": "Menu",
+    "step_moved_notice": "Your step changed while you were filling in this page. The profile continues from where you are now. What you entered on the previous step was not saved - you will need to fill it in again."
   },
   "Onboarding": {
     "consent_title": "This is a serious platform",

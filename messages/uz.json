@@ -33,7 +33,8 @@
     "back": "Orqaga",
     "loading": "Kuting…",
     "error_generic": "Xatolik yuz berdi. Qayta urinib koʻring.",
-    "menu": "Menyu"
+    "menu": "Menyu",
+    "step_moved_notice": "Siz sahifani toʻldirayotganingizda bosqichingiz oʻzgardi. Anketa hozir turgan joyingizdan davom etadi. Oldingi bosqichda kiritganlaringiz saqlanmadi - ularni qaytadan toʻldirishingiz kerak boʻladi."
   },
   "Onboarding": {
     "consent_title": "Bu jiddiy platforma",

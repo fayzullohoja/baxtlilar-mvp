@@ -33,7 +33,8 @@
     "back": "Geri",
     "loading": "Lütfen bekleyin…",
     "error_generic": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
-    "menu": "Menü"
+    "menu": "Menü",
+    "step_moved_notice": "Siz bu sayfayı doldururken adımınız değişti. Form şu anda bulunduğunuz yerden devam edecek. Önceki adımda girdikleriniz kaydedilmedi - bunları yeniden doldurmanız gerekecek."
   },
   "Onboarding": {
     "consent_title": "Bu ciddi bir platformdur",

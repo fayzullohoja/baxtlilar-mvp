@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 import { Field, Select, TextArea, TextInput, scrollToFirstError } from "./AnketaFields";
 import {
   EMPLOYMENT_STATUS,
@@ -44,7 +45,9 @@ export function V2AnketaSelfForm({
     validation: t("err_validation"),
     failed: t("err_failed"),
   };
-  const router = useRouter();
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
+    "/api/onboarding/profile/self",
+  );
   const [bio, setBio] = useState(initial?.bio ?? "");
   const [education, setEducation] = useState(initial?.education ?? "");
   const [specialty, setSpecialty] = useState(initial?.specialty ?? "");
@@ -58,8 +61,6 @@ export function V2AnketaSelfForm({
   const [employmentFormat, setEmploymentFormat] = useState(
     initial?.employment_format ?? "",
   );
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
   // T-104 (правки оунера): «О себе» — от 50 до 500 СИМВОЛОВ, со счётчиком.
@@ -79,40 +80,17 @@ export function V2AnketaSelfForm({
       requestAnimationFrame(scrollToFirstError);
       return;
     }
-    setBusy(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/onboarding/profile/self", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          bio,
-          education,
-          ...(showSpecialty && specialty.trim() ? { specialty: specialty.trim() } : {}),
-          activity_field: activityField,
-          ...(activityField === "other" && activityFieldOther.trim()
-            ? { activity_field_other: activityFieldOther.trim() }
-            : {}),
-          employment_status: employmentStatus,
-          ...(showWorkFormat && employmentFormat ? { employment_format: employmentFormat } : {}),
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        ok: boolean;
-        next?: string;
-        detail?: string;
-        error?: string;
-      };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      setErr(data.detail ?? data.error ?? "failed");
-    } catch {
-      setErr("failed");
-    } finally {
-      setBusy(false);
-    }
+    await submitStep({
+      bio,
+      education,
+      ...(showSpecialty && specialty.trim() ? { specialty: specialty.trim() } : {}),
+      activity_field: activityField,
+      ...(activityField === "other" && activityFieldOther.trim()
+        ? { activity_field_other: activityFieldOther.trim() }
+        : {}),
+      employment_status: employmentStatus,
+      ...(showWorkFormat && employmentFormat ? { employment_format: employmentFormat } : {}),
+    });
   }
 
   const showWorkFormat = (EMPLOYMENT_WORKING_STATUSES as readonly string[]).includes(
@@ -203,23 +181,7 @@ export function V2AnketaSelfForm({
         </Field>
       ) : null}
 
-      {err ? (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "16px",
-            lineHeight: "1.5",
-          }}
-        >
-          {errCopy[err] ?? errCopy.failed}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} errorCopy={errCopy} />
 
       <Button
         variant="primary"

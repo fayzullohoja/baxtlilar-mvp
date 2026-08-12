@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 import { Field, Select, scrollToFirstError } from "./AnketaFields";
 import { RegionPicker, type RegionValue } from "./RegionPicker";
 import {
@@ -202,7 +203,9 @@ export function V2AnketaParentsForm({
   locale: string;
   initial?: Record<string, unknown>;
 }) {
-  const router = useRouter();
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
+    "/api/onboarding/profile/parents",
+  );
   const t = useTranslations("Anketa");
   const [father, setFather] = useState<ParentState>(() => initialParent(initial, "father"));
   const [mother, setMother] = useState<ParentState>(() => initialParent(initial, "mother"));
@@ -211,8 +214,6 @@ export function V2AnketaParentsForm({
   const [familyRelations, setFamilyRelations] = useState((initial?.family_relations as string) ?? "");
   const [familyInvolvement, setFamilyInvolvement] = useState((initial?.family_involvement as string) ?? "");
   const [open, setOpen] = useState<"father" | "mother" | "family" | null>("father");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
   // §2 P0: эквивалент прежнего valid (статус отца/матери + участие семьи).
@@ -255,35 +256,17 @@ export function V2AnketaParentsForm({
       requestAnimationFrame(scrollToFirstError);
       return;
     }
-    setBusy(true);
-    setErr(null);
-    try {
-      const body: Record<string, unknown> = {
-        ...parentBody(father, "father"),
-        ...parentBody(mother, "mother"),
-        family_involvement: familyInvolvement,
-      };
-      if (parentsMarital) body.parents_marital = parentsMarital;
-      // Ревью оунера 1.5: «сколько лет вместе» шлём, только если родители вместе.
-      if (parentsMarital === "together" && yearsTogether) body.parents_years_together = yearsTogether;
-      if (familyRelations) body.family_relations = familyRelations;
+    const body: Record<string, unknown> = {
+      ...parentBody(father, "father"),
+      ...parentBody(mother, "mother"),
+      family_involvement: familyInvolvement,
+    };
+    if (parentsMarital) body.parents_marital = parentsMarital;
+    // Ревью оунера 1.5: «сколько лет вместе» шлём, только если родители вместе.
+    if (parentsMarital === "together" && yearsTogether) body.parents_years_together = yearsTogether;
+    if (familyRelations) body.family_relations = familyRelations;
 
-      const res = await fetch("/api/onboarding/profile/parents", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = (await res.json().catch(() => ({}))) as { ok: boolean; next?: string };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      setErr("failed");
-    } catch {
-      setErr("failed");
-    } finally {
-      setBusy(false);
-    }
+    await submitStep(body);
   }
 
   return (
@@ -313,11 +296,7 @@ export function V2AnketaParentsForm({
         </Field>
       </AccordionSection>
 
-      {err ? (
-        <div style={{ padding: "10px 14px", background: "#FBE7E4", borderLeft: "3px solid var(--color-v2-danger)", borderRadius: "12px", fontSize: "13px", color: "#9A4B46", fontFamily: "var(--font-v2-body)", marginBottom: "16px" }}>
-          {t("err_failed")}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />
 
       {Object.keys(errors).length ? (
         <div style={{ fontSize: "12px", color: "var(--color-v2-ink-400)", fontFamily: "var(--font-v2-body)", marginBottom: "12px", lineHeight: 1.45 }}>

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
 import { Field, Select, Chips, scrollToFirstError } from "./AnketaFields";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 import {
   LIFESTYLE_PACE,
   FREE_TIME_ACTIVITIES,
@@ -47,8 +48,10 @@ export function V2AnketaLifestyleForm({
     alcohol_level?: string;
   };
 }) {
-  const router = useRouter();
   const t = useTranslations("Anketa");
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
+    "/api/onboarding/profile/lifestyle",
+  );
   const [pace, setPace] = useState(initial?.lifestyle_pace ?? "");
   const [freeTime, setFreeTime] = useState<string[]>(
     initial?.free_time_activities ?? [],
@@ -57,8 +60,6 @@ export function V2AnketaLifestyleForm({
   const [badHabits, setBadHabits] = useState(initial?.bad_habits_level ?? "");
   const [nutrition, setNutrition] = useState(initial?.nutrition_style ?? "");
   const [alcohol, setAlcohol] = useState(initial?.alcohol_level ?? "");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
   // §2 P0: эквивалент прежнего valid (pace + routine + freeTime 1-3; прочее опц.).
@@ -80,36 +81,15 @@ export function V2AnketaLifestyleForm({
       requestAnimationFrame(scrollToFirstError);
       return;
     }
-    setBusy(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/onboarding/profile/lifestyle", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          lifestyle_pace: pace,
-          free_time_activities: freeTime,
-          daily_routine: routine,
-          ...(badHabits ? { bad_habits_level: badHabits } : {}),
-          ...(nutrition ? { nutrition_style: nutrition } : {}),
-          ...(alcohol ? { alcohol_level: alcohol } : {}),
-          // drugs_use убран из анкеты (ревью оунера) — вопрос переносится в Правила.
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        ok: boolean;
-        next?: string;
-      };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      setErr("failed");
-    } catch {
-      setErr("failed");
-    } finally {
-      setBusy(false);
-    }
+    await submitStep({
+      lifestyle_pace: pace,
+      free_time_activities: freeTime,
+      daily_routine: routine,
+      ...(badHabits ? { bad_habits_level: badHabits } : {}),
+      ...(nutrition ? { nutrition_style: nutrition } : {}),
+      ...(alcohol ? { alcohol_level: alcohol } : {}),
+      // drugs_use убран из анкеты (ревью оунера) - вопрос переносится в Правила.
+    });
   }
 
   return (
@@ -189,22 +169,7 @@ export function V2AnketaLifestyleForm({
           юридически чувствителен и почти никогда не заполняется честно —
           переносится в Правила платформы + safety-модерацию. */}
 
-      {err ? (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "16px",
-          }}
-        >
-          {t("err_failed")}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />
 
       <Button onClick={submit} disabled={busy} variant="primary">
         {busy ? t("btn_saving") : t("btn_next")}

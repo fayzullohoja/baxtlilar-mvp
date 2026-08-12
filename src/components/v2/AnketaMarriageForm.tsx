@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 import { Field, Select, scrollToFirstError } from "./AnketaFields";
 import { POST_MARRIAGE_LIVING, MARRIAGE_READINESS, RELOCATION_READINESS } from "@/lib/profile/options";
 import type { Gender } from "@/lib/profile/gender-wording";
@@ -29,13 +30,13 @@ export function V2AnketaMarriageForm({
     relocation_readiness?: string;
   };
 }) {
-  const router = useRouter();
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
+    "/api/onboarding/profile/marriage",
+  );
   const t = useTranslations('Anketa');
   const [living, setLiving] = useState(initial?.post_marriage_living ?? "");
   const [readiness, setReadiness] = useState(initial?.marriage_readiness ?? "");
   const [relocation, setRelocation] = useState(initial?.relocation_readiness ?? "");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
   // §2 P0: эквивалент прежнего `!living`-гейта (readiness/relocation опциональны).
@@ -49,32 +50,11 @@ export function V2AnketaMarriageForm({
       requestAnimationFrame(scrollToFirstError);
       return;
     }
-    setBusy(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/onboarding/profile/marriage", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          post_marriage_living: living,
-          ...(readiness ? { marriage_readiness: readiness } : {}),
-          ...(relocation ? { relocation_readiness: relocation } : {}),
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        ok: boolean;
-        next?: string;
-      };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      setErr("failed");
-    } catch {
-      setErr("failed");
-    } finally {
-      setBusy(false);
-    }
+    await submitStep({
+      post_marriage_living: living,
+      ...(readiness ? { marriage_readiness: readiness } : {}),
+      ...(relocation ? { relocation_readiness: relocation } : {}),
+    });
   }
 
   return (
@@ -112,22 +92,11 @@ export function V2AnketaMarriageForm({
         />
       </Field>
 
-      {err ? (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "24px",
-          }}
-        >
-          {t('marriage_format_save_err')}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice
+        errorCode={errorCode}
+        stepMoved={stepMoved}
+        errorCopy={{ failed: t('marriage_format_save_err') }}
+      />
 
       <Button
         variant="primary"

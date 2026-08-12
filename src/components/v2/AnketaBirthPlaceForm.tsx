@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 import { Field, Select, TextInput, scrollToFirstError } from "./AnketaFields";
 import { COUNTRY_OF_RESIDENCE, UZ_REGIONS } from "@/lib/profile/options";
 import { UZ_DISTRICTS_BY_REGION, hasDistrictList } from "@/lib/profile/uz-districts";
@@ -29,13 +30,13 @@ export function V2AnketaBirthPlaceForm({
   };
 }) {
   const t = useTranslations('Anketa');
-  const router = useRouter();
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
+    "/api/onboarding/profile/birth-place",
+  );
   const [country, setCountry] = useState(initial?.birth_country || "UZ");
   const [region, setRegion] = useState(initial?.birth_region ?? "");
   const [district, setDistrict] = useState(initial?.birth_district ?? "");
   const [city, setCity] = useState(initial?.birth_city ?? "");
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
   const showUzRegions = country === "UZ";
@@ -57,33 +58,12 @@ export function V2AnketaBirthPlaceForm({
       requestAnimationFrame(scrollToFirstError);
       return;
     }
-    setBusy(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/onboarding/profile/birth-place", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          birth_country: country,
-          birth_region: region.trim() || undefined,
-          birth_district: district.trim() || undefined,
-          birth_city: city.trim() || undefined,
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        ok: boolean;
-        next?: string;
-      };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      setErr("failed");
-    } catch {
-      setErr("failed");
-    } finally {
-      setBusy(false);
-    }
+    await submitStep({
+      birth_country: country,
+      birth_region: region.trim() || undefined,
+      birth_district: district.trim() || undefined,
+      birth_city: city.trim() || undefined,
+    });
   }
 
   return (
@@ -178,22 +158,11 @@ export function V2AnketaBirthPlaceForm({
         )}
       </Field>
 
-      {err ? (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "24px",
-          }}
-        >
-          {t('birth_place_save_error')}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice
+        errorCode={errorCode}
+        stepMoved={stepMoved}
+        errorCopy={{ failed: t('birth_place_save_error') }}
+      />
 
       <Button
         variant="primary"

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "./Button";
 import { Field, Select } from "./AnketaFields";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 import { HEALTH_OPENNESS, MEDICAL_CHECK_WILLINGNESS, DRUGS_USE } from "@/lib/profile/options";
 
 /**
@@ -23,44 +24,23 @@ export function V2AnketaHealthForm({
     substance_dependency_status?: string;
   };
 }) {
-  const router = useRouter();
   const t = useTranslations("Anketa");
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
+    "/api/onboarding/profile/health",
+  );
   const [openness, setOpenness] = useState(initial?.health_openness ?? "");
   const [medical, setMedical] = useState(initial?.medical_check_willingness ?? "");
   const [substance, setSubstance] = useState(
     initial?.substance_dependency_status ?? "",
   );
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
 
   async function submit() {
     if (busy) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/onboarding/profile/health", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          ...(openness ? { health_openness: openness } : {}),
-          ...(medical ? { medical_check_willingness: medical } : {}),
-          ...(substance ? { substance_dependency_status: substance } : {}),
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        ok: boolean;
-        next?: string;
-      };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      setErr("failed");
-    } catch {
-      setErr("failed");
-    } finally {
-      setBusy(false);
-    }
+    await submitStep({
+      ...(openness ? { health_openness: openness } : {}),
+      ...(medical ? { medical_check_willingness: medical } : {}),
+      ...(substance ? { substance_dependency_status: substance } : {}),
+    });
   }
 
   return (
@@ -97,22 +77,7 @@ export function V2AnketaHealthForm({
         />
       </Field>
 
-      {err ? (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "16px",
-          }}
-        >
-          {t("err_failed")}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />
 
       <Button onClick={submit} disabled={busy} variant="primary">
         {busy ? t("btn_saving") : t("btn_next")}
