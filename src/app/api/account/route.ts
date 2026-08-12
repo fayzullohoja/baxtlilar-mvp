@@ -3,7 +3,11 @@ import { loadActiveUserApi } from "@/lib/auth/active-guard";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { clearSession } from "@/lib/auth/session";
-import { BUCKET_PHOTOS, BUCKET_DOCUMENTS } from "@/lib/uploads/storage";
+import {
+  BUCKET_PHOTOS,
+  BUCKET_DOCUMENTS,
+  removeUserFeedbackScreenshots,
+} from "@/lib/uploads/storage";
 import { hashPhone } from "@/lib/identity/hashing";
 
 // F-006: окно cooldown после delete, в течение которого тот же телефон
@@ -94,6 +98,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // транзакционен; orphan-файлы лучше периодически чистить отдельным cron).
     try {
       if (photoPaths.length) await sb.storage.from(BUCKET_PHOTOS).remove(photoPaths);
+      // Скриншоты отзывов - обходом папки, а не по feedback.screenshot_path:
+      // файл, чья запись об отзыве не создалась (суточный лимит, дедуп двойного
+      // тапа, обрыв запроса), в базе не значится вовсе, и по ссылкам из неё
+      // остался бы на диске навсегда. На нём может быть чужая анкета.
+      await removeUserFeedbackScreenshots(user.id);
       const { data: docFiles } = await sb.storage.from(BUCKET_DOCUMENTS).list(user.id);
       if (docFiles?.length)
         await sb.storage.from(BUCKET_DOCUMENTS).remove(docFiles.map((f) => `${user.id}/${f.name}`));

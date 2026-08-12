@@ -113,6 +113,67 @@ describe("RPC shape — set-returning функции читаются как М�
     expect(Array.isArray(data)).toBe(true);
   });
 
+  it("create_feedback: {feedback_id,limited,deduplicated,screenshot_stored} массивом - иначе роут отвечает 500 на сохранённый отзыв", async () => {
+    const u = await seedUser();
+    const { data, error } = await sb.rpc("create_feedback", {
+      p_user_id: u,
+      p_rating: 5,
+      p_body: "всё понятно, спасибо",
+      p_screenshot_path: `${u}/1.png`,
+      p_locale: "ru",
+    });
+    expect(error).toBeNull();
+    expect(Array.isArray(data)).toBe(true); // ← при баге здесь была строка "(uuid,f)"
+    const row = (Array.isArray(data) ? data[0] : data) as {
+      feedback_id?: string;
+      limited?: boolean;
+      deduplicated?: boolean;
+      screenshot_stored?: boolean;
+    };
+    expect(row.feedback_id).toBeTruthy(); // ← при баге undefined → db_failed → 500
+    expect(row.limited).toBe(false);
+    // Оба флага обязаны доехать до роута ИМЕНОВАННЫМИ полями: по ним он решает,
+    // сносить ли уже загруженный файл и что сказать человеку про скриншот.
+    expect(row.deduplicated).toBe(false);
+    expect(row.screenshot_stored).toBe(true);
+  });
+
+  it("create_feedback на дедупе: скриншот прикрепляется к найденной записи, а не теряется", async () => {
+    const u = await seedUser();
+    const first = await sb.rpc("create_feedback", {
+      p_user_id: u, p_rating: 5, p_body: "экран платежа падает", p_screenshot_path: null, p_locale: "ru",
+    });
+    const firstId = (first.data as Array<{ feedback_id: string }>)[0].feedback_id;
+
+    // Человек спохватился и в ту же минуту повторил отправку со скриншотом.
+    const again = await sb.rpc("create_feedback", {
+      p_user_id: u, p_rating: 5, p_body: "экран платежа падает", p_screenshot_path: `${u}/2.png`, p_locale: "ru",
+    });
+    const row = (again.data as Array<{
+      feedback_id: string; limited: boolean; deduplicated: boolean; screenshot_stored: boolean;
+    }>)[0];
+    expect(row.feedback_id).toBe(firstId); // дубля отзыва не завели
+    expect(row.deduplicated).toBe(true);
+    expect(row.screenshot_stored).toBe(true); // файл доехал до записи - сносить его нельзя
+  });
+
+  it("create_feedback сверх суточного лимита: limited=true читается, а не превращается в 500", async () => {
+    const u = await seedUser();
+    // Тексты разные - иначе сработает дедуп двойного тапа (минутное окно).
+    for (const body of ["раз", "два", "три"]) {
+      const { data } = await sb.rpc("create_feedback", {
+        p_user_id: u, p_rating: 4, p_body: body, p_screenshot_path: null, p_locale: "ru",
+      });
+      expect((data as Array<{ limited: boolean }>)[0].limited).toBe(false);
+    }
+    const { data } = await sb.rpc("create_feedback", {
+      p_user_id: u, p_rating: 4, p_body: "четыре", p_screenshot_path: null, p_locale: "ru",
+    });
+    const row = (data as Array<{ feedback_id: string | null; limited: boolean }>)[0];
+    expect(row.limited).toBe(true); // человек должен увидеть текст про лимит, а не ошибку
+    expect(row.feedback_id).toBeNull();
+  });
+
   it("get_recommendations / get_chat_list: массивы", async () => {
     const u = await seedUser();
     const rec = await sb.rpc("get_recommendations", { p_viewer: u, p_limit: 5, p_relax_level: 0 });

@@ -25,7 +25,13 @@ export async function GET(
   }
   try {
     const file = await fs.readFile(objectFsPath(bucket, objectPath));
-    return new Response(new Uint8Array(file), {
+    // Вид на те же байты, а НЕ копия (было `new Uint8Array(file)`): файл уже
+    // целиком в памяти, и второй экземпляр удваивал пик на каждый запрос. При
+    // скриншотах до 5 МБ и списке отзывов это сотни лишних мегабайт на боксе
+    // 2 vCPU / 2-4 ГБ. Границы вида заданы явно: Buffer бывает окном в общий
+    // пул, и `new Uint8Array(file.buffer)` отдал бы наружу чужие байты пула.
+    const bytes = new Uint8Array(file.buffer, file.byteOffset, file.byteLength);
+    return new Response(bytes, {
       headers: {
         "Content-Type": mimeForPath(objectPath),
         "Cache-Control": "private, max-age=300",

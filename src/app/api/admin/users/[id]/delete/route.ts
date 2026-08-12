@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin/guard";
 import { can } from "@/lib/admin/permissions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { BUCKET_DOCUMENTS, BUCKET_PHOTOS } from "@/lib/uploads/storage";
+import {
+  BUCKET_DOCUMENTS,
+  BUCKET_FEEDBACK,
+  BUCKET_PHOTOS,
+  removeUserFeedbackScreenshots,
+} from "@/lib/uploads/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,17 +46,28 @@ export async function POST(
   if (!r.ok)
     return NextResponse.json(r, { status: r.error === "not_found" ? 404 : 400 });
 
-  // best-effort: пробуем удалить файлы из обоих приватных бакетов (неверный
-  // бакет — no-op/ошибка, глушим). БД уже удалена — файлы иначе осиротеют.
+  // best-effort: пробуем удалить файлы из всех приватных бакетов (неверный
+  // бакет - no-op/ошибка, глушим). БД уже удалена - файлы иначе осиротеют.
   const paths = r.storage_paths ?? [];
   if (paths.length) {
-    for (const bucket of [BUCKET_PHOTOS, BUCKET_DOCUMENTS]) {
+    for (const bucket of [BUCKET_PHOTOS, BUCKET_DOCUMENTS, BUCKET_FEEDBACK]) {
       try {
         await sb.storage.from(bucket).remove(paths);
       } catch (e) {
         console.error(`[hard-delete] storage cleanup (${bucket}) failed:`, e);
       }
     }
+  }
+  // Бакет отзывов вдобавок обходим папкой: путь скриншота доезжает до базы не
+  // всегда (файл кладётся до create_feedback, и суточный лимит, дедуп двойного
+  // тапа или обрыв запроса оставляют его без записи), поэтому storage_paths для
+  // этого бакета заведомо неполон. На неучтённом файле может быть чужая анкета,
+  // а «необратимое» удаление обязано уносить и её. Проход по storage_paths выше
+  // остаётся второй линией на случай, если обход папки не удастся.
+  try {
+    await removeUserFeedbackScreenshots(id);
+  } catch (e) {
+    console.error("[hard-delete] storage cleanup (feedback) failed:", e);
   }
   return NextResponse.json({ ok: true });
 }

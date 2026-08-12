@@ -359,6 +359,11 @@ export const SET_RETURNING = new Set([
   // admin_sla_reclaim_stale_cases — результат только логировался (безобидно, но форма неверна).
   "admin_ban_expire_sweep",
   "admin_sla_reclaim_stale_cases",
+  // create_feedback (returns table(feedback_id, limited, deduplicated,
+  // screenshot_stored)): без записи здесь роут читал бы composite СТРОКОЙ
+  // "(uuid,f,f,f)", не смог бы отличить успех от лимита и отвечал бы 500 на уже
+  // сохранённый отзыв.
+  "create_feedback",
 ]);
 const FN_NAME = /^[a-z_][a-z0-9_]*$/;
 
