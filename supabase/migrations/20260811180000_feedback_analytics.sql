@@ -15,7 +15,19 @@ create schema if not exists analytics;
 -- пути к скриншоту - только признак "картинка была".
 create or replace view analytics.v_feedback_daily as
 select
-  date_trunc('day', created_at)::date as day,
+  -- Граница суток прибита к Asia/Tashkent, а не к часовому поясу сессии. Голый
+  -- date_trunc над timestamptz считает день по TimeZone клиента: на сервере с
+  -- UTC отзыв, оставленный в 2 часа ночи по Ташкенту, уезжает во вчера и портит
+  -- среднюю сразу за оба дня, а вечерне-ночная активность здесь не край, а
+  -- основная масса. Хуже того, одна и та же витрина отдавала бы разные числа
+  -- датасорсу Grafana и psql с VPS. Тот же приём и по той же причине - в
+  -- 20260601200000_admin_demographics (окна регистраций) и в bump_quota.
+  --
+  -- К суточному лимиту отзывов это отношения НЕ имеет: там намеренно скользящее
+  -- окно now() - 24 часа, а не календарный день, и тексты про лимит это окно
+  -- честно описывают (гейт src/i18n/feedback-rate-limit-copy.test.ts). Здесь
+  -- календарный день нужен только отчёту.
+  (created_at at time zone 'Asia/Tashkent')::date as day,
   count(*)                            as feedback_count,
   round(avg(rating)::numeric, 2)      as avg_rating,
   count(*) filter (where screenshot_path is not null) as with_screenshot
@@ -24,7 +36,7 @@ group by 1
 order by 1 desc;
 
 comment on view analytics.v_feedback_daily is
-  'Отзывы по дням: сколько, средняя оценка, сколько со скриншотом. Ни текстов, ни идентификаторов людей - роль grafana_ro шире круга модераторов, тексты читают в /admin/feedback.';
+  'Отзывы по дням (сутки по Asia/Tashkent, а не по часовому поясу клиента): сколько, средняя оценка, сколько со скриншотом. Ни текстов, ни идентификаторов людей - роль grafana_ro шире круга модераторов, тексты читают в /admin/feedback.';
 
 -- Распределение оценок: средняя скрывает поляризацию (две единицы и две
 -- пятёрки дают ту же тройку, что четыре тройки), а решение «чинить или нет»
