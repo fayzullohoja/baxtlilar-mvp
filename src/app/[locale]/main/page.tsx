@@ -63,12 +63,29 @@ export default async function MainPage({ params }: { params: Promise<{ locale: s
 
   // Shadow Active — empty + плашка.
   if (!hasPermission(role, "view_feed")) {
+    // Дорога назад к повторной подаче документов. Считаем на сервере, потому что
+    // решение зависит от reject_category в user_documents: при блокирующем отказе
+    // (подделка/катфиш/несовершеннолетний) кнопки не должно быть в DOM вообще —
+    // отсутствие узла, а не disabled, как на /onboarding/rejected.
+    let repairHref: string | null = null;
+    if (user.verification_status === "needs_changes") {
+      repairHref = "/onboarding/needs-changes";
+    } else if (user.verification_status === "rejected") {
+      const { data: doc } = await supabaseAdmin()
+        .from("user_documents")
+        .select("reject_category")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (doc?.reject_category !== "blocking") repairHref = "/onboarding/rejected";
+    }
+
     return (
       <>
         <MiniAppShell eyebrow="Baxtlilar" align="top" footer={null}>
           <VerificationPlashka
             status={user.verification_status}
             submittedAt={user.verification_submitted_at}
+            repairHref={repairHref}
           />
         </MiniAppShell>
         <BottomNav active="feed" unread={unread} />

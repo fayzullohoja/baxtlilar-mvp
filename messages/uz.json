@@ -1034,6 +1034,11 @@
       "title": "Tekshiruvdan oʻtmadi.",
       "body": "Hujjatlar qabul qilinmadi. Buni xato deb hisoblasangiz — qoʻllab-quvvatlash xizmatiga murojaat qiling."
     },
+    "rejectedTechnical": {
+      "label": "Qayta suratga olish kerak",
+      "title": "Fotolarni tekshira olmadik.",
+      "body": "Moderator hujjatlarni aniq koʻra olmadi. Ularni qayta suratga oling - biz yana tekshiramiz."
+    },
     "notStarted": {
       "label": "Boshlanmagan",
       "title": "Shaxsingizni tasdiqlang.",
@@ -1047,7 +1052,8 @@
     "justNow": "hozirgina",
     "minutesAgo": "{n} daqiqa oldin",
     "hoursAgo": "{n} soat oldin",
-    "daysAgo": "{n} kun oldin"
+    "daysAgo": "{n} kun oldin",
+    "repairCta": "Hujjatlarni qayta yuklash"
   },
   "Options": {
     "GENDER": {

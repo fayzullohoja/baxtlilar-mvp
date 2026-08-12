@@ -1,5 +1,5 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { requireUserAtStep } from "@/lib/state-machine/guard";
+import { requireUserForVerificationRepair } from "@/lib/state-machine/guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { Screen } from "@/components/ui/screen";
 import { NeedsChangesForm } from "@/components/onboarding/needs-changes-form";
@@ -9,7 +9,11 @@ export const dynamic = "force-dynamic";
 export default async function NeedsChangesPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const user = await requireUserAtStep(locale, "needs_changes");
+  // Пускаем по состоянию верификации, а не по шагу: после shadow-active человек
+  // в момент решения модератора стоит на шаге анкеты (или уже active), и гейт по
+  // шагу увёл бы его отсюда обратно в анкету - то есть повторная подача
+  // документов была бы недостижима навсегда.
+  const user = await requireUserForVerificationRepair(locale, "needs_changes");
   const t = await getTranslations("Onboarding");
 
   const { data: doc } = await supabaseAdmin()

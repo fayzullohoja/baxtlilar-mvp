@@ -1,18 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
-import { loadUserForStep } from "@/lib/onboarding/guard-api";
-import { tryTransition } from "@/lib/state-machine/transitions";
+import { loadUserForVerificationRepair } from "@/lib/onboarding/guard-api";
+import { tryTransition, type UserStatePatch } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { uploadDocumentImage } from "@/lib/uploads/storage";
 import { isDocumentBlacklisted } from "@/lib/uploads/blacklist";
-import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
+import { ONBOARDING_PATHS, nextScreenFor } from "@/lib/state-machine/router";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Повторная загрузка после needs_changes: грузим присланные файлы → снова на модерацию. */
+/**
+ * Повторная загрузка документов: грузим присланные файлы → снова в очередь.
+ *
+ * Единственная дорога назад после решения модератора для тех, кто уже ушёл из
+ * до-анкетных шагов. Гейт - по verification_status, а не по onboarding_step:
+ * после shadow-active человек в момент решения стоит на шаге анкеты (или уже
+ * опубликовался и стал active), и вернуть ему верификационный шаг нельзя - это
+ * ровно тот нелегальный прыжок, который ронял анкету в 409 на проде 12.08.2026.
+ *
+ * Принимаем два исхода модерации:
+ *   needs_changes           - «поправьте фото»;
+ *   rejected + technical    - «переснимите, не смогли проверить».
+ * Блокирующий отказ (подделка/катфиш/несовершеннолетний) отсекается ниже.
+ */
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const { user, res } = await loadUserForStep("needs_changes");
+  const { user, res } = await loadUserForVerificationRepair(["needs_changes", "rejected"]);
   if (res) return res;
+
+  const sb = supabaseAdmin();
+
+  // R1 verdict-guard, как в /api/onboarding/retry. Раньше эту дверь держал сам
+  // гейт по шагу: blocking-отказ ставил шаг 'verification_rejected', а роут
+  // требовал 'needs_changes'. Теперь гейт по статусу, и blocking сюда бы прошёл,
+  // поэтому проверку категории надо делать ЯВНО и ДО любой мутации - иначе
+  // человек с подозрением на подделку вернул бы себя в очередь через этот роут.
+  const { data: doc } = await sb
+    .from("user_documents")
+    .select("reject_category")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (doc?.reject_category === "blocking") {
+    // R9: лог попытки для security-визибильности (admin_id=null - system-side).
+    await sb.from("admin_audit_log").insert({
+      admin_id: null,
+      action: "retry_blocked",
+      entity: "user",
+      entity_id: user.id,
+      new_value: { reason: "blocking_reject", route: "fix" },
+      reason: "user attempted re-upload after blocking reject",
+      ip: null,
+    });
+    return NextResponse.json({ ok: false, error: "blocking_reject" }, { status: 403 });
+  }
 
   const form = await req.formData().catch(() => null);
   if (!form) return NextResponse.json({ ok: false, error: "no_form" }, { status: 400 });
@@ -49,18 +88,44 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "no_file" }, { status: 400 });
 
   // Обновлённые файлы должны лечь в БД ДО возврата в модерацию.
-  const { error: saveErr } = await supabaseAdmin()
+  // reject_category сбрасываем (как /retry): это новая попытка верификации, и
+  // устаревшая категория с прошлого круга не должна тянуться за человеком.
+  const { error: saveErr } = await sb
     .from("user_documents")
-    .update({ ...patch, status: "pending_review", reject_reason: null, reject_target: null })
+    .update({
+      ...patch,
+      status: "pending_review",
+      reject_reason: null,
+      reject_target: null,
+      reject_category: null,
+    })
     .eq("user_id", user.id);
   if (saveErr) return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
-  const tr = await tryTransition(
-    user.id,
-    { verification_status: "pending_review", onboarding_step: "moderation_pending" },
-    "re-submitted after needs_changes",
-    { kind: "user", id: user.id },
-  );
+  // Шаг двигаем ТОЛЬКО тому, кто стоит ровно на 'needs_changes' - единственное
+  // ребро needs_changes → moderation_pending в ALLOWED_TRANSITIONS. Всем
+  // остальным (человек в анкете, человек уже active) меняем один
+  // verification_status: открытый кейс модератору всё равно заведёт триггер
+  // users_ensure_verification_case на входе в pending_review, а шаг анкеты
+  // обязан остаться нетронутым - иначе вернём ровно тот баг, который чиним.
+  const onNeedsChangesStep =
+    user.lifecycle_state === "onboarding" && user.onboarding_step === "needs_changes";
+  const patchState: UserStatePatch = onNeedsChangesStep
+    ? { verification_status: "pending_review", onboarding_step: "moderation_pending" }
+    : { verification_status: "pending_review" };
+
+  const tr = await tryTransition(user.id, patchState, "re-submitted documents for verification", {
+    kind: "user",
+    id: user.id,
+  });
   if (!tr.ok) return NextResponse.json({ ok: false, error: tr.error }, { status: 409 });
-  return NextResponse.json({ ok: true, next: ONBOARDING_PATHS.moderation_pending });
+
+  // Человеку в анкете / уже в приложении на /onboarding/pending делать нечего -
+  // возвращаем его на его же экран (анкета там, где бросил, либо /main).
+  // lifecycle_state и onboarding_step мы ему не меняли, поэтому nextScreenFor
+  // по прочитанному до мутации user даёт верный ответ.
+  return NextResponse.json({
+    ok: true,
+    next: onNeedsChangesStep ? ONBOARDING_PATHS.moderation_pending : nextScreenFor(user),
+  });
 }

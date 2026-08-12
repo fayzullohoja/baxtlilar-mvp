@@ -1034,6 +1034,11 @@
       "title": "İnceleme geçilemedi.",
       "body": "Belgeler kabul edilmedi. Bunun bir hata olduğunu düşünüyorsanız — destek ekibiyle iletişime geçin."
     },
+    "rejectedTechnical": {
+      "label": "Yeniden çekim gerekiyor",
+      "title": "Fotoğrafları kontrol edemedik.",
+      "body": "Moderatör belgeleri seçemedi. Yeniden fotoğraf çekin - tekrar kontrol edelim."
+    },
     "notStarted": {
       "label": "Başlanmadı",
       "title": "Kimliğinizi doğrulayın.",
@@ -1047,7 +1052,8 @@
     "justNow": "az önce",
     "minutesAgo": "{n} dk önce",
     "hoursAgo": "{n} sa önce",
-    "daysAgo": "{n} gün önce"
+    "daysAgo": "{n} gün önce",
+    "repairCta": "Belgeleri yeniden yükleyin"
   },
   "Options": {
     "GENDER": {

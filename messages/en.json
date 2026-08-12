@@ -1034,6 +1034,11 @@
       "title": "Didn't pass verification.",
       "body": "Your documents weren't accepted. If you think this is a mistake — contact support."
     },
+    "rejectedTechnical": {
+      "label": "Reshoot needed",
+      "title": "We couldn't check your photos.",
+      "body": "The moderator couldn't make out your documents. Take new photos - and we'll check again."
+    },
     "notStarted": {
       "label": "Not started",
       "title": "Confirm your identity.",
@@ -1047,7 +1052,8 @@
     "justNow": "just now",
     "minutesAgo": "{n} min ago",
     "hoursAgo": "{n} h ago",
-    "daysAgo": "{n} d ago"
+    "daysAgo": "{n} d ago",
+    "repairCta": "Upload documents again"
   },
   "Options": {
     "GENDER": {

@@ -7,20 +7,34 @@
  * verification_status:
  *   - submitted / pending_review → "Модератор смотрит, обычно 2-4 часа"
  *   - needs_changes              → "Нужно поправить" + кнопка
- *   - rejected                   → "Не прошёл" (final)
+ *   - rejected                   → "Не прошёл": кнопка при техническом отказе,
+ *                                  поддержка при блокирующем
  *
  * Если verification_submitted_at задан — показываем относительное время
  * ("отправлено 1 час назад").
+ *
+ * ВАЖНО (12.08.2026): кнопка здесь - не украшение, а единственный вход в
+ * повторную подачу документов для человека, который дошёл до lifecycle='active'
+ * с неодобренной верификацией. Без неё решение модератора needs_changes/
+ * rejected становилось для него необратимым: экраны починки гейтились шагом
+ * онбординга, а шаг у него уже 'active'.
  */
 
 "use client";
 import type { VerificationStatus } from "@/lib/state-machine/types";
 import { Headline } from "./Headline";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
 type Props = {
   status: VerificationStatus;
   submittedAt: string | null;
+  /**
+   * Куда вести за повторной подачей документов. null - чинить нечего
+   * (статус не требует действий) либо нельзя (блокирующий отказ: подделка,
+   * катфиш, несовершеннолетний - таким retry закрыт, узла в DOM быть не должно).
+   */
+  repairHref?: string | null;
 };
 
 type Content = {
@@ -29,7 +43,11 @@ type Content = {
   body: string;
 };
 
-function contentFor(status: VerificationStatus, t: ReturnType<typeof useTranslations>): Content {
+function contentFor(
+  status: VerificationStatus,
+  t: ReturnType<typeof useTranslations>,
+  canRepair: boolean,
+): Content {
   switch (status) {
     case "documents_uploaded":
     case "liveness_uploaded":
@@ -46,11 +64,20 @@ function contentFor(status: VerificationStatus, t: ReturnType<typeof useTranslat
         body: t("needsChanges.body"),
       };
     case "rejected":
-      return {
-        eyebrow: t("rejected.label"),
-        title: t("rejected.title"),
-        body: t("rejected.body"),
-      };
+      // Технический отказ («не смогли разобрать фото») и блокирующий
+      // («не подтвердили личность») - разные сообщения. Отличаем по тому, дали
+      // ли нам ссылку на починку: её считает сервер по reject_category.
+      return canRepair
+        ? {
+            eyebrow: t("rejectedTechnical.label"),
+            title: t("rejectedTechnical.title"),
+            body: t("rejectedTechnical.body"),
+          }
+        : {
+            eyebrow: t("rejected.label"),
+            title: t("rejected.title"),
+            body: t("rejected.body"),
+          };
     case "not_started":
     case "phone_verified":
       return {
@@ -82,9 +109,10 @@ function timeAgo(iso: string | null, tTime: ReturnType<typeof useTranslations>):
   return tTime("daysAgo", { n: day });
 }
 
-export function VerificationPlashka({ status, submittedAt }: Props) {
+export function VerificationPlashka({ status, submittedAt, repairHref = null }: Props) {
   const t = useTranslations("VerificationPlashka");
-  const c = contentFor(status, t);
+  const canRepair = repairHref !== null;
+  const c = contentFor(status, t, canRepair);
   const ago = timeAgo(submittedAt, t);
 
   return (
@@ -140,6 +168,25 @@ export function VerificationPlashka({ status, submittedAt }: Props) {
       >
         {c.body}
       </p>
+      {repairHref ? (
+        <Link
+          href={repairHref}
+          style={{
+            display: "block",
+            marginTop: "24px",
+            padding: "16px 24px",
+            borderRadius: "999px",
+            background: "var(--color-v2-accent)",
+            color: "#fff",
+            fontSize: "15px",
+            fontWeight: 700,
+            textAlign: "center",
+            textDecoration: "none",
+          }}
+        >
+          {t("repairCta")}
+        </Link>
+      ) : null}
     </div>
   );
 }
