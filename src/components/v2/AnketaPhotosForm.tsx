@@ -87,7 +87,15 @@ export function V2AnketaPhotosForm({ initial = [] }: { initial?: InitialPhoto[] 
   }
 
   async function remove(id: string) {
-    await fetch(`/api/onboarding/profile/photo/${id}`, { method: "DELETE" });
+    // Убираем превью, ТОЛЬКО если сервер подтвердил удаление. Раньше ответ не
+    // читали вовсе - слот пустел на экране, а снимок оставался в базе с
+    // is_main=true и продолжал показываться в подборе. Дальше человек упирался в
+    // «фото такого типа уже загружено» на визуально пустом слоте или уходил в
+    // мэтчинг с тем самым фото, которое считал удалённым. Роут отвечает 500
+    // именно ради этого (см. комментарий в photo/[id]/route.ts), а 409
+    // wrong_step здесь возможен так же, как и на «готово».
+    const outcome = await submitTo(`/api/onboarding/profile/photo/${id}`, undefined, "DELETE");
+    if (outcome.kind !== "ok") return;
     setPhotos((p) => p.filter((x) => x.id !== id));
   }
 
@@ -175,6 +183,7 @@ export function V2AnketaPhotosForm({ initial = [] }: { initial?: InitialPhoto[] 
                     <button
                       onClick={() => remove(photo.id)}
                       type="button"
+                      disabled={busy}
                       style={{
                         position: "absolute",
                         top: "6px",

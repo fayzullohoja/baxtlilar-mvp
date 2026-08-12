@@ -2,9 +2,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   parseStepOutcome,
   postStep,
+  staysOnScreen,
   stepMovedHref,
   stepSubmitEffect,
   submitNoticeKind,
+  TRANSITION_FAILED_CODE,
 } from "./submit-step";
 
 /**
@@ -86,6 +88,22 @@ describe("parseStepOutcome", () => {
       path: "/",
       dataLost: false,
     });
+  });
+
+  it("сломалась машина переходов - это ОШИБКА на форме, а не увод в корень", () => {
+    // Регресс на бесконечную перезагрузку экрана. tryTransition падает не только
+    // когда шаг сменился: «пользователя не нашли» и отказ самой RPC (у неё свой
+    // SQL-вайтлист, который уже расходился с TS-таблицей) шаг НЕ двигают. Раньше
+    // всё это приезжало как wrong_step без current, клиент молча уводил в
+    // корень, корень возвращал на ту же страницу - и так по кругу, без единого
+    // сообщения. Теперь у поломки свой код: человек остаётся на форме и видит текст.
+    expect(parseStepOutcome(409, { ok: false, error: TRANSITION_FAILED_CODE })).toEqual({
+      kind: "error",
+      code: TRANSITION_FAILED_CODE,
+    });
+    const e = stepSubmitEffect(parseStepOutcome(409, { ok: false, error: TRANSITION_FAILED_CODE }));
+    expect(e.navigateTo).toBeNull();
+    expect(submitNoticeKind(e.errorCode, e.stepMoved)).toBe("error");
   });
 
   it("409 с неизвестным шагом всё равно уводит человека с формы", () => {
@@ -212,6 +230,44 @@ describe("stepSubmitEffect + submitNoticeKind - что реально увиди
     const e = stepSubmitEffect(parseStepOutcome(500, { ok: false }));
     expect(e).toEqual({ navigateTo: null, errorCode: "failed", stepMoved: false });
     expect(submitNoticeKind(e.errorCode, e.stepMoved)).toBe("error");
+  });
+});
+
+describe("кнопка отпускается, только когда человек остаётся на экране", () => {
+  /**
+   * Регресс на двойной тап. router.replace возвращает управление сразу, а
+   * страница меняется позже (своего loading.tsx в дереве [locale] нет), поэтому
+   * форма остаётся на экране и кликабельной. Если снять busy сразу, второй тап
+   * уедет на сервер уже с переведённым шагом, получит 409 и человеку соврут
+   * «введённое не сохранилось - заполните заново», хотя первый запрос всё
+   * сохранил. После fix f5978ad двойной тап - ГЛАВНЫЙ поставщик 409 wrong_step.
+   */
+  it("успешный шаг: уходим на следующий экран - кнопку держим нажатой", () => {
+    const e = stepSubmitEffect(parseStepOutcome(200, { ok: true, next: "/v2/anketa/health" }));
+    expect(staysOnScreen(e)).toBe(false);
+  });
+
+  it("шаг сменился: уходим на настоящий экран - кнопку держим нажатой", () => {
+    const moved = parseStepOutcome(409, {
+      ok: false,
+      error: "wrong_step",
+      current: "needs_changes",
+    });
+    expect(staysOnScreen(stepSubmitEffect(moved))).toBe(false);
+  });
+
+  it("загрузка фото (ok без next): остаёмся на экране - кнопку отпускаем", () => {
+    const e = stepSubmitEffect(parseStepOutcome(200, { ok: true, photo: { id: "p1" } }));
+    expect(staysOnScreen(e)).toBe(true);
+  });
+
+  it("ошибка: остаёмся на форме - кнопку отпускаем, иначе повторить нечем", () => {
+    expect(staysOnScreen(stepSubmitEffect(parseStepOutcome(500, { ok: false })))).toBe(true);
+    expect(
+      staysOnScreen(
+        stepSubmitEffect(parseStepOutcome(409, { ok: false, error: TRANSITION_FAILED_CODE })),
+      ),
+    ).toBe(true);
   });
 });
 

@@ -31,6 +31,26 @@ export class TransitionError extends Error {
     this.name = "TransitionError";
   }
 }
+
+/**
+ * Шаг человека уже НЕ тот, из которого разрешён этот переход.
+ *
+ * ПОЧЕМУ отдельный класс. Это единственная неудача перехода, про которую точно
+ * известно: onboarding_step у человека сменился, и повтор запроса не поможет
+ * никогда - надо вести человека на его настоящий экран. Все остальные неудачи
+ * (пользователя не нашли, RPC отказала, графы TS и SQL разошлись) шаг НЕ
+ * двигают: там как раз повтор осмыслен, а увод с экрана - вреден. Раньше
+ * tryTransition сваливал их всех в 'wrong_step', и клиент молча уводил человека
+ * в корень, корень возвращал на ту же страницу - кнопка «Далее» бесконечно
+ * перезагружала экран без единого сообщения.
+ */
+export class WrongStepError extends TransitionError {
+  constructor(from: string, to: string) {
+    super(`disallowed onboarding_step: ${from} -> ${to}`);
+    this.name = "WrongStepError";
+  }
+}
+
 export class ConcurrencyError extends Error {
   constructor() {
     super("optimistic concurrency conflict");
@@ -64,9 +84,7 @@ export async function transition(
     // с аудитом в user_state_transitions и optimistic concurrency.
     const back = ONBOARDING_BACK[cur.onboarding_step as OnboardingStep];
     if (!allowed.includes(patch.onboarding_step) && patch.onboarding_step !== back) {
-      throw new TransitionError(
-        `disallowed onboarding_step: ${cur.onboarding_step} -> ${patch.onboarding_step}`,
-      );
+      throw new WrongStepError(cur.onboarding_step, patch.onboarding_step);
     }
   }
 
@@ -89,19 +107,35 @@ export async function transition(
 /**
  * Обёртка для API-роутов: не бросает на гонке/неверном шаге, а возвращает результат.
  * Фикс BUG-1: двойной submit → 409, а не 500.
+ *
+ * Три РАЗНЫХ исхода, и путать их нельзя - клиент по ним решает, что сказать
+ * человеку (см. parseStepOutcome в src/lib/onboarding/submit-step.ts):
+ *  - "conflict"          - гонка по updated_at, повтор помогает;
+ *  - "wrong_step"        - шаг человека сменился, повтор не поможет никогда,
+ *                          человека надо увести на его настоящий экран;
+ *  - "transition_failed" - сломалась сама машина переходов (пользователя не
+ *                          нашли, RPC отказала, графы TS и SQL разошлись). Шаг
+ *                          при этом остался ПРЕЖНИМ, уводить человека некуда, и
+ *                          молчать нельзя: надо показать ошибку.
  */
 export async function tryTransition(
   userId: string,
   patch: UserStatePatch,
   reason: string,
   triggeredBy: TriggeredBy,
-): Promise<{ ok: true } | { ok: false; error: "conflict" | "wrong_step" }> {
+): Promise<{ ok: true } | { ok: false; error: "conflict" | "wrong_step" | "transition_failed" }> {
   try {
     await transition(userId, patch, reason, triggeredBy);
     return { ok: true };
   } catch (e) {
     if (e instanceof ConcurrencyError) return { ok: false, error: "conflict" };
-    if (e instanceof TransitionError) return { ok: false, error: "wrong_step" };
+    if (e instanceof WrongStepError) return { ok: false, error: "wrong_step" };
+    if (e instanceof TransitionError) {
+      // Логируем: снаружи этот код виден человеку как «что-то пошло не так», и
+      // без строки в логах разбирать причину будет не по чему.
+      console.error("[transition] failed:", e.message);
+      return { ok: false, error: "transition_failed" };
+    }
     throw e;
   }
 }

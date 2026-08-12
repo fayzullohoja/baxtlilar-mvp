@@ -41,8 +41,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     user.lifecycle_state !== "onboarding" ||
     !user.onboarding_step.startsWith("tutorial_")
   ) {
+    // lifecycle отдаём рядом с шагом - ровно как loadUserForStep: клиент по этой
+    // паре считает настоящий экран человека и уводит его туда одним переходом.
     return NextResponse.json(
-      { ok: false, error: "wrong_step", current: user.onboarding_step },
+      {
+        ok: false,
+        error: "wrong_step",
+        current: user.onboarding_step,
+        lifecycle: user.lifecycle_state,
+      },
       { status: 409 },
     );
   }

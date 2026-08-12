@@ -2,18 +2,26 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
-import { postStep, stepSubmitEffect, type StepSubmitOutcome } from "@/lib/onboarding/submit-step";
+import {
+  postStep,
+  staysOnScreen,
+  stepSubmitEffect,
+  type StepSubmitOutcome,
+} from "@/lib/onboarding/submit-step";
 
 /** Тело шага: обычная форма шлёт JSON, загрузка фото - FormData, publish - ничего. */
 export type StepPayload = Record<string, unknown> | FormData | undefined;
 
-function buildInit(payload: StepPayload): RequestInit {
-  if (payload instanceof FormData) return { method: "POST", body: payload };
+/** Метод запроса. DELETE нужен удалению фото - оно ходит через тот же слой. */
+export type StepMethod = "POST" | "DELETE";
+
+function buildInit(payload: StepPayload, method: StepMethod): RequestInit {
+  if (payload instanceof FormData) return { method, body: payload };
   if (payload === undefined) {
-    return { method: "POST", headers: { "content-type": "application/json" } };
+    return { method, headers: { "content-type": "application/json" } };
   }
   return {
-    method: "POST",
+    method,
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload),
   };
@@ -46,13 +54,17 @@ export function useAnketaSubmit(url: string) {
    * (загрузка снимка и «готово»), но состояние busy/ошибки у формы одно.
    */
   const submitTo = useCallback(
-    async (target: string, payload?: StepPayload): Promise<StepSubmitOutcome> => {
+    async (
+      target: string,
+      payload?: StepPayload,
+      method: StepMethod = "POST",
+    ): Promise<StepSubmitOutcome> => {
       if (busyRef.current) return { kind: "error", code: "busy" };
       busyRef.current = true;
       setBusy(true);
       setErrorCode(null);
       setStepMoved(false);
-      const outcome = await postStep(target, buildInit(payload));
+      const outcome = await postStep(target, buildInit(payload, method));
       // Решение целиком в stepSubmitEffect - там же оно и протестировано.
       // Метка объяснения едет в адресе: эта форма после replace размонтируется,
       // читать баннер человеку будет негде.
@@ -60,8 +72,14 @@ export function useAnketaSubmit(url: string) {
       setStepMoved(effect.stepMoved);
       setErrorCode(effect.errorCode);
       if (effect.navigateTo) router.replace(effect.navigateTo);
-      busyRef.current = false;
-      setBusy(false);
+      // Кнопку отпускаем, только если человек остаётся на этом экране (правило и
+      // причина - в staysOnScreen). Уходим - держим нажатой до конца перехода:
+      // иначе второй тап по «Далее» уедет на сервер уже с переведённым шагом,
+      // получит 409 и человеку соврут, что введённое пропало.
+      if (staysOnScreen(effect)) {
+        busyRef.current = false;
+        setBusy(false);
+      }
       return outcome;
     },
     [router],

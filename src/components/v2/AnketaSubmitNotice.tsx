@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { submitNoticeKind } from "@/lib/onboarding/submit-step";
+import { submitNoticeKind, TRANSITION_FAILED_CODE } from "@/lib/onboarding/submit-step";
 import { stepMovedBoxStyle } from "./StepMovedNotice";
 
 const errorBoxStyle: React.CSSProperties = {
@@ -49,9 +49,14 @@ export function AnketaSubmitNotice({
     );
   }
   if (kind !== "error" || !errorCode) return null;
-  return (
-    <div style={errorBoxStyle}>
-      {errorCopy?.[errorCode] ?? errorCopy?.failed ?? t("Anketa.err_failed")}
-    </div>
-  );
+  // Сломалась машина переходов: данные шага роут записал ДО перехода, поэтому
+  // общий текст «не получилось сохранить» здесь врал бы - человек пошёл бы
+  // перезаполнять готовый шаг. Говорим нейтральное «что-то пошло не так»:
+  // повтор в этом случае как раз осмыслен.
+  const text =
+    errorCopy?.[errorCode] ??
+    (errorCode === TRANSITION_FAILED_CODE ? t("Common.error_generic") : undefined) ??
+    errorCopy?.failed ??
+    t("Anketa.err_failed");
+  return <div style={errorBoxStyle}>{text}</div>;
 }

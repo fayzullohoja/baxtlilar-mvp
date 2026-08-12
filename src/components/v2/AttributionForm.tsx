@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 
 /**
  * V2 Attribution (Blueprint §3.3 B8).
@@ -12,6 +13,11 @@ import { Button } from "./Button";
  * Skip разрешён — не блокируем прогресс.
  *
  * API: POST /api/onboarding/attribution { source, skip }.
+ *
+ * Отправка через общий слой (useAnketaSubmit): шаг стоит внутри той же цепочки,
+ * что и анкета, и на 409 wrong_step (например после «перезапустить онбординг»)
+ * человека надо уводить на его настоящий экран, а не предлагать повтор, который
+ * не сработает никогда.
  */
 
 const SOURCES = [
@@ -33,32 +39,17 @@ type Source = (typeof SOURCES)[number]["value"];
 
 export function V2AttributionForm() {
   const t = useTranslations("Onboarding");
-  const router = useRouter();
+  const { busy, errorCode, stepMoved, submit: submitAttr } = useAnketaSubmit(
+    "/api/onboarding/attribution",
+  );
   const [selected, setSelected] = useState<Source | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+
+  // Свой текст у экрана один на все коды - как и было до общего слоя.
+  const ERR_COPY: Record<string, string> = { failed: t("attr_error") };
 
   async function submit(payload: { source?: Source; skip?: boolean }) {
     if (busy) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/onboarding/attribution", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = (await res.json().catch(() => ({}))) as { ok: boolean; next?: string };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      setErr(t("attr_error"));
-    } catch {
-      setErr(t("attr_error"));
-    } finally {
-      setBusy(false);
-    }
+    await submitAttr(payload);
   }
 
   return (
@@ -93,22 +84,7 @@ export function V2AttributionForm() {
         })}
       </div>
 
-      {err ? (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "16px",
-          }}
-        >
-          {err}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} errorCopy={ERR_COPY} />
 
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
         <Button

@@ -34,6 +34,15 @@ export type StepSubmitOutcome =
   /** Всё остальное: валидация, отказ сервера, обрыв сети. Повтор осмыслен. */
   | { kind: "error"; code: string };
 
+/**
+ * Код неудачи, который кладёт в тело tryTransition, когда сломалась сама машина
+ * переходов (src/lib/state-machine/transitions.ts). Данные шага при этом УЖЕ
+ * записаны, а шаг человека НЕ сменился - значит и уводить его никуда нельзя, и
+ * говорить «не сохранилось» нельзя. Показываем нейтральное «что-то пошло не
+ * так»: повтор здесь как раз осмыслен.
+ */
+export const TRANSITION_FAILED_CODE = "transition_failed";
+
 function asRecord(raw: unknown): Record<string, unknown> {
   return raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
 }
@@ -57,9 +66,16 @@ export function parseStepOutcome(status: number, raw: unknown): StepSubmitOutcom
       const lifecycle = asString(body.lifecycle) ?? "onboarding";
       return { kind: "step_moved", path: clientNextPath(lifecycle, current), dataLost: true };
     }
-    // tryTransition в конце роута: данные уже записаны, а шаг неизвестен -
-    // ведём в корень, он разведёт человека по его настоящему состоянию.
-    // Молча: терять тут нечего, и объяснять человеку нечего.
+    // tryTransition в конце роута отбил переход по графу: шаг человека реально
+    // сменился (иначе перехода бы не отбили), но какой он теперь - роут не
+    // сказал. Ведём в корень, он разведёт человека по его настоящему состоянию.
+    // Молча: данные шага записаны до перехода, терять тут нечего.
+    //
+    // Сюда попадает ТОЛЬКО сменившийся шаг. Поломка самой машины переходов
+    // приезжает отдельным кодом transition_failed и разбирается ниже как
+    // обычная ошибка - раньше она приходила сюда же, и человека молча уводили в
+    // корень, а корень возвращал его на ту же страницу: кнопка «Далее»
+    // бесконечно перезагружала экран без единого сообщения.
     return { kind: "step_moved", path: "/", dataLost: false };
   }
   return { kind: "error", code: asString(body.detail) ?? asString(body.error) ?? "failed" };
@@ -93,6 +109,25 @@ export function stepSubmitEffect(outcome: StepSubmitOutcome): StepSubmitEffect {
     return { navigateTo: null, errorCode: outcome.code, stepMoved: false };
   }
   return { navigateTo: outcome.next ?? null, errorCode: null, stepMoved: false };
+}
+
+/**
+ * Разблокировать ли кнопку после исхода.
+ *
+ * ПОЧЕМУ не «всегда разблокировать». Уходим с экрана - кнопку НЕ отпускаем.
+ * router.replace возвращает управление сразу, а страница меняется позже: своего
+ * loading.tsx в дереве [locale] нет, поэтому старая форма остаётся на экране и
+ * остаётся кликабельной, а надпись на кнопке успевает вернуться с «Сохраняем…»
+ * на «Далее». На медленной мобильной сети это секунды. Человек, не увидев
+ * реакции, жмёт второй раз - и второй запрос ловит 409 wrong_step, потому что
+ * шаг ему уже перевёл первый. Дальше человеку показывают «введённое не
+ * сохранилось - заполните заново», хотя первый запрос всё сохранил, и он идёт
+ * перезаполнять готовый шаг: ровно тот вред, ради которого всё это чинилось.
+ *
+ * Так же намеренно устроена кнопка «Назад» (BackButton.tsx).
+ */
+export function staysOnScreen(effect: StepSubmitEffect): boolean {
+  return effect.navigateTo === null;
 }
 
 /**

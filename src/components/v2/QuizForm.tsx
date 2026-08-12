@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useTranslations } from 'next-intl';
-import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
+import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
+import { useAnketaSubmit } from "./useAnketaSubmit";
 import { QUESTIONS } from "@/lib/quiz/questions";
 
 /**
@@ -18,46 +19,45 @@ import { QUESTIONS } from "@/lib/quiz/questions";
  * пользователь может «вернуться и переспросить».
  *
  * API: POST /api/onboarding/quiz/complete с answers[].
+ *
+ * Отправка идёт через общий слой (useAnketaSubmit): опрос стоит ВНУТРИ той же
+ * цепочки, что и анкета (photos → quiz → attribution → preview), и гейтится тем
+ * же гардом. Оператор может нажать «перезапустить онбординг» (RPC
+ * admin_restart_onboarding сырым UPDATE ставит шаг bot_language на любом шаге),
+ * пока человек отвечает на Big Five, - и «Готово» упрётся в 409. Своя обработка
+ * показывала на это «не удалось сохранить, попробуйте ещё раз»: повтор не
+ * срабатывал никогда, а ответы терялись молча.
  */
 
 const SCALE_LABELS = { min: "scale_min", max: "scale_max" };
 
 export function V2QuizForm({ locale }: { locale: string }) {
   const t = useTranslations('Quiz');
-  const router = useRouter();
+  const { busy, errorCode, stepMoved, submit: submitQuiz } = useAnketaSubmit(
+    "/api/onboarding/quiz/complete",
+  );
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
 
   const allAnswered = QUESTIONS.every((q) => answers[q.id]);
   const progress = Object.keys(answers).length;
 
+  // save_failed - запись ответов в БД, incomplete_quiz - неполный набор (кнопка
+  // такого не даст, но роут проверяет). Всё остальное, включая обрыв сети, -
+  // общий текст.
+  const ERR_COPY: Record<string, string> = {
+    save_failed: t('err_save_failed'),
+    incomplete_quiz: t('err_save_failed'),
+    failed: t('err_something_wrong'),
+  };
+
   async function submit() {
     if (busy) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/onboarding/quiz/complete", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          answers: QUESTIONS.map((q) => ({
-            question_id: q.id,
-            value: answers[q.id],
-          })),
-        }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { ok: boolean; next?: string };
-      if (data.ok && data.next) {
-        router.replace(data.next);
-        return;
-      }
-      setErr(t('err_save_failed'));
-    } catch {
-      setErr(t('err_something_wrong'));
-    } finally {
-      setBusy(false);
-    }
+    await submitQuiz({
+      answers: QUESTIONS.map((q) => ({
+        question_id: q.id,
+        value: answers[q.id],
+      })),
+    });
   }
 
   return (
@@ -169,23 +169,7 @@ export function V2QuizForm({ locale }: { locale: string }) {
         </div>
       ))}
 
-      {err ? (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#FBE7E4",
-            borderLeft: "3px solid var(--color-v2-danger)",
-            borderRadius: "12px",
-            fontSize: "13px",
-            fontWeight: 600,
-            color: "#9A4B46",
-            fontFamily: "var(--font-v2-body)",
-            marginBottom: "16px",
-          }}
-        >
-          {err}
-        </div>
-      ) : null}
+      <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} errorCopy={ERR_COPY} />
 
       <Button onClick={submit} disabled={busy || !allAnswered} variant="primary">
         {busy ? t('saving') : allAnswered ? t('done') : t('remaining', { count: QUESTIONS.length - progress })}
