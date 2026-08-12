@@ -13,7 +13,6 @@ const MODERATOR_EXPECTED: Permission[] = [
   "users.moderate",
   "profiles.edit", // ← 2026-07-14: правка анкет открыта модераторам (ревью оунера)
   "i18n.edit", // ← 2026-07-14: конструктор текстовок открыт модераторам (ревью оунера)
-  "feedback.view", // ← Task 8: раздел «Отзывы» - чтение обратной связи, рычагов над человеком нет
 ];
 
 // Права, которых у модератора быть НЕ должно (super-only). Явно, чтобы случайное
@@ -27,6 +26,7 @@ const MODERATOR_FORBIDDEN: Permission[] = [
   "staff.manage",
   "settings.edit",
   "invites.manage", // ← Task 10: гашение чужого кода + выпуск мастер-кода - super-only
+  "feedback.view", // ← Task 8: скриншот отзыва - материал уровня паспорта, super-only как весь реестр
 ];
 
 describe("RBAC capability matrix", () => {
@@ -80,8 +80,12 @@ describe("RBAC capability matrix", () => {
     expect(can("superadmin", "invites.manage")).toBe(true);
   });
 
-  it("раздел «Отзывы» (feedback.view) - ОБЕИМ ролям (Task 8)", () => {
-    expect(can("moderator", "feedback.view")).toBe(true);
+  // Раньше этот тест фиксировал обратное - что раздел открыт обеим ролям. Так
+  // право и осталось бы широким: сузить его значило получить красный тест и
+  // решить, что ломаешь намеренное решение. Держим утверждение вывернутым
+  // именно здесь, чтобы следующее расширение требовало осознанной правки.
+  it("раздел «Отзывы» (feedback.view) - ТОЛЬКО super (Task 8)", () => {
+    expect(can("moderator", "feedback.view")).toBe(false);
     expect(can("superadmin", "feedback.view")).toBe(true);
   });
 });
