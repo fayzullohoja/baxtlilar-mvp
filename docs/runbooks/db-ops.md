@@ -53,7 +53,7 @@ self-delete).
 
 ## Применение миграций
 
-См. [railway-deploy.md](./railway-deploy.md).
+См. [deploy.md](./deploy.md).
 
 ## GUC `app.session_secret`
 
