@@ -209,7 +209,6 @@ export function CaseStudio({
       {step === 4 && enteredPayload ? (
         <DecisionPanel
           caseId={loadedCase.case_id}
-          userId={loadedCase.user.id}
           payload={enteredPayload}
           faceMatch={faceMatch}
           expectedUpdatedAt={currentUpdatedAt}

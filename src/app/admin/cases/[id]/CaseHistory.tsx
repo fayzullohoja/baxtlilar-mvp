@@ -13,6 +13,10 @@ const ACTION_RU: Record<string, string> = {
   reassigned: "Переназначен",
   reopened: "Переоткрыт",
   blocking_rejected: "Blocking-reject",
+  // Пишется отменой блокирующего отказа (admin_unblock_verification). Кейс,
+  // который читает модератор, заведён этой отменой и без события выглядел бы
+  // как первичная заявка - решение принималось бы вслепую.
+  blocking_reject_revoked: "Блокирующий отказ отменён суперадмином",
 };
 
 function actionLabel(a: string): string {
@@ -138,6 +142,12 @@ export function CaseHistory({
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {events.map((e) => {
               const outcome = e.payload?.["outcome"];
+              // Отменённый блокирующий отказ: категория и текст прошлого
+              // решения - единственный контекст, с которым модератор берёт
+              // заведённый отменой кейс. Строку документов RPC к этому моменту
+              // уже обнулила, так что показать это больше неоткуда.
+              const revokedCat = e.payload?.["revoked_reject_category"];
+              const revokedReason = e.payload?.["revoked_reject_reason"];
               return (
                 <div
                   key={e.id}
@@ -156,6 +166,8 @@ export function CaseHistory({
                   <span style={{ flex: 1 }}>
                     {actionLabel(e.action)}
                     {typeof outcome === "string" ? ` → ${outcome}` : ""}
+                    {typeof revokedCat === "string" ? ` (было: ${revokedCat})` : ""}
+                    {typeof revokedReason === "string" ? ` · «${revokedReason}»` : ""}
                     {e.actor ? (
                       <span style={{ color: ADMIN.ink500 }}> · {e.actor}</span>
                     ) : null}

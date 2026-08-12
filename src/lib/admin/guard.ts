@@ -354,12 +354,46 @@ async function recordScopeViolation(
 }
 
 /**
+ * Кто считается «в очереди модерации» - общий предикат для API-гарда и
+ * server-page гарда. Раньше он был написан дважды и означал
+ * `pending_review AND lifecycle_state='onboarding'`.
+ *
+ * ПОЧЕМУ УБРАЛИ lifecycle_state='onboarding'. Условие было верным, пока в
+ * очередь попадали только до-анкетные. Сейчас нет: по shadow-active человек
+ * дозаполняет анкету и публикуется (lifecycle_state='active'), пока верификация
+ * ещё висит в pending_review, а миграция 20260812140000 разрешила возвращать в
+ * очередь и активного (отмена ошибочного блокирующего отказа). Тот же гард,
+ * который убрали из RPC, оставался здесь - и штатная работа модератора по
+ * такому кейсу упиралась в 403/notFound. Хуже того, каждый такой отказ писался
+ * в admin_scope_violations как попытка выйти за scope: нормальный рабочий путь
+ * выглядел в аудите как нарушение самого модератора.
+ *
+ * ЧТО НЕ ОСЛАБЛИ. Смысл скоупа прежний - модератор видит человека, чья заявка
+ * ПРЯМО СЕЙЧАС у него на проверке; вышел из pending_review (approve/reject) -
+ * доступ закрылся. Ось бана остаётся закрытой, и список тот же, что в RPC
+ * отмены отказа (код banned_lifecycle): забаненному и удалённому в очереди
+ * делать нечего. F-120 (карточка раскрывает паспортную PII) этим не нарушен:
+ * тот же модератор в эту же минуту смотрит паспорт этого человека в студии
+ * кейса - расширился не набор данных, а определение «в очереди».
+ */
+const QUEUE_FORBIDDEN_LIFECYCLE = ["blocked", "pending_ban", "deleted"];
+
+function isInModerationQueue(
+  u: { verification_status: string; lifecycle_state: string } | null | undefined,
+): boolean {
+  return (
+    !!u &&
+    u.verification_status === "pending_review" &&
+    !QUEUE_FORBIDDEN_LIFECYCLE.includes(u.lifecycle_state)
+  );
+}
+
+/**
  * Гард для admin-роутов, обращающихся к данным конкретного юзера.
  *
  * - superadmin: пропускаем без чека (для incident-response).
  * - moderator: пускаем только если юзер в активной очереди модерации
- *   (verification_status='pending_review' AND lifecycle_state='onboarding').
- *   Иначе — 403 + запись в admin_scope_violations.
+ *   (см. isInModerationQueue). Иначе - 403 + запись в admin_scope_violations.
  *
  * R2-#8 (verdict): возвращаем 403 ВО ВСЕХ нелигитимных случаях (включая
  * "юзер не найден") — иначе 404 даёт existence-oracle (можно перебором UUID
@@ -386,8 +420,7 @@ export async function requireInQueueOrSuper(
     .select("id, verification_status, lifecycle_state")
     .eq("id", userId)
     .maybeSingle();
-  const inQueue = !!u && u.verification_status === "pending_review" && u.lifecycle_state === "onboarding";
-  if (inQueue) return { ok: true, userId };
+  if (isInModerationQueue(u)) return { ok: true, userId };
 
   // R2-#8: единый 403 для "не найден" и "вне очереди". Audit-запись пишем
   // только если юзер существует (нет смысла логировать нарушение по
@@ -428,8 +461,7 @@ export async function checkInQueueOrSuperPage(
     .select("id, verification_status, lifecycle_state")
     .eq("id", userId)
     .maybeSingle();
-  const inQueue = !!u && u.verification_status === "pending_review" && u.lifecycle_state === "onboarding";
-  if (inQueue) return { ok: true };
+  if (isInModerationQueue(u)) return { ok: true };
 
   if (u) {
     await recordScopeViolationServerPage(session.adminId, userId, context, ipAddr);

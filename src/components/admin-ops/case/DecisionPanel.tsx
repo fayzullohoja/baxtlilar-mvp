@@ -21,9 +21,11 @@ const BLOCK_CATEGORIES: { value: "fake" | "minor" | "catfish"; label: string }[]
   { value: "catfish", label: "Catfish — чужие фото/личность" },
 ];
 
+// userId в пропсах больше нет: он был нужен ровно для редиректа на карточку
+// клиента после approve, а тот редирект уводил модератора за пределы его
+// скоупа (см. комментарий у router.push ниже).
 export function DecisionPanel({
   caseId,
-  userId,
   payload,
   faceMatch,
   expectedUpdatedAt,
@@ -31,7 +33,6 @@ export function DecisionPanel({
   onBack,
 }: {
   caseId: string;
-  userId: string;
   payload: PassportPayload;
   faceMatch: FaceMatchResult | null;
   expectedUpdatedAt: string;
@@ -102,11 +103,15 @@ export function DecisionPanel({
         setBusy(false);
         return;
       }
-      if (action === "approve") {
-        router.push(`/admin/clients/${userId}`);
-      } else {
-        router.push("/admin/queue/mine");
-      }
+      // После ЛЮБОГО решения человек выходит из очереди: verification_status
+      // становится approved/needs_changes/rejected, и скоуп модератора на него
+      // закрывается (isInModerationQueue в src/lib/admin/guard.ts). Раньше
+      // ветка approve вела на /admin/clients/<id>, то есть на страницу, которая
+      // для модератора гарантированно ответит notFound - и запишет ему
+      // out_of_queue_user_view в admin_scope_violations. Штатное завершение
+      // работы выглядело в аудите как попытка выйти за scope. Возвращаем в
+      // очередь: следующий кейс - там.
+      router.push("/admin/queue/mine");
       router.refresh();
     } catch {
       setError("network");
