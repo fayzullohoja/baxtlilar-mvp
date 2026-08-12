@@ -75,6 +75,10 @@ export default async function Page({
     pending_ban_reason: string | null;
   };
   let danger: DangerData | null = null;
+  // Категория отказа лежит в user_documents, а не в users: без неё danger-zone
+  // не отличит блокирующий отказ от технического и показала бы кнопку отката
+  // там, где RPC ответит not_blocking.
+  let rejectCategory: string | null = null;
   if (can(session.role, "users.sanction")) {
     const { data: u } = await supabaseAdmin()
       .from("users")
@@ -84,6 +88,12 @@ export default async function Page({
       .eq("id", id)
       .maybeSingle();
     danger = (u as DangerData | null) ?? null;
+    const { data: doc } = await supabaseAdmin()
+      .from("user_documents")
+      .select("reject_category")
+      .eq("user_id", id)
+      .maybeSingle();
+    rejectCategory = (doc as { reject_category: string | null } | null)?.reject_category ?? null;
   }
 
   return (
@@ -102,6 +112,7 @@ export default async function Page({
           userId={id}
           lifecycleState={danger.lifecycle_state}
           verificationStatus={danger.verification_status}
+          rejectCategory={rejectCategory}
           pendingBan={
             danger.pending_ban_at
               ? {

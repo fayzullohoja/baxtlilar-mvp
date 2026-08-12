@@ -52,12 +52,20 @@ export async function POST(
     sha_tombstones_cleared?: number;
   };
   if (!r.ok) {
+    // banned_lifecycle - новый код из миграции 20260812140000: отказ ТОЛЬКО для
+    // blocked/pending_ban/deleted. wrong_lifecycle оставлен рядом намеренно: он
+    // придёт, если БД ещё не накатила эту миграцию, и без него старый ответ
+    // превратился бы в 500 «внутренняя ошибка» вместо внятного 409.
     const status =
       r.error === "not_found"
         ? 404
         : r.error === "conflict"
           ? 409
-          : r.error === "not_rejected" || r.error === "wrong_lifecycle" || r.error === "not_blocking" || r.error === "no_documents"
+          : r.error === "not_rejected" ||
+              r.error === "banned_lifecycle" ||
+              r.error === "wrong_lifecycle" ||
+              r.error === "not_blocking" ||
+              r.error === "no_documents"
             ? 409
             : 500;
     return NextResponse.json({ ok: false, error: r.error }, { status });

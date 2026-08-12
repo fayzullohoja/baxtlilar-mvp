@@ -17,9 +17,16 @@ type Props = {
   userId: string;
   lifecycleState: string;
   verificationStatus: string;
+  rejectCategory: string | null;
   pendingBan: { at: string; byAdminId: string; reason: string | null } | null;
   currentAdminId: string;
 };
+
+// Состояния, в которых откат блокирующего отказа запрещён самой RPC
+// (миграция 20260812140000, код ошибки banned_lifecycle). Список задан
+// исключением, а не перечислением разрешённых: так он совпадает с SQL и не
+// разъедется, когда в lifecycle_state добавят новое рабочее состояние.
+const UNBLOCK_FORBIDDEN_LIFECYCLE = ["blocked", "pending_ban", "deleted"];
 
 type Kind =
   | "ban_propose"
@@ -99,6 +106,7 @@ export function DangerZone({
   userId,
   lifecycleState,
   verificationStatus,
+  rejectCategory,
   pendingBan,
   currentAdminId,
 }: Props) {
@@ -135,6 +143,27 @@ export function DangerZone({
     (!cfg?.typedConfirm || typed === cfg.typedConfirm);
 
   const isProposer = pendingBan?.byAdminId === currentAdminId;
+
+  // Кнопка отката блокирующего отказа. Условие зеркалит гарды RPC один в один,
+  // иначе оператор жмёт кнопку и получает ошибку вместо действия.
+  //
+  // ПОЧЕМУ ЭТО ПРАВКА, А НЕ КОСМЕТИКА: раньше здесь стояло
+  // `lifecycleState === "blocked" && verificationStatus === "rejected"`, и это
+  // не совпадало с бэком НИГДЕ. Блокирующий отказ не трогает lifecycle_state
+  // (в 'blocked' переводит только подтверждение бана), поэтому у того, кому
+  // откат нужен, состояние onboarding или active - кнопки он не видел. А когда
+  // кнопка всё же появлялась (человека забанили отдельно), RPC отвечала
+  // отказом. Множества «видно» и «работает» не пересекались: через интерфейс
+  // действие было недостижимо с самого начала.
+  //
+  // Забаненному кнопку по-прежнему не показываем - но теперь потому, что так
+  // решает бэк: сначала «Разбанить» (кнопка рядом), потом откат верификации.
+  const canUnblockVerification =
+    verificationStatus === "rejected" &&
+    // Тот же предикат, что в RPC: coalesce(reject_category,'') <> 'blocking'.
+    // NULL сюда НЕ попадает - у технического отказа откатывать нечего.
+    rejectCategory === "blocking" &&
+    !UNBLOCK_FORBIDDEN_LIFECYCLE.includes(lifecycleState);
 
   return (
     <div style={box}>
@@ -174,7 +203,7 @@ export function DangerZone({
       </Row>
 
       {/* Откат blocking-reject */}
-      {lifecycleState === "blocked" && verificationStatus === "rejected" ? (
+      {canUnblockVerification ? (
         <Row label="Верификация">
           <Button onClick={() => start("unblock_verif")}>Откатить блокировку</Button>
         </Row>
