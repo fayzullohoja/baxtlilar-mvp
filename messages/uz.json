@@ -709,7 +709,7 @@
     "err_rate_limited": "Siz so'nggi 24 soat ichida uchta fikr qoldirdingiz. Keyinroq urinib ko'ring.",
     "err_too_fast": "Juda koʻp soʻrov ketma-ket yuborildi. Bir oz kutib, yana urinib koʻring.",
     "err_too_large": "Fayl 5 MB dan katta. Kichikroq skrinshot yuboring.",
-    "err_bad_type": "Bu fayl toʻgʻri kelmadi. JPG, PNG yoki WEBP skrinshot yuboring.",
+    "err_bad_type": "Bu fayl toʻgʻri kelmadi. JPG, PNG, WebP yoki HEIC skrinshot yuboring.",
     "err_generic": "Yuborib boʻlmadi. Yana urinib koʻring - yozganingiz saqlanib qoldi.",
     "shot_failed": "Fikr saqlandi, lekin skrinshotni biriktirib boʻlmadi.",
     "shot_retry": "Skrinshotni yana biriktirish",
