@@ -13,6 +13,7 @@ const MODERATOR_EXPECTED: Permission[] = [
   "users.moderate",
   "profiles.edit", // ← 2026-07-14: правка анкет открыта модераторам (ревью оунера)
   "i18n.edit", // ← 2026-07-14: конструктор текстовок открыт модераторам (ревью оунера)
+  "feedback.view", // ← Task 8: раздел «Отзывы» - чтение обратной связи, рычагов над человеком нет
 ];
 
 // Права, которых у модератора быть НЕ должно (super-only). Явно, чтобы случайное
@@ -77,5 +78,10 @@ describe("RBAC capability matrix", () => {
   it("раздел «Приглашения» (invites.manage) - ТОЛЬКО super (Task 10)", () => {
     expect(can("moderator", "invites.manage")).toBe(false);
     expect(can("superadmin", "invites.manage")).toBe(true);
+  });
+
+  it("раздел «Отзывы» (feedback.view) - ОБЕИМ ролям (Task 8)", () => {
+    expect(can("moderator", "feedback.view")).toBe(true);
+    expect(can("superadmin", "feedback.view")).toBe(true);
   });
 });

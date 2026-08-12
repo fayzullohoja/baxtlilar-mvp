@@ -27,6 +27,10 @@ export const PERMISSIONS = [
   // людей). Оба рычага - консеквентные, по образцу users.sanction, поэтому
   // super-only (НЕ добавлено в MODERATOR_CAPS ниже).
   "invites.manage",
+  // Раздел «Отзывы» (Task 8): чтение того, что люди пишут о приложении. Рычагов
+  // над человеком тут нет - только чтение, поэтому право открыто И модератору
+  // (см. MODERATOR_CAPS): отзыв разбирает тот же человек, что держит очередь.
+  "feedback.view",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -42,6 +46,7 @@ const MODERATOR_CAPS: readonly Permission[] = [
   "users.moderate",
   "profiles.edit", // ревью оунера 2026-07-14: правка анкет открыта и модераторам (всё в аудите)
   "i18n.edit", // конструктор текстовок: оунер просил «под ролями супер админа и модератора»; всё в аудите
+  "feedback.view", // Task 8: отзывы читает и модератор - это обратная связь, а не управление доступом
 ];
 
 const ROLE_CAPS: Record<AdminRole, ReadonlySet<Permission>> = {
