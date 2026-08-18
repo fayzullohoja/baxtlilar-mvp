@@ -12,12 +12,14 @@ Telegram Mini App для серьёзных знакомств в Узбекис
 
 - **Next.js 16** (App Router, async cookies/headers/params) · React 19 · TypeScript strict · Tailwind v4
 - **Postgres напрямую** через node-`pg` (`src/lib/db/`) — без Supabase/PostgREST
-- **Файловое хранилище** на Railway Volume (`src/lib/storage/`) — приватные фото/документы отдаются только через подписанный (HMAC+TTL) роут `/api/storage/o/...`
+- **Файловое хранилище** на диске сервера (`STORAGE_DIR`, `src/lib/storage/`) — приватные фото/документы отдаются только через подписанный (HMAC+TTL) роут `/api/storage/o/...`
 - Auth: Telegram **initData (HMAC-SHA256)** + httpOnly cookie session
 - next-intl 4 (RU/UZ) · Vitest · Zod
-- Хостинг: **Railway** (Nixpacks, Node 22, pnpm 10)
+- Хостинг: **свой VPS в Ташкенте**, `https://app.baxtlilar.uz` (требование резидентности ПД РУз).
+  Выкладка на сервере: `sudo baxtlilar-deploy`. Railway погашен 10.08.2026, автодеплой снят
+  12.08.2026 - см. [`docs/runbooks/deploy.md`](docs/runbooks/deploy.md).
 
-> Раньше проект работал на Vercel + Supabase; мигрирован на Railway + native Postgres.
+> История: Vercel + Supabase -> Railway + native Postgres -> свой VPS (с 10.08.2026).
 > Подробности слоя данных и деплоя — в [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Локальный запуск
@@ -39,7 +41,7 @@ pnpm typecheck    # tsc --noEmit
 pnpm test:run     # vitest (CI-режим)
 pnpm build        # next build
 pnpm webhook:set  # регистрирует webhook бота в Telegram
-railway up        # деплой на Railway (healthcheck /api/health)
+sudo baxtlilar-deploy   # НА СЕРВЕРЕ: бэкап, git pull, миграции, сборка, рестарт, health
 ```
 
 ## Структура

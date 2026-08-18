@@ -50,10 +50,13 @@ node scripts/seed-10k.mjs --url "$DATABASE_URL" --n 200   # пересеять �
 ## Стек
 - Next.js 16 (App Router, **async** cookies/headers/params; Server Actions возвращают void/Promise<void>)
 - React 19 · TypeScript strict · Tailwind v4
-- **Postgres напрямую** (node-`pg`, `src/lib/db/`) + файловое хранилище на **Railway Volume** (`src/lib/storage/`) — доступ только с сервера, RLS off (service-уровень). **Supabase больше НЕ используется.**
+- **Postgres напрямую** (node-`pg`, `src/lib/db/`) + файловое хранилище на **диске сервера** (`STORAGE_DIR`, `src/lib/storage/`) — доступ только с сервера, RLS off (service-уровень). **Supabase больше НЕ используется.**
 - Auth: Telegram **initData (HMAC-SHA256)** + httpOnly cookie session
 - next-intl 4 (RU/UZ) · Vitest · Zod
-- **Railway** (Nixpacks, Node 22, pnpm 10): один сервис `baxtlilar-mvp` + сервис Postgres + Volume `/data`; деплой `railway up`, healthcheck `/api/health`
+- **Свой VPS в Ташкенте**, `https://app.baxtlilar.uz`: приложение + Postgres на одной машине,
+  выкладка на сервере через `sudo baxtlilar-deploy` (бэкап -> git pull -> миграции -> сборка ->
+  рестарт -> health), миграции - `sudo baxtlilar-migrate`. Railway погашен 10.08.2026, автодеплой
+  снят 12.08.2026; `railway up` больше НЕ выкладывает. Подробности - `docs/runbooks/deploy.md`.
 
 ## 9 инвариантов (нельзя нарушать)
 1. Контакты защищены: телефон/документы/селфи не в публичном API.
@@ -70,7 +73,7 @@ node scripts/seed-10k.mjs --url "$DATABASE_URL" --n 200   # пересеять �
 - `supabaseAdmin()` (`src/lib/supabase/admin.ts`) — историческое имя; теперь это **native-клиент** поверх node-`pg` + файлового хранилища. Поверхность `.from()/.rpc()/.storage` сохранена, поэтому call-site'ы не трогаем.
 - `src/lib/db/query-builder.ts` — мини query-builder под используемое подмножество PostgREST (select/insert/update/upsert/delete · eq/neq/gt/gte/lt/lte/in/is/not · order/limit · single/maybeSingle · count+head · RETURNING · `.rpc()` именованными аргументами). Все значения параметризуются, идентификаторы валидируются.
 - `.rpc(name, …)` зовёт ту же Postgres-функцию: `process_interest`/`get_recommendations`/`get_chat_list` возвращают набор (массив), остальные — скаляр.
-- `src/lib/storage/fs-store.ts` — фото/документы на Railway Volume (`STORAGE_DIR=/data`); приватность через подписанный (HMAC+TTL) роут `/api/storage/o/<bucket>/<path>` — НЕ публичные ссылки.
+- `src/lib/storage/fs-store.ts` — фото/документы на диске сервера (`STORAGE_DIR`); приватность через подписанный (HMAC+TTL) роут `/api/storage/o/<bucket>/<path>` — НЕ публичные ссылки.
 - Миграции `supabase/migrations/*.sql` — обычный Postgres; накатываются по timestamp-порядку через `psql` (строки `storage.buckets` пропускаются — в голом PG их нет).
 
 ## Чего НЕ делать
@@ -88,12 +91,12 @@ pnpm test:run     # CI-режим (run once)
 pnpm typecheck    # tsc --noEmit
 pnpm lint         # eslint
 pnpm build        # next build
-railway up        # деплой на Railway (Nixpacks, healthcheck /api/health)
+sudo baxtlilar-deploy   # НА СЕРВЕРЕ: выкладка целиком (см. docs/runbooks/deploy.md)
 # накатить миграции: psql "$DATABASE_PUBLIC_URL?sslmode=require" -f <combined.sql>
 ```
 
 ## Env (обязательные)
-`DATABASE_URL` (Postgres), `STORAGE_DIR` (на Railway `/data`), `SESSION_SECRET` (32+), `TELEGRAM_BOT_TOKEN`, `BOT_USERNAME`, `BOT_WEBAPP_SHORT_NAME`, `TELEGRAM_WEBHOOK_SECRET` (16+). Опц.: `APP_URL`, `SUPPORT_URL`, `PGSSL=require` (для внешнего Postgres).
+`DATABASE_URL` (Postgres), `STORAGE_DIR` (каталог хранилища на сервере), `SESSION_SECRET` (32+), `TELEGRAM_BOT_TOKEN`, `BOT_USERNAME`, `BOT_WEBAPP_SHORT_NAME`, `TELEGRAM_WEBHOOK_SECRET` (16+). Опц.: `APP_URL`, `SUPPORT_URL`, `PGSSL=require` (для внешнего Postgres).
 
 ## Dev-флаги
 - `DEV_BYPASS_TG=1` — пропустить HMAC initData в браузере (только локально; в проде НЕ ставить).
