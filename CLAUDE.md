@@ -4,8 +4,33 @@
 
 ## Что это
 Telegram Mini App для серьёзных знакомств в Узбекистане.
-**Полные спеки:** `~/Desktop/Baxtlilar/` (Чат 1–13 + Excel-бэклог + пояснительная записка).
-**План разработки:** `~/.claude/plans/sequential-popping-crayon.md`.
+**Полные спеки:** докстор, `shared/17. Baxtlilar` (Чат 1-13 + Excel-бэклог + пояснительная
+записка). Достать: `ofdoc get "shared/17. Baxtlilar/<путь>" <файл>`; список - `ofdoc tree "shared/17. Baxtlilar" 3`.
+Локальная копия для чтения: `~/Desktop/Все файлы/Baxtlilar/спеки/` (см. README там же).
+Прежний путь `~/Desktop/Baxtlilar/` - от старой машины, его больше нет.
+
+**План разработки:** файла `~/.claude/plans/sequential-popping-crayon.md` больше не существует,
+и копии не сохранилось - он был на старой машине. Действующие планы лежат в самом репозитории:
+`docs/p0-implementation-plan-2026-07-02.md`, `docs/admin-plan-2026-07-04.md`,
+`docs/owner-feedback-plan-2026-07-07.md`, `docs/review-plan-2026-07-09.md`.
+
+## Локальная разработка (собрано 18.08.2026)
+
+Окружение на этой машине уже поднято: Postgres 16 через brew (`baxtlilar_dev`, все 107
+миграций накачены), `.env.local` заполнен, засеяно 200 тестовых юзеров.
+
+```bash
+corepack pnpm dev                  # репо пинит pnpm 10.33.2, поэтому через corepack
+node scripts/dev-session.mjs       # выдать сессию мини-аппы в обход бота
+node scripts/dev-session.mjs --browser   # то же, но сниппет для консоли браузера
+node scripts/seed-10k.mjs --url "$DATABASE_URL" --n 200   # пересеять данные
+```
+
+`TELEGRAM_BOT_TOKEN` в `.env.local` - **заглушка**, не боевой токен. Схема env требует
+>=20 символов, иначе падает весь конфиг и `/api/health` отдаёт 503 с обманчивым текстом
+«db check failed». С заглушкой не работает бот-плечо целиком: `/start`, webhook,
+`request_contact`, deep-link, любые вызовы Bot API. Мини-аппа при этом открывается через
+`DEV_BYPASS_TG=1` + `scripts/dev-session.mjs`.
 
 ## Документация: где что живёт (с 2026-06-21)
 
