@@ -6,7 +6,7 @@
 Telegram Mini App для серьёзных знакомств в Узбекистане.
 **Полные спеки:** докстор, `shared/17. Baxtlilar` (Чат 1-13 + Excel-бэклог + пояснительная
 записка). Достать: `ofdoc get "shared/17. Baxtlilar/<путь>" <файл>`; список - `ofdoc tree "shared/17. Baxtlilar" 3`.
-Локальная копия для чтения: `~/Desktop/Все файлы/Baxtlilar/спеки/` (см. README там же).
+Локальная копия для чтения: `~/Desktop/Все файлы/17. Baxtlilar/Спека (чаты)/` (см. README там же).
 Прежний путь `~/Desktop/Baxtlilar/` - от старой машины, его больше нет.
 
 **План разработки:** файла `~/.claude/plans/sequential-popping-crayon.md` больше не существует,
