@@ -12,7 +12,10 @@ import { chatPairKey } from "./chat-pair";
  * прочитал до 200 сообщений разговора двух непричастных людей.
  */
 let pool: Pool;
-let tid = 990000000;
+// Случайная база на каждый прогон + уборка в afterAll: telegram_id уникален
+// среди активных, и фиксированный счётчик ронял повторный запуск тестов.
+let tid = 900_000_000 + Math.floor(Math.random() * 50_000_000);
+const created: string[] = [];
 
 async function seedUser(): Promise<string> {
   const id = randomUUID();
@@ -22,6 +25,7 @@ async function seedUser(): Promise<string> {
      values ($1, $2, 'active', 'active', 'approved')`,
     [id, tid],
   );
+  created.push(id);
   return id;
 }
 
@@ -49,6 +53,10 @@ beforeAll(() => {
 });
 
 afterAll(async () => {
+  if (created.length) {
+    await pool.query("delete from chats where user_a = any($1) or user_b = any($1)", [created]);
+    await pool.query("delete from users where id = any($1)", [created]);
+  }
   await pool.end();
 });
 
