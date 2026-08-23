@@ -584,7 +584,10 @@
   "Feed": {
     "title": "Öneriler",
     "subtitle": "Değerleri size yakın kişiler",
-    "empty": "Henüz uygun profil yok. Daha sonra tekrar bakın."
+    "empty": "Henüz uygun profil yok. Daha sonra tekrar bakın.",
+    "skip_limit_title": "Bugünlük bu kadar",
+    "skip_limit_body": "Rastgele kişileri göstermiyoruz - yarın uğrayın, yeni kişiler seçelim.",
+    "skip_failed": "Atlanamadı. Lütfen tekrar deneyin."
   },
   "ProfileView": {
     "verified": "Profil doğrulandı",
@@ -943,7 +946,15 @@
       "duplicateIdentity": "Bu kimlik zaten kayıtlı",
       "duplicatePassport": "Bu pasaport zaten kullanılmış",
       "duplicateSelfie": "Bu selfie zaten kullanılmış",
-      "failed": "Yüklenemedi"
+      "failed": "Yüklenemedi",
+      "noFile": "Dosya seçilmedi. Yükleme alanına dokunup fotoğrafı seçin.",
+      "documentBlacklisted": "Bu belge başka bir hesapta kullanılmış. Destek ekibine yazın.",
+      "consentRequired": "Biyometrik veri onayı gerekiyor. Doğrulama adımına dönüp onaylayın.",
+      "temporarilyOff": "Belge kabulü geçici olarak durduruldu. Daha sonra deneyin.",
+      "blockingReject": "Başvurunuz hakkında nihai karar verildi. Destek ekibine başvurun.",
+      "wrongStep": "Bu adım zaten tamamlandı. Sayfayı yenileyin.",
+      "rateLimited": "Çok fazla deneme yaptınız. Bir dakika bekleyip tekrar deneyin.",
+      "saveFailed": "Kaydedilemedi. Lütfen tekrar deneyin."
     }
   },
   "ProfileSafety": {

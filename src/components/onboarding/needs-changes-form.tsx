@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
+import { uploadErrorKey } from "@/lib/uploads/error-copy";
 import { useRouter } from "@/i18n/navigation";
 import { postForm } from "@/lib/client/api";
 import { PrimaryButton } from "@/components/ui/screen";
@@ -45,6 +46,7 @@ function FilePick({
 
 export function NeedsChangesForm({ target = "both" }: { target?: "passport" | "selfie" | "both" }) {
   const t = useTranslations("Onboarding");
+  const tUpload = useTranslations("Upload");
   const router = useRouter();
   const [passport, setPassport] = useState<File | null>(null);
   const [selfie, setSelfie] = useState<File | null>(null);
@@ -64,7 +66,12 @@ export function NeedsChangesForm({ target = "both" }: { target?: "passport" | "s
     const r = await postForm("/api/onboarding/fix", fd);
     if (r.ok && r.next) router.push(r.next);
     else {
-      setError(r.error === "too_large" ? t("upload_err_too_large") : t("upload_err_bad_type"));
+      // Раньше здесь различался ровно один код: всё, что не too_large,
+      // подписывалось как «неподходящий тип файла». Человек с правильным JPEG,
+      // которому модератор вынес блокирующий отказ или чей документ попал в
+      // чёрный список, получал совет пересохранить снимок в другом формате и
+      // ходил по кругу. Теперь подпись берётся из общего словаря кодов.
+      setError(tUpload(`errors.${uploadErrorKey(r.error)}`));
       setBusy(false);
     }
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 import { InterestModal } from "./InterestModal";
@@ -29,21 +30,43 @@ export function InterestActions({ candidateId, candidateFirstName }: Props) {
   const [skipping, startSkip] = useTransition();
   const [modalOpen, setModalOpen] = useState(false);
   const [limitHit, setLimitHit] = useState(false);
+  const [transientError, setTransientError] = useState(false);
+  const t = useTranslations("Feed");
 
   function skip() {
     if (skipping || limitHit) return;
     startSkip(async () => {
+      setTransientError(false);
       const res = await fetch("/api/feed/skip", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ target_id: candidateId }),
-      });
-      if (res.ok) {
+      }).catch(() => null);
+
+      if (res?.ok) {
         router.refresh();
         return;
       }
-      // D1: дневной лимит пропусков исчерпан — не молчим, а объясняем.
-      if (res.status === 429) setLimitHit(true);
+
+      // Раньше здесь стояло `if (res.status === 429) setLimitHit(true)`, и это
+      // склеивало три разные вещи в одну надпись «на сегодня достаточно»:
+      //   - настоящий дневной лимит (роут отдаёт daily_limit);
+      //   - общий ограничитель нагрузки в proxy.ts (тот же 429, но rate_limited);
+      //   - сбой базы или сети (500 либо вовсе нет ответа) - он не показывался
+      //     никак, кнопка просто молча ничего не делала.
+      // Хуже того, состояние залипало: кнопки исчезали до перезахода в
+      // приложение, хотя человек сегодня не пропустил ни одного кандидата.
+      // Теперь различаем по коду в теле: залипает только настоящий лимит,
+      // остальное - обычная ошибка с предложением повторить.
+      const code = res
+        ? await res
+            .json()
+            .then((b: { error?: string }) => b?.error)
+            .catch(() => undefined)
+        : undefined;
+
+      if (code === "daily_limit") setLimitHit(true);
+      else setTransientError(true);
     });
   }
 
@@ -64,8 +87,10 @@ export function InterestActions({ candidateId, candidateFirstName }: Props) {
           fontFamily: "var(--font-v2-body)",
         }}
       >
-        На сегодня достаточно. Мы не показываем кого попало — загляните завтра,
-        подберём новых.
+        <strong style={{ display: "block", marginBottom: "4px" }}>
+          {t("skip_limit_title")}
+        </strong>
+        {t("skip_limit_body")}
       </p>
     );
   }
@@ -88,6 +113,23 @@ export function InterestActions({ candidateId, candidateFirstName }: Props) {
           {skipping ? "..." : "Сейчас не подходит"}
         </Button>
       </div>
+
+      {transientError ? (
+        <p
+          role="status"
+          style={{
+            marginTop: "10px",
+            marginBottom: 0,
+            fontSize: "13px",
+            fontWeight: 600,
+            textAlign: "center",
+            color: "var(--color-v2-danger)",
+            fontFamily: "var(--font-v2-body)",
+          }}
+        >
+          {t("skip_failed")}
+        </p>
+      ) : null}
 
       {modalOpen ? (
         <InterestModal

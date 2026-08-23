@@ -584,7 +584,10 @@
   "Feed": {
     "title": "Recommendations",
     "subtitle": "People who share your values",
-    "empty": "No matching profiles yet. Check back later."
+    "empty": "No matching profiles yet. Check back later.",
+    "skip_limit_title": "That is enough for today",
+    "skip_limit_body": "We do not show just anyone - come back tomorrow and we will find new people.",
+    "skip_failed": "Could not skip. Please try again."
   },
   "ProfileView": {
     "verified": "Profile verified",
@@ -943,7 +946,15 @@
       "duplicateIdentity": "This identity is already registered",
       "duplicatePassport": "This document has already been used",
       "duplicateSelfie": "This selfie has already been used",
-      "failed": "Upload failed"
+      "failed": "Upload failed",
+      "noFile": "No file selected. Tap the upload area and choose a photo.",
+      "documentBlacklisted": "This document is already used by another account. Please contact support.",
+      "consentRequired": "Biometric consent is required. Go back to the verification step and confirm it.",
+      "temporarilyOff": "Document intake is paused for now. Please try again later.",
+      "blockingReject": "A final decision has been made on your application. Please contact support.",
+      "wrongStep": "This step is already done. Refresh the page.",
+      "rateLimited": "Too many attempts. Wait a minute and try again.",
+      "saveFailed": "Could not save. Please try again."
     }
   },
   "ProfileSafety": {

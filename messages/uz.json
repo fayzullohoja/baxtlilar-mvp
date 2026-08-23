@@ -584,7 +584,10 @@
   "Feed": {
     "title": "Tavsiyalar",
     "subtitle": "Yaqin qadriyatli odamlar",
-    "empty": "Hozircha mos anketalar yoʻq. Keyinroq qarang."
+    "empty": "Hozircha mos anketalar yoʻq. Keyinroq qarang.",
+    "skip_limit_title": "Bugunga yetarli",
+    "skip_limit_body": "Biz kimni boʻlsa shuni koʻrsatmaymiz - ertaga kiring, yangi odamlarni tanlaymiz.",
+    "skip_failed": "Oʻtkazib yuborilmadi. Yana urinib koʻring."
   },
   "ProfileView": {
     "verified": "Profil tasdiqlangan",
@@ -943,7 +946,15 @@
       "duplicateIdentity": "Bu shaxs allaqachon roʻyxatdan oʻtgan",
       "duplicatePassport": "Bu hujjat allaqachon ishlatilgan",
       "duplicateSelfie": "Bu selfi allaqachon ishlatilgan",
-      "failed": "Yuklab boʻlmadi"
+      "failed": "Yuklab boʻlmadi",
+      "noFile": "Fayl tanlanmadi. Yuklash maydonini bosing va suratni tanlang.",
+      "documentBlacklisted": "Bu hujjat boshqa hisobda ishlatilgan. Qoʻllab-quvvatlash xizmatiga yozing.",
+      "consentRequired": "Biometrik maʼlumotlarga rozilik kerak. Tekshiruv haqidagi qadamga qaytib, tasdiqlang.",
+      "temporarilyOff": "Hujjatlarni qabul qilish vaqtincha toʻxtatilgan. Keyinroq urinib koʻring.",
+      "blockingReject": "Arizangiz boʻyicha yakuniy qaror qabul qilingan. Qoʻllab-quvvatlash xizmatiga murojaat qiling.",
+      "wrongStep": "Bu qadam allaqachon oʻtilgan. Sahifani yangilang.",
+      "rateLimited": "Juda koʻp urinish. Bir daqiqa kutib, qayta urinib koʻring.",
+      "saveFailed": "Saqlanmadi. Yana urinib koʻring."
     }
   },
   "ProfileSafety": {

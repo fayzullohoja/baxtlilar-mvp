@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
+import { uploadErrorKey } from "@/lib/uploads/error-copy";
 
 /**
  * V2 UploadField — file picker для паспорта/селфи в editorial-стилe.
@@ -25,17 +26,7 @@ type Props = {
   capture?: "user" | "environment";
 };
 
-function getErrorCopy(t: ReturnType<typeof useTranslations>) {
-  return {
-    bad_type: t('errors.badType'),
-    too_large: t('errors.tooLarge'),
-    duplicate_identity: t('errors.duplicateIdentity'),
-    duplicate_passport: t('errors.duplicatePassport'),
-    duplicate_selfie: t('errors.duplicateSelfie'),
-    failed: t('errors.failed'),
-    save_failed: t('errors.failed'),
-  };
-}
+
 
 export function UploadField({
   endpoint,
@@ -51,7 +42,6 @@ export function UploadField({
   const [pending, setPending] = useState(false);
   const [errorCode, setErrorCode] = useState<string | null>(null);
 
-  const errorCopy = getErrorCopy(t);
 
   async function submit() {
     if (!file || pending) return;
@@ -172,7 +162,7 @@ export function UploadField({
             lineHeight: "1.5",
           }}
         >
-          {(errorCopy as Record<string, string>)[errorCode] ?? errorCopy.failed}
+          {t(`errors.${uploadErrorKey(errorCode)}`)}
         </div>
       ) : null}
 
