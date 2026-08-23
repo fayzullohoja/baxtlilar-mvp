@@ -194,7 +194,7 @@
     "religion_label": "İnanç",
     "religion_importance_label": "İnancın önemi ne kadar",
     "values_label": "Temel değerler",
-    "values_hint": "1 ile 3 arası seçin",
+    "values_hint": "1 ile 5 arası seçin",
     "education_label": "Eğitim",
     "employment_label": "İstihdam durumu",
     "looking_title": "Kimi arıyorsunuz",
@@ -361,7 +361,7 @@
     "futureChildrenPlansLabel": "Gelecekte çocuk planları",
     "futureChildrenPlansHint": "Bu önemli bir eşleşme sinyalidir — algoritma planların uyumunu dikkate alır.",
     "geographyLabel": "Coğrafya",
-    "lifeValuesHint": "En fazla 3 tane seçin — bu, sizin için neyin önemli olduğunu algoritmaya gösterir.",
+    "lifeValuesHint": "En fazla 5 tane seçin — bu, sizin için neyin önemli olduğunu algoritmaya gösterir.",
     "basic_district_label": "İkamet edilen ilçe",
     "basic_district_hint": "İlçe, yalnızca ilgili anahtarı açtığınızda ankette gösterilir.",
     "basic_district_visible_label": "İlçeyi ankette göster",
@@ -535,7 +535,11 @@
     "err_bio_too_few_words": "En az 30 kelime.",
     "bio_word_counter": "En az 30 kelime. Şimdi: {current}/30.",
     "bio_char_counter": "Karakter: {current}/500 (min 50).",
-    "progress_halfway": "Anketin yarısından fazlası bitti. Az kaldı."
+    "progress_halfway": "Anketin yarısından fazlası bitti. Az kaldı.",
+    "parents_origin_heading_father": "Babanız nerede doğup büyüdü?",
+    "parents_origin_heading_mother": "Anneniz nerede doğup büyüdü?",
+    "parents_current_heading_father": "Babanız şimdi nerede yaşıyor?",
+    "parents_current_heading_mother": "Anneniz şimdi nerede yaşıyor?"
   },
   "Quiz": {
     "intro_title": "Uyum anketi",

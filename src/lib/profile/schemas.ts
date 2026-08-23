@@ -370,7 +370,9 @@ export const valuesV3Schema = z.object({
   religion: z.enum(tuple(vals(RELIGION))).optional().nullable(),
   religion_practice: z.enum(tuple(vals(RELIGION_PRACTICE))).optional(),
   religion_partner_match: z.enum(tuple(vals(RELIGION_PARTNER_MATCH))).optional(),
-  top_life_values: z.array(z.enum(tuple(vals(LIFE_VALUES_V3)))).min(1).max(3),
+  // Family launch 2026-08: потолок подняли 3 -> 5. Тестеры жаловались, что три
+  // ценности не описывают человека; вариантов в LIFE_VALUES_V3 четырнадцать.
+  top_life_values: z.array(z.enum(tuple(vals(LIFE_VALUES_V3)))).min(1).max(5),
 });
 
 /** Экран 7 — Семейная модель. Hot колонки (family_role_model, wife_work) +

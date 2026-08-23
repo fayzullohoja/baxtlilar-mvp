@@ -194,7 +194,7 @@
     "religion_label": "Faith",
     "religion_importance_label": "How important faith is",
     "values_label": "Core values",
-    "values_hint": "Select 1 to 3",
+    "values_hint": "Select 1 to 5",
     "education_label": "Education",
     "employment_label": "Employment",
     "looking_title": "Who you're looking for",
@@ -361,7 +361,7 @@
     "futureChildrenPlansLabel": "Plans for children in the future",
     "futureChildrenPlansHint": "This is an important matching signal — the algorithm considers how well your plans align.",
     "geographyLabel": "Location",
-    "lifeValuesHint": "Choose up to 3 — this shows the algorithm what matters to you.",
+    "lifeValuesHint": "Choose up to 5 — this shows the algorithm what matters to you.",
     "basic_district_label": "District of residence",
     "basic_district_hint": "Your district is shown on your profile only if you turn on the corresponding toggle.",
     "basic_district_visible_label": "Show district on profile",
@@ -535,7 +535,11 @@
     "err_bio_too_few_words": "At least 30 words.",
     "bio_word_counter": "At least 30 words. Now: {current}/30.",
     "bio_char_counter": "Characters: {current}/500 (min 50).",
-    "progress_halfway": "More than half of the form is done. Almost there."
+    "progress_halfway": "More than half of the form is done. Almost there.",
+    "parents_origin_heading_father": "Where your father was born and raised",
+    "parents_origin_heading_mother": "Where your mother was born and raised",
+    "parents_current_heading_father": "Where does your father live now?",
+    "parents_current_heading_mother": "Where does your mother live now?"
   },
   "Quiz": {
     "intro_title": "10 questions about you",

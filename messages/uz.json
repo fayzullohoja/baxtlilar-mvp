@@ -194,7 +194,7 @@
     "religion_label": "Eʼtiqod",
     "religion_importance_label": "Eʼtiqod qanchalik muhim",
     "values_label": "Asosiy qadriyatlar",
-    "values_hint": "1 dan 3 gacha tanlang",
+    "values_hint": "1 dan 5 gacha tanlang",
     "education_label": "Taʼlim",
     "employment_label": "Bandlik",
     "looking_title": "Kimni qidiryapsiz",
@@ -361,7 +361,7 @@
     "futureChildrenPlansLabel": "Kelajakda bolalar bo'yicha rejalar",
     "futureChildrenPlansHint": "Bu muhim mos kelish signali — algoritm rejalarning moslikini hisobga oladi.",
     "geographyLabel": "Geografiya",
-    "lifeValuesHint": "3 tagacha tanlang — bu algoritmga sizga nima muhimligini koʻrsatadi.",
+    "lifeValuesHint": "5 tagacha tanlang — bu algoritmga sizga nima muhimligini koʻrsatadi.",
     "basic_district_label": "Yashash tumani",
     "basic_district_hint": "Tuman anketada faqat siz tegishli sozlamani yoqsangiz koʻrsatiladi.",
     "basic_district_visible_label": "Tumanni anketada koʻrsatish",
@@ -535,7 +535,11 @@
     "err_bio_too_few_words": "Kamida 30 ta soʻz.",
     "bio_word_counter": "Kamida 30 ta soʻz. Hozir: {current}/30.",
     "bio_char_counter": "Belgilar: {current}/500 (kamida 50).",
-    "progress_halfway": "Anketaning yarmidan koʻpi ortda qoldi. Yana ozgina qoldi."
+    "progress_halfway": "Anketaning yarmidan koʻpi ortda qoldi. Yana ozgina qoldi.",
+    "parents_origin_heading_father": "Otangiz qayerda tugʻilib oʻsgan?",
+    "parents_origin_heading_mother": "Onangiz qayerda tugʻilib oʻsgan?",
+    "parents_current_heading_father": "Otangiz hozir qayerda yashaydi?",
+    "parents_current_heading_mother": "Onangiz hozir qayerda yashaydi?"
   },
   "Quiz": {
     "intro_title": "Siz haqingizda 10 ta savol",

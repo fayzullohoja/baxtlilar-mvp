@@ -39,7 +39,7 @@ export function V2AnketaValuesForm({
   const [values, setValues] = useState<string[]>(initial?.top_life_values ?? []);
   const [showErrors, setShowErrors] = useState(false);
 
-  // §2 P0: эквивалент прежнего `valid` (values 1-3; max=3 обеспечивает Chips).
+  // §2 P0: эквивалент прежнего `valid` (values 1-5; max=5 обеспечивает Chips).
   const errors: Record<string, string> = {};
   if (values.length < 1) errors.top_life_values = t("err_select_required");
 
@@ -73,7 +73,7 @@ export function V2AnketaValuesForm({
         hint={t('lifeValuesHint')! + ` ${values.length}/3`}
         error={showErrors ? errors.top_life_values : undefined}
       >
-        <Chips options={LIFE_VALUES_V3} selected={values} onToggle={toggle} max={3} locale={locale} />
+        <Chips options={LIFE_VALUES_V3} selected={values} onToggle={toggle} max={5} locale={locale} />
       </Field>
 
       <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />
