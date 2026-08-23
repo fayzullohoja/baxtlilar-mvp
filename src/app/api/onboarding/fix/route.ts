@@ -5,6 +5,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { uploadDocumentImage } from "@/lib/uploads/storage";
 import { isDocumentBlacklisted } from "@/lib/uploads/blacklist";
 import { ONBOARDING_PATHS, nextScreenFor } from "@/lib/state-machine/router";
+import { hasActiveBiometricConsent } from "@/lib/consent/biometric";
+import { assertFeatureEnabledForRequest } from "@/lib/features/flags";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,8 +26,28 @@ export const dynamic = "force-dynamic";
  * Блокирующий отказ (подделка/катфиш/несовершеннолетний) отсекается ниже.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // C-033 kill switch, как в /document и /selfie. Раньше этот роут его не
+  // слушался, и получалось так: верификацию выключили из-за перегруза очереди
+  // или инцидента, два роута приёма документов встали, а третий - экран
+  // «переделать документы» - продолжал принимать паспорта и селфи и растить
+  // ту самую очередь. Рубильник обязан гасить подсистему целиком.
+  const off = await assertFeatureEnabledForRequest("verification");
+  if (off) return off;
+
   const { user, res } = await loadUserForVerificationRepair(["needs_changes", "rejected"]);
   if (res) return res;
+
+  // ENFORCE согласия на биометрию ДО приёма файла - фактическая точка обработки
+  // спец-категории ПД. Из трёх роутов приёма это был единственный без проверки:
+  // /document и /selfie её делают, а сюда человек попадает как раз retry-путём,
+  // ради которого enforcement в них и заводили. Fail-closed: при сбое чтения
+  // согласий считаем, что согласия нет.
+  if (!(await hasActiveBiometricConsent(user.id))) {
+    return NextResponse.json(
+      { ok: false, error: "biometric_consent_required", next: ONBOARDING_PATHS.verification_intro },
+      { status: 403 },
+    );
+  }
 
   const sb = supabaseAdmin();
 
