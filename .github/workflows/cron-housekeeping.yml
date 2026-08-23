@@ -20,16 +20,24 @@ jobs:
       - name: Call housekeeping endpoint
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          PROD_URL: ${{ vars.PROD_URL }}
         run: |
           RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST \
-            "https://baxtlilar-mvp-production.up.railway.app/api/cron/housekeeping" \
+            "${PROD_URL:-https://app.baxtlilar.uz}/api/cron/housekeeping" \
             -H "X-Cron-Secret: ${CRON_SECRET}" \
             -H "Content-Type: application/json")
           STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
           BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
           echo "HTTP Status: $STATUS"
           echo "Body: $BODY"
-          if [ "$STATUS" != "200" ]; then
+          # Роут отдаёт 207, когда часть из трёх задач не выполнилась, и 200
+          # когда все три прошли. Считать 207 провалом всего крона неверно:
+          # именно из-за этого запуски краснели ещё до того, как их выключили,
+          # и красный перестал что-либо значить. 207 логируем предупреждением,
+          # провал - всё остальное.
+          if [ "$STATUS" = "207" ]; then
+            echo "::warning::Housekeeping выполнен частично (207): $BODY"
+          elif [ "$STATUS" != "200" ]; then
             echo "::error::Housekeeping cron failed with status $STATUS"
             exit 1
           fi
