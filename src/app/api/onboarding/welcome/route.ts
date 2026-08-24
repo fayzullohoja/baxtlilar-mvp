@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { loadUserForStep } from "@/lib/onboarding/guard-api";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
@@ -23,7 +23,7 @@ const NEXT_STEP: Partial<Record<OnboardingStep, OnboardingStep>> = {
   welcome_rules: "verification_intro",
 };
 
-export async function POST(_req: NextRequest): Promise<NextResponse> {
+export async function POST(): Promise<NextResponse> {
   const { user, res } = await loadUserForStep();
   if (res) return res;
 

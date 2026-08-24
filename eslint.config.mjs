@@ -23,6 +23,24 @@ const eslintConfig = defineConfig([
     files: ["src/lib/db/query-builder.ts", "src/lib/db/query-builder.test.ts"],
     rules: { "@typescript-eslint/no-explicit-any": "off" },
   },
+  // Соглашение «подчёркивание = намеренно не используется» в коде уже
+  // применялось (`_req` в роутах, `_raw` в моках), но линтер о нём не знал и
+  // ругался. Из-за этого предупреждения копились и на них перестали смотреть -
+  // а вместе с ними терялись и настоящие. Теперь соглашение работает: значит
+  // всякое оставшееся предупреждение об unused - настоящее.
+  {
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+          destructuredArrayIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;
