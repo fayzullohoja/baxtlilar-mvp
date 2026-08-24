@@ -13,7 +13,7 @@ import {
   type ChildInfo,
 } from "./ChildrenDetails";
 import {
-  MARITAL_STATUS,
+  MARITAL_STATUS_SELECTABLE,
   PREVIOUS_MARRIAGES,
   HAS_CHILDREN,
   FUTURE_CHILDREN_PLAN,
@@ -135,7 +135,7 @@ export function V2AnketaFamilyForm({
             Гендерный вариант берётся по ключу Options.MARITAL_STATUS.<v>__<m|f>
             (редактируется в админке), с откатом на код-оверрайд. */}
         <Select
-          options={MARITAL_STATUS}
+          options={MARITAL_STATUS_SELECTABLE}
           value={marital}
           onChange={(v) => {
             setMarital(v);

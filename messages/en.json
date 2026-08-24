@@ -670,7 +670,13 @@
     "statusLabel": "Status",
     "versionInfo": "Version V2 · Baxtlilar",
     "invite_title": "Invite",
-    "invite_desc": "Your code and invite link"
+    "invite_desc": "Your code and invite link",
+    "blocked_title": "Blocked people",
+    "blocked_empty": "You have not blocked anyone.",
+    "blocked_unblock": "Unblock",
+    "blocked_unknown": "Profile unavailable",
+    "blocked_unblock_failed": "That did not work. The block is still in place, please try again.",
+    "blocked_hint": "An unblocked person can appear in your matches again and message you."
   },
   "Invite": {
     "title": "Invite",
@@ -803,7 +809,8 @@
     "lifeValuesLabel": "Life values",
     "detailsLabel": "More",
     "profileFootnote": "The profile updates along with your questionnaire",
-    "verifiedBadge": "Verified"
+    "verifiedBadge": "Verified",
+    "personalityHint": "Built from the personality quiz answers, not written by the person"
   },
   "Tutorial": {
     "next": "Next",
@@ -1318,7 +1325,17 @@
       "ok_if_needed": "Допустимо, если нужно",
       "prefer_not": "Предпочитаю, чтобы не работал(а)",
       "against": "Категорически против",
-      "discuss": "Готов(а) обсуждать"
+      "discuss": "Готов(а) обсуждать",
+      "welcome__m": "I support my wife's wish to work",
+      "welcome__f": "I support my husband's wish to work",
+      "ok_if_needed__m": "I agree if we decide together that it is needed",
+      "ok_if_needed__f": "I agree if we decide together that it is needed",
+      "prefer_not__m": "I would prefer my wife not to work",
+      "prefer_not__f": "I would prefer my husband not to work",
+      "against__m": "I do not support my wife working",
+      "against__f": "I do not support my husband working",
+      "discuss__m": "I am open to discussing it",
+      "discuss__f": "I am open to discussing it"
     },
     "FAMILY_DECISION_MODEL": {
       "husband_main": "Основное за мужем",

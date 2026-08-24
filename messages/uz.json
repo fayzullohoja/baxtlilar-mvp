@@ -670,7 +670,13 @@
     "statusLabel": "Holat",
     "versionInfo": "Versiya V2 · Baxtlilar",
     "invite_title": "Taklif qilish",
-    "invite_desc": "Kodingiz va taklif havolasi"
+    "invite_desc": "Kodingiz va taklif havolasi",
+    "blocked_title": "Bloklanganlar",
+    "blocked_empty": "Siz hech kimni bloklamagansiz.",
+    "blocked_unblock": "Blokdan chiqarish",
+    "blocked_unknown": "Profil mavjud emas",
+    "blocked_unblock_failed": "Boʻlmadi. Blok saqlanib qoldi, yana urinib koʻring.",
+    "blocked_hint": "Blokdan chiqarilgan odam yana tavsiyalarda koʻrinishi va sizga yozishi mumkin."
   },
   "Invite": {
     "title": "Taklif qilish",
@@ -803,7 +809,8 @@
     "lifeValuesLabel": "Hayot qadriyatlari",
     "detailsLabel": "Batafsil",
     "profileFootnote": "Profil anketa kabi yangilanadi",
-    "verifiedBadge": "Tasdiqlangan"
+    "verifiedBadge": "Tasdiqlangan",
+    "personalityHint": "Psixologik soʻrovnoma javoblari asosida tuzilgan, odam oʻzi yozmagan"
   },
   "Tutorial": {
     "next": "Keyingi",
@@ -1318,7 +1325,17 @@
       "ok_if_needed": "Kerak boʻlsa, mumkin",
       "prefer_not": "Ishlamasligini afzal koʻraman",
       "against": "Qatʼiy qarshi",
-      "discuss": "Muhokama qilishga tayyorman"
+      "discuss": "Muhokama qilishga tayyorman",
+      "welcome__m": "Xotinimning ishlash istagini qoʻllab-quvvatlayman",
+      "welcome__f": "Erimning ishlash istagini qoʻllab-quvvatlayman",
+      "ok_if_needed__m": "Birgalikda zarur deb qaror qilsak, roziman",
+      "ok_if_needed__f": "Birgalikda zarur deb qaror qilsak, roziman",
+      "prefer_not__m": "Xotinim ishlamasligini afzal koʻraman",
+      "prefer_not__f": "Erim ishlamasligini afzal koʻraman",
+      "against__m": "Xotinimning ishlashini qoʻllab-quvvatlamayman",
+      "against__f": "Erimning ishlashini qoʻllab-quvvatlamayman",
+      "discuss__m": "Muhokama qilishga tayyorman",
+      "discuss__f": "Muhokama qilishga tayyorman"
     },
     "FAMILY_DECISION_MODEL": {
       "husband_main": "Asosiy qaror erda",

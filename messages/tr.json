@@ -670,7 +670,13 @@
     "statusLabel": "Durum",
     "versionInfo": "Sürüm V2 · Baxtlilar",
     "invite_title": "Davet edin",
-    "invite_desc": "Kodunuz ve davet bağlantınız"
+    "invite_desc": "Kodunuz ve davet bağlantınız",
+    "blocked_title": "Engellenenler",
+    "blocked_empty": "Kimseyi engellemediniz.",
+    "blocked_unblock": "Engeli kaldır",
+    "blocked_unknown": "Profil kullanılamıyor",
+    "blocked_unblock_failed": "Olmadı. Engel kaldırılmadı, tekrar deneyin.",
+    "blocked_hint": "Engeli kaldırılan kişi yeniden önerilerde görünebilir ve size yazabilir."
   },
   "Invite": {
     "title": "Davet edin",
@@ -803,7 +809,8 @@
     "lifeValuesLabel": "Hayattaki değerler",
     "detailsLabel": "Ayrıntılar",
     "profileFootnote": "Profil, anket olarak güncellenir",
-    "verifiedBadge": "Doğrulanmış"
+    "verifiedBadge": "Doğrulanmış",
+    "personalityHint": "Kişilik testi yanıtlarına göre oluşturuldu, kişinin kendi yazdığı metin değil"
   },
   "Tutorial": {
     "next": "İleri",
@@ -1318,7 +1325,17 @@
       "ok_if_needed": "Допустимо, если нужно",
       "prefer_not": "Предпочитаю, чтобы не работал(а)",
       "against": "Категорически против",
-      "discuss": "Готов(а) обсуждать"
+      "discuss": "Готов(а) обсуждать",
+      "welcome__m": "Karımın çalışma isteğini desteklerim",
+      "welcome__f": "Kocamın çalışma isteğini desteklerim",
+      "ok_if_needed__m": "Birlikte gerekli görürsek kabul ederim",
+      "ok_if_needed__f": "Birlikte gerekli görürsek kabul ederim",
+      "prefer_not__m": "Karımın çalışmamasını tercih ederim",
+      "prefer_not__f": "Kocamın çalışmamasını tercih ederim",
+      "against__m": "Karımın çalışmasını desteklemem",
+      "against__f": "Kocamın çalışmasını desteklemem",
+      "discuss__m": "Konuşmaya açığım",
+      "discuss__f": "Konuşmaya açığım"
     },
     "FAMILY_DECISION_MODEL": {
       "husband_main": "Основное за мужем",

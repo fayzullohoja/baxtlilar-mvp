@@ -200,7 +200,7 @@ describe("generateMatchStory — relaxLevel honesty", () => {
     const v = profile({ partner_age_min: 25, partner_age_max: 25, birth_date: "1996-01-01" });
     const c = profile({ birth_date: "1991-01-01" }); // ~35 — вне строгого окна
     const story = generateMatchStory(v, c, 1);
-    expect(story.cautions.some((x) => /расширили возрастной/i.test(x))).toBe(true);
+    expect(story.cautions.some((x) => /расширили поиск/i.test(x))).toBe(true);
   });
 
   it("relax-note вытесняет generic «возраст слегка вне диапазона» (не дублируем)", () => {
@@ -227,7 +227,7 @@ describe("generateMatchStory — relaxLevel honesty", () => {
       birth_date: "1991-01-01",
     });
     const story = generateMatchStory(v, c, 1);
-    expect(story.cautions.some((x) => /расширили возрастной/i.test(x))).toBe(true);
+    expect(story.cautions.some((x) => /расширили поиск/i.test(x))).toBe(true);
     expect(story.cautions.length).toBeLessThanOrEqual(2);
   });
 
@@ -236,6 +236,6 @@ describe("generateMatchStory — relaxLevel honesty", () => {
     const c = profile();
     expect(generateMatchStory(v, c, 0)).toEqual(generateMatchStory(v, c));
     const all = [...generateMatchStory(v, c).cautions, ...generateMatchStory(v, c).reasons];
-    expect(all.some((x) => /расширили возрастной/i.test(x))).toBe(false);
+    expect(all.some((x) => /расширили поиск/i.test(x))).toBe(false);
   });
 });
