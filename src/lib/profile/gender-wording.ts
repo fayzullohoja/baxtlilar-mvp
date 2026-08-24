@@ -18,6 +18,7 @@
 import {
   HOUSEHOLD_RESPONSIBILITY_MODEL,
   MARITAL_STATUS,
+  WIFE_WORK_VIEW,
   labelOf,
   type Opt,
 } from "./options";
@@ -38,16 +39,21 @@ type OverrideEntry = { m?: PerGenderLabel; f?: PerGenderLabel };
 const CONST_REGISTRY: Record<string, Opt[]> = {
   HOUSEHOLD_RESPONSIBILITY_MODEL,
   MARITAL_STATUS,
+  WIFE_WORK_VIEW,
 };
 
 /**
  * Gender-специфичные подписи. Ключ первого уровня — имя константы (совпадает с
  * export name из options.ts). Ключ второго уровня — enum `value`.
  *
- * Расширение (не в MVP): FAMILY_ROLE_MODEL и WIFE_WORK_VIEW потенциально требуют
- * своего гендерного варианта — например, «Работа мужа» vs «Работа жены».
- * Пока оставляем нейтральные лейблы из options.ts; если понадобится — добавляем
- * запись сюда, никаких изменений в вызывающем коде не требуется.
+ * WIFE_WORK_VIEW получил гендерные варианты 24.08.2026 по замечанию тестеров
+ * family launch: женщине показывали мужские формулировки («моя жена») - вопрос
+ * о работе супруга звучит зеркально, и нейтральные лейблы этого не покрывали.
+ * Расширение оказалось ровно таким, как здесь и предполагалось: запись ниже,
+ * в вызывающем коде ничего менять не пришлось.
+ *
+ * FAMILY_ROLE_MODEL пока оставлен нейтральным: «Семья с лидерством мужчины»
+ * читается одинаково с обеих сторон, это описание уклада, а не роли говорящего.
  */
 export const GENDERED_OVERRIDES: Record<string, Record<string, OverrideEntry>> = {
   HOUSEHOLD_RESPONSIBILITY_MODEL: {
@@ -65,6 +71,34 @@ export const GENDERED_OVERRIDES: Record<string, Record<string, OverrideEntry>> =
     widowed: {
       m: { ru: "Вдовец", uz: "Beva" },
       f: { ru: "Вдова", uz: "Beva" },
+    },
+  },
+  // Замечание 7 family launch: вопрос о работе супруга зеркальный. Мужчина
+  // отвечает про жену, женщина - про мужа. Раньше обе стороны видели один
+  // нейтральный текст, а на проде поверх него стоял мужской оверрайд, и
+  // женщинам показывали «моя жена».
+  WIFE_WORK_VIEW: {
+    welcome: {
+      m: { ru: "Поддержу желание жены работать", uz: "Xotinimning ishlash istagini qoʻllab-quvvatlayman" },
+      f: { ru: "Поддержу желание мужа работать", uz: "Erimning ishlash istagini qoʻllab-quvvatlayman" },
+    },
+    prefer_not: {
+      m: { ru: "Предпочитаю, чтобы жена не работала", uz: "Xotinim ishlamasligini afzal koʻraman" },
+      f: { ru: "Предпочитаю, чтобы муж не работал", uz: "Erim ishlamasligini afzal koʻraman" },
+    },
+    against: {
+      m: { ru: "Не поддерживаю работу жены", uz: "Xotinimning ishlashini qoʻllab-quvvatlamayman" },
+      f: { ru: "Не поддерживаю работу мужа", uz: "Erimning ishlashini qoʻllab-quvvatlamayman" },
+    },
+    // Эти два варианта не про супруга, а про самого отвечающего - но в русском
+    // род всё равно слышен («согласен» / «согласна»), поэтому вариант нужен.
+    ok_if_needed: {
+      m: { ru: "Согласен, если вместе решим, что нужно", uz: "Birgalikda zarur deb qaror qilsak, roziman" },
+      f: { ru: "Согласна, если вместе решим, что нужно", uz: "Birgalikda zarur deb qaror qilsak, roziman" },
+    },
+    discuss: {
+      m: { ru: "Готов обсудить", uz: "Muhokama qilishga tayyorman" },
+      f: { ru: "Готова обсудить", uz: "Muhokama qilishga tayyorman" },
     },
   },
   // Ревью оунера 1.11: план проживания после брака звучит по-разному для М/Ж.

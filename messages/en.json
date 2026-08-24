@@ -194,7 +194,7 @@
     "religion_label": "Faith",
     "religion_importance_label": "How important faith is",
     "values_label": "Core values",
-    "values_hint": "Select 1 to 3",
+    "values_hint": "Select 1 to 5",
     "education_label": "Education",
     "employment_label": "Employment",
     "looking_title": "Who you're looking for",
@@ -361,7 +361,7 @@
     "futureChildrenPlansLabel": "Plans for children in the future",
     "futureChildrenPlansHint": "This is an important matching signal — the algorithm considers how well your plans align.",
     "geographyLabel": "Location",
-    "lifeValuesHint": "Choose up to 3 — this shows the algorithm what matters to you.",
+    "lifeValuesHint": "Choose up to 5 — this shows the algorithm what matters to you.",
     "basic_district_label": "District of residence",
     "basic_district_hint": "Your district is shown on your profile only if you turn on the corresponding toggle.",
     "basic_district_visible_label": "Show district on profile",
@@ -535,7 +535,11 @@
     "err_bio_too_few_words": "At least 30 words.",
     "bio_word_counter": "At least 30 words. Now: {current}/30.",
     "bio_char_counter": "Characters: {current}/500 (min 50).",
-    "progress_halfway": "More than half of the form is done. Almost there."
+    "progress_halfway": "More than half of the form is done. Almost there.",
+    "parents_origin_heading_father": "Where your father was born and raised",
+    "parents_origin_heading_mother": "Where your mother was born and raised",
+    "parents_current_heading_father": "Where does your father live now?",
+    "parents_current_heading_mother": "Where does your mother live now?"
   },
   "Quiz": {
     "intro_title": "10 questions about you",
@@ -580,7 +584,10 @@
   "Feed": {
     "title": "Recommendations",
     "subtitle": "People who share your values",
-    "empty": "No matching profiles yet. Check back later."
+    "empty": "No matching profiles yet. Check back later.",
+    "skip_limit_title": "That is enough for today",
+    "skip_limit_body": "We do not show just anyone - come back tomorrow and we will find new people.",
+    "skip_failed": "Could not skip. Please try again."
   },
   "ProfileView": {
     "verified": "Profile verified",
@@ -663,7 +670,13 @@
     "statusLabel": "Status",
     "versionInfo": "Version V2 · Baxtlilar",
     "invite_title": "Invite",
-    "invite_desc": "Your code and invite link"
+    "invite_desc": "Your code and invite link",
+    "blocked_title": "Blocked people",
+    "blocked_empty": "You have not blocked anyone.",
+    "blocked_unblock": "Unblock",
+    "blocked_unknown": "Profile unavailable",
+    "blocked_unblock_failed": "That did not work. The block is still in place, please try again.",
+    "blocked_hint": "An unblocked person can appear in your matches again and message you."
   },
   "Invite": {
     "title": "Invite",
@@ -796,7 +809,8 @@
     "lifeValuesLabel": "Life values",
     "detailsLabel": "More",
     "profileFootnote": "The profile updates along with your questionnaire",
-    "verifiedBadge": "Verified"
+    "verifiedBadge": "Verified",
+    "personalityHint": "Built from the personality quiz answers, not written by the person"
   },
   "Tutorial": {
     "next": "Next",
@@ -930,7 +944,8 @@
       "blocked": "This person is unavailable.",
       "unavailable": "This profile is no longer available.",
       "noPermission": "You need verification to send interest."
-    }
+    },
+    "err_not_eligible": "Sending interest is unavailable right now. Please try again later."
   },
   "Upload": {
     "errors": {
@@ -939,7 +954,15 @@
       "duplicateIdentity": "This identity is already registered",
       "duplicatePassport": "This document has already been used",
       "duplicateSelfie": "This selfie has already been used",
-      "failed": "Upload failed"
+      "failed": "Upload failed",
+      "noFile": "No file selected. Tap the upload area and choose a photo.",
+      "documentBlacklisted": "This document is already used by another account. Please contact support.",
+      "consentRequired": "Biometric consent is required. Go back to the verification step and confirm it.",
+      "temporarilyOff": "Document intake is paused for now. Please try again later.",
+      "blockingReject": "A final decision has been made on your application. Please contact support.",
+      "wrongStep": "This step is already done. Refresh the page.",
+      "rateLimited": "Too many attempts. Wait a minute and try again.",
+      "saveFailed": "Could not save. Please try again."
     }
   },
   "ProfileSafety": {
@@ -1303,7 +1326,17 @@
       "ok_if_needed": "Допустимо, если нужно",
       "prefer_not": "Предпочитаю, чтобы не работал(а)",
       "against": "Категорически против",
-      "discuss": "Готов(а) обсуждать"
+      "discuss": "Готов(а) обсуждать",
+      "welcome__m": "I support my wife's wish to work",
+      "welcome__f": "I support my husband's wish to work",
+      "ok_if_needed__m": "I agree if we decide together that it is needed",
+      "ok_if_needed__f": "I agree if we decide together that it is needed",
+      "prefer_not__m": "I would prefer my wife not to work",
+      "prefer_not__f": "I would prefer my husband not to work",
+      "against__m": "I do not support my wife working",
+      "against__f": "I do not support my husband working",
+      "discuss__m": "I am open to discussing it",
+      "discuss__f": "I am open to discussing it"
     },
     "FAMILY_DECISION_MODEL": {
       "husband_main": "Основное за мужем",

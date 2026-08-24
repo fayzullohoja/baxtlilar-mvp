@@ -18,6 +18,10 @@ export async function notifyUser(
       headers: { "Content-Type": "application/json" },
       // без parse_mode: текст модератора идёт как plain — нет HTML-инъекции/поломки доставки (ADM-6/BUG-8)
       body: JSON.stringify({ chat_id: telegramId, text }),
+      // Тот же таймаут, что в bot-api.ts и tg-outbox-worker.ts. Эта функция
+      // зовётся из админских роутов синхронно: без него зависший вызов к
+      // Telegram держит модератора на спиннере после нажатия решения.
+      signal: AbortSignal.timeout(10_000),
     });
     return res.ok;
   } catch (e) {

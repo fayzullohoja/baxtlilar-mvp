@@ -11,7 +11,6 @@ export type ClientRow = {
   age: number | null;
   city: string | null;
   pinfl: string | null;
-  passport: string | null;
   telegram_username: string | null;
   phone_number_masked: string | null;
   verification_status: string;
@@ -88,9 +87,14 @@ export async function searchClients(
       .in("user_id", ids),
     sb
       .from("user_identity")
-      .select(
-        "user_id, last_name, first_name, middle_name, pinfl, passport_series, passport_number, birth_date",
-      )
+      // Серию и номер паспорта здесь НЕ читаем: директория их нигде не рисует
+      // (ClientsTable показывает ФИО, ПИНФЛ, замаскированный телефон, город),
+      // а строки уезжают в браузер целиком - полсотни паспортов за раз и заново
+      // на каждый набранный в поиске символ. ПИНФЛ оставлен намеренно: он в
+      // таблице отображается, доступ к директории только у суперадмина.
+      // Полные паспортные данные открываются в карточке человека - там они
+      // нужны и там их видно осознанно.
+      .select("user_id, last_name, first_name, middle_name, pinfl, birth_date")
       .is("superseded_at", null)
       .in("user_id", ids),
   ]);
@@ -126,7 +130,6 @@ export async function searchClients(
       age: bd ? ageFromDate(bd) : null,
       city: (p?.city as string | null) ?? null,
       pinfl: (i?.pinfl as string | null) ?? null,
-      passport: i ? `${i.passport_series}${i.passport_number}` : null,
       telegram_username: (u.telegram_username as string | null) ?? null,
       phone_number_masked: u.phone_number
         ? maskPhone(u.phone_number as string)

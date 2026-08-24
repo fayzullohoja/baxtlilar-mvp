@@ -130,6 +130,7 @@ function AccordionSection({
 
 function ParentSection({
   locale,
+  who,
   value,
   onChange,
   statusOptions,
@@ -137,6 +138,14 @@ function ParentSection({
   statusError,
 }: {
   locale: string;
+  /** Family launch, замечания 4-5: заголовки внутри секции обязаны называть
+   *  конкретного родителя. Раньше обе секции делили ключи
+   *  `parents_origin_heading` / `parents_current_heading`, и оунер переопределил
+   *  их в админке на «Ota yoki ona qayerlik?» - вопрос стал выглядеть общим для
+   *  отца и матери, хотя данные всегда писались раздельно
+   *  (father_origin_* / mother_origin_*). Ключ с суффиксом убирает саму
+   *  возможность такой двусмысленности. */
+  who: "father" | "mother";
   value: ParentState;
   onChange: (v: ParentState) => void;
   statusOptions: Opt[];
@@ -178,7 +187,7 @@ function ParentSection({
       {showDetails ? (
         <>
           <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-v2-ink-300)", fontFamily: "var(--font-v2-body)", margin: "6px 0 2px" }}>
-            {t("parents_origin_heading")}
+            {t(`parents_origin_heading_${who}`)}
           </div>
           <RegionPicker locale={locale} value={value.origin} onChange={(origin) => onChange({ ...value, origin })} labels={{ ...locLabels, countryHint: t("parents_origin_hint") }} />
         </>
@@ -187,7 +196,7 @@ function ParentSection({
       {showAliveOnly ? (
         <>
           <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-v2-ink-300)", fontFamily: "var(--font-v2-body)", margin: "6px 0 2px" }}>
-            {t("parents_current_heading")}
+            {t(`parents_current_heading_${who}`)}
           </div>
           <RegionPicker locale={locale} value={value.current} onChange={(current) => onChange({ ...value, current })} labels={{ ...locLabels, countryHint: t("parents_current_hint") }} />
         </>
@@ -272,11 +281,11 @@ export function V2AnketaParentsForm({
   return (
     <div>
       <AccordionSection title={t("parents_father_title")} open={open === "father"} complete={!!father.status} onToggle={() => toggle("father")}>
-        <ParentSection locale={locale} value={father} onChange={setFather} statusOptions={FATHER_STATUS} statusLabel={t("father_status_label")} statusError={showErrors ? errors.father_status : undefined} />
+        <ParentSection locale={locale} who="father" value={father} onChange={setFather} statusOptions={FATHER_STATUS} statusLabel={t("father_status_label")} statusError={showErrors ? errors.father_status : undefined} />
       </AccordionSection>
 
       <AccordionSection title={t("parents_mother_title")} open={open === "mother"} complete={!!mother.status} onToggle={() => toggle("mother")}>
-        <ParentSection locale={locale} value={mother} onChange={setMother} statusOptions={MOTHER_STATUS} statusLabel={t("mother_status_label")} statusError={showErrors ? errors.mother_status : undefined} />
+        <ParentSection locale={locale} who="mother" value={mother} onChange={setMother} statusOptions={MOTHER_STATUS} statusLabel={t("mother_status_label")} statusError={showErrors ? errors.mother_status : undefined} />
       </AccordionSection>
 
       <AccordionSection title={t("parents_family_title")} open={open === "family"} complete={!!familyInvolvement} onToggle={() => toggle("family")}>

@@ -12,6 +12,7 @@ import {
   MONTHLY_INCOME_RANGE,
   HOUSING_STATUS,
 } from "@/lib/profile/options";
+import { shouldAskIncomeRange } from "@/lib/profile/finance-visibility";
 
 /**
  * V4 (2026-06-30) — Чат 2 — Анкета.md Экран 9 «Финансы и материальная стабильность».
@@ -71,6 +72,11 @@ export function V2AnketaFinanceForm({
     errors.financial_stability_importance = t("err_select_required");
   if (!management) errors.family_finance_management = t("err_select_required");
 
+  // Family launch, замечание 3: сказал «дохода нет» или «не хочу отвечать» -
+  // вопрос о размере дохода не показываем и НЕ отправляем, даже если человек
+  // успел его заполнить до того, как поменял ответ выше.
+  const askIncomeRange = shouldAskIncomeRange(incomeSource);
+
   async function submit() {
     if (busy) return;
     if (Object.keys(errors).length) {
@@ -83,7 +89,9 @@ export function V2AnketaFinanceForm({
       ...(incomeSource ? { income_source_stability: incomeSource } : {}),
       financial_stability_importance: Number(importance),
       family_finance_management: management,
-      ...(incomeRange ? { monthly_income_range: incomeRange } : {}),
+      ...(askIncomeRange && incomeRange
+        ? { monthly_income_range: incomeRange }
+        : {}),
       ...(housing ? { housing_status: housing } : {}),
     });
   }
@@ -130,17 +138,19 @@ export function V2AnketaFinanceForm({
         />
       </Field>
 
-      <Field
-        label={t("finance_income_range_question")}
-        hint={t("optionalHint")}
-      >
-        <Select
-          options={MONTHLY_INCOME_RANGE}
-          value={incomeRange}
-          onChange={setIncomeRange}
-          locale={locale}
-        />
-      </Field>
+      {askIncomeRange ? (
+        <Field
+          label={t("finance_income_range_question")}
+          hint={t("optionalHint")}
+        >
+          <Select
+            options={MONTHLY_INCOME_RANGE}
+            value={incomeRange}
+            onChange={setIncomeRange}
+            locale={locale}
+          />
+        </Field>
+      ) : null}
 
       <Field label={t("finance_housing_question")} hint={t("optionalHint")}>
         <Select

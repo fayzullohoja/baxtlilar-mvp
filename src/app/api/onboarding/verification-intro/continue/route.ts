@@ -3,6 +3,7 @@ import { loadUserForStep } from "@/lib/onboarding/guard-api";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
 import { recordBiometricConsent } from "@/lib/consent/biometric";
+import { trustedIp } from "@/lib/http/ip";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,7 +39,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Согласие на биометрию — ДО перехода (atomic: если запись упала, шаг не
   // двигаем). Дублируется enforcement'ом в upload-роутах для retry-путей,
   // которые минуют intro (needs_changes/verification_rejected → doc_upload).
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "miniapp";
+  // IP берём через trustedIp, а НЕ левым сегментом X-Forwarded-For. Левые
+  // сегменты приходят от клиента и подделываются: человек мог бы подписать
+  // согласие на биометрию с любым адресом, вплоть до чужого. Согласие -
+  // юридический документ, и в споре «я такого не подписывал» запись обязана
+  // указывать на реальный адрес. trustedIp читает то, что проставил наш edge,
+  // и уже используется так в 18 других местах - здесь его просто забыли позвать.
+  const ip = trustedIp(req);
   const ua = req.headers.get("user-agent") || "miniapp";
   const consent = await recordBiometricConsent({
     userId: user.id,

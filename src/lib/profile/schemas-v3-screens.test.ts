@@ -141,8 +141,16 @@ describe("V3 valuesV3Schema (Экран 6)", () => {
     top_life_values: ["family", "education"],
   };
 
-  it("принимает 1-3 top_life_values", () => {
+  it("принимает 1-5 top_life_values", () => {
     expect(valuesV3Schema.safeParse(ok).success).toBe(true);
+    // Правка по итогам family launch (замечание 2): потолок подняли с 3 до 5 —
+    // тестеры жаловались, что три ценности не описывают человека.
+    expect(
+      valuesV3Schema.safeParse({
+        ...ok,
+        top_life_values: ["family", "education", "honesty", "career", "health"],
+      }).success,
+    ).toBe(true);
   });
 
   it("принимает БЕЗ religion (вера опциональна — «не хочу указывать» убран)", () => {
@@ -165,11 +173,18 @@ describe("V3 valuesV3Schema (Экран 6)", () => {
     ).toBe(true);
   });
 
-  it("отклоняет 4 top_life_values", () => {
+  it("отклоняет 6 top_life_values", () => {
     expect(
       valuesV3Schema.safeParse({
         ...ok,
-        top_life_values: ["family", "education", "honesty", "career"],
+        top_life_values: [
+          "family",
+          "education",
+          "honesty",
+          "career",
+          "health",
+          "respect",
+        ],
       }).success,
     ).toBe(false);
   });

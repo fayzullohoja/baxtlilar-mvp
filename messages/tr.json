@@ -194,7 +194,7 @@
     "religion_label": "İnanç",
     "religion_importance_label": "İnancın önemi ne kadar",
     "values_label": "Temel değerler",
-    "values_hint": "1 ile 3 arası seçin",
+    "values_hint": "1 ile 5 arası seçin",
     "education_label": "Eğitim",
     "employment_label": "İstihdam durumu",
     "looking_title": "Kimi arıyorsunuz",
@@ -361,7 +361,7 @@
     "futureChildrenPlansLabel": "Gelecekte çocuk planları",
     "futureChildrenPlansHint": "Bu önemli bir eşleşme sinyalidir — algoritma planların uyumunu dikkate alır.",
     "geographyLabel": "Coğrafya",
-    "lifeValuesHint": "En fazla 3 tane seçin — bu, sizin için neyin önemli olduğunu algoritmaya gösterir.",
+    "lifeValuesHint": "En fazla 5 tane seçin — bu, sizin için neyin önemli olduğunu algoritmaya gösterir.",
     "basic_district_label": "İkamet edilen ilçe",
     "basic_district_hint": "İlçe, yalnızca ilgili anahtarı açtığınızda ankette gösterilir.",
     "basic_district_visible_label": "İlçeyi ankette göster",
@@ -535,7 +535,11 @@
     "err_bio_too_few_words": "En az 30 kelime.",
     "bio_word_counter": "En az 30 kelime. Şimdi: {current}/30.",
     "bio_char_counter": "Karakter: {current}/500 (min 50).",
-    "progress_halfway": "Anketin yarısından fazlası bitti. Az kaldı."
+    "progress_halfway": "Anketin yarısından fazlası bitti. Az kaldı.",
+    "parents_origin_heading_father": "Babanız nerede doğup büyüdü?",
+    "parents_origin_heading_mother": "Anneniz nerede doğup büyüdü?",
+    "parents_current_heading_father": "Babanız şimdi nerede yaşıyor?",
+    "parents_current_heading_mother": "Anneniz şimdi nerede yaşıyor?"
   },
   "Quiz": {
     "intro_title": "Uyum anketi",
@@ -580,7 +584,10 @@
   "Feed": {
     "title": "Öneriler",
     "subtitle": "Değerleri size yakın kişiler",
-    "empty": "Henüz uygun profil yok. Daha sonra tekrar bakın."
+    "empty": "Henüz uygun profil yok. Daha sonra tekrar bakın.",
+    "skip_limit_title": "Bugünlük bu kadar",
+    "skip_limit_body": "Rastgele kişileri göstermiyoruz - yarın uğrayın, yeni kişiler seçelim.",
+    "skip_failed": "Atlanamadı. Lütfen tekrar deneyin."
   },
   "ProfileView": {
     "verified": "Profil doğrulandı",
@@ -663,7 +670,13 @@
     "statusLabel": "Durum",
     "versionInfo": "Sürüm V2 · Baxtlilar",
     "invite_title": "Davet edin",
-    "invite_desc": "Kodunuz ve davet bağlantınız"
+    "invite_desc": "Kodunuz ve davet bağlantınız",
+    "blocked_title": "Engellenenler",
+    "blocked_empty": "Kimseyi engellemediniz.",
+    "blocked_unblock": "Engeli kaldır",
+    "blocked_unknown": "Profil kullanılamıyor",
+    "blocked_unblock_failed": "Olmadı. Engel kaldırılmadı, tekrar deneyin.",
+    "blocked_hint": "Engeli kaldırılan kişi yeniden önerilerde görünebilir ve size yazabilir."
   },
   "Invite": {
     "title": "Davet edin",
@@ -796,7 +809,8 @@
     "lifeValuesLabel": "Hayattaki değerler",
     "detailsLabel": "Ayrıntılar",
     "profileFootnote": "Profil, anket olarak güncellenir",
-    "verifiedBadge": "Doğrulanmış"
+    "verifiedBadge": "Doğrulanmış",
+    "personalityHint": "Kişilik testi yanıtlarına göre oluşturuldu, kişinin kendi yazdığı metin değil"
   },
   "Tutorial": {
     "next": "İleri",
@@ -930,7 +944,8 @@
       "blocked": "Bu kişi şu anda uygun değil.",
       "unavailable": "Anket artık mevcut değil.",
       "noPermission": "İlgi göndermek için doğrulama gerekir."
-    }
+    },
+    "err_not_eligible": "Şu anda ilgi gönderilemiyor. Daha sonra tekrar deneyin."
   },
   "Upload": {
     "errors": {
@@ -939,7 +954,15 @@
       "duplicateIdentity": "Bu kimlik zaten kayıtlı",
       "duplicatePassport": "Bu pasaport zaten kullanılmış",
       "duplicateSelfie": "Bu selfie zaten kullanılmış",
-      "failed": "Yüklenemedi"
+      "failed": "Yüklenemedi",
+      "noFile": "Dosya seçilmedi. Yükleme alanına dokunup fotoğrafı seçin.",
+      "documentBlacklisted": "Bu belge başka bir hesapta kullanılmış. Destek ekibine yazın.",
+      "consentRequired": "Biyometrik veri onayı gerekiyor. Doğrulama adımına dönüp onaylayın.",
+      "temporarilyOff": "Belge kabulü geçici olarak durduruldu. Daha sonra deneyin.",
+      "blockingReject": "Başvurunuz hakkında nihai karar verildi. Destek ekibine başvurun.",
+      "wrongStep": "Bu adım zaten tamamlandı. Sayfayı yenileyin.",
+      "rateLimited": "Çok fazla deneme yaptınız. Bir dakika bekleyip tekrar deneyin.",
+      "saveFailed": "Kaydedilemedi. Lütfen tekrar deneyin."
     }
   },
   "ProfileSafety": {
@@ -1303,7 +1326,17 @@
       "ok_if_needed": "Допустимо, если нужно",
       "prefer_not": "Предпочитаю, чтобы не работал(а)",
       "against": "Категорически против",
-      "discuss": "Готов(а) обсуждать"
+      "discuss": "Готов(а) обсуждать",
+      "welcome__m": "Karımın çalışma isteğini desteklerim",
+      "welcome__f": "Kocamın çalışma isteğini desteklerim",
+      "ok_if_needed__m": "Birlikte gerekli görürsek kabul ederim",
+      "ok_if_needed__f": "Birlikte gerekli görürsek kabul ederim",
+      "prefer_not__m": "Karımın çalışmamasını tercih ederim",
+      "prefer_not__f": "Kocamın çalışmamasını tercih ederim",
+      "against__m": "Karımın çalışmasını desteklemem",
+      "against__f": "Kocamın çalışmasını desteklemem",
+      "discuss__m": "Konuşmaya açığım",
+      "discuss__f": "Konuşmaya açığım"
     },
     "FAMILY_DECISION_MODEL": {
       "husband_main": "Основное за мужем",

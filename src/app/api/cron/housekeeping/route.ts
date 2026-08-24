@@ -74,6 +74,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     });
   }
 
+  // Task 4: ретенция очереди уведомлений. Строка ложится в tg_outbox на каждое
+  // событие и раньше не удалялась никогда - ни доставленная, ни окончательно
+  // мёртвая. Доставленные чистим через 30 дней, мёртвые держим 90: это сигнал,
+  // что до человека не достучались, и он должен успеть попасть кому-то на глаза.
+  try {
+    const { data, error } = await sb.rpc("gc_tg_outbox");
+    if (error) throw error;
+    results.push({ task: "gc_tg_outbox", ok: true, result: data });
+  } catch (err) {
+    results.push({
+      task: "gc_tg_outbox",
+      ok: false,
+      error: err instanceof Error ? err.message : "unknown",
+    });
+  }
+
   const allOk = results.every((r) => r.ok);
   return NextResponse.json({ ok: allOk, results }, { status: allOk ? 200 : 207 });
 }

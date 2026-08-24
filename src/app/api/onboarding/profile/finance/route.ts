@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { financeSchema } from "@/lib/profile/schemas";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
 import { stampExtended } from "@/lib/profile/extended";
+import { shouldAskIncomeRange } from "@/lib/profile/finance-visibility";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "read_failed" }, { status: 500 });
   const ext = (existing?.extended as Record<string, unknown>) ?? {};
   const prevFinance = (ext.finance as Record<string, unknown>) ?? {};
-  const newFinance = {
+  const newFinance: Record<string, unknown> = {
     ...prevFinance,
     income_source_stability: parsed.data.income_source_stability,
     financial_stability_importance: parsed.data.financial_stability_importance,
@@ -61,6 +62,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       ? { housing_status: parsed.data.housing_status }
       : {}),
   };
+
+  // Family launch, замечание 3. Клиент прячет вопрос о размере дохода, когда
+  // человек ответил «дохода нет» или «не хочу отвечать», и перестаёт его слать.
+  // Одного этого мало: выше стоит `...prevFinance`, и УЖЕ СОХРАНЁННЫЙ ранее
+  // диапазон пережил бы отказ - в базе осталось бы «10-20 млн» у человека,
+  // который только что сказал, что дохода нет. Человек считает, что отозвал
+  // ответ, а он на месте. Поэтому чистим на сервере, а не полагаемся на клиент:
+  // скрытое поле обязано исчезать из данных, а не только с экрана.
+  if (!shouldAskIncomeRange(parsed.data.income_source_stability)) {
+    delete newFinance.monthly_income_range;
+  }
 
   const { error: saveErr } = await sb
     .from("user_profiles")

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { verifyPassword } from "@/lib/admin/password";
+import { verifyPasswordConstantTime } from "@/lib/admin/password";
 import { setAdminSession, setPendingTotp, type AdminRole } from "@/lib/admin/session";
 import { isLoginThrottled, recordLoginAttempt } from "@/lib/admin/throttle";
 import { adminAudit } from "@/lib/admin/guard";
@@ -34,10 +34,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   // Деактивированный аккаунт (staff-управление) не входит — тихо, как неверный
   // пароль (не раскрываем факт деактивации).
-  const ok =
-    admin && admin.active !== false
-      ? verifyPassword(password, admin.password_hash as string)
-      : false;
+  // Считаем scrypt ВСЕГДА, даже когда учётки нет или она деактивирована:
+  // иначе время ответа выдаёт, какие логины существуют (см. докстроку
+  // verifyPasswordConstantTime). Деактивированный аккаунт по-прежнему получает
+  // тот же ответ, что и неверный пароль - факт деактивации не раскрываем.
+  const passwordOk = verifyPasswordConstantTime(
+    password,
+    admin ? (admin.password_hash as string) : null,
+  );
+  const ok = Boolean(admin) && admin!.active !== false && passwordOk;
   if (!ok) {
     await recordLoginAttempt(ip, false);
     await recordLoginAttempt(loginKey, false);

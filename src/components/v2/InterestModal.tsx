@@ -45,6 +45,12 @@ export function InterestModal({ candidateId, candidateFirstName, onClose }: Prop
     blocked: t("err_blocked"),
     unavailable: t("err_unavailable"),
     no_interest_permission: t("err_no_interest_permission"),
+    // Роут отдаёт not_eligible, когда is_matchable вернул false: цель или сам
+    // отправитель уже не в состоянии 'active'. Подписи не было, и человек видел
+    // общее «не получилось». Текст намеренно нейтральный: одна из причин -
+    // предложенный, но не подтверждённый бан, и раскрывать его нельзя
+    // (политика Option A, см. deriveRole в src/lib/v2/permissions.ts).
+    not_eligible: t("err_not_eligible"),
     failed: t("err_failed"),
   };
   const [message, setMessage] = useState("");

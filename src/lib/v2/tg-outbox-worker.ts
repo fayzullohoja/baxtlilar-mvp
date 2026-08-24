@@ -124,6 +124,14 @@ async function sendBotMessage(telegramId: number, text: string): Promise<boolean
         // Plain text (нет HTML/MD) — следует политике notify.ts: модератор/system
         // тексты не должны быть parse_mode-уязвимы.
         body: JSON.stringify({ chat_id: telegramId, text }),
+        // Таймаут обязателен: доставка вызывается синхронно внутри
+        // пользовательского запроса (первое сообщение в чате, решение
+        // модератора). Без него зависший вызов к Telegram держит запрос до
+        // таймаута платформы, и человек смотрит на спиннер минутами - для VPS
+        // в Ташкенте это не выдумка. Провал не теряется: строка остаётся в
+        // tg_outbox и уходит следующим проходом крона. Те же 10 секунд, что в
+        // bot-api.ts.
+        signal: AbortSignal.timeout(10_000),
       },
     );
     return res.ok;

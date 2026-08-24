@@ -4,7 +4,7 @@ name: Cron · tg-outbox drain
 # Каждые 5 минут вызывает /api/cron/tg-outbox, который шлёт pending
 # push-уведомления через Bot API.
 #
-# Secret CRON_SECRET должен совпадать с Railway env CRON_SECRET.
+# Secret CRON_SECRET должен совпадать с CRON_SECRET на прод-сервере.
 
 on:
   schedule:
@@ -21,9 +21,10 @@ jobs:
       - name: Call cron endpoint
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          PROD_URL: ${{ vars.PROD_URL }}
         run: |
           RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST \
-            "https://baxtlilar-mvp-production.up.railway.app/api/cron/tg-outbox" \
+            "${PROD_URL:-https://app.baxtlilar.uz}/api/cron/tg-outbox" \
             -H "X-Cron-Secret: ${CRON_SECRET}" \
             -H "Content-Type: application/json")
           STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)

@@ -1,0 +1,72 @@
+name: CI (свой раннер)
+
+# Запасной пайплайн на СВОЁМ раннере.
+#
+# Зачем он есть. С 24.08.2026 облачные машины GitHub не запускаются: аккаунт
+# отдаёт «The job was not started because recent account payments have failed».
+# Задания падают за 4 секунды, ещё до чекаута, то есть код никто не проверяет.
+# При этом сами Actions в репозитории включены, и СВОЙ раннер под ограничение
+# не попадает - минуты тратятся только облачными машинами.
+#
+# ci.yml НЕ трогаем намеренно: когда оплату починят, он оживёт сам, и тогда этот
+# файл можно удалить или оставить как дублирующую проверку.
+#
+# Ограничение, о котором надо помнить: раннер живёт на рабочем Маке. Пока он
+# выключен, проверки не идут - задания просто ждут в очереди. Это не замена
+# облачному CI навсегда, это способ не выкладывать непроверенный код сейчас.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-self-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: типы · линт · тесты · ПДн · SQL · интеграция
+    runs-on: [self-hosted, baxtlilar]
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      # На своём раннере node и pnpm уже стоят - ставить их через actions не
+      # нужно и вредно (setup-node качает тулчейн в _work на каждый прогон).
+      # Версию pnpm берём из package.json через corepack, как и локально.
+      - name: Проверить окружение
+        run: |
+          echo "node: $(node --version)"
+          corepack pnpm --version
+          echo "psql: $(psql --version)"
+
+      - name: Установить зависимости
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Типы
+        run: corepack pnpm typecheck
+
+      - name: Линт
+        run: corepack pnpm lint
+
+      - name: Модульные тесты
+        run: corepack pnpm test:run
+
+      # Гейт «без ПДн в логах» - в облаке он отдельным воркфлоу, и там тоже
+      # не запускается. Держим рядом с остальными: проверка стоит секунды, а
+      # ловит она утечку паспорта или телефона в console/Sentry.
+      - name: Нет ПДн в логах
+        run: corepack pnpm check:pii
+
+      - name: SQL-контракты
+        run: bash scripts/test-db/run-sql-tests.sh
+
+      # Этого шага в облачном ci.yml нет вовсе - интеграционные тесты не гонял
+      # никто. А именно они ловят расхождения между кодом и живой базой: набор
+      # вариантов против CHECK, колонки выгрузки персональных данных, порядок
+      # участников чата. Раз уж свой раннер стоит рядом с Postgres - гоняем.
+      - name: Интеграционные тесты
+        run: bash scripts/test-db/run-integration-tests.sh

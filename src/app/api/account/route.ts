@@ -162,7 +162,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           .eq("reporter_id", user.id),
         sb
           .from("user_state_transitions")
-          .select("from_state, to_state, reason, triggered_by_kind, created_at")
+          // Колонки называются field/from_value/to_value. Раньше здесь стояло
+          // from_state/to_state - таких колонок нет, запрос падал, ошибка
+          // глоталась через `?? []`, и человек получал выгрузку с ВСЕГДА пустым
+          // разделом истории статусов. Молча: ни ошибки, ни признака неполноты,
+          // а суточная попытка выгрузки при этом сгорала.
+          // `field` обязателен: без него непонятно, что именно менялось.
+          .select("field, from_value, to_value, reason, triggered_by_kind, created_at")
           .eq("user_id", user.id)
           .order("created_at", { ascending: true }),
       ]);
@@ -198,6 +204,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         my_reports: myReports.data ?? [],
         state_transitions: stateLog.data ?? [],
       },
+      // Выгрузка - право человека по закону, и она не должна тихо приходить
+      // неполной. Раньше сбой любого из запросов превращался в пустой раздел
+      // без единого признака, что данные потеряны, а суточная попытка при этом
+      // сгорала. Теперь неполнота названа прямо: человек видит, чего не хватает,
+      // и может обратиться в поддержку, а не считать пустоту правдой.
+      incomplete: [
+        ["profile", profile.error],
+        ["photos", photos.error],
+        ["quiz_answers", qAnswers.error],
+        ["quiz_results", qResults.error],
+        ["consents", consents.error],
+        ["documents", docs.error],
+        ["sent_requests", sentReqs.error],
+        ["received_requests", recvReqs.error],
+        ["my_messages", myMsgs.error],
+        ["my_reports", myReports.error],
+        ["state_transitions", stateLog.error],
+      ]
+        .filter(([, err]) => Boolean(err))
+        .map(([name]) => name),
     });
   }
 

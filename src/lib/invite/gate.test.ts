@@ -13,8 +13,8 @@ vi.mock("@/lib/features/flags", () => ({
 type StoreRow = { id: string; code: string; owner_id: string | null; disabled_at: string | null } | null;
 let activeCode: StoreRow = null;
 let existsButDisabled = false;
-const findActiveCodeMock = vi.fn((raw: string) => Promise.resolve(activeCode));
-const codeExistsButDisabledMock = vi.fn((raw: string) => Promise.resolve(existsButDisabled));
+const findActiveCodeMock = vi.fn((_raw: string) => Promise.resolve(activeCode));
+const codeExistsButDisabledMock = vi.fn((_raw: string) => Promise.resolve(existsButDisabled));
 vi.mock("./store", () => ({
   findActiveCode: (raw: string) => findActiveCodeMock(raw),
   codeExistsButDisabled: (raw: string) => codeExistsButDisabledMock(raw),

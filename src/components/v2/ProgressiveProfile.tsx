@@ -274,6 +274,25 @@ export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
         {traits.length > 0 ? (
           <div>
             <div style={sectionLabelStyle}>{t('personalityLabel')}</div>
+            {/*
+              Замечание 8-9 тестеров family launch: человек не понимал, откуда
+              взялось описание характера - он такого о себе не писал и решил,
+              что это придумано за него. Текст собирается из ответов на
+              психологический опрос по порогам (см. personalityTraits выше),
+              никакого сочинения там нет. Подпись снимает вопрос прямо на
+              экране, чтобы за ней не приходилось идти в поддержку.
+            */}
+            <div
+              style={{
+                fontSize: "11.5px",
+                lineHeight: 1.45,
+                color: "var(--color-v2-ink-400)",
+                marginBottom: "6px",
+                fontFamily: "var(--font-v2-body)",
+              }}
+            >
+              {t('personalityHint')}
+            </div>
             <Lead style={{ marginTop: 0 }}>
               {name} —{" "}
               {traits.map((t, i) => (

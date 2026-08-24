@@ -16,6 +16,8 @@ import { BottomNav } from "@/components/bottom-nav";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline } from "@/components/v2/Headline";
 import { V2SettingsActions } from "@/components/v2/SettingsActions";
+import { BlockedList } from "@/components/v2/BlockedList";
+import { loadBlockedByMe } from "@/lib/safety/blocked-list";
 import { deriveRole, ROLE_LABEL } from "@/lib/v2/permissions";
 
 export const dynamic = "force-dynamic";
@@ -46,6 +48,9 @@ export default async function V2SettingsPage({
   const roleLabel = ROLE_LABEL[role][locale === "uz" ? "uz" : "ru"];
   const unread = await getUnreadTotal(user.id);
   const name = firstWord((p?.display_name as string) ?? "");
+  // Замечание 11 family launch: заблокированные нигде не показывались, снять
+  // блокировку было нельзя, хотя ручка разблокировки существовала.
+  const blocked = await loadBlockedByMe(user.id);
 
   return (
     <>
@@ -93,6 +98,34 @@ export default async function V2SettingsPage({
         </div>
 
         <V2SettingsActions paused={user.lifecycle_state === "paused"} />
+
+        <section style={{ marginTop: "44px" }}>
+          <h2
+            style={{
+              margin: "0 0 6px",
+              fontSize: "13px",
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "var(--color-v2-ink-300)",
+              fontFamily: "var(--font-v2-body)",
+            }}
+          >
+            {t('blocked_title')}
+          </h2>
+          <p
+            style={{
+              margin: "0 0 14px",
+              fontSize: "12.5px",
+              lineHeight: 1.5,
+              color: "var(--color-v2-ink-400)",
+              fontFamily: "var(--font-v2-body)",
+            }}
+          >
+            {t('blocked_hint')}
+          </p>
+          <BlockedList people={blocked} />
+        </section>
 
         <div
           style={{
