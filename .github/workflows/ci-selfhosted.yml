@@ -28,7 +28,7 @@ concurrency:
 
 jobs:
   checks:
-    name: typecheck · lint · unit · SQL · integration
+    name: типы · линт · тесты · ПДн · SQL · интеграция
     runs-on: [self-hosted, baxtlilar]
     timeout-minutes: 25
     steps:
@@ -54,6 +54,12 @@ jobs:
 
       - name: Модульные тесты
         run: corepack pnpm test:run
+
+      # Гейт «без ПДн в логах» - в облаке он отдельным воркфлоу, и там тоже
+      # не запускается. Держим рядом с остальными: проверка стоит секунды, а
+      # ловит она утечку паспорта или телефона в console/Sentry.
+      - name: Нет ПДн в логах
+        run: corepack pnpm check:pii
 
       - name: SQL-контракты
         run: bash scripts/test-db/run-sql-tests.sh
