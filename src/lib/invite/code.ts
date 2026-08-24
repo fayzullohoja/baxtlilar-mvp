@@ -87,6 +87,11 @@ export function generateInviteCode(): string {
 
   // Резервный путь: если не выпало за 100 попыток, сгенерируем детерминированно.
   // Вероятность так мала (~0.0001%), что это условие почти не вызывается.
-  let code = "2A" + Array(4).fill(0).map(() => INVITE_CODE_ALPHABET[Math.floor(Math.random() * INVITE_CODE_ALPHABET.length)]).join("");
+  const code =
+    "2A" +
+    Array(4)
+      .fill(0)
+      .map(() => INVITE_CODE_ALPHABET[Math.floor(Math.random() * INVITE_CODE_ALPHABET.length)])
+      .join("");
   return code;
 }
