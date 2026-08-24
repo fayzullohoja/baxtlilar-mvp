@@ -944,7 +944,8 @@
       "blocked": "This person is unavailable.",
       "unavailable": "This profile is no longer available.",
       "noPermission": "You need verification to send interest."
-    }
+    },
+    "err_not_eligible": "Sending interest is unavailable right now. Please try again later."
   },
   "Upload": {
     "errors": {

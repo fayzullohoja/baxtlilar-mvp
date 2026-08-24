@@ -944,7 +944,8 @@
       "blocked": "Bu odam mavjud emas.",
       "unavailable": "Anketa endi mavjud emas.",
       "noPermission": "Qiziqishni yuborish uchun tekshirish kerak."
-    }
+    },
+    "err_not_eligible": "Hozir qiziqish yuborib boʻlmaydi. Keyinroq urinib koʻring."
   },
   "Upload": {
     "errors": {

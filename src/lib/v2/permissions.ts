@@ -82,6 +82,20 @@ export function deriveRole(
       // user'у до admin_ban_confirm. Treat как active — role/permissions/screens
       // идентичны прежнему состоянию. Видимый блок происходит только при confirm
       // (lifecycle→blocked → этот switch выпадает в case "blocked").
+      //
+      // ⚠️ Расхождение слоёв, найденное аудитом 23.08.2026 - осознанное, но о нём
+      // надо знать. Здесь pending_ban = active, а в базе get_recommendations и
+      // is_matchable требуют ровно lifecycle_state = 'active', то есть такой
+      // человек уже не появляется в чужих лентах и не может завести новый
+      // контакт. Безопасность при этом НЕ течёт: новые связи не образуются.
+      //
+      // Видимый эффект: интерфейс предлагает действия, которые база отклонит.
+      // Раньше человек получал на них общее «не получилось»; теперь роут отдаёт
+      // not_eligible с нейтральным текстом, не раскрывающим предложение бана.
+      //
+      // Сделать интерфейс согласованным (спрятать кнопки) нельзя, не нарушив
+      // Option A: скрытые действия и есть раскрытие. Поэтому либо живём так,
+      // либо меняем политику - это решение продукта, а не рефакторинг.
       if (verificationStatus === "approved") return "verified";
       if (verificationStatus === "rejected") return "rejected";
       // submitted / pending_review / needs_changes / not_started / phone_verified

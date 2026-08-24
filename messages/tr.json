@@ -944,7 +944,8 @@
       "blocked": "Bu kişi şu anda uygun değil.",
       "unavailable": "Anket artık mevcut değil.",
       "noPermission": "İlgi göndermek için doğrulama gerekir."
-    }
+    },
+    "err_not_eligible": "Şu anda ilgi gönderilemiyor. Daha sonra tekrar deneyin."
   },
   "Upload": {
     "errors": {
