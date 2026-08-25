@@ -58,22 +58,21 @@ function Icon({ k }: { k: string }): ReactNode {
   );
 }
 
-export function BottomNav({
-  active,
-  unread = 0,
-}: {
+type NavProps = {
   active: "feed" | "requests" | "chats" | "profile";
   unread?: number;
-}) {
+};
+
+function Bar({ active, unread = 0, fixed }: NavProps & { fixed: boolean }) {
   const t = useTranslations("Nav");
   return (
     <nav
       style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: 20,
+        position: fixed ? "fixed" : "static",
+        bottom: fixed ? 0 : undefined,
+        left: fixed ? 0 : undefined,
+        right: fixed ? 0 : undefined,
+        zIndex: fixed ? 20 : undefined,
         marginLeft: "auto",
         marginRight: "auto",
         maxWidth: "var(--v2-max-width)",
@@ -134,5 +133,37 @@ export function BottomNav({
         );
       })}
     </nav>
+  );
+}
+
+/**
+ * Нижняя панель + распорка под неё.
+ *
+ * Панель прибита к экрану (position: fixed), то есть выпадает из потока и
+ * накрывает собой то, что оказалось под ней. Из-за этого на экране подбора
+ * кнопка «Сейчас не подходит» пряталась под панель почти наполовину - 29
+ * пикселей из 61, и докрутить до неё было нельзя: страница уже кончилась, а
+ * кнопка всё равно оставалась перекрытой.
+ *
+ * Поэтому рядом с настоящей панелью рисуется её невидимая копия, уже в потоке.
+ * Копия занимает ровно столько же места - и содержимое страницы получает
+ * отступ снизу само, без магических чисел в каждом экране.
+ *
+ * Почему копия, а не `height: 61px`: высота панели складывается из иконки,
+ * подписи и отступа безопасной зоны устройства. Она разная на разных шрифтах,
+ * языках и телефонах, и любое зашитое число рано или поздно разойдётся с
+ * действительностью. Копия того же компонента совпадает всегда.
+ *
+ * Работает это потому, что во всех семи экранах с панелью она стоит последней
+ * в разметке - распорка ложится в самый низ страницы, а не в середину.
+ */
+export function BottomNav(props: NavProps) {
+  return (
+    <>
+      <div aria-hidden style={{ visibility: "hidden", pointerEvents: "none" }}>
+        <Bar {...props} fixed={false} />
+      </div>
+      <Bar {...props} fixed />
+    </>
   );
 }

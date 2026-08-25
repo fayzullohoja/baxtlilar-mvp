@@ -57,7 +57,12 @@ function sigFor(bucket: string, objectPath: string, exp: number): string {
  */
 export function stableExp(ttlSec: number, nowMs: number = Date.now()): number {
   const now = Math.floor(nowMs / 1000);
-  const step = Math.max(60, Math.floor(ttlSec / 4));
+  // Шаг - четверть срока. Пол именно 1, а НЕ 60: при поле в 60 секунд любой
+  // ttl <= 60 давал бы step >= ttl, множитель ниже схлопывался бы в единицу, и
+  // ссылка на хвосте окна выдавалась бы с остатком жизни в одну секунду. В
+  // боевом коде таких сроков сейчас нет (только 300, 600 и 3600), но запас
+  // в три четверти ttl должен держаться при любом значении, а не при удачном.
+  const step = Math.max(1, Math.floor(ttlSec / 4));
   // Начало текущего окна + столько шагов, чтобы покрыть ttl. Внутри окна
   // значение постоянное — это и даёт одинаковый URL.
   return (Math.floor(now / step) + Math.ceil(ttlSec / step)) * step;

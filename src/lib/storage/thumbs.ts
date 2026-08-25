@@ -91,11 +91,32 @@ function remember(key: string, t: Thumb): void {
   }
 }
 
+// Отсутствие библиотеки и нечитаемый файл - это ДВЕ РАЗНЫЕ беды, и гасить их
+// одинаково молча нельзя. Если sharp не встанет на сервере, превью просто
+// перестанут получаться, а снаружи всё будет выглядеть штатно: код 200,
+// правильные картинки, ноль ошибок - только каждая по пять мегабайт. Отличить
+// «правка не доехала» от «это айфонный HEIC» стало бы невозможно, тем более
+// без доступа к серверу. Поэтому про сломанную библиотеку сообщаем - один раз,
+// чтобы не залить лог на каждый запрос.
+let moduleFailureReported = false;
+
 async function render(srcAbsPath: string, width: ThumbWidth): Promise<Thumb | null> {
+  let sharp: typeof import("sharp").default;
   try {
-    // Динамический импорт: если библиотеки на сервере нет, ловим здесь и
-    // спокойно отдаём оригинал, а не роняем весь роут отдачи файлов.
-    const { default: sharp } = await import("sharp");
+    ({ default: sharp } = await import("sharp"));
+  } catch (e) {
+    if (!moduleFailureReported) {
+      moduleFailureReported = true;
+      console.error(
+        "[thumbs] sharp не загрузился - превью отключены, отдаём оригиналы. " +
+          "Проверьте, что @img/sharp-linux-x64 установился при деплое:",
+        e,
+      );
+    }
+    return null;
+  }
+
+  try {
     // Одна операция - один поток libvips. Иначе одно пережатие само по себе
     // разбирает весь пул и ограничитель выше теряет смысл.
     sharp.concurrency(1);
@@ -113,9 +134,10 @@ async function render(srcAbsPath: string, width: ThumbWidth): Promise<Thumb | nu
     // зато не удерживает и не отдаёт наружу чужие байты общего пула Buffer.
     return { bytes: new Uint8Array(out), contentType: "image/webp" };
   } catch {
-    // Библиотеки нет, формат не читается (HEIC с айфона libheif отвергает),
-    // файл битый - любой случай означает «отдайте оригинал», а не битую
-    // картинку у модератора.
+    // Ожидаемая осечка: формат не читается (HEIC с айфона libheif отвергает
+    // с «Number of references in iref box exceeds the security limits»), файл
+    // битый. Это не повод шуметь в лог на каждый запрос - просто отдаём
+    // оригинал, а не битую картинку у модератора.
     return null;
   }
 }
