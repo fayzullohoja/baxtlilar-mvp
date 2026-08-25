@@ -587,7 +587,10 @@
     "empty": "Henüz uygun profil yok. Daha sonra tekrar bakın.",
     "skip_limit_title": "Bugünlük bu kadar",
     "skip_limit_body": "Rastgele kişileri göstermiyoruz - yarın uğrayın, yeni kişiler seçelim.",
-    "skip_failed": "Atlanamadı. Lütfen tekrar deneyin."
+    "skip_failed": "Atlanamadı. Lütfen tekrar deneyin.",
+    "send_interest": "İlgi gönder",
+    "not_now": "Şimdilik uygun değil",
+    "returned_note": "Bu kişiyi daha önce ertelemiştiniz - belki şimdi farklı görünür."
   },
   "ProfileView": {
     "verified": "Profil doğrulandı",
@@ -1625,5 +1628,22 @@
       "depends": "Это зависит от ситуации",
       "prefer_not": "Предпочитаю не отвечать"
     }
+  },
+  "SkipSheet": {
+    "aria_label": "Ret nedeni",
+    "lead": "Neyin uymadığını söyleyin - eşleşmeler daha isabetli olur",
+    "reason_age": "Yaş olarak uygun değil",
+    "reason_geo": "Uzak, benim şehrim değil",
+    "reason_not_ready": "Şu an tanışmaya hazır değilim",
+    "reason_not_my_type": "Sadece bana göre değil",
+    "reason_profile_issue": "Profilde bir sorun var",
+    "reason_never": "Bir daha gösterilmesin",
+    "just_next": "Sadece devam et",
+    "hint_title_age": "Mesele yaş aralığı",
+    "hint_body_age": "Aralığınıza uyan kimse olmadığında aramayı biraz genişletiyoruz - bu yüzden biraz daha büyük veya küçük kişiler çıkıyor. Aralığı değiştirebilirsiniz.",
+    "hint_title_geo": "Mesele şehir",
+    "hint_body_geo": "Şu anda eşleşmeler şehrinizden ve yakınından geliyor. Daha geniş bakmaya hazırsanız tercihi değiştirin.",
+    "hint_cta": "Ayarları değiştir",
+    "hint_later": "Şimdi değil"
   }
 }

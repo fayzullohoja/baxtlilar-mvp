@@ -587,7 +587,10 @@
     "empty": "No matching profiles yet. Check back later.",
     "skip_limit_title": "That is enough for today",
     "skip_limit_body": "We do not show just anyone - come back tomorrow and we will find new people.",
-    "skip_failed": "Could not skip. Please try again."
+    "skip_failed": "Could not skip. Please try again.",
+    "send_interest": "Send interest",
+    "not_now": "Not right now",
+    "returned_note": "You passed on this person before - maybe it reads differently now."
   },
   "ProfileView": {
     "verified": "Profile verified",
@@ -1625,5 +1628,22 @@
       "depends": "Это зависит от ситуации",
       "prefer_not": "Предпочитаю не отвечать"
     }
+  },
+  "SkipSheet": {
+    "aria_label": "Reason for passing",
+    "lead": "Tell us what didn't fit - matches will get more accurate",
+    "reason_age": "Not the right age",
+    "reason_geo": "Too far, not my city",
+    "reason_not_ready": "Not ready to meet anyone right now",
+    "reason_not_my_type": "Just not for me",
+    "reason_profile_issue": "Something's off with the profile",
+    "reason_never": "Don't show again",
+    "just_next": "Just move on",
+    "hint_title_age": "It's about your age range",
+    "hint_body_age": "When nobody fits your range, we widen the search a little - that's why slightly older or younger people show up. You can change the range.",
+    "hint_title_geo": "It's about the city",
+    "hint_body_geo": "Right now matches come from your city and nearby. If you're open to looking wider, change the preference.",
+    "hint_cta": "Change preferences",
+    "hint_later": "Not now"
   }
 }

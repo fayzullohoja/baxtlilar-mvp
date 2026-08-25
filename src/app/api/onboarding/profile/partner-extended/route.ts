@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { clearFilterSkips } from "@/lib/matching/clear-filter-skips";
 import { loadUserForStep } from "@/lib/onboarding/guard-api";
 import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -110,6 +111,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   if (saveErr)
     return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
+
+  // Человек поменял возрастные рамки - значит отказы вида «не подходит по
+  // возрасту» больше не имеют оснований, и спрятанных за них людей надо
+  // вернуть. Иначе выходит ловушка: рамки починил, а лента осталась пустой.
+  // Этот шаг доступен и после онбординга (настройки редиректят в повторный
+  // проход анкеты), так что вызов не мёртвый. Гео здесь всегда 'my_city' и не
+  // меняется, поэтому снимаем только возрастные.
+  await clearFilterSkips(user.id, ["age"]);
 
   // 2026-07-12 (ревью оунера): экран приватности убран — анкета видна только
   // при мэтчинге (profile_visibility_mode остаётся дефолтом 'verified_only').

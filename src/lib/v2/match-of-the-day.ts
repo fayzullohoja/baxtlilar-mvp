@@ -36,6 +36,15 @@ export type MatchOfTheDay = {
   };
   /** Editorial-объяснение почему этот мэтч. */
   story: MatchStory;
+  /**
+   * Этого человека уже откладывали, и он вернулся после срока.
+   *
+   * Возврат надо ПОЯСНЯТЬ. Молча показать того, от кого человек отказался
+   * месяц назад, - верный способ получить вывод «приложение не помнит моих
+   * решений», ровно как с возрастными рамками. Строка на карточке снимает
+   * вопрос, а в шторке отказа появляется «больше не показывать».
+   */
+  returning: boolean;
 };
 
 async function loadFullProfile(userId: string): Promise<ProfileForMatch | null> {
@@ -127,8 +136,18 @@ export async function getMatchOfTheDay(viewerId: string): Promise<MatchOfTheDay 
   // диапазон был расширен, история честно об этом говорит.
   const story = generateMatchStory(viewerProfile, candidateProfile, top.relaxLevel, label);
 
+  // Подбор отдаёт только тех, у кого срок сокрытия вышел (или его не было),
+  // поэтому сам факт строки в match_views означает «уже откладывали».
+  const { data: prior } = await supabaseAdmin()
+    .from("match_views")
+    .select("target_id")
+    .eq("viewer_id", viewerId)
+    .eq("target_id", top.user_id)
+    .maybeSingle();
+
   return {
     candidate: { user_id: top.user_id, profile: candidateProfile },
     story,
+    returning: Boolean(prior),
   };
 }

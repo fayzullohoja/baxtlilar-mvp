@@ -587,7 +587,10 @@
     "empty": "Hozircha mos anketalar yoʻq. Keyinroq qarang.",
     "skip_limit_title": "Bugunga yetarli",
     "skip_limit_body": "Biz kimni boʻlsa shuni koʻrsatmaymiz - ertaga kiring, yangi odamlarni tanlaymiz.",
-    "skip_failed": "Oʻtkazib yuborilmadi. Yana urinib koʻring."
+    "skip_failed": "Oʻtkazib yuborilmadi. Yana urinib koʻring.",
+    "send_interest": "Qiziqish yuborish",
+    "not_now": "Hozir toʻgʻri kelmadi",
+    "returned_note": "Siz bu odamni avval kechiktirgansiz - balki endi boshqacha koʻrinar."
   },
   "ProfileView": {
     "verified": "Profil tasdiqlangan",
@@ -1625,5 +1628,22 @@
       "depends": "Vaziyatga bogʻliq",
       "prefer_not": "Javob berishni xohlamayman"
     }
+  },
+  "SkipSheet": {
+    "aria_label": "Rad etish sababi",
+    "lead": "Nima toʻgʻri kelmaganini ayting - moslama aniqroq boʻladi",
+    "reason_age": "Yosh boʻyicha toʻgʻri kelmadi",
+    "reason_geo": "Uzoq, mening shahrim emas",
+    "reason_not_ready": "Hozir tanishishga tayyor emasman",
+    "reason_not_my_type": "Shunchaki menikimas",
+    "reason_profile_issue": "Anketada nimadir notoʻgʻri",
+    "reason_never": "Boshqa koʻrsatilmasin",
+    "just_next": "Shunchaki keyingisi",
+    "hint_title_age": "Gap yosh chegarasida",
+    "hint_body_age": "Chegarangizga mos odam boʻlmaganda, qidiruvni biroz kengaytiramiz - shuning uchun sizdan kattaroq yoki kichikroq odamlar chiqadi. Chegarani oʻzgartirsa boʻladi.",
+    "hint_title_geo": "Gap shaharda",
+    "hint_body_geo": "Hozir moslamada shahringiz va yaqin atrofdagi odamlar koʻrsatiladi. Kengroq qarashga tayyor boʻlsangiz - afzallikni oʻzgartiring.",
+    "hint_cta": "Sozlamalarni oʻzgartirish",
+    "hint_later": "Hozir emas"
   }
 }

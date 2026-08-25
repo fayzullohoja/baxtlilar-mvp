@@ -183,6 +183,7 @@ export default async function MainPage({ params }: { params: Promise<{ locale: s
           <InterestActions
             candidateId={match.candidate.user_id}
             candidateFirstName={candidateFirstName}
+            returning={match.returning}
           />
         }
       >
@@ -190,6 +191,21 @@ export default async function MainPage({ params }: { params: Promise<{ locale: s
             DOB / статуса / детей / предпочтений). Кандидаты в подборе всегда
             approved (is_matchable гейтит verification_status='approved') → бейдж
             «Проверен» показываем. */}
+        {/* Возврат поясняем, а не показываем молча: иначе человек решит, что
+            приложение не помнит его решений. */}
+        {match.returning ? (
+          <p
+            style={{
+              margin: "0 0 12px",
+              fontSize: 13,
+              lineHeight: 1.45,
+              color: "var(--color-v2-ink-300)",
+              fontFamily: "var(--font-v2-body)",
+            }}
+          >
+            {t("returned_note")}
+          </p>
+        ) : null}
         <ProgressiveProfile
           profile={toProgressiveView({
             ...match.candidate.profile,
