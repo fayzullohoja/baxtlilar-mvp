@@ -26,7 +26,9 @@ export default async function Page({
     .maybeSingle();
 
   const [{ rows, next_cursor }, reasonTemplates] = await Promise.all([
-    loadPhotosQueue(filter, 60, sp.cursor),
+    // Было 60. В каждой строке две картинки (превью фото + аватар), и обе —
+    // оригиналы. Меньше строк на страницу = меньше вытянутых мегабайт.
+    loadPhotosQueue(filter, 24, sp.cursor),
     loadReasonTemplates("photo", "ru"),
   ]);
 

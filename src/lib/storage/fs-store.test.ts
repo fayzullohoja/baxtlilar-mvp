@@ -10,7 +10,7 @@ process.env.DATABASE_URL = "postgres://localhost/none";
 process.env.TELEGRAM_BOT_TOKEN = "telegram-bot-token-xxxxxxxx";
 process.env.STORAGE_DIR = TEST_DIR;
 
-import { createStorage, verifyStorageSig } from "./fs-store";
+import { createStorage, verifyStorageSig, stableExp } from "./fs-store";
 
 function parseSigned(url: string) {
   const u = new URL(url, "http://x");
@@ -65,5 +65,59 @@ describe("fs-store: filesystem roundtrip", () => {
     const s = createStorage().from("user-documents");
     const up = await s.upload("../../etc/evil", new Uint8Array([1]), { upsert: true });
     expect(up.error).not.toBeNull();
+  });
+});
+
+describe("fs-store: exp округляется до сетки (иначе кеш браузера не работает)", () => {
+  const TTL = 3600;
+  const STEP = 900; // max(60, ttl/4)
+
+  it("внутри окна ссылка на один файл не меняется", async () => {
+    const s = createStorage().from("profile-photos");
+    // Три момента в пределах одного окна — URL обязан совпасть побайтово,
+    // иначе браузер считает это разными картинками и качает их заново.
+    const base = 1_800_000_000_000;
+    const a = stableExp(TTL, base);
+    const b = stableExp(TTL, base + 60_000);
+    const c = stableExp(TTL, base + (STEP - 1) * 1000);
+    expect(a).toBe(b);
+    expect(b).toBe(c);
+
+    const u1 = await s.createSignedUrl("u1/photo_0_123.jpg", TTL);
+    const u2 = await s.createSignedUrl("u1/photo_0_123.jpg", TTL);
+    expect(u1.data?.signedUrl).toBe(u2.data?.signedUrl);
+  });
+
+  it("в следующем окне ссылка обновляется", () => {
+    const base = 1_800_000_000_000;
+    expect(stableExp(TTL, base + STEP * 1000)).toBeGreaterThan(stableExp(TTL, base));
+  });
+
+  it("запас жизни ссылки не меньше ttl минус шаг — не протухнет под руками", () => {
+    for (let i = 0; i < 500; i++) {
+      const nowMs = 1_800_000_000_000 + i * 7_000;
+      const remaining = stableExp(TTL, nowMs) - Math.floor(nowMs / 1000);
+      expect(remaining).toBeGreaterThanOrEqual(TTL - STEP);
+      expect(remaining).toBeLessThanOrEqual(TTL);
+    }
+  });
+
+  it("короткий ttl документов тоже округляется и остаётся коротким", () => {
+    const remaining = stableExp(300, 1_800_000_000_000) - 1_800_000_000;
+    // Паспорт/селфи перезаписываются по тому же пути, поэтому срок жизни
+    // ссылки обязан остаться коротким — иначе модератор увидит старый документ.
+    expect(remaining).toBeGreaterThan(0);
+    expect(remaining).toBeLessThanOrEqual(300);
+  });
+
+  it("округлённый exp по-прежнему проходит проверку подписи", async () => {
+    const s = createStorage().from("profile-photos");
+    const { data } = await s.createSignedUrl("u2/photo_1_456.jpg", TTL);
+    const u = new URL(data!.signedUrl, "http://x");
+    const exp = Number(u.searchParams.get("exp"));
+    const sig = u.searchParams.get("sig") ?? "";
+    expect(verifyStorageSig("profile-photos", "u2/photo_1_456.jpg", exp, sig)).toBe(true);
+    // подпись привязана к exp: соседнее значение не принимается
+    expect(verifyStorageSig("profile-photos", "u2/photo_1_456.jpg", exp + 1, sig)).toBe(false);
   });
 });

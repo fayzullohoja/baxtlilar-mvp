@@ -26,6 +26,7 @@ import {
 } from "@/lib/profile/options";
 import { cityLabel } from "@/lib/profile/cities";
 import { ageFromDate } from "@/lib/profile/schemas";
+import { thumb } from "@/lib/storage/thumb-url";
 
 export type RevealedProfileData = {
   display_name: string;
@@ -117,7 +118,9 @@ export function RevealedProfile({ profile, locale = "ru" }: Props) {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={url}
+                // Фото на всю ширину экрана: 1280 держит резкость даже на 3x,
+                // но весит десятки килобайт вместо мегабайт оригинала.
+                src={thumb(url, 1280) ?? url}
                 alt=""
                 style={{
                   width: "100%",

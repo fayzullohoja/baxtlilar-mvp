@@ -10,6 +10,7 @@ import { BottomNav } from "@/components/bottom-nav";
 import { RequestActions } from "@/components/requests/request-actions";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline } from "@/components/v2/Headline";
+import { thumb } from "@/lib/storage/thumb-url";
 
 export const dynamic = "force-dynamic";
 
@@ -176,7 +177,7 @@ export default async function RequestsPage({
                     >
                       {m?.photoUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={m.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <img src={thumb(m.photoUrl, 320) ?? m.photoUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       ) : (
                         <span
                           aria-hidden

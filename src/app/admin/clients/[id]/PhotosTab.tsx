@@ -1,6 +1,7 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { signedPhotoUrls } from "@/lib/uploads/storage";
+import { thumb } from "@/lib/storage/thumb-url";
 import { ADMIN } from "@/lib/admin/admin-tokens";
 import { StatusPill } from "@/components/admin-ops/StatusPill";
 import { photoTypeLabel, photoStatusLabel } from "@/lib/admin/photo-labels";
@@ -70,8 +71,14 @@ export async function PhotosTab({ userId }: { userId: string }) {
             {url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={url}
+                src={thumb(url, 640) ?? url}
                 alt=""
+                // Здесь lazy безопасна, в отличие от списков: signedPhotoUrls
+                // берёт TTL по умолчанию (час), и к моменту прокрутки подпись
+                // ещё жива. В очереди фото и в списке клиентов TTL 300 секунд,
+                // поэтому там отложенный запрос вернул бы 403.
+                loading="lazy"
+                decoding="async"
                 style={{ width: "100%", aspectRatio: "3/4", objectFit: "cover" }}
               />
             ) : (

@@ -6,6 +6,7 @@ import { StatusPill } from "@/components/admin-ops/StatusPill";
 import { Button } from "@/components/admin-ops/Button";
 import { photoTypeLabel } from "@/lib/admin/photo-labels";
 import type { PhotoCase } from "@/lib/admin/load-photos";
+import { thumb } from "@/lib/storage/thumb-url";
 
 function ago(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -96,9 +97,15 @@ export function PhotosTable({
                 {r.signed_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={r.signed_url}
+                    src={thumb(r.signed_url, 320) ?? r.signed_url}
                     alt=""
                     onClick={() => onOpen(r)}
+                    // Без lazy намеренно: подпись живёт 300 секунд и вморожена
+                    // в разметку, а отложенный запрос вернул бы 403. Превью
+                    // весит килобайты, откладывать нечего.
+                    decoding="async"
+                    width={60}
+                    height={80}
                     style={{
                       width: 60,
                       height: 80,
@@ -126,8 +133,11 @@ export function PhotosTable({
                   {r.client.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={r.client.avatar_url}
+                      src={thumb(r.client.avatar_url, 160) ?? r.client.avatar_url}
                       alt=""
+                      decoding="async"
+                      width={24}
+                      height={24}
                       style={{
                         width: 24,
                         height: 24,

@@ -9,6 +9,7 @@ import { Dialog } from "@/components/admin-ops/Dialog";
 import { useAsyncAction, postAdminAction } from "@/lib/admin/use-async-action";
 import { ADMIN_ERROR_RU as ERR_RU } from "@/lib/admin/labels";
 import type { ClientRow } from "@/lib/admin/load-clients-search";
+import { thumb } from "@/lib/storage/thumb-url";
 
 const th = {
   textAlign: "left" as const,
@@ -116,8 +117,16 @@ export function ClientsTable({ rows }: { rows: ClientRow[] }) {
                   {r.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={r.avatar_url}
+                      src={thumb(r.avatar_url, 160) ?? r.avatar_url}
                       alt=""
+                      // Ленивую загрузку тут ставить НЕЛЬЗЯ, хотя список и
+                      // длинный: подпись у ссылки живёт 300 секунд и вморожена
+                      // в разметку на серверном рендере, а lazy откладывает сам
+                      // запрос до прокрутки. Домотал позже - получил 403 вместо
+                      // фото. Нужды в ней и нет: превью весит килобайты.
+                      decoding="async"
+                      width={32}
+                      height={32}
                       style={{
                         width: 32,
                         height: 32,

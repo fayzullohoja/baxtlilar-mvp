@@ -33,7 +33,10 @@ const VERIFICATION_FILTERS = [
   { key: "not_started", label: "Не начата" },
 ];
 
-const PAGE_SIZE = 50;
+// Было 50. Каждая строка тянет аватар — оригинал снимка с телефона, ресайза в
+// проекте нет. Даже с ленивой загрузкой потолок на страницу лучше держать
+// низким: пролистав список до конца, человек всё равно вытянет всё, что на ней.
+const PAGE_SIZE = 24;
 
 export default async function Page({
   searchParams,
