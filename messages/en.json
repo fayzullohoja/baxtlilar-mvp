@@ -573,7 +573,8 @@
     "empty_body": "There's no profile yet that matches yours closely enough. That's normal — we don't show just anyone. New people appear every day: as soon as we find the right person, they'll be here.",
     "empty_body_2": "In the meantime, you can widen your preferred age range in the profile or complete your psycho-portrait. The more precise your data, the broader and more accurate the matching.",
     "maint_title": "Matching is paused for maintenance.",
-    "maint_body": "We've temporarily paused new matches while we do some upkeep. Nothing is lost — check back a little later and today's match will be here."
+    "maint_body": "We've temporarily paused new matches while we do some upkeep. Nothing is lost — check back a little later and today's match will be here.",
+    "returned_note": "You passed on this person before - maybe it reads differently now."
   },
   "Nav": {
     "feed": "Feed",
@@ -587,7 +588,9 @@
     "empty": "No matching profiles yet. Check back later.",
     "skip_limit_title": "That is enough for today",
     "skip_limit_body": "We do not show just anyone - come back tomorrow and we will find new people.",
-    "skip_failed": "Could not skip. Please try again."
+    "skip_failed": "Could not skip. Please try again.",
+    "send_interest": "Send interest",
+    "not_now": "Not right now"
   },
   "ProfileView": {
     "verified": "Profile verified",
@@ -1625,5 +1628,48 @@
       "depends": "Это зависит от ситуации",
       "prefer_not": "Предпочитаю не отвечать"
     }
+  },
+  "SkipSheet": {
+    "aria_label": "Reason for passing",
+    "lead": "Tell us what didn't fit - matches will get more accurate",
+    "reason_age": "Not the right age",
+    "reason_geo": "Too far, not my city",
+    "reason_not_ready": "Not ready to meet anyone right now",
+    "reason_not_my_type": "Just not for me",
+    "reason_profile_issue": "Something's off with the profile",
+    "reason_never": "Don't show again",
+    "just_next": "Just move on",
+    "hint_title_age": "It's about your age range",
+    "hint_body_age": "When nobody fits your range, we widen the search a little - that's why slightly older or younger people show up. You can change the range.",
+    "hint_title_geo": "It's about the city",
+    "hint_body_geo": "Right now matches come from your city and nearby. If you're open to looking wider, change the preference.",
+    "hint_cta": "Change preferences",
+    "hint_later": "Not now"
+  },
+  "ProfileEdit": {
+    "eyebrow": "Profile",
+    "title": "My profile",
+    "lead": "Change anything, any time. Each section saves on its own.",
+    "save": "Save",
+    "locked_title": "From your document",
+    "locked_name": "Name",
+    "locked_birth": "Date of birth",
+    "locked_gender": "Gender",
+    "gender_m": "Male",
+    "gender_f": "Female",
+    "locked_note": "These came from your passport during identity verification and can only be changed through support.",
+    "section_self": "About me and work",
+    "section_appearance": "Appearance and languages",
+    "section_birth_place": "Place of birth",
+    "section_family": "Marital status and children",
+    "section_marriage": "Views on marriage",
+    "section_parents": "Parents and family",
+    "section_values": "Faith and values",
+    "section_family_model": "Family model",
+    "section_finance": "Finances",
+    "section_lifestyle": "Lifestyle",
+    "section_health": "Health",
+    "section_partner": "Who I'm looking for",
+    "open_link": "Edit profile"
   }
 }

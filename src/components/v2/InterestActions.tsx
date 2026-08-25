@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "./Button";
 import { InterestModal } from "./InterestModal";
+import { SkipReasonSheet } from "./SkipReasonSheet";
 
 /**
  * V2 InterestActions — два варианта решения по кандидату.
@@ -23,52 +24,19 @@ import { InterestModal } from "./InterestModal";
 type Props = {
   candidateId: string;
   candidateFirstName: string;
+  /** Кандидат уже показывался и вернулся после срока - см. skip-reasons.ts. */
+  returning?: boolean;
 };
 
-export function InterestActions({ candidateId, candidateFirstName }: Props) {
+export function InterestActions({ candidateId, candidateFirstName, returning = false }: Props) {
   const router = useRouter();
-  const [skipping, startSkip] = useTransition();
   const [modalOpen, setModalOpen] = useState(false);
+  // Отказ больше не отправляется прямо из кнопки: сначала шторка спрашивает
+  // причину, и она же решает, на какой срок человек скроется.
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [limitHit, setLimitHit] = useState(false);
   const [transientError, setTransientError] = useState(false);
   const t = useTranslations("Feed");
-
-  function skip() {
-    if (skipping || limitHit) return;
-    startSkip(async () => {
-      setTransientError(false);
-      const res = await fetch("/api/feed/skip", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ target_id: candidateId }),
-      }).catch(() => null);
-
-      if (res?.ok) {
-        router.refresh();
-        return;
-      }
-
-      // Раньше здесь стояло `if (res.status === 429) setLimitHit(true)`, и это
-      // склеивало три разные вещи в одну надпись «на сегодня достаточно»:
-      //   - настоящий дневной лимит (роут отдаёт daily_limit);
-      //   - общий ограничитель нагрузки в proxy.ts (тот же 429, но rate_limited);
-      //   - сбой базы или сети (500 либо вовсе нет ответа) - он не показывался
-      //     никак, кнопка просто молча ничего не делала.
-      // Хуже того, состояние залипало: кнопки исчезали до перезахода в
-      // приложение, хотя человек сегодня не пропустил ни одного кандидата.
-      // Теперь различаем по коду в теле: залипает только настоящий лимит,
-      // остальное - обычная ошибка с предложением повторить.
-      const code = res
-        ? await res
-            .json()
-            .then((b: { error?: string }) => b?.error)
-            .catch(() => undefined)
-        : undefined;
-
-      if (code === "daily_limit") setLimitHit(true);
-      else setTransientError(true);
-    });
-  }
 
   if (limitHit) {
     return (
@@ -98,19 +66,11 @@ export function InterestActions({ candidateId, candidateFirstName }: Props) {
   return (
     <>
       <div className="flex flex-col gap-2.5">
-        <Button
-          variant="primary"
-          onClick={() => setModalOpen(true)}
-          disabled={skipping}
-        >
-          Отправить интерес
+        <Button variant="primary" onClick={() => setModalOpen(true)}>
+          {t("send_interest")}
         </Button>
-        <Button
-          variant="secondary"
-          onClick={skip}
-          disabled={skipping}
-        >
-          {skipping ? "..." : "Сейчас не подходит"}
+        <Button variant="secondary" onClick={() => setSheetOpen(true)}>
+          {t("not_now")}
         </Button>
       </div>
 
@@ -129,6 +89,25 @@ export function InterestActions({ candidateId, candidateFirstName }: Props) {
         >
           {t("skip_failed")}
         </p>
+      ) : null}
+
+      {sheetOpen ? (
+        <SkipReasonSheet
+          candidateId={candidateId}
+          returning={returning}
+          onDone={() => {
+            setSheetOpen(false);
+            router.refresh();
+          }}
+          onLimitHit={() => {
+            setSheetOpen(false);
+            setLimitHit(true);
+          }}
+          onError={() => {
+            setSheetOpen(false);
+            setTransientError(true);
+          }}
+        />
       ) : null}
 
       {modalOpen ? (

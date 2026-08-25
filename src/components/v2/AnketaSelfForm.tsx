@@ -23,6 +23,8 @@ import {
 export function V2AnketaSelfForm({
   locale,
   initial,
+  endpoint,
+  submitLabel,
 }: {
   locale: string;
   initial?: {
@@ -34,6 +36,10 @@ export function V2AnketaSelfForm({
     employment_status?: string;
     employment_format?: string;
   };
+  /** Куда слать. Пусто - обычный шаг анкеты. */
+  endpoint?: string;
+  /** Подпись кнопки. Пусто - «Далее», как в анкете. */
+  submitLabel?: string;
 }) {
   const t = useTranslations('Anketa');
   // Локализованные ошибки из i18n (как в AnketaBasicForm) — не хардкод RU.
@@ -45,9 +51,7 @@ export function V2AnketaSelfForm({
     validation: t("err_validation"),
     failed: t("err_failed"),
   };
-  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
-    "/api/onboarding/profile/self",
-  );
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(endpoint ?? "/api/onboarding/profile/self");
   const [bio, setBio] = useState(initial?.bio ?? "");
   const [education, setEducation] = useState(initial?.education ?? "");
   const [specialty, setSpecialty] = useState(initial?.specialty ?? "");
@@ -189,7 +193,7 @@ export function V2AnketaSelfForm({
         disabled={busy}
         style={{ width: "100%" }}
       >
-        {busy ? t('btn_saving') : t('btn_next')}
+        {busy ? t('btn_saving') : (submitLabel ?? t("btn_next"))}
       </Button>
     </div>
   );

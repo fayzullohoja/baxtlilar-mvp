@@ -16,6 +16,8 @@ import { HEALTH_OPENNESS, MEDICAL_CHECK_WILLINGNESS, DRUGS_USE } from "@/lib/pro
 export function V2AnketaHealthForm({
   locale,
   initial,
+  endpoint,
+  submitLabel,
 }: {
   locale: string;
   initial?: {
@@ -23,11 +25,13 @@ export function V2AnketaHealthForm({
     medical_check_willingness?: string;
     substance_dependency_status?: string;
   };
+  /** Куда слать. Пусто - обычный шаг анкеты. */
+  endpoint?: string;
+  /** Подпись кнопки. Пусто - «Далее», как в анкете. */
+  submitLabel?: string;
 }) {
   const t = useTranslations("Anketa");
-  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
-    "/api/onboarding/profile/health",
-  );
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(endpoint ?? "/api/onboarding/profile/health");
   const [openness, setOpenness] = useState(initial?.health_openness ?? "");
   const [medical, setMedical] = useState(initial?.medical_check_willingness ?? "");
   const [substance, setSubstance] = useState(
@@ -80,7 +84,7 @@ export function V2AnketaHealthForm({
       <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />
 
       <Button onClick={submit} disabled={busy} variant="primary">
-        {busy ? t("btn_saving") : t("btn_next")}
+        {busy ? t("btn_saving") : (submitLabel ?? t("btn_next"))}
       </Button>
     </div>
   );

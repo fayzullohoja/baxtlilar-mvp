@@ -24,17 +24,21 @@ import {
 export function V2AnketaValuesForm({
   locale,
   initial,
+  endpoint,
+  submitLabel,
 }: {
   locale: string;
   initial?: {
     religion?: string;
     top_life_values?: string[];
   };
+  /** Куда слать. Пусто - обычный шаг анкеты. */
+  endpoint?: string;
+  /** Подпись кнопки. Пусто - «Далее», как в анкете. */
+  submitLabel?: string;
 }) {
   const t = useTranslations('Anketa');
-  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
-    "/api/onboarding/profile/values",
-  );
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(endpoint ?? "/api/onboarding/profile/values");
   const [religion, setReligion] = useState(initial?.religion ?? "");
   const [values, setValues] = useState<string[]>(initial?.top_life_values ?? []);
   const [showErrors, setShowErrors] = useState(false);
@@ -79,7 +83,7 @@ export function V2AnketaValuesForm({
       <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />
 
       <Button onClick={submit} disabled={busy} variant="primary">
-        {busy ? t('btn_saving') : t('btn_next')}
+        {busy ? t('btn_saving') : (submitLabel ?? t("btn_next"))}
       </Button>
     </div>
   );

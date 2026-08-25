@@ -13,6 +13,7 @@ import { ageFromDate } from "@/lib/profile/schemas";
 import { cityLabel } from "@/lib/profile/cities";
 import { getUnreadTotal } from "@/lib/chat/list";
 import { BottomNav } from "@/components/bottom-nav";
+import { Link } from "@/i18n/navigation";
 import { MiniAppShell } from "@/components/v2/MiniAppShell";
 import { Headline } from "@/components/v2/Headline";
 import { V2SettingsActions } from "@/components/v2/SettingsActions";
@@ -34,6 +35,7 @@ export default async function V2SettingsPage({
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('Settings');
+  const tEdit = await getTranslations("ProfileEdit");
   const user = await requireActiveUser(locale, { allowPaused: true });
   const sb = supabaseAdmin();
 
@@ -96,6 +98,29 @@ export default async function V2SettingsPage({
             {t('statusLabel')} · {roleLabel}
           </div>
         </div>
+
+        {/* Правка анкеты. До появления редактора здесь было честное «TODO
+            Sprint 16», а править профиль можно было только повторным проходом
+            онбординга - семнадцать экранов ради смены города. */}
+        <Link
+          href="/v2/profile/edit"
+          style={{
+            display: "block",
+            textAlign: "center",
+            padding: "14px 18px",
+            marginBottom: "14px",
+            fontSize: "15px",
+            fontWeight: 600,
+            fontFamily: "var(--font-v2-body)",
+            color: "var(--color-v2-ink-100)",
+            background: "var(--color-v2-paper-2)",
+            border: "1px solid var(--color-v2-border)",
+            borderRadius: "var(--v2-radius-md)",
+            textDecoration: "none",
+          }}
+        >
+          {tEdit("open_link")}
+        </Link>
 
         <V2SettingsActions paused={user.lifecycle_state === "paused"} />
 

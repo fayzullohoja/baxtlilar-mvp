@@ -37,6 +37,8 @@ import {
 export function V2AnketaLifestyleForm({
   locale,
   initial,
+  endpoint,
+  submitLabel,
 }: {
   locale: string;
   initial?: {
@@ -47,11 +49,13 @@ export function V2AnketaLifestyleForm({
     nutrition_style?: string;
     alcohol_level?: string;
   };
+  /** Куда слать. Пусто - обычный шаг анкеты. */
+  endpoint?: string;
+  /** Подпись кнопки. Пусто - «Далее», как в анкете. */
+  submitLabel?: string;
 }) {
   const t = useTranslations("Anketa");
-  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
-    "/api/onboarding/profile/lifestyle",
-  );
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(endpoint ?? "/api/onboarding/profile/lifestyle");
   const [pace, setPace] = useState(initial?.lifestyle_pace ?? "");
   const [freeTime, setFreeTime] = useState<string[]>(
     initial?.free_time_activities ?? [],
@@ -172,7 +176,7 @@ export function V2AnketaLifestyleForm({
       <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />
 
       <Button onClick={submit} disabled={busy} variant="primary">
-        {busy ? t("btn_saving") : t("btn_next")}
+        {busy ? t("btn_saving") : (submitLabel ?? t("btn_next"))}
       </Button>
     </div>
   );

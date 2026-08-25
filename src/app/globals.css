@@ -135,6 +135,74 @@
 }
 
 /* ============================================================================
+ * Нижняя шторка (выбор причины отказа от кандидата).
+ *
+ * На переходах, а НЕ на кейфреймах: шторку могут открыть и закрыть быстро
+ * подряд, а кейфрейм при повторном запуске стартует с нуля и дёргается.
+ * Переход в такой ситуации плавно перенацеливается с текущей позиции.
+ *
+ * Движение только по transform и opacity - обе идут мимо раскладки и отрисовки,
+ * на видеокарте. Смещение задано в процентах от собственной высоты, поэтому
+ * шторка одинаково работает и с пятью строками, и с подсказкой про фильтр.
+ *
+ * Вход 260 мс, выход 180 мс. Выход быстрее намеренно: человек уже принял
+ * решение, и ждать на закрытии нечего. Кривая cubic-bezier(0.32, 0.72, 0, 1) -
+ * та же, по которой ходят системные шторки на телефонах: резкий старт и мягкое
+ * торможение. Пятисотмиллисекундный bxRise выше для шторки медленный.
+ * ========================================================================= */
+.v2-sheet-backdrop {
+  opacity: 0;
+  transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.v2-sheet-backdrop[data-open="true"] { opacity: 1; }
+
+.v2-sheet {
+  transform: translateY(100%);
+  transition: transform 260ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.v2-sheet[data-open="true"] { transform: translateY(0); }
+.v2-sheet[data-open="false"] { transition-duration: 180ms; }
+
+/* Строки причин появляются каскадом. Это единственное здесь украшение, и оно
+ * работает на смысл: список, проступающий по одной строке, читается как
+ * предложенные варианты, а не как выгруженная анкета. Задержки короткие -
+ * длинные превращают каскад в ожидание. */
+.v2-sheet-row {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1),
+              transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.v2-sheet[data-open="true"] .v2-sheet-row { opacity: 1; transform: translateY(0); }
+/* Считаем по ТИПУ элемента, а не по порядку среди всех детей: перед строками в
+ * шторке идут полоска-ручка (div) и вводная строка (p). С nth-child первые две
+ * задержки не сработали бы вовсе, а последняя строка осталась бы без задержки -
+ * каскад развалился бы ровно посередине. Строки - единственные button внутри,
+ * поэтому nth-of-type считает именно их. */
+.v2-sheet[data-open="true"] .v2-sheet-row:nth-of-type(1) { transition-delay: 30ms; }
+.v2-sheet[data-open="true"] .v2-sheet-row:nth-of-type(2) { transition-delay: 65ms; }
+.v2-sheet[data-open="true"] .v2-sheet-row:nth-of-type(3) { transition-delay: 100ms; }
+.v2-sheet[data-open="true"] .v2-sheet-row:nth-of-type(4) { transition-delay: 135ms; }
+.v2-sheet[data-open="true"] .v2-sheet-row:nth-of-type(5) { transition-delay: 170ms; }
+.v2-sheet[data-open="true"] .v2-sheet-row:nth-of-type(6) { transition-delay: 205ms; }
+.v2-sheet[data-open="true"] .v2-sheet-row:nth-of-type(7) { transition-delay: 240ms; }
+
+/* Отклик на нажатие. Без него строка кажется неживой: палец уже поднят, а
+ * интерфейс ещё не показал, что услышал. */
+.v2-sheet-row:active { transform: scale(0.985); transition-duration: 120ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Уменьшенное движение - это МЕНЬШЕ движения, а не его отсутствие: прозрачность
+   * помогает понять, что появилось что-то новое, и её оставляем. Убираем именно
+   * перемещение и каскад. */
+  .v2-sheet { transform: none; transition: opacity 160ms linear; opacity: 0; }
+  .v2-sheet[data-open="true"] { opacity: 1; }
+  .v2-sheet-row { transform: none; transition: opacity 160ms linear; }
+  .v2-sheet[data-open="true"] .v2-sheet-row { transition-delay: 0ms; }
+  .v2-sheet-row:active { transform: none; }
+}
+
+/* ============================================================================
  * Body default — V2 paper. V1-страницы (/blocked, /onboarding/{rejected,
  * needs-changes}) self-skin через Screen компонент, который красит свой <main>
  * в bg-baxt-pink-bg. Это сделано чтобы V2 (большинство страниц) не платило за

@@ -32,6 +32,8 @@ import { shouldAskIncomeRange } from "@/lib/profile/finance-visibility";
 export function V2AnketaFinanceForm({
   locale,
   initial,
+  endpoint,
+  submitLabel,
 }: {
   locale: string;
   initial?: {
@@ -41,11 +43,13 @@ export function V2AnketaFinanceForm({
     monthly_income_range?: string;
     housing_status?: string;
   };
+  /** Куда слать. Пусто - обычный шаг анкеты. */
+  endpoint?: string;
+  /** Подпись кнопки. Пусто - «Далее», как в анкете. */
+  submitLabel?: string;
 }) {
   const t = useTranslations("Anketa");
-  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
-    "/api/onboarding/profile/finance",
-  );
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(endpoint ?? "/api/onboarding/profile/finance");
   const [incomeSource, setIncomeSource] = useState(
     initial?.income_source_stability ?? "",
   );
@@ -180,7 +184,7 @@ export function V2AnketaFinanceForm({
       <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />
 
       <Button onClick={submit} disabled={busy} variant="primary">
-        {busy ? t("btn_saving") : t("btn_next")}
+        {busy ? t("btn_saving") : (submitLabel ?? t("btn_next"))}
       </Button>
     </div>
   );

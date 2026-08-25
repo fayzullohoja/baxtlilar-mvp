@@ -573,7 +573,8 @@
     "empty_body": "Hozircha anketangizga yetarlicha mos keladigan anketa yoʻq. Bu normal — biz kimni boʻlsa koʻrsatmaymiz. Har kuni yangi odamlar paydo boʻladi: mos odamni topishimiz bilan u shu yerda boʻladi.",
     "empty_body_2": "Ayni paytda — anketada istagan yosh oraligʻini kengaytirishingiz yoki psixoportretni toʻldirishingiz mumkin. Maʼlumotlar qanchalik aniq boʻlsa, tanlov shunchalik keng va aniq boʻladi.",
     "maint_title": "Tanlov texnik ishlar uchun vaqtincha toʻxtatilgan.",
-    "maint_body": "Texnik ishlar vaqtida yangi tanlovlarni vaqtincha toʻxtatib turdik. Hech narsa yoʻqolmaydi — birozdan soʻng qayting, bugungi tanlov shu yerda boʻladi."
+    "maint_body": "Texnik ishlar vaqtida yangi tanlovlarni vaqtincha toʻxtatib turdik. Hech narsa yoʻqolmaydi — birozdan soʻng qayting, bugungi tanlov shu yerda boʻladi.",
+    "returned_note": "Siz bu odamni avval kechiktirgansiz - balki endi boshqacha koʻrinar."
   },
   "Nav": {
     "feed": "Lenta",
@@ -587,7 +588,9 @@
     "empty": "Hozircha mos anketalar yoʻq. Keyinroq qarang.",
     "skip_limit_title": "Bugunga yetarli",
     "skip_limit_body": "Biz kimni boʻlsa shuni koʻrsatmaymiz - ertaga kiring, yangi odamlarni tanlaymiz.",
-    "skip_failed": "Oʻtkazib yuborilmadi. Yana urinib koʻring."
+    "skip_failed": "Oʻtkazib yuborilmadi. Yana urinib koʻring.",
+    "send_interest": "Qiziqish yuborish",
+    "not_now": "Hozir toʻgʻri kelmadi"
   },
   "ProfileView": {
     "verified": "Profil tasdiqlangan",
@@ -1625,5 +1628,48 @@
       "depends": "Vaziyatga bogʻliq",
       "prefer_not": "Javob berishni xohlamayman"
     }
+  },
+  "SkipSheet": {
+    "aria_label": "Rad etish sababi",
+    "lead": "Nima toʻgʻri kelmaganini ayting - moslama aniqroq boʻladi",
+    "reason_age": "Yosh boʻyicha toʻgʻri kelmadi",
+    "reason_geo": "Uzoq, mening shahrim emas",
+    "reason_not_ready": "Hozir tanishishga tayyor emasman",
+    "reason_not_my_type": "Shunchaki menikimas",
+    "reason_profile_issue": "Anketada nimadir notoʻgʻri",
+    "reason_never": "Boshqa koʻrsatilmasin",
+    "just_next": "Shunchaki keyingisi",
+    "hint_title_age": "Gap yosh chegarasida",
+    "hint_body_age": "Chegarangizga mos odam boʻlmaganda, qidiruvni biroz kengaytiramiz - shuning uchun sizdan kattaroq yoki kichikroq odamlar chiqadi. Chegarani oʻzgartirsa boʻladi.",
+    "hint_title_geo": "Gap shaharda",
+    "hint_body_geo": "Hozir moslamada shahringiz va yaqin atrofdagi odamlar koʻrsatiladi. Kengroq qarashga tayyor boʻlsangiz - afzallikni oʻzgartiring.",
+    "hint_cta": "Sozlamalarni oʻzgartirish",
+    "hint_later": "Hozir emas"
+  },
+  "ProfileEdit": {
+    "eyebrow": "Profil",
+    "title": "Mening profilim",
+    "lead": "Xohlagan narsangizni xohlagan vaqtda oʻzgartiring. Har bir boʻlim alohida saqlanadi.",
+    "save": "Saqlash",
+    "locked_title": "Hujjatdan olingan maʼlumotlar",
+    "locked_name": "Ism",
+    "locked_birth": "Tugʻilgan sana",
+    "locked_gender": "Jins",
+    "gender_m": "Erkak",
+    "gender_f": "Ayol",
+    "locked_note": "Bu maʼlumotlar shaxsni tasdiqlashda pasportdan olingan va faqat qoʻllab-quvvatlash orqali oʻzgaradi.",
+    "section_self": "Oʻzim va ishim",
+    "section_appearance": "Tashqi koʻrinish va tillar",
+    "section_birth_place": "Tugʻilgan joy",
+    "section_family": "Oilaviy holat va farzandlar",
+    "section_marriage": "Nikohga qarash",
+    "section_parents": "Ota-ona va oila",
+    "section_values": "Din va qadriyatlar",
+    "section_family_model": "Oila modeli",
+    "section_finance": "Moliya",
+    "section_lifestyle": "Turmush tarzi",
+    "section_health": "Salomatlik",
+    "section_partner": "Kimni izlayapman",
+    "open_link": "Profilni tahrirlash"
   }
 }

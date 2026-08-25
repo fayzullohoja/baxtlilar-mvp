@@ -21,6 +21,8 @@ export function V2AnketaMarriageForm({
   locale,
   gender,
   initial,
+  endpoint,
+  submitLabel,
 }: {
   locale: string;
   gender: Gender | null;
@@ -29,10 +31,12 @@ export function V2AnketaMarriageForm({
     marriage_readiness?: string;
     relocation_readiness?: string;
   };
+  /** Куда слать. Пусто - обычный шаг анкеты. */
+  endpoint?: string;
+  /** Подпись кнопки. Пусто - «Далее», как в анкете. */
+  submitLabel?: string;
 }) {
-  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
-    "/api/onboarding/profile/marriage",
-  );
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(endpoint ?? "/api/onboarding/profile/marriage");
   const t = useTranslations('Anketa');
   const [living, setLiving] = useState(initial?.post_marriage_living ?? "");
   const [readiness, setReadiness] = useState(initial?.marriage_readiness ?? "");
@@ -104,7 +108,7 @@ export function V2AnketaMarriageForm({
         disabled={busy}
         style={{ width: "100%" }}
       >
-        {busy ? t('marriage_format_saving') : t('marriage_format_next')}
+        {busy ? t('marriage_format_saving') : (submitLabel ?? t("marriage_format_next"))}
       </Button>
     </div>
   );
