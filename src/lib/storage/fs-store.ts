@@ -35,6 +35,39 @@ function sigFor(bucket: string, objectPath: string, exp: number): string {
     .digest("base64url");
 }
 
+/**
+ * Момент истечения, округлённый до сетки — чтобы ссылка на один и тот же файл
+ * не менялась при каждом рендере.
+ *
+ * Зачем. Раньше было `exp = now + ttl`, то есть при каждой отрисовке страницы
+ * рождался новый exp, новая подпись и новый URL. Для браузера URL — это ключ
+ * кеша, поэтому заголовок `Cache-Control` на отдаче не срабатывал НИ РАЗУ:
+ * каждый заход в админку заново тянул все картинки целиком. На списке клиентов
+ * это десятки оригиналов с телефонов по несколько мегабайт — при каждом
+ * открытии страницы.
+ *
+ * Теперь exp привязан к сетке шага `step`: все рендеры внутри одного окна дают
+ * побайтово одинаковый URL, и кеш работает. Остаток жизни ссылки при этом не
+ * меньше `ttl - step` (для фото это 45 минут из часа), так что она не успевает
+ * протухнуть у человека под руками.
+ *
+ * Безопасность не меняется: подпись по-прежнему HMAC по (bucket, path, exp), а
+ * срок по-прежнему проверяется. Округление лишь делает URL повторяемым внутри
+ * окна — угадать его без ключа всё так же нельзя.
+ */
+export function stableExp(ttlSec: number, nowMs: number = Date.now()): number {
+  const now = Math.floor(nowMs / 1000);
+  // Шаг - четверть срока. Пол именно 1, а НЕ 60: при поле в 60 секунд любой
+  // ttl <= 60 давал бы step >= ttl, множитель ниже схлопывался бы в единицу, и
+  // ссылка на хвосте окна выдавалась бы с остатком жизни в одну секунду. В
+  // боевом коде таких сроков сейчас нет (только 300, 600 и 3600), но запас
+  // в три четверти ttl должен держаться при любом значении, а не при удачном.
+  const step = Math.max(1, Math.floor(ttlSec / 4));
+  // Начало текущего окна + столько шагов, чтобы покрыть ttl. Внутри окна
+  // значение постоянное — это и даёт одинаковый URL.
+  return (Math.floor(now / step) + Math.ceil(ttlSec / step)) * step;
+}
+
 /** Проверка подписи + срока (для serving-роута). */
 export function verifyStorageSig(bucket: string, objectPath: string, exp: number, sig: string): boolean {
   if (!Number.isFinite(exp) || exp * 1000 < Date.now()) return false;
@@ -111,7 +144,7 @@ function bucketApi(bucket: string) {
       objectPath: string,
       ttlSec: number,
     ): Promise<{ data: SignedUrl | null; error: StorageError | null }> {
-      const exp = Math.floor(Date.now() / 1000) + ttlSec;
+      const exp = stableExp(ttlSec);
       const sig = sigFor(bucket, objectPath, exp);
       const url = `/api/storage/o/${bucket}/${objectPath}?exp=${exp}&sig=${sig}`;
       return { data: { signedUrl: url }, error: null };
@@ -124,7 +157,7 @@ function bucketApi(bucket: string) {
       data: { path: string; signedUrl: string; error: string | null }[] | null;
       error: StorageError | null;
     }> {
-      const exp = Math.floor(Date.now() / 1000) + ttlSec;
+      const exp = stableExp(ttlSec);
       const data = paths.map((objectPath) => ({
         path: objectPath,
         signedUrl: `/api/storage/o/${bucket}/${objectPath}?exp=${exp}&sig=${sigFor(bucket, objectPath, exp)}`,

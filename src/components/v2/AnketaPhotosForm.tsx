@@ -6,6 +6,7 @@ import { Button } from "./Button";
 import { AnketaSubmitNotice } from "./AnketaSubmitNotice";
 import { useAnketaSubmit } from "./useAnketaSubmit";
 import { scrollToFirstError, ANKETA_ERROR_ATTR } from "./AnketaFields";
+import { thumb } from "@/lib/storage/thumb-url";
 
 /**
  * V2 Anketa Photos (Blueprint §3.3 B5 · ревью оунера Экран 13).
@@ -171,7 +172,7 @@ export function V2AnketaPhotosForm({ initial = [] }: { initial?: InitialPhoto[] 
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={photo.url}
+                      src={thumb(photo.url, 320) ?? photo.url}
                       alt=""
                       style={{
                         width: "100%",

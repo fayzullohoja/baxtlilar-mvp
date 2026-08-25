@@ -31,6 +31,7 @@ import {
   LIFE_VALUES_V3,
 } from "@/lib/profile/options";
 import type { ProgressiveProfileView } from "@/lib/v2/progressive-view";
+import { thumb } from "@/lib/storage/thumb-url";
 
 type Props = {
   profile: ProgressiveProfileView;
@@ -163,7 +164,10 @@ export function ProgressiveProfile({ profile, locale = "ru" }: Props) {
           {profile.photo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={profile.photo_url}
+              // Кружок 64 px - а в src лежал ОРИГИНАЛ снимка на несколько
+              // мегабайт. Это главный экран, который листают с телефонов по
+              // мобильному интернету, поэтому здесь превью важнее, чем в админке.
+              src={thumb(profile.photo_url, 320) ?? profile.photo_url}
               alt=""
               style={{
                 width: "64px",
