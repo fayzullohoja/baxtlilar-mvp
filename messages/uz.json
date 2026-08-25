@@ -573,7 +573,8 @@
     "empty_body": "Hozircha anketangizga yetarlicha mos keladigan anketa yoʻq. Bu normal — biz kimni boʻlsa koʻrsatmaymiz. Har kuni yangi odamlar paydo boʻladi: mos odamni topishimiz bilan u shu yerda boʻladi.",
     "empty_body_2": "Ayni paytda — anketada istagan yosh oraligʻini kengaytirishingiz yoki psixoportretni toʻldirishingiz mumkin. Maʼlumotlar qanchalik aniq boʻlsa, tanlov shunchalik keng va aniq boʻladi.",
     "maint_title": "Tanlov texnik ishlar uchun vaqtincha toʻxtatilgan.",
-    "maint_body": "Texnik ishlar vaqtida yangi tanlovlarni vaqtincha toʻxtatib turdik. Hech narsa yoʻqolmaydi — birozdan soʻng qayting, bugungi tanlov shu yerda boʻladi."
+    "maint_body": "Texnik ishlar vaqtida yangi tanlovlarni vaqtincha toʻxtatib turdik. Hech narsa yoʻqolmaydi — birozdan soʻng qayting, bugungi tanlov shu yerda boʻladi.",
+    "returned_note": "Siz bu odamni avval kechiktirgansiz - balki endi boshqacha koʻrinar."
   },
   "Nav": {
     "feed": "Lenta",
@@ -589,8 +590,7 @@
     "skip_limit_body": "Biz kimni boʻlsa shuni koʻrsatmaymiz - ertaga kiring, yangi odamlarni tanlaymiz.",
     "skip_failed": "Oʻtkazib yuborilmadi. Yana urinib koʻring.",
     "send_interest": "Qiziqish yuborish",
-    "not_now": "Hozir toʻgʻri kelmadi",
-    "returned_note": "Siz bu odamni avval kechiktirgansiz - balki endi boshqacha koʻrinar."
+    "not_now": "Hozir toʻgʻri kelmadi"
   },
   "ProfileView": {
     "verified": "Profil tasdiqlangan",

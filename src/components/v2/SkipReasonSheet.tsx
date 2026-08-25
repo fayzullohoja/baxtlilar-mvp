@@ -94,6 +94,11 @@ export function SkipReasonSheet({
     return data?.error === "daily_limit" ? "limit" : "error";
   }
 
+  /* Ведём в РЕДАКТОР профиля, а не на шаг анкеты. Экраны анкеты пускают только
+     тех, кто на этом шаге стоит: активного человека они выбрасывают обратно в
+     ленту - проверено переходом, попадаешь на /main. То есть кнопка «поправить»
+     вела бы в тупик ровно для тех, кому она нужна. */
+
   /** Закрыть с анимацией, потом отдать управление наверх. */
   function closeThen(after: () => void) {
     if (closing.current) return;
@@ -273,7 +278,7 @@ export function SkipReasonSheet({
             <button
               className="v2-sheet-row"
               onClick={() =>
-                closeThen(() => router.push("/v2/anketa/partner-extended"))
+                closeThen(() => router.push("/v2/profile/edit"))
               }
               style={{
                 display: "block",

@@ -573,7 +573,8 @@
     "empty_body": "Henüz sizinkiyle yeterince eşleşen bir profil yok. Bu normal — herkesi göstermiyoruz. Her gün yeni insanlar geliyor: doğru kişiyi bulur bulmaz burada olacak.",
     "empty_body_2": "Bu arada — profilde tercih ettiğiniz yaş aralığını genişletebilir veya psiko-portrenizi tamamlayabilirsiniz. Verileriniz ne kadar kesin olursa, eşleştirme o kadar geniş ve isabetli olur.",
     "maint_title": "Eşleştirme bakım için duraklatıldı.",
-    "maint_body": "Bakım süresince yeni eşleşmeleri geçici olarak duraklattık. Hiçbir şey kaybolmadı — biraz sonra tekrar bakın, bugünün eşleşmesi burada olacak."
+    "maint_body": "Bakım süresince yeni eşleşmeleri geçici olarak duraklattık. Hiçbir şey kaybolmadı — biraz sonra tekrar bakın, bugünün eşleşmesi burada olacak.",
+    "returned_note": "Bu kişiyi daha önce ertelemiştiniz - belki şimdi farklı görünür."
   },
   "Nav": {
     "feed": "Akış",
@@ -589,8 +590,7 @@
     "skip_limit_body": "Rastgele kişileri göstermiyoruz - yarın uğrayın, yeni kişiler seçelim.",
     "skip_failed": "Atlanamadı. Lütfen tekrar deneyin.",
     "send_interest": "İlgi gönder",
-    "not_now": "Şimdilik uygun değil",
-    "returned_note": "Bu kişiyi daha önce ertelemiştiniz - belki şimdi farklı görünür."
+    "not_now": "Şimdilik uygun değil"
   },
   "ProfileView": {
     "verified": "Profil doğrulandı",

@@ -4,10 +4,13 @@ import { loadActiveUserApi } from "@/lib/auth/active-guard";
 import { stampExtended } from "@/lib/profile/extended";
 import { MARITAL_STATUS_NEEDS_REVIEW } from "@/lib/profile/options";
 import { clearFilterSkips } from "@/lib/matching/clear-filter-skips";
+import { PROFILE_COLUMNS, NON_EDITABLE_COLUMNS } from "@/lib/profile/profile-columns";
 import {
   EDIT_SECTIONS,
   isEditSection,
   splitSectionData,
+  fieldsToClear,
+  knownFields,
   SECTION_CLEARS_AGE_SKIPS,
   SECTION_RECHECKS_MARITAL,
 } from "@/lib/profile/edit-sections";
@@ -63,16 +66,35 @@ export async function POST(
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const { columns, extended } = splitSectionData(parsed.data as Record<string, unknown>);
+  const data = parsed.data as Record<string, unknown>;
+  const { columns, extended } = splitSectionData(data);
 
   // Читаем-сливаем-пишем: в extended лежат секции ВСЕХ разделов, и запись
   // целиком затёрла бы чужие. Так же делают ручки анкеты.
   const prevExt = (prof?.extended as Record<string, unknown>) ?? {};
   const prevSection = (prevExt[def.extendedKey] as Record<string, unknown>) ?? {};
-  const nextExt = {
-    ...prevExt,
-    [def.extendedKey]: { ...prevSection, ...extended },
-  };
+  const merged: Record<string, unknown> = { ...prevSection, ...extended };
+
+  // ОЧИСТКА ПО ОТСУТСТВИЮ. В анкете отсутствие ключа справедливо значит «не
+  // трогай»: она заполняется по частям. Правка - другое дело, она шлёт раздел
+  // целиком, и если человек стёр необязательное поле, форма просто перестаёт
+  // его слать. Проверено вживую: очистка «специальности» уходила в пустоту -
+  // человек видел «сохранено», а прежнее значение оставалось в базе.
+  for (const k of knownFields(section)) {
+    if (k in data) continue;
+    if (PROFILE_COLUMNS.has(k)) continue; // колонки чистим ниже, по правилам раздела
+    if (k in merged) delete merged[k];
+  }
+
+  // ОЧИСТКА ПО ОТПАВШЕМУ УСЛОВИЮ. Скрытое на экране поле обязано исчезать из
+  // данных, а не только с глаз: иначе у человека, сказавшего «дохода нет»,
+  // в базе остаётся прежний диапазон. Ровно это уже кусало в family launch.
+  for (const k of fieldsToClear(section, data)) {
+    if (PROFILE_COLUMNS.has(k) && !NON_EDITABLE_COLUMNS.has(k)) columns[k] = null;
+    else merged[k] = null;
+  }
+
+  const nextExt = { ...prevExt, [def.extendedKey]: merged };
 
   const patch: Record<string, unknown> = {
     user_id: user.id,

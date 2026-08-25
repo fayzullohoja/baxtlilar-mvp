@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { V2AnketaSelfForm } from "./AnketaSelfForm";
 import { V2AnketaValuesForm } from "./AnketaValuesForm";
@@ -73,6 +74,7 @@ const SECTIONS: readonly EditSectionKey[] = [
 
 export function ProfileEditor({ locale, initial, locked }: Props) {
   const t = useTranslations("ProfileEdit");
+  const router = useRouter();
   // Три раздела - семейное положение, взгляды на брак и модель семьи - звучат
   // по-разному для мужчины и женщины, поэтому формам нужен пол. Берём его из
   // паспортного блока: он неизменяем, значит и подмены не будет.
@@ -183,7 +185,14 @@ export function ProfileEditor({ locale, initial, locked }: Props) {
             }}
           >
             <button
-              onClick={() => setOpenKey(isOpen ? null : k)}
+              onClick={() => {
+                // Закрывая раздел, просим страницу перечитать данные: значения
+                // формы приходят с сервера один раз при загрузке, и без этого
+                // человек, сохранивший и свернувший раздел, увидел бы при
+                // повторном открытии СТАРЫЕ значения и решил, что не сохранилось.
+                if (isOpen) router.refresh();
+                setOpenKey(isOpen ? null : k);
+              }}
               aria-expanded={isOpen}
               style={{
                 display: "flex",

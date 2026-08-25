@@ -4,6 +4,8 @@ import {
   EDIT_SECTION_KEYS,
   isEditSection,
   splitSectionData,
+  knownFields,
+  fieldsToClear,
 } from "./edit-sections";
 import { PROFILE_COLUMNS, NON_EDITABLE_COLUMNS } from "./profile-columns";
 
@@ -79,9 +81,22 @@ describe("реестр разделов", () => {
     }
   });
 
-  it("имена секций в extended не повторяются", () => {
-    // Два раздела с одним именем затирали бы данные друг друга.
-    const keys = EDIT_SECTION_KEYS.map((k) => EDIT_SECTIONS[k].extendedKey);
+  it("«модель семьи» и «семья» делят секцию extended.family - как в анкете", () => {
+    // Общий ключ здесь НЕ ошибка: ручки анкеты family-model и family обе пишут
+    // в extended.family, просто разные поля (модель решений против детей).
+    // Правка одного раздела не трогает поля другого, потому что очистка по
+    // отсутствию ограничена полями собственной схемы раздела.
+    expect(EDIT_SECTIONS.family_model.extendedKey).toBe("family");
+    expect(EDIT_SECTIONS.family.extendedKey).toBe("family");
+    const fmFields = new Set(knownFields("family_model"));
+    const famFields = knownFields("family");
+    expect(famFields.some((f) => fmFields.has(f))).toBe(false);
+  });
+
+  it("остальные разделы не делят секции extended между собой", () => {
+    const keys = EDIT_SECTION_KEYS.filter((k) => k !== "family_model").map(
+      (k) => EDIT_SECTIONS[k].extendedKey,
+    );
     expect(new Set(keys).size).toBe(keys.length);
   });
 
@@ -108,5 +123,92 @@ describe("реестр разделов", () => {
       employment_status: "employed",
     });
     expect(withPhone.success).toBe(false);
+  });
+});
+
+describe("ключи extended заморожены по факту, а не по догадке", () => {
+  /**
+   * Куда РЕАЛЬНО пишет ручка анкеты каждого раздела. Снято чтением исходников
+   * ручек 2026-08-25 (grep по stampExtended/extended.<ключ>), а не выведено из
+   * имени раздела - именно догадка по имени и дала две ошибки: «модель семьи»
+   * пишет в family, а не family_model, «внешность» в langs, а не appearance.
+   *
+   * Ошибка тихая: сохранение отвечает ok, а прочитать значение потом неоткуда.
+   * Поэтому значения зафиксированы здесь списком: сдвинуть их можно только
+   * осознанно, вместе с этим тестом.
+   */
+  const REAL_KEYS: Record<string, string> = {
+    self: "self",
+    values: "values",
+    family_model: "family",
+    finance: "finance",
+    lifestyle: "lifestyle",
+    health: "health",
+    appearance: "langs",
+    parents: "parents",
+    birth_place: "birth_place",
+    marriage: "marriage",
+    family: "family",
+    partner: "partner",
+  };
+
+  it("каждый раздел пишет туда же, куда ручка анкеты", () => {
+    for (const k of EDIT_SECTION_KEYS) {
+      expect(EDIT_SECTIONS[k].extendedKey, `раздел ${k}`).toBe(REAL_KEYS[k]);
+    }
+  });
+
+  it("список разделов и список проверенных ключей совпадают", () => {
+    // Добавили раздел и забыли сверить его ключ с ручкой - тест упадёт здесь.
+    expect([...EDIT_SECTION_KEYS].sort()).toEqual(Object.keys(REAL_KEYS).sort());
+  });
+});
+
+describe("зачистка полей с отпавшим условием", () => {
+  it("«дохода нет» стирает сохранённый ранее размер дохода", () => {
+    // Та самая ловушка family launch: клиент прячет вопрос и перестаёт слать
+    // поле, а прежний диапазон переживает отказ и остаётся в базе.
+    expect(fieldsToClear("finance", { income_source_stability: "none" })).toContain(
+      "monthly_income_range",
+    );
+    expect(fieldsToClear("finance", { income_source_stability: "stable" })).toEqual([]);
+  });
+
+  it("«детей нет» стирает список детей и с кем они живут", () => {
+    const cleared = fieldsToClear("family", { has_children: "no", marital_status: "never" });
+    expect(cleared).toContain("children");
+    expect(cleared).toContain("children_living");
+  });
+
+  it("при наличии детей список не стирается", () => {
+    const cleared = fieldsToClear("family", { has_children: "yes", marital_status: "never" });
+    expect(cleared).not.toContain("children");
+  });
+
+  it("«сколько раз в браке» спрашивают только у разведённых", () => {
+    expect(fieldsToClear("family", { marital_status: "never" })).toContain("previous_marriages");
+    expect(fieldsToClear("family", { marital_status: "divorced" })).not.toContain(
+      "previous_marriages",
+    );
+  });
+
+  it("разделы без условных полей ничего не чистят", () => {
+    for (const k of ["self", "values", "health", "parents", "partner"] as const) {
+      expect(fieldsToClear(k, {})).toEqual([]);
+    }
+  });
+});
+
+describe("поля схемы раздела", () => {
+  it("известны и для обычных схем, и для схем с проверками", () => {
+    // partnerExtendedSchema обёрнута в .refine - у неё .shape лежит глубже, и
+    // без учёта этого список полей вышел бы пустым, а очистка по отсутствию
+    // молча перестала бы работать именно там, где важнее всего.
+    expect(knownFields("self")).toContain("specialty");
+    expect(knownFields("partner").length).toBeGreaterThan(0);
+    expect(knownFields("family").length).toBeGreaterThan(0);
+    for (const k of EDIT_SECTION_KEYS) {
+      expect(knownFields(k).length, `у раздела ${k} пустой список полей`).toBeGreaterThan(0);
+    }
   });
 });

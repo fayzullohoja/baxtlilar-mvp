@@ -52,7 +52,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const until = hiddenUntil(reason, Date.now());
 
   const sb = supabaseAdmin();
-  await sb.from("match_views").upsert(
+  const { error: saveErr } = await sb.from("match_views").upsert(
     {
       viewer_id: user.id,
       target_id,
@@ -62,6 +62,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     },
     { onConflict: "viewer_id,target_id" },
   );
+  // Сбой записи нельзя выдавать за успех: дневной лимит уже списан выше, а
+  // кандидат остался бы в ленте. Человек получил бы «отказ учтён», увидел того
+  // же человека снова и потерял попытку - худшее сочетание из возможных.
+  if (saveErr)
+    return NextResponse.json({ ok: false, error: "save_failed" }, { status: 500 });
 
   // «Что-то не так с анкетой» — это сигнал модерации, а не подбору. Кладём в ту
   // же очередь, что и обычные жалобы, но ОТДЕЛЬНЫМ кодом: оператор должен
