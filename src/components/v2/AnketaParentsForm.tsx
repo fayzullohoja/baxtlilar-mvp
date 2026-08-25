@@ -208,13 +208,17 @@ function ParentSection({
 export function V2AnketaParentsForm({
   locale,
   initial,
+  endpoint,
+  submitLabel,
 }: {
   locale: string;
   initial?: Record<string, unknown>;
+  /** Куда слать. Пусто - обычный шаг анкеты. */
+  endpoint?: string;
+  /** Подпись кнопки. Пусто - «Далее», как в анкете. */
+  submitLabel?: string;
 }) {
-  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
-    "/api/onboarding/profile/parents",
-  );
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(endpoint ?? "/api/onboarding/profile/parents");
   const t = useTranslations("Anketa");
   const [father, setFather] = useState<ParentState>(() => initialParent(initial, "father"));
   const [mother, setMother] = useState<ParentState>(() => initialParent(initial, "mother"));
@@ -314,7 +318,7 @@ export function V2AnketaParentsForm({
       ) : null}
 
       <Button onClick={submit} disabled={busy} variant="primary" style={{ width: "100%" }}>
-        {busy ? t("btn_saving") : t("btn_next")}
+        {busy ? t("btn_saving") : (submitLabel ?? t("btn_next"))}
       </Button>
     </div>
   );

@@ -68,6 +68,8 @@ function parseRange(
 export function V2AnketaPartnerExtendedForm({
   locale,
   initial,
+  endpoint,
+  submitLabel,
 }: {
   locale: string;
   initial?: {
@@ -88,11 +90,13 @@ export function V2AnketaPartnerExtendedForm({
     partner_hard_criteria?: string[];
     partner_origin_region_pref?: string;
   };
+  /** Куда слать. Пусто - обычный шаг анкеты. */
+  endpoint?: string;
+  /** Подпись кнопки. Пусто - «Далее», как в анкете. */
+  submitLabel?: string;
 }) {
   const t = useTranslations("Anketa");
-  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
-    "/api/onboarding/profile/partner-extended",
-  );
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(endpoint ?? "/api/onboarding/profile/partner-extended");
   // Возраст/рост — диапазоны двойным ползунком. «Не указано» до касания (isSet).
   const initAge = parseRange(
     initial?.partner_age_min,
@@ -425,7 +429,7 @@ export function V2AnketaPartnerExtendedForm({
       <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />
 
       <Button onClick={submit} disabled={busy} variant="primary">
-        {busy ? t("btn_saving") : t("btn_next")}
+        {busy ? t("btn_saving") : (submitLabel ?? t("btn_next"))}
       </Button>
     </div>
   );

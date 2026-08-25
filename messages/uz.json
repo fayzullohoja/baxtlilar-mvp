@@ -1645,5 +1645,31 @@
     "hint_body_geo": "Hozir moslamada shahringiz va yaqin atrofdagi odamlar koʻrsatiladi. Kengroq qarashga tayyor boʻlsangiz - afzallikni oʻzgartiring.",
     "hint_cta": "Sozlamalarni oʻzgartirish",
     "hint_later": "Hozir emas"
+  },
+  "ProfileEdit": {
+    "eyebrow": "Profil",
+    "title": "Mening profilim",
+    "lead": "Xohlagan narsangizni xohlagan vaqtda oʻzgartiring. Har bir boʻlim alohida saqlanadi.",
+    "save": "Saqlash",
+    "locked_title": "Hujjatdan olingan maʼlumotlar",
+    "locked_name": "Ism",
+    "locked_birth": "Tugʻilgan sana",
+    "locked_gender": "Jins",
+    "gender_m": "Erkak",
+    "gender_f": "Ayol",
+    "locked_note": "Bu maʼlumotlar shaxsni tasdiqlashda pasportdan olingan va faqat qoʻllab-quvvatlash orqali oʻzgaradi.",
+    "section_self": "Oʻzim va ishim",
+    "section_appearance": "Tashqi koʻrinish va tillar",
+    "section_birth_place": "Tugʻilgan joy",
+    "section_family": "Oilaviy holat va farzandlar",
+    "section_marriage": "Nikohga qarash",
+    "section_parents": "Ota-ona va oila",
+    "section_values": "Din va qadriyatlar",
+    "section_family_model": "Oila modeli",
+    "section_finance": "Moliya",
+    "section_lifestyle": "Turmush tarzi",
+    "section_health": "Salomatlik",
+    "section_partner": "Kimni izlayapman",
+    "open_link": "Profilni tahrirlash"
   }
 }

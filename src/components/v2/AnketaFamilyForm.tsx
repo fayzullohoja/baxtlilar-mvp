@@ -50,6 +50,8 @@ export function V2AnketaFamilyForm({
   locale,
   gender,
   initial,
+  endpoint,
+  submitLabel,
 }: {
   locale: string;
   gender: Gender | null;
@@ -63,10 +65,12 @@ export function V2AnketaFamilyForm({
     children?: ChildInfo[];
     children_living?: string;
   };
+  /** Куда слать. Пусто - обычный шаг анкеты. */
+  endpoint?: string;
+  /** Подпись кнопки. Пусто - «Далее», как в анкете. */
+  submitLabel?: string;
 }) {
-  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
-    "/api/onboarding/profile/family",
-  );
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(endpoint ?? "/api/onboarding/profile/family");
   const t = useTranslations("Anketa");
   const [marital, setMarital] = useState(initial?.marital_status ?? "");
   const [prevMarriages, setPrevMarriages] = useState(
@@ -236,7 +240,7 @@ export function V2AnketaFamilyForm({
       <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />
 
       <Button onClick={submit} disabled={busy} variant="primary">
-        {busy ? t("btn_saving") : t("btn_next")}
+        {busy ? t("btn_saving") : (submitLabel ?? t("btn_next"))}
       </Button>
     </div>
   );

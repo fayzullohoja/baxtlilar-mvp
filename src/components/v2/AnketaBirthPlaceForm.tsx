@@ -20,6 +20,8 @@ import { useTranslations } from 'next-intl';
 export function V2AnketaBirthPlaceForm({
   locale,
   initial,
+  endpoint,
+  submitLabel,
 }: {
   locale: string;
   initial?: {
@@ -28,11 +30,13 @@ export function V2AnketaBirthPlaceForm({
     birth_district?: string;
     birth_city?: string;
   };
+  /** Куда слать. Пусто - обычный шаг анкеты. */
+  endpoint?: string;
+  /** Подпись кнопки. Пусто - «Далее», как в анкете. */
+  submitLabel?: string;
 }) {
   const t = useTranslations('Anketa');
-  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
-    "/api/onboarding/profile/birth-place",
-  );
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(endpoint ?? "/api/onboarding/profile/birth-place");
   const [country, setCountry] = useState(initial?.birth_country || "UZ");
   const [region, setRegion] = useState(initial?.birth_region ?? "");
   const [district, setDistrict] = useState(initial?.birth_district ?? "");
@@ -170,7 +174,7 @@ export function V2AnketaBirthPlaceForm({
         disabled={busy}
         style={{ width: "100%" }}
       >
-        {busy ? t('birth_place_saving') : t('birth_place_next')}
+        {busy ? t('birth_place_saving') : (submitLabel ?? t("birth_place_next"))}
       </Button>
     </div>
   );

@@ -26,6 +26,8 @@ const WEIGHT_MID = 70;
 export function V2AnketaAppearanceForm({
   locale,
   initial,
+  endpoint,
+  submitLabel,
 }: {
   locale: string;
   initial?: {
@@ -35,11 +37,13 @@ export function V2AnketaAppearanceForm({
     languages?: string[];
     other_language?: string;
   };
+  /** Куда слать. Пусто - обычный шаг анкеты. */
+  endpoint?: string;
+  /** Подпись кнопки. Пусто - «Далее», как в анкете. */
+  submitLabel?: string;
 }) {
   const t = useTranslations("Anketa");
-  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
-    "/api/onboarding/profile/appearance",
-  );
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(endpoint ?? "/api/onboarding/profile/appearance");
   const hasHeight = typeof initial?.height_cm === "number";
   const hasWeight = typeof initial?.weight_kg === "number";
   const [heightCm, setHeightCm] = useState(initial?.height_cm ?? HEIGHT_MID);
@@ -197,7 +201,7 @@ export function V2AnketaAppearanceForm({
         disabled={busy}
         style={{ width: "100%" }}
       >
-        {busy ? t("btn_saving") : t("btn_next")}
+        {busy ? t("btn_saving") : (submitLabel ?? t("btn_next"))}
       </Button>
     </div>
   );

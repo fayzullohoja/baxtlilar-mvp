@@ -32,6 +32,8 @@ export function V2AnketaFamilyModelForm({
   locale,
   gender,
   initial,
+  endpoint,
+  submitLabel,
 }: {
   locale: string;
   gender: Gender | null;
@@ -40,10 +42,12 @@ export function V2AnketaFamilyModelForm({
     wife_work_after_marriage_view?: string;
     household_responsibility_model?: string;
   };
+  /** Куда слать. Пусто - обычный шаг анкеты. */
+  endpoint?: string;
+  /** Подпись кнопки. Пусто - «Далее», как в анкете. */
+  submitLabel?: string;
 }) {
-  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(
-    "/api/onboarding/profile/family-model",
-  );
+  const { busy, errorCode, stepMoved, submit: submitStep } = useAnketaSubmit(endpoint ?? "/api/onboarding/profile/family-model");
   const t = useTranslations("Anketa");
   const [roleModel, setRoleModel] = useState(initial?.family_role_model ?? "");
   const [wifeWork, setWifeWork] = useState(
@@ -122,7 +126,7 @@ export function V2AnketaFamilyModelForm({
       <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />
 
       <Button onClick={submit} disabled={busy} variant="primary">
-        {busy ? t('btn_saving') : t('btn_next')}
+        {busy ? t('btn_saving') : (submitLabel ?? t("btn_next"))}
       </Button>
     </div>
   );

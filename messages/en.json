@@ -1645,5 +1645,31 @@
     "hint_body_geo": "Right now matches come from your city and nearby. If you're open to looking wider, change the preference.",
     "hint_cta": "Change preferences",
     "hint_later": "Not now"
+  },
+  "ProfileEdit": {
+    "eyebrow": "Profile",
+    "title": "My profile",
+    "lead": "Change anything, any time. Each section saves on its own.",
+    "save": "Save",
+    "locked_title": "From your document",
+    "locked_name": "Name",
+    "locked_birth": "Date of birth",
+    "locked_gender": "Gender",
+    "gender_m": "Male",
+    "gender_f": "Female",
+    "locked_note": "These came from your passport during identity verification and can only be changed through support.",
+    "section_self": "About me and work",
+    "section_appearance": "Appearance and languages",
+    "section_birth_place": "Place of birth",
+    "section_family": "Marital status and children",
+    "section_marriage": "Views on marriage",
+    "section_parents": "Parents and family",
+    "section_values": "Faith and values",
+    "section_family_model": "Family model",
+    "section_finance": "Finances",
+    "section_lifestyle": "Lifestyle",
+    "section_health": "Health",
+    "section_partner": "Who I'm looking for",
+    "open_link": "Edit profile"
   }
 }

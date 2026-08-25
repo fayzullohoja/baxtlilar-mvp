@@ -1645,5 +1645,31 @@
     "hint_body_geo": "Şu anda eşleşmeler şehrinizden ve yakınından geliyor. Daha geniş bakmaya hazırsanız tercihi değiştirin.",
     "hint_cta": "Ayarları değiştir",
     "hint_later": "Şimdi değil"
+  },
+  "ProfileEdit": {
+    "eyebrow": "Profil",
+    "title": "Profilim",
+    "lead": "Dilediğinizi dilediğiniz zaman değiştirin. Her bölüm ayrı kaydedilir.",
+    "save": "Kaydet",
+    "locked_title": "Belgeden alınan bilgiler",
+    "locked_name": "Ad",
+    "locked_birth": "Doğum tarihi",
+    "locked_gender": "Cinsiyet",
+    "gender_m": "Erkek",
+    "gender_f": "Kadın",
+    "locked_note": "Bu bilgiler kimlik doğrulamasında pasaporttan alındı ve yalnızca destek üzerinden değişir.",
+    "section_self": "Hakkımda ve işim",
+    "section_appearance": "Görünüm ve diller",
+    "section_birth_place": "Doğum yeri",
+    "section_family": "Medeni hal ve çocuklar",
+    "section_marriage": "Evlilik görüşü",
+    "section_parents": "Ebeveynler ve aile",
+    "section_values": "İnanç ve değerler",
+    "section_family_model": "Aile modeli",
+    "section_finance": "Finans",
+    "section_lifestyle": "Yaşam tarzı",
+    "section_health": "Sağlık",
+    "section_partner": "Kimi arıyorum",
+    "open_link": "Profili düzenle"
   }
 }
