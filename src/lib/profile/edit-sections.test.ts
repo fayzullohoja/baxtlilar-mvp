@@ -212,3 +212,46 @@ describe("поля схемы раздела", () => {
     }
   });
 });
+
+describe("зачистка семьи покрывает и колонки, а не только поля extended", () => {
+  it("«детей нет» обнуляет колонку children_count", () => {
+    // Форма перестаёт слать children_count, как только выбрано «детей нет».
+    // Без явной очистки в базе остаётся has_children='no' при children_count=2 -
+    // ручка анкеты это чистит, а в правке потерялось.
+    expect(fieldsToClear("family", { has_children: "no", marital_status: "never" })).toContain(
+      "children_count",
+    );
+  });
+
+  it("при наличии детей количество не стирается", () => {
+    expect(fieldsToClear("family", { has_children: "yes", marital_status: "never" })).not.toContain(
+      "children_count",
+    );
+  });
+
+  it("устаревшая колонка youngest_child_age зануляется всегда", () => {
+    for (const has of ["yes", "no"]) {
+      expect(
+        fieldsToClear("family", { has_children: has, marital_status: "never" }),
+        `при has_children=${has}`,
+      ).toContain("youngest_child_age");
+    }
+  });
+
+  it("список покрывает всё, что зануляет ручка анкеты", () => {
+    // Страж от повторения: ручка анкеты family/route.ts выставляет в null
+    // children, children_living, children_age_range, previous_marriages,
+    // children_count и youngest_child_age. Правка обязана уметь столько же.
+    const cleared = new Set(fieldsToClear("family", { has_children: "no", marital_status: "never" }));
+    for (const f of [
+      "children",
+      "children_living",
+      "children_age_range",
+      "previous_marriages",
+      "children_count",
+      "youngest_child_age",
+    ]) {
+      expect(cleared.has(f), `${f} обязано чиститься`).toBe(true);
+    }
+  });
+});

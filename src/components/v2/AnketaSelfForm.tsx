@@ -13,6 +13,7 @@ import {
   ACTIVITY_FIELDS,
   EMPLOYMENT_FORMAT,
 } from "@/lib/profile/options";
+import { BIO_MAX } from "@/lib/profile/limits";
 
 /**
  * V3 Sprint 2 — Экран 3 «О себе».
@@ -115,7 +116,7 @@ export function V2AnketaSelfForm({
           value={bio}
           onChange={(e) => setBio(e.target.value)}
           rows={5}
-          maxLength={1000}
+          maxLength={BIO_MAX}
           placeholder={t('bioPlaceholder')}
         />
       </Field>

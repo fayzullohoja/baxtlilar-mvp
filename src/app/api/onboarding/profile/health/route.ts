@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { healthSchema } from "@/lib/profile/schemas";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
 import { stampExtended } from "@/lib/profile/extended";
+import { extendedBuilderFor } from "@/lib/profile/section-extended";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,28 +43,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const ext = (existing?.extended as Record<string, unknown>) ?? {};
   const health = (ext.health as Record<string, unknown>) ?? {};
 
-  const newHealth: Record<string, unknown> = {
-    ...health,
-    _visibility: "matching_only",
-    ...(parsed.data.health_openness
-      ? { health_openness: parsed.data.health_openness }
-      : {}),
-    ...(parsed.data.medical_check_willingness
-      ? { medical_check_willingness: parsed.data.medical_check_willingness }
-      : {}),
-    // Ревью оунера 1.10 (substance): safety_only — НЕ показывается другим юзерам,
-    // не в публичной анкете (в progressive-view whitelist не входит). Флаг
-    // ready_to_discuss помечает на будущий внутренний safety-review (воркфлоу пока нет).
-    ...(parsed.data.substance_dependency_status
-      ? {
-          substance_dependency_status: parsed.data.substance_dependency_status,
-          substance_visibility: "safety_only",
-          ...(parsed.data.substance_dependency_status === "ready_to_discuss"
-            ? { later_safety_review: true }
-            : {}),
-        }
-      : {}),
-  };
+  // Укладка в extended живёт в section-extended.ts - тем же кодом пользуется
+  // редактор профиля. Здесь были служебные метки приватности (_visibility,
+  // substance_visibility), которых редактор не ставил, и раздел, впервые
+  // заполненный правкой, выглядел иначе, чем такой же из анкеты.
+  const newHealth = extendedBuilderFor("health")!(parsed.data, health);
 
   const { error: saveErr } = await supabaseAdmin()
     .from("user_profiles")

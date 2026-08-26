@@ -105,9 +105,19 @@ export function fieldsToClear(
   }
   if (section === "family") {
     const out: string[] = [];
-    if (data.has_children !== "yes") out.push("children", "children_living");
+    if (data.has_children !== "yes") {
+      out.push("children", "children_living");
+      // КОЛОНКА, а не поле extended. Её тоже надо обнулять: форма перестаёт
+      // слать children_count, как только выбрано «детей нет», и без явной
+      // очистки в базе остаётся has_children='no' при children_count=2.
+      // Ручка анкеты это делает (`children_count: parsed.data.children_count ?? null`),
+      // а в правке потерялось - то же расхождение, что и с размером дохода.
+      out.push("children_count");
+    }
     // Легаси-диапазон возраста заменён на children[].age - чистим всегда.
     out.push("children_age_range");
+    // youngest_child_age устарел вместе с ним и в анкете зануляется безусловно.
+    out.push("youngest_child_age");
     // Сколько раз в браке спрашивают только у разведённых.
     if (data.marital_status !== "divorced") out.push("previous_marriages");
     return out;
