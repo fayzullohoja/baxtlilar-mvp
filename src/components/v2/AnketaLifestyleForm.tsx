@@ -14,6 +14,7 @@ import {
   NUTRITION_STYLE,
   ALCOHOL_LEVEL,
 } from "@/lib/profile/options";
+import { FREE_TIME_MAX } from "@/lib/profile/limits";
 
 /**
  * V4 (2026-06-30) — Чат 2 — Анкета.md Экран 10 «Образ жизни и привычки».
@@ -110,7 +111,7 @@ export function V2AnketaLifestyleForm({
       <Field
         label={t("lifestyle_freetime_question")}
         required
-        hint={`${t("lifestyle_freetime_hint")} ${freeTime.length}/3`}
+        hint={`${t("lifestyle_freetime_hint")} ${freeTime.length}/${FREE_TIME_MAX}`}
         error={showErrors ? errors.free_time_activities : undefined}
       >
         <Chips
@@ -118,7 +119,7 @@ export function V2AnketaLifestyleForm({
           /* T-104: макс. выбор увеличен с 3 до 5 */
           selected={freeTime}
           onToggle={toggleFreeTime}
-          max={5}
+          max={FREE_TIME_MAX}
           locale={locale}
         />
       </Field>

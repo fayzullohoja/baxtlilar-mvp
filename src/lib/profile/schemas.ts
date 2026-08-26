@@ -69,6 +69,14 @@ import {
   FAMILY_RELATIONS,
   FAMILY_INVOLVEMENT,
 } from "./options";
+import {
+  LIFE_VALUES_MIN,
+  LIFE_VALUES_MAX,
+  FREE_TIME_MIN,
+  FREE_TIME_MAX,
+  BIO_MIN,
+  BIO_MAX,
+} from "./limits";
 
 const tuple = (a: string[]) => a as [string, ...string[]];
 
@@ -266,8 +274,8 @@ export const selfSchema = z.object({
   bio: z
     .string()
     .trim()
-    .min(50, { message: "bio_too_short" })
-    .max(500, { message: "bio_too_long" })
+    .min(BIO_MIN, { message: "bio_too_short" })
+    .max(BIO_MAX, { message: "bio_too_long" })
     .refine((s) => !containsContact(s), { message: "bio_has_contacts" }),
   education: z.enum(tuple(vals(EDUCATION))),
   // Ревью оунера Экран 4: условное поле «специальность / направление» (показывается
@@ -372,7 +380,10 @@ export const valuesV3Schema = z.object({
   religion_partner_match: z.enum(tuple(vals(RELIGION_PARTNER_MATCH))).optional(),
   // Family launch 2026-08: потолок подняли 3 -> 5. Тестеры жаловались, что три
   // ценности не описывают человека; вариантов в LIFE_VALUES_V3 четырнадцать.
-  top_life_values: z.array(z.enum(tuple(vals(LIFE_VALUES_V3)))).min(1).max(5),
+  top_life_values: z
+    .array(z.enum(tuple(vals(LIFE_VALUES_V3))))
+    .min(LIFE_VALUES_MIN)
+    .max(LIFE_VALUES_MAX),
 });
 
 /** Экран 7 — Семейная модель. Hot колонки (family_role_model, wife_work) +
@@ -471,7 +482,10 @@ export const financeSchema = z.object({
  *  взаимного интереса даже после публикации профиля. */
 export const lifestyleSchema = z.object({
   lifestyle_pace: z.enum(tuple(vals(LIFESTYLE_PACE))),
-  free_time_activities: z.array(z.enum(tuple(vals(FREE_TIME_ACTIVITIES)))).min(1).max(5),
+  free_time_activities: z
+    .array(z.enum(tuple(vals(FREE_TIME_ACTIVITIES))))
+    .min(FREE_TIME_MIN)
+    .max(FREE_TIME_MAX),
   daily_routine: z.enum(tuple(vals(DAILY_ROUTINE))),
   bad_habits_level: z.enum(tuple(vals(BAD_HABITS_LEVEL))).optional(),
   nutrition_style: z.enum(tuple(vals(NUTRITION_STYLE))).optional(),

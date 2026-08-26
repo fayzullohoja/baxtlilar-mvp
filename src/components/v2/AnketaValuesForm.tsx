@@ -10,6 +10,7 @@ import {
   RELIGION,
   LIFE_VALUES_V3,
 } from "@/lib/profile/options";
+import { LIFE_VALUES_MAX } from "@/lib/profile/limits";
 
 /**
  * V2 Anketa Values form (Blueprint §3.3 B3).
@@ -74,10 +75,10 @@ export function V2AnketaValuesForm({
       <Field
         label={t('lifeValuesLabel')}
         required
-        hint={t('lifeValuesHint')! + ` ${values.length}/3`}
+        hint={t('lifeValuesHint')! + ` ${values.length}/${LIFE_VALUES_MAX}`}
         error={showErrors ? errors.top_life_values : undefined}
       >
-        <Chips options={LIFE_VALUES_V3} selected={values} onToggle={toggle} max={5} locale={locale} />
+        <Chips options={LIFE_VALUES_V3} selected={values} onToggle={toggle} max={LIFE_VALUES_MAX} locale={locale} />
       </Field>
 
       <AnketaSubmitNotice errorCode={errorCode} stepMoved={stepMoved} />

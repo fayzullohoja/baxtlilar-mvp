@@ -58,6 +58,7 @@ import {
   PARTNER_PREFERRED_COUNTRIES,
   GEO_PREFERENCE,
 } from "@/lib/profile/options";
+import { LIFE_VALUES_MAX, FREE_TIME_MAX, BIO_MAX } from "@/lib/profile/limits";
 
 export type EditKind = "text" | "textarea" | "number" | "select" | "multiselect" | "toggle";
 
@@ -136,7 +137,7 @@ export const PROFILE_EDIT_SECTIONS: readonly EditSection[] = [
   {
     title: "Ценности",
     fields: [
-      { key: "top_life_values", label: "Жизненные ценности", kind: "multiselect", options: LIFE_VALUES_V3, maxItems: 3 },
+      { key: "top_life_values", label: "Жизненные ценности", kind: "multiselect", options: LIFE_VALUES_V3, maxItems: LIFE_VALUES_MAX },
     ],
   },
   {
@@ -172,7 +173,7 @@ export const PROFILE_EDIT_SECTIONS: readonly EditSection[] = [
       { key: "bad_habits_level", label: "Вредные привычки", kind: "select", options: BAD_HABITS_LEVEL, cold: "lifestyle" },
       { key: "nutrition_style", label: "Питание", kind: "select", options: NUTRITION_STYLE, cold: "lifestyle" },
       { key: "alcohol_level", label: "Алкоголь", kind: "select", options: ALCOHOL_LEVEL, cold: "lifestyle" },
-      { key: "free_time_activities", label: "Досуг", kind: "multiselect", options: FREE_TIME_ACTIVITIES, maxItems: 3, cold: "lifestyle" },
+      { key: "free_time_activities", label: "Досуг", kind: "multiselect", options: FREE_TIME_ACTIVITIES, maxItems: FREE_TIME_MAX, cold: "lifestyle" },
     ],
   },
   {
@@ -202,7 +203,7 @@ export const PROFILE_EDIT_SECTIONS: readonly EditSection[] = [
   {
     title: "Дополнительно",
     fields: [
-      { key: "bio", label: "О себе (bio)", kind: "textarea", maxLen: 1000 },
+      { key: "bio", label: "О себе (bio)", kind: "textarea", maxLen: BIO_MAX },
       { key: "hobbies", label: "Хобби", kind: "textarea", maxLen: 500, cold: "bio" },
       { key: "about_family", label: "О семье", kind: "textarea", maxLen: 500, cold: "bio" },
     ],
