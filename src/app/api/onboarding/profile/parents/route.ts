@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { parentsSchema } from "@/lib/profile/schemas";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
 import { stampExtended } from "@/lib/profile/extended";
+import { extendedBuilderFor } from "@/lib/profile/section-extended";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,19 +22,6 @@ export const dynamic = "force-dynamic";
  * пишем метаданными в extended.parents._visibility под будущий granular-контроль
  * (сам энфорсмент отложен, как и per-block privacy в целом).
  */
-const VISIBILITY_DEFAULTS: Record<string, "matching_only" | "hidden"> = {
-  father_status: "matching_only",
-  mother_status: "matching_only",
-  father_age_range: "hidden",
-  mother_age_range: "hidden",
-  father_profession: "matching_only",
-  mother_profession: "matching_only",
-  father_origin_region: "matching_only",
-  mother_origin_region: "matching_only",
-  father_current_location: "hidden",
-  mother_current_location: "hidden",
-  family_involvement: "matching_only",
-};
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const { user, res } = await loadUserForStep("profile_parents");
@@ -55,19 +43,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const ext = (prof?.extended as Record<string, unknown>) ?? {};
   const prevParents = (ext.parents as Record<string, unknown>) ?? {};
 
-  // IF/THEN оунера: «хочу советоваться с семьёй» → позже мягко предложить
-  // семейный аддон (флаг для будущей фичи, самой фичи ещё нет).
-  const later_offer_family_addon =
-    parsed.data.family_involvement === "family_consultation";
 
+  // Укладка в extended живёт в section-extended.ts - тем же кодом пользуется
+  // редактор профиля. Дефолты видимости и флаг семейного аддона переехали туда
+  // же: редактор их не ставил.
   const newExtended = {
     ...ext,
-    parents: {
-      ...prevParents,
-      ...parsed.data,
-      _visibility: VISIBILITY_DEFAULTS,
-      later_offer_family_addon,
-    },
+    parents: extendedBuilderFor("parents")!(parsed.data, prevParents),
   };
 
   const { error: saveErr } = await sb

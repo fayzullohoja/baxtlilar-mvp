@@ -5,6 +5,7 @@ import { stampExtended } from "@/lib/profile/extended";
 import { MARITAL_STATUS_NEEDS_REVIEW } from "@/lib/profile/options";
 import { clearFilterSkips } from "@/lib/matching/clear-filter-skips";
 import { PROFILE_COLUMNS, NON_EDITABLE_COLUMNS } from "@/lib/profile/profile-columns";
+import { extendedBuilderFor } from "@/lib/profile/section-extended";
 import {
   EDIT_SECTIONS,
   isEditSection,
@@ -73,17 +74,30 @@ export async function POST(
   // целиком затёрла бы чужие. Так же делают ручки анкеты.
   const prevExt = (prof?.extended as Record<string, unknown>) ?? {};
   const prevSection = (prevExt[def.extendedKey] as Record<string, unknown>) ?? {};
-  const merged: Record<string, unknown> = { ...prevSection, ...extended };
+  // Укладка в extended. У разделов с ПРАВИЛОМ (переименование поля, служебная
+  // метка) есть свой строитель - тот же самый, которым пользуется ручка анкеты.
+  // Раньше здесь была своя копия раскладки, и она разъехалась: «модель семьи»
+  // писала family_decision_model вместо decision_model, и админка правку не
+  // видела. Теперь дом у правила один.
+  const builder = extendedBuilderFor(section);
+  const merged: Record<string, unknown> = builder
+    ? builder(data, prevSection)
+    : { ...prevSection, ...extended };
 
   // ОЧИСТКА ПО ОТСУТСТВИЮ. В анкете отсутствие ключа справедливо значит «не
   // трогай»: она заполняется по частям. Правка - другое дело, она шлёт раздел
   // целиком, и если человек стёр необязательное поле, форма просто перестаёт
   // его слать. Проверено вживую: очистка «специальности» уходила в пустоту -
   // человек видел «сохранено», а прежнее значение оставалось в базе.
-  for (const k of knownFields(section)) {
-    if (k in data) continue;
-    if (PROFILE_COLUMNS.has(k)) continue; // колонки чистим ниже, по правилам раздела
-    if (k in merged) delete merged[k];
+  // Строитель раздела сам решает, что попадает в секцию, поэтому очистку по
+  // отсутствию применяем только к разделам БЕЗ строителя - иначе она сносила бы
+  // служебные метки и переименованные поля, которых нет в данных формы.
+  if (!builder) {
+    for (const k of knownFields(section)) {
+      if (k in data) continue;
+      if (PROFILE_COLUMNS.has(k)) continue; // колонки чистим ниже, по правилам раздела
+      if (k in merged) delete merged[k];
+    }
   }
 
   // ОЧИСТКА ПО ОТПАВШЕМУ УСЛОВИЮ. Скрытое на экране поле обязано исчезать из

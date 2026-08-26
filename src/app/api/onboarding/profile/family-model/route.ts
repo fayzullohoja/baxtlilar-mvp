@@ -4,6 +4,7 @@ import { tryTransition } from "@/lib/state-machine/transitions";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { familyModelSchema } from "@/lib/profile/schemas";
 import { ONBOARDING_PATHS } from "@/lib/state-machine/router";
+import { extendedBuilderFor } from "@/lib/profile/section-extended";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,15 +51,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ ok: false, error: "read_failed" }, { status: 500 });
     const ext = (existing?.extended as Record<string, unknown>) ?? {};
     const family = (ext.family as Record<string, unknown>) ?? {};
-    const newFamily = {
-      ...family,
-      ...(parsed.data.family_decision_model
-        ? { decision_model: parsed.data.family_decision_model }
-        : {}),
-      ...(parsed.data.household_responsibility_model
-        ? { household_responsibility_model: parsed.data.household_responsibility_model }
-        : {}),
-    };
+    // Укладка в extended живёт в section-extended.ts - тем же кодом пользуется
+    // редактор профиля. Своя копия здесь уже привела к расхождению: редактор
+    // писал family_decision_model вместо decision_model, и админка правку не
+    // видела. У правила должен быть один дом.
+    const newFamily = extendedBuilderFor("family_model")!(parsed.data, family);
     hotUpdate.extended = { ...ext, family: newFamily };
   }
 
